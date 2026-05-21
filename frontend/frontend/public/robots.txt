@@ -1,0 +1,22 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /portal
+Disallow: /editor
+Disallow: /api/
+
+User-agent: Googlebot
+Allow: /
+Disallow: /admin
+Disallow: /portal
+Disallow: /editor
+Disallow: /api/
+
+User-agent: Yeti
+Allow: /
+Disallow: /admin
+Disallow: /portal
+Disallow: /editor
+Disallow: /api/
+
+Sitemap: https://younjeong.com/sitemap.xml

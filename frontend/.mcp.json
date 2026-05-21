@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "korean-law": {
+      "command": "korean-law-mcp",
+      "env": {
+        "LAW_OC": "yjlaw"
+      }
+    }
+  }
+}

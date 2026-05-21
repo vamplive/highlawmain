@@ -1,0 +1,42 @@
+node_modules/
+dist/
+dist_test/
+dist_final/
+dist2/
+
+# 데이터/업로드/백업 (운영물 — 깃에서 완전히 제외)
+backend/data/
+backend/uploads/
+
+# OCR 학습 데이터 (Tesseract traineddata, 별도 스토리지/다운로드 권장)
+*.traineddata
+
+# 운영 임시·백업 (.bak, .bak.숫자 등)
+*.bak
+*.bak.*
+
+# 프로필 원본 자료 (바이너리 — 별도 스토리지 관리)
+profile/
+
+# 환경변수
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 로그
+*.log
+npm-debug.log*
+
+# 임시 파일
+*.tmp.*
+
+# Claude Code 설정
+.claude/

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  macOS launchd 에이전트 템플릿 — 매일 03:10 에 DB 백업 실행.
+
+  설치 절차는 ops/README.md 참고.
+  설치 전 __PROJECT_ROOT__, __NODE_PATH__ 두 플레이스홀더를 실제 경로로 치환해야 함.
+-->
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.yjlaw.db-backup</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>__NODE_PATH__</string>
+        <string>__PROJECT_ROOT__/backend/scripts/backup-db.js</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>__PROJECT_ROOT__</string>
+
+    <!-- 매일 03:10 (서울시간 기준) 실행. Mac 이 켜져있어야 함. -->
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>3</integer>
+        <key>Minute</key>
+        <integer>10</integer>
+    </dict>
+
+    <!-- 지정 시각에 Mac 이 꺼져있거나 자고 있었다면 다음 부팅·웨이크 후 한 번 실행. -->
+    <key>RunAtLoad</key>
+    <false/>
+
+    <!-- 로그 경로: 프로젝트 내부 backups 디렉토리에 통합 -->
+    <key>StandardOutPath</key>
+    <string>__PROJECT_ROOT__/backend/data/backups/_launchd.out.log</string>
+    <key>StandardErrorPath</key>
+    <string>__PROJECT_ROOT__/backend/data/backups/_launchd.err.log</string>
+
+    <!-- 환경 변수 (선택): 보관 개수 등 -->
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>DB_BACKUP_KEEP</key>
+        <string>14</string>
+    </dict>
+</dict>
+</plist>

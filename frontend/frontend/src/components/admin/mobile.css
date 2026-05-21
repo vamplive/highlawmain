@@ -1,0 +1,277 @@
+/**
+ * 관리자 페이지 모바일 최적화 — 손가락 하나로 조작 가능한 인터페이스.
+ *
+ * 핵심 원칙: 페이지가 절대로 가로로 잘리거나 오른쪽이 안 보이는 상황을 만들지 않는다.
+ *  - 모든 admin-shell 하위 요소는 viewport 폭을 절대 초과하지 않음
+ *  - 표는 카드로 전환하거나 컨테이너 안에서 가로 스크롤
+ *  - 버튼/탭 등 가로로 긴 요소는 wrap 또는 가로 스와이프
+ *
+ * 적용 범위:
+ *  - 모든 .admin-main-content 하위 요소가 자동 반응형이 되도록 설계
+ *  - data-mobile-cards 속성이 붙은 테이블은 768px 이하에서 카드 레이아웃으로 전환
+ *  - 필터 grid 자동 1열 전환
+ *  - 모든 인터랙티브 요소 최소 40px tap target 보장
+ */
+
+/* ───────── 모바일 — 가로 오버플로우 절대 방지 (<= 899px) ───────── */
+@media (max-width: 899px) {
+  /* 최상위에서 viewport 외부로 새는 것을 차단 */
+  html, body {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+  .admin-shell,
+  .admin-main,
+  .admin-main-content {
+    overflow-x: hidden !important;
+    max-width: 100vw;
+  }
+  /* 모든 하위 블록은 부모 폭을 절대 못 넘게 — 안전망 */
+  .admin-main-content,
+  .admin-main-content > *,
+  .admin-main-content > * > * {
+    max-width: 100% !important;
+    box-sizing: border-box;
+    min-width: 0; /* flex/grid item 이 콘텐츠로 인해 늘어나는 것 방지 */
+  }
+  .admin-main-content {
+    font-size: 14px;
+  }
+  /* 단어가 길어 한 줄을 넘기는 경우 자동 줄바꿈 */
+  .admin-main-content {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  /* PageHeader 폰트/마진 축소 */
+  .admin-main-content h1 {
+    font-size: 19px !important;
+    line-height: 1.3 !important;
+  }
+  /* PageHeader 액션(우측 버튼 그룹) — 줄바꿈 + 폭 보호 */
+  .admin-page-actions {
+    width: 100%;
+    flex-wrap: wrap !important;
+    justify-content: flex-start !important;
+    gap: 8px !important;
+  }
+  .admin-page-actions > * {
+    flex: 0 1 auto;
+    max-width: 100%;
+    white-space: nowrap;
+  }
+
+  /* 폼 필드 — 손가락 친화적인 높이 */
+  .admin-main-content input,
+  .admin-main-content select,
+  .admin-main-content textarea {
+    min-height: 40px;
+    font-size: 15px !important; /* iOS 자동 줌 방지 (16px 이상이면 zoom 안 함, 15px 도 거의 OK) */
+  }
+
+  .admin-main-content button {
+    min-height: 40px;
+  }
+
+  /* 작은 ghost 버튼은 그대로 유지 (테이블 행 액션) — small 클래스 */
+  .admin-main-content button.btn-small,
+  .admin-main-content button[data-size="small"] {
+    min-height: 32px;
+  }
+
+  /* 그리드를 1열 또는 2열로 강제 (관리자 필터/요약 카드 영역) */
+  .admin-main-content [style*="grid-template-columns: repeat(auto-fit, minmax(150px"],
+  .admin-main-content [style*="grid-template-columns: repeat(auto-fit, minmax(140px"],
+  .admin-main-content [style*="grid-template-columns: repeat(auto-fit, minmax(130px"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* 4-5열 그리드 (예: 신규 task 입력) — 1열로 */
+  .admin-main-content [style*="grid-template-columns: 2fr 1fr 1fr 1fr 1fr"],
+  .admin-main-content [style*="grid-template-columns: minmax(280px"],
+  .admin-main-content [style*="grid-template-columns: 120px 140px 1fr 140px"],
+  .admin-main-content [style*="grid-template-columns: 140px 1fr 1fr 100px"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* 칸반 4컬럼 — 모바일 가로 스크롤 */
+  .admin-main-content [style*="grid-template-columns: repeat(4, 1fr)"] {
+    display: flex !important;
+    grid-template-columns: none !important;
+    gap: 12px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 6px;
+  }
+  .admin-main-content [style*="grid-template-columns: repeat(4, 1fr)"] > * {
+    flex: 0 0 80%;
+    scroll-snap-align: start;
+  }
+}
+
+/* ───────── 모바일 (<= 768px) — 더 강한 변환 ───────── */
+@media (max-width: 768px) {
+  /* PageHeader 마진 축소 */
+  .admin-main-content > div:first-child {
+    margin-bottom: 14px !important;
+  }
+
+  /* 모든 테이블을 카드 레이아웃으로 자동 변환 — data-mobile-cards 속성 없어도 적용
+     (data-no-mobile-cards 로 opt-out 가능) */
+  .admin-main-content table:not([data-no-mobile-cards]) {
+    display: block;
+    width: 100%;
+    border: none;
+    border-collapse: collapse;
+  }
+  .admin-main-content table:not([data-no-mobile-cards]) thead {
+    display: none;
+  }
+  .admin-main-content table:not([data-no-mobile-cards]) tbody {
+    display: block;
+    width: 100%;
+  }
+  .admin-main-content table:not([data-no-mobile-cards]) tr {
+    display: block;
+    width: 100%;
+    margin: 0 0 10px;
+    padding: 12px 14px;
+    border: 1px solid #e5e8ed;
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    box-sizing: border-box;
+  }
+  .admin-main-content table:not([data-no-mobile-cards]) td {
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 4px 0 !important;
+    border: none !important;
+    text-align: right !important;
+    line-height: 1.4;
+    box-sizing: border-box;
+    overflow-wrap: anywhere;
+  }
+  /* td 의 "라벨" — data-label 속성을 :before 로 표시 */
+  .admin-main-content table:not([data-no-mobile-cards]) td[data-label]::before {
+    content: attr(data-label);
+    flex: 0 0 90px;
+    color: #888;
+    font-size: 11px;
+    font-weight: 600;
+    text-align: left;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  /* data-label 이 없는 td (액션 버튼 묶음 등) — 카드 마지막 줄에 가로 채움 */
+  .admin-main-content table:not([data-no-mobile-cards]) td:not([data-label]) {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    border-top: 1px solid #f0f0f0 !important;
+    margin-top: 8px;
+    padding-top: 10px !important;
+    text-align: left !important;
+  }
+  /* 이름/식별자 컬럼이 첫 td 이고 라벨이 없으면 큰 제목처럼 처리 */
+  .admin-main-content table:not([data-no-mobile-cards]) tr td:first-child:not([data-label]) {
+    border-top: none !important;
+    margin-top: 0;
+    padding-top: 0 !important;
+    font-weight: 600;
+    font-size: 15px;
+  }
+  /* 카드 안에 들어간 select 는 가로 줄어들어야 함 */
+  .admin-main-content table:not([data-no-mobile-cards]) td select,
+  .admin-main-content table:not([data-no-mobile-cards]) td input {
+    max-width: 60%;
+  }
+  /* 빈 td (액션 칸 등 내용 없음) 는 숨김 — 카드 하단에 빈 줄 만들지 않도록 */
+  .admin-main-content table:not([data-no-mobile-cards]) td:empty {
+    display: none;
+  }
+
+  /* opt-out 테이블은 가로 스크롤 컨테이너 안에서 동작 */
+  .admin-main-content table[data-no-mobile-cards] {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+
+  /* 탭 스트립 — 가로 스크롤 가능, 폭 보호 */
+  .admin-main-content > div[style*="overflowX"],
+  .admin-main-content > div[style*="overflow-x"] {
+    max-width: 100%;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* 2열 그리드 → 1열 */
+  .admin-main-content [style*="grid-template-columns: repeat(2, 1fr)"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* 좌측 의뢰인 목록 + 우측 원장 같은 split layout 도 1열로 */
+  .admin-main-content [style*="grid-template-columns: minmax(280px, 360px)"],
+  .admin-main-content [style*="grid-template-columns: minmax(280px, 360px) 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* 액션 바 → 세로 스택 */
+  .admin-main-content [style*="display: flex"][style*="justify-content: space-between"] {
+    flex-wrap: wrap;
+  }
+
+  /* 커다란 stat 카드 폰트 축소 */
+  .admin-main-content [style*="font-size: 26px"],
+  .admin-main-content [style*="font-size: 28px"] {
+    font-size: 22px !important;
+  }
+}
+
+/* ───────── 작은 모바일 (<= 480px) — 추가 압축 ───────── */
+@media (max-width: 480px) {
+  .admin-main-content {
+    padding: 14px 10px 88px !important;
+  }
+  .admin-main-content [style*="grid-template-columns: repeat(auto-fit, minmax"] {
+    grid-template-columns: 1fr !important;
+  }
+  /* 테이블 카드 내부 패딩 축소 */
+  table[data-mobile-cards] tr {
+    padding: 10px 12px;
+  }
+}
+
+/* ───────── 아이콘이 충분히 큰 tap target ───────── */
+.admin-main-content button[aria-label],
+.admin-main-content a[aria-label] {
+  min-width: 40px;
+  min-height: 40px;
+}
+
+/* ───────── 인풋 포커스 더 잘 보이게 ───────── */
+.admin-main-content input:focus,
+.admin-main-content select:focus,
+.admin-main-content textarea:focus {
+  border-color: #4f46e5 !important;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12) !important;
+}
+
+/* ───────── 가로 스크롤 표시기 ───────── */
+@media (max-width: 768px) {
+  .admin-main-content [style*="overflow-x: auto"] {
+    background-image:
+      linear-gradient(to right, #fff 30%, rgba(255,255,255,0)),
+      linear-gradient(to right, rgba(255,255,255,0), #fff 70%) right,
+      linear-gradient(to right, rgba(0,0,0,0.08), rgba(0,0,0,0)),
+      linear-gradient(to left, rgba(0,0,0,0.08), rgba(0,0,0,0)) right;
+    background-repeat: no-repeat;
+    background-size: 24px 100%, 24px 100%, 8px 100%, 8px 100%;
+    background-attachment: local, local, scroll, scroll;
+  }
+}

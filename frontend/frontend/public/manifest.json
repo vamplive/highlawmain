@@ -1,0 +1,13 @@
+{
+  "name": "법무법인 하이로",
+  "short_name": "하이로",
+  "description": "법무법인 하이로 공식 홈페이지 — 불법파견·게임사기·노동·군사건 전문",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0f1923",
+  "lang": "ko",
+  "icons": [
+    { "src": "/favicon.png", "sizes": "192x192", "type": "image/png" }
+  ]
+}

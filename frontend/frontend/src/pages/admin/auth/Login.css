@@ -1,0 +1,395 @@
+/* ===== 관리자 인증 — 프리미엄 스플릿 스크린 레이아웃 ===== */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+.admin-login {
+  display: flex;
+  min-height: 100vh;
+  font-family: 'Inter', 'Noto Sans KR', sans-serif;
+  overflow: hidden;
+}
+
+/* ── 좌측 패널 (배경 영상 히어로) ── */
+.admin-login__left {
+  flex: 0 0 55%;
+  position: relative;
+  background: #080e17;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 36px 44px 32px;
+  overflow: hidden;
+}
+
+/* 배경 영상 */
+.admin-login__left-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+}
+
+/* 그라디언트 오버레이 */
+.admin-login__left-overlay {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(8,14,23,0.7) 0%, rgba(8,14,23,0.4) 40%, rgba(8,14,23,0.6) 70%, rgba(8,14,23,0.85) 100%),
+    linear-gradient(90deg, rgba(8,14,23,0.3) 0%, transparent 50%, rgba(8,14,23,0.3) 100%);
+  z-index: 1;
+}
+
+/* 좌측 내 모든 콘텐츠를 오버레이 위로 */
+.admin-login__top,
+.admin-login__brand {
+  position: relative;
+  z-index: 2;
+}
+
+/* 버전 배지 */
+.admin-login__version {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 20px;
+  padding: 5px 16px;
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(99, 102, 241, 0.7);
+  letter-spacing: 0.08em;
+  width: fit-content;
+  margin-bottom: 12px;
+  backdrop-filter: blur(8px);
+}
+
+/* 실시간 시계 */
+.admin-login__clock {
+  font-size: 80px;
+  font-weight: 200;
+  color: #ffffff;
+  letter-spacing: -3px;
+  line-height: 1;
+  margin-bottom: 8px;
+  text-shadow: 0 2px 40px rgba(0,0,0,0.3);
+}
+
+/* 날짜 */
+.admin-login__date {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.35);
+  letter-spacing: 0.04em;
+  font-weight: 300;
+}
+
+/* ── 하단 브랜딩 ── */
+.admin-login__brand {
+  margin-top: auto;
+}
+
+.admin-login__brand-name {
+  font-size: 32px;
+  font-weight: 300;
+  color: #ffffff;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  font-family: 'Georgia', 'Times New Roman', serif;
+  text-shadow: 0 1px 20px rgba(0,0,0,0.2);
+}
+
+.admin-login__brand-addr {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.28);
+  line-height: 1.9;
+  font-weight: 300;
+  letter-spacing: 0.02em;
+}
+
+.admin-login__brand-links {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-top: 28px;
+}
+
+.admin-login__brand-link {
+  font-size: 10px;
+  font-weight: 500;
+  color: rgba(148, 163, 184, 0.5);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.3s ease;
+  padding: 0 14px;
+}
+
+.admin-login__brand-link:first-child {
+  padding-left: 0;
+}
+
+.admin-login__brand-link:hover {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.admin-login__brand-sep {
+  width: 1px;
+  height: 10px;
+  background: rgba(148, 163, 184, 0.2);
+}
+
+/* ── 우측 패널 (인증 폼) ── */
+.admin-login__right {
+  flex: 0 0 45%;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 72px;
+  position: relative;
+}
+
+/* 홈페이지 링크 (우상단) */
+.admin-login__home-link {
+  position: absolute;
+  top: 32px;
+  right: 40px;
+  font-size: 12px;
+  color: #94a3b8;
+  text-decoration: none;
+  letter-spacing: 0.04em;
+  transition: color 0.3s ease;
+  font-weight: 400;
+}
+
+.admin-login__home-link:hover {
+  color: #1a1a2e;
+}
+
+/* 폼 컨테이너 */
+.admin-login__form-wrap {
+  width: 100%;
+  max-width: 340px;
+}
+
+/* ADMINISTRATION 라벨 */
+.admin-login__label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6366f1;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+/* 관리자 인증 제목 */
+.admin-login__heading {
+  font-size: 28px;
+  font-weight: 600;
+  color: #0f1923;
+  margin-bottom: 32px;
+  letter-spacing: -0.02em;
+}
+
+/* ── 역할 전환 탭 ── */
+.admin-login__tabs {
+  display: flex;
+  border: 1px solid #e2e5ea;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 36px;
+  background: #f8f9fb;
+}
+
+.admin-login__tab {
+  flex: 1;
+  padding: 13px 0;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  outline: none;
+  letter-spacing: 0.04em;
+  font-family: inherit;
+  border-radius: 8px;
+  margin: 3px;
+}
+
+.admin-login__tab--active {
+  background: #0f1923;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(15, 25, 35, 0.2);
+}
+
+.admin-login__tab--inactive {
+  background: transparent;
+  color: #94a3b8;
+}
+
+.admin-login__tab--inactive:hover {
+  color: #64748b;
+  background: rgba(0, 0, 0, 0.03);
+}
+
+/* PASSWORD 라벨 */
+.admin-login__pw-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #94a3b8;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+/* 비밀번호 입력 */
+.admin-login__input {
+  width: 100%;
+  border: none;
+  border-bottom: 2px solid #e8eaef;
+  padding: 12px 0;
+  font-size: 20px;
+  color: #0f1923;
+  outline: none;
+  background: transparent;
+  letter-spacing: 4px;
+  font-family: inherit;
+  box-sizing: border-box;
+  transition: border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.admin-login__input:focus {
+  border-bottom-color: #6366f1;
+}
+
+/* 에러 상태 */
+.admin-login__input--error {
+  border-bottom-color: #ef4444;
+}
+
+.admin-login__input--error:focus {
+  border-bottom-color: #ef4444;
+}
+
+/* 에러 메시지 */
+.admin-login__error {
+  color: #ef4444;
+  font-size: 12px;
+  margin-top: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  animation: adminLoginFadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* AUTHENTICATE 버튼 */
+.admin-login__btn {
+  width: 100%;
+  background: linear-gradient(135deg, #0f1923 0%, #1a2a3d 100%);
+  color: #ffffff;
+  border: none;
+  padding: 17px 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  cursor: pointer;
+  margin-top: 28px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: inherit;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(15, 25, 35, 0.15);
+}
+
+.admin-login__btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #1a2a3d 0%, #253b52 100%);
+  box-shadow: 0 6px 24px rgba(15, 25, 35, 0.25);
+  transform: translateY(-1px);
+}
+
+.admin-login__btn:active:not(:disabled) {
+  background: #0a1018;
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(15, 25, 35, 0.2);
+}
+
+.admin-login__btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* 하단 푸터 */
+.admin-login__footer {
+  margin-top: 56px;
+  text-align: center;
+}
+
+.admin-login__footer-line {
+  font-size: 10px;
+  color: #c8ccd4;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  line-height: 2;
+  font-weight: 400;
+}
+
+.admin-login__footer-line:first-child {
+  color: #6366f1;
+  opacity: 0.5;
+}
+
+/* ── 비밀번호 분실 링크 + 안내 메시지 ── */
+.admin-login__forgot {
+  display: block;
+  width: 100%;
+  margin-top: 14px;
+  padding: 10px 0;
+  background: transparent;
+  border: none;
+  color: #6b7785;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-family: inherit;
+  transition: color 0.2s;
+}
+.admin-login__forgot:hover:not(:disabled) {
+  color: #1a2a3d;
+}
+.admin-login__forgot:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.admin-login__forgot-msg {
+  margin-top: 12px;
+  padding: 12px 14px;
+  background: #f0f5fa;
+  border: 1px solid #d6e1ec;
+  border-radius: 6px;
+  color: #1a2a3d;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+/* ── 애니메이션 ── */
+@keyframes adminLoginFadeIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── 반응형: 모바일에서는 우측 폼만 풀스크린 ── */
+@media (max-width: 900px) {
+  .admin-login__left {
+    display: none;
+  }
+  .admin-login__right {
+    flex: 1;
+    padding: 40px 32px;
+  }
+}

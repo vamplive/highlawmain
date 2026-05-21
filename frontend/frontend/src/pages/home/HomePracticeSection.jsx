@@ -1,0 +1,43 @@
+/** 홈 업무분야 섹션 — 4개 분야 카드 그리드 */
+import { Link } from "react-router-dom";
+import { C, PRACTICE_AREAS } from "./homeTokens";
+
+export default function HomePracticeSection({ lang = "ko", copy }) {
+  const isEnglish = lang === "en";
+
+  return (
+    <section className="hp-section" style={{ background: C.bg }}>
+      <div className="hp-section-inner">
+        <p className="hp-kicker">{copy.practiceKicker}</p>
+        <h2 className="hp-title">{copy.practiceTitle}</h2>
+
+        <div className="hp-grid hp-grid-practice">
+          {PRACTICE_AREAS.map((area) => (
+            <PracticeCard key={area.en} area={area} isEnglish={isEnglish} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function PracticeCard({ area, isEnglish }) {
+  return (
+    <Link
+      to={area.to}
+      className="hp-practice-card"
+    >
+      <h3 className="hp-practice-title">
+        {isEnglish ? area.en : area.ko}
+      </h3>
+
+      <p className="hp-practice-meta">
+        {isEnglish ? area.ko : area.en}
+      </p>
+
+      <p className="hp-practice-copy">
+        {isEnglish ? area.descEn : area.desc}
+      </p>
+    </Link>
+  );
+}

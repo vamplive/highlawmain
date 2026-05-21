@@ -1,0 +1,153 @@
+name: Deploy to Lightsail
+
+# main 브랜치에 push되면 자동으로 운영서버(15.164.128.160)에 배포한다.
+# 빌드는 GitHub Actions에서 수행하고, 결과물(frontend/dist)만 서버로 rsync 한다.
+# 서버 RAM이 약 914MB로 작아 운영서버에서 vite 빌드 시 OOM 위험이 있기 때문.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-lightsail
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: "24"
+  # SSH 사용자명·운영서버 IP는 비밀이 아니므로 직접 박아둠 (Secrets 등록 실패에도 동작 보장)
+  DEPLOY_USER: ubuntu
+  DEPLOY_HOST: 15.164.128.160
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: |
+            frontend/package-lock.json
+            backend/package-lock.json
+
+      - name: Install frontend deps
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Setup SSH
+        # 시크릿은 ${{ secrets.X }}로 셸 명령에 직접 보간하지 말고 env 변수로 전달한다.
+        # 직접 보간하면 시크릿 내용이 YAML 템플릿 확장 단계에서 명령 텍스트에 박히므로
+        # 메타문자/줄바꿈 처리 사고나 마스킹 우회 가능성이 생긴다. env로 넘기면 셸 런타임에서만 평가된다.
+        env:
+          SSH_KEY: ${{ secrets.LIGHTSAIL_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          # 디버깅: 키 형식 검증 (내용 노출 없이 길이/헤더만 확인)
+          echo "deploy_key bytes: $(wc -c < ~/.ssh/deploy_key)"
+          head -1 ~/.ssh/deploy_key | grep -q "BEGIN" && echo "key header OK" || echo "key header MISSING"
+          tail -1 ~/.ssh/deploy_key | grep -q "END" && echo "key footer OK" || echo "key footer MISSING"
+          ssh-keygen -y -f ~/.ssh/deploy_key > /dev/null && echo "key parse OK" || { echo "key parse FAIL"; exit 1; }
+          # known_hosts 등록
+          ssh-keyscan -t ed25519,rsa -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts 2>&1
+          echo "known_hosts lines: $(wc -l < ~/.ssh/known_hosts)"
+          # 연결 테스트
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o BatchMode=yes \
+            "$DEPLOY_USER@$DEPLOY_HOST" 'echo CONNECT_OK; whoami; pwd'
+
+      - name: Sync frontend dist
+        run: |
+          rsync -az --delete \
+            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes" \
+            frontend/dist/ \
+            ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }}:/home/ubuntu/yjlawoffice/frontend/dist/
+
+      - name: Sync backend source
+        # 서버는 GitHub 접근 권한이 없으므로 git fetch 대신 CI 러너에서 직접 rsync로 동기화한다.
+        # node_modules / 운영 DB / 업로드 파일 / .env 는 보존(--exclude)해야 운영 데이터가 날아가지 않는다.
+        run: |
+          rsync -az --delete \
+            --exclude='node_modules' \
+            --exclude='data/' \
+            --exclude='uploads/' \
+            --exclude='.env' \
+            --exclude='.env.*' \
+            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes" \
+            backend/ \
+            ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }}:/home/ubuntu/yjlawoffice/backend/
+
+      - name: Sync backend runtime env
+        env:
+          ALIGO_API_KEY: ${{ secrets.ALIGO_API_KEY }}
+          ALIGO_USER_ID: ${{ secrets.ALIGO_USER_ID }}
+          ALIGO_SENDER: ${{ secrets.ALIGO_SENDER }}
+        run: |
+          set -euo pipefail
+          test -n "$ALIGO_API_KEY"
+          test -n "$ALIGO_USER_ID"
+          test -n "$ALIGO_SENDER"
+
+          tmp_env="$(mktemp)"
+          chmod 600 "$tmp_env"
+          {
+            printf 'ALIGO_API_KEY=%s\n' "$ALIGO_API_KEY"
+            printf 'ALIGO_USER_ID=%s\n' "$ALIGO_USER_ID"
+            printf 'ALIGO_SENDER=%s\n' "$ALIGO_SENDER"
+          } > "$tmp_env"
+
+          scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes \
+            "$tmp_env" \
+            ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }}:/tmp/yjlaw-aligo.env
+
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes \
+            ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }} \
+            'set -euo pipefail
+             cd /home/ubuntu/yjlawoffice/backend
+             touch .env
+             chmod 600 .env
+             while IFS= read -r line; do
+               key="${line%%=*}"
+               tmp_file="$(mktemp)"
+               grep -v "^${key}=" .env > "$tmp_file" || true
+               printf "%s\n" "$line" >> "$tmp_file"
+               cat "$tmp_file" > .env
+               rm -f "$tmp_file"
+             done < /tmp/yjlaw-aligo.env
+             rm -f /tmp/yjlaw-aligo.env
+             chmod 600 .env'
+          rm -f "$tmp_env"
+
+      - name: Install backend deps & reload pm2
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }} \
+            'set -euo pipefail
+             cd /home/ubuntu/yjlawoffice/backend
+             npm ci --omit=dev
+             pm2 reload yjlaw --update-env
+             pm2 save'
+
+      - name: Smoke test
+        run: |
+          sleep 3
+          for path in / /api/site-settings /api/lawyers; do
+            code=$(curl -sk -o /dev/null -w "%{http_code}" "https://younjeong.com${path}")
+            echo "GET ${path} -> HTTP ${code}"
+            [[ "$code" == "200" ]] || { echo "FAIL: ${path}"; exit 1; }
+          done
+
+      - name: Cleanup SSH key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key

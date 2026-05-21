@@ -1,0 +1,11 @@
+<svg width="1200" height="675" viewBox="0 0 1200 675" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="675" fill="#0F172A"/>
+  <rect x="92" y="82" width="1016" height="511" rx="18" fill="#F8F6F1"/>
+  <path d="M316 196H760C827 196 882 250 882 318C882 386 827 440 760 440H316V196Z" fill="#FFFFFF" stroke="#152238" stroke-width="16"/>
+  <path d="M316 196V526H792C842 526 882 486 882 436V318" stroke="#152238" stroke-width="16" stroke-linecap="round"/>
+  <path d="M406 284H725M406 346H790M406 408H672" stroke="#8C7448" stroke-width="12" stroke-linecap="round"/>
+  <path d="M934 190L990 246L874 362L818 306L934 190Z" fill="#C7B28A" stroke="#152238" stroke-width="12" stroke-linejoin="round"/>
+  <path d="M818 306L798 382L874 362" stroke="#152238" stroke-width="12" stroke-linejoin="round"/>
+  <text x="170" y="145" fill="#152238" font-family="Georgia, serif" font-size="42" font-weight="700">YOUNJEONG LAW OFFICE</text>
+  <text x="170" y="585" fill="#152238" font-family="Arial, sans-serif" font-size="26" letter-spacing="4">PRACTICAL LAW GUIDE</text>
+</svg>

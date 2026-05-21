@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p \"c:/Users/youns/Desktop/web_dev/highlaw/frontend/frontend/public/brand\" && ls \"c:/Users/youns/Desktop/web_dev/highlaw/frontend/frontend/public/\")",
+      "Bash(npx --version)",
+      "Bash(curl -sS -o /dev/null -w \"HTML %{http_code}\\\\n\" http://localhost:5175/)",
+      "Bash(curl -sS -o /dev/null -w \"gold %{http_code} %{size_download}b\\\\n\" http://localhost:5175/brand/highlaw-mark-gold.png)",
+      "Bash(curl -sS -o /dev/null -w \"navy %{http_code} %{size_download}b\\\\n\" http://localhost:5175/brand/highlaw-mark-navy.png)",
+      "Bash(curl -sS -o /dev/null -w \"jo  %{http_code} %{size_download}b\\\\n\" http://localhost:5175/lawyers/jodeokjae.jpg)",
+      "Bash(curl -sS -o /dev/null -w \"kim %{http_code} %{size_download}b\\\\n\" http://localhost:5175/lawyers/kimbeom.png)",
+      "Read(//c/Program Files/Google/Chrome/Application/**)",
+      "Read(//c/Program Files \\(x86\\)/Microsoft/Edge/Application/**)",
+      "Read(//c/Program Files/Microsoft/Edge/Application/**)",
+      "Bash(git init *)",
+      "Bash(git add *)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\youns\\Desktop\\web_dev\\highlaw\\frontend\\frontend\\public"
+    ]
+  }
+}
