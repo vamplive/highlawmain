@@ -150,7 +150,7 @@ export const FALLBACK_LAWYERS = [
     name: "김범",
     nameEn: "Kim Beom",
     position: "대표변호사",
-    photoUrl: "/lawyers/kimbeom.png",
+    photoUrl: "/lawyers/kimbeom.jpg",
     specialties: JSON.stringify(["송무", "기업자문"]),
   },
   {
@@ -158,7 +158,7 @@ export const FALLBACK_LAWYERS = [
     name: "강민구",
     nameEn: "Kang Min-Gu",
     position: "대표변호사",
-    photoUrl: "/lawyers/kangmingu.png",
+    photoUrl: "/lawyers/kangmingu.jpg",
     specialties: JSON.stringify(["노동", "인사", "중대재해"]),
   },
 ];

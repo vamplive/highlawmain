@@ -38,7 +38,7 @@ export default function QnaAskPage() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
-  useEffect(() => { document.title = "질문 남기기 | 법무법인 하이로 법률 Q&A"; }, []);
+  useEffect(() => { document.title = "질문 남기기 | 법무법인 하이로 Q&A"; }, []);
 
   useEffect(() => {
     api.get("/qna/categories")

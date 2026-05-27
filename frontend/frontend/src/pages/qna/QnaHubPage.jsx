@@ -55,8 +55,8 @@ export default function QnaHubPage() {
 
   useEffect(() => {
     const title = currentNav.node
-      ? `${currentNav.node.name} 법률 Q&A | 법무법인 하이로`
-      : "법률 Q&A | 법무법인 하이로";
+      ? `${currentNav.node.name} Q&A | 법무법인 하이로`
+      : "Q&A | 법무법인 하이로";
     document.title = title;
   }, [currentNav.node]);
 
@@ -98,7 +98,7 @@ export default function QnaHubPage() {
             </span>
           </div>
           <h1 className="font-serif-kr reveal" style={{ fontSize: "clamp(2rem, 5vw, 3.2rem)", fontWeight: 300, color: "#fff", lineHeight: 1.4, marginBottom: 20 }}>
-            {currentNav.node ? currentNav.node.name : <>법률 <span style={{ fontWeight: 500 }}>Q&amp;A</span></>}
+            {currentNav.node ? currentNav.node.name : <><span style={{ fontWeight: 500 }}>Q&amp;A</span></>}
           </h1>
           <p className="reveal" style={{ fontSize: 15, color: "var(--white-60)", lineHeight: 1.9, fontWeight: 300, maxWidth: 560, margin: "0 auto" }}>
             {currentNav.node?.description || "전문 변호사가 답변하는 법률 질의응답입니다."}
@@ -241,7 +241,7 @@ function Breadcrumb({ path }) {
       <Link to="/" style={{ color: "inherit", textDecoration: "none" }}>홈</Link>
       <span style={{ margin: "0 8px" }}>›</span>
       <Link to="/qna" style={{ color: path.length > 0 ? "inherit" : "var(--text-primary)", textDecoration: "none", fontWeight: path.length > 0 ? 400 : 500 }}>
-        법률 Q&A
+        Q&A
       </Link>
       {path.map((n, i) => (
         <span key={n.id}>

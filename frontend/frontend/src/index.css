@@ -1,40 +1,56 @@
 @import "tailwindcss";
 
-/* ===== DESIGN TOKENS — 프리미엄 로펌 (다크 네이비 + 블루 액센트) =====
-   참고: --accent-gold 변수명은 레거시 호환을 위해 유지되며, 실제 값은
-   브랜드 블루(딥 스카이 블루) 팔레트로 운용한다. */
+/* ===== DESIGN TOKENS — 프리미엄 로펌 (화이트 + 딥 네이비 + 골드) =====
+   리뉴얼: 화이트 베이스 + 딥 네이비(#0b1f3a) + 골드(#c9a84c) 팔레트.
+   --accent-gold 변수명 유지(레거시 호환), 실제값은 골드 팔레트로 전환. */
 :root {
-  --bg-primary: #f7f8fa;
-  --bg-secondary: #eef2f6;
-  --bg-tertiary: #e5e8ed;
-  --bg-dark: #0f1923;
-  --bg-navy: #1a1a2e;
-  --text-primary: #1a1a1a;
-  --text-secondary: #555555;
-  --text-muted: #999999;
-  --accent-gold: #3b6ea5;
-  --accent-gold-hover: #2e588a;
-  --accent-gold-light: rgba(59, 110, 165, 0.12);
-  --border-color: rgba(10, 22, 40, 0.10);
-  --border-subtle: rgba(10, 22, 40, 0.07);
+  /* ===== 기본 배경 ===== */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f3ef;
+  --bg-tertiary: #ede9e0;
+  --bg-dark: #0b1f3a;
+  --bg-navy: #0b1f3a;
+  --bg-cream: #faf8f4;
 
-  /* 그레이 스케일 (인라인 하드코딩 방지) */
-  --gray-900: #1a1a1a;
-  --gray-700: #333;
-  --gray-600: #444;
-  --gray-500: #666;
-  --gray-400: #888;
-  --gray-300: #999;
-  --gray-200: #bbb;
-  --gray-100: #ddd;
-  --gray-50: #eee;
+  /* ===== 텍스트 ===== */
+  --text-primary: #0b1f3a;
+  --text-secondary: #4a5568;
+  --text-muted: #8a97a8;
 
-  /* 히어로/다크 오버레이 */
-  --overlay-dark: rgba(15, 25, 35, 0.7);
-  --overlay-darker: rgba(15, 25, 35, 0.85);
-  --overlay-light: rgba(0, 0, 0, 0.35);
+  /* ===== 골드 액센트 ===== */
+  --accent-gold: #c9a84c;
+  --accent-gold-hover: #b8923e;
+  --accent-gold-dark: #a07c2e;
+  --accent-gold-light: rgba(201, 168, 76, 0.12);
+  --accent-gold-subtle: rgba(201, 168, 76, 0.08);
 
-  /* 텍스트 위 화이트 변형 */
+  /* ===== 딥 네이비 ===== */
+  --navy: #0b1f3a;
+  --navy-mid: #132d52;
+  --navy-light: rgba(11, 31, 58, 0.08);
+
+  /* ===== 보더 ===== */
+  --border-color: rgba(11, 31, 58, 0.12);
+  --border-subtle: rgba(11, 31, 58, 0.07);
+  --border-gold: rgba(201, 168, 76, 0.30);
+
+  /* ===== 그레이 스케일 ===== */
+  --gray-900: #0b1f3a;
+  --gray-700: #2d3e55;
+  --gray-600: #4a5568;
+  --gray-500: #68778d;
+  --gray-400: #8a97a8;
+  --gray-300: #b0bbc9;
+  --gray-200: #d1d9e3;
+  --gray-100: #e8ecf1;
+  --gray-50: #f5f7fa;
+
+  /* ===== 오버레이 ===== */
+  --overlay-dark: rgba(11, 31, 58, 0.80);
+  --overlay-darker: rgba(11, 31, 58, 0.92);
+  --overlay-light: rgba(11, 31, 58, 0.35);
+
+  /* ===== 화이트 투명도 변형 ===== */
   --white-90: rgba(255, 255, 255, 0.9);
   --white-60: rgba(255, 255, 255, 0.6);
   --white-40: rgba(255, 255, 255, 0.4);
@@ -42,21 +58,23 @@
   --white-15: rgba(255, 255, 255, 0.15);
   --white-08: rgba(255, 255, 255, 0.08);
 
+  /* ===== 폰트 ===== */
   --font-serif: 'Cormorant Garamond', 'Noto Serif KR', Georgia, serif;
   --font-serif-kr: 'Noto Serif KR', Georgia, serif;
   --font-sans-en: 'Pretendard', 'Montserrat', sans-serif;
   --font-sans-kr: 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 
-  /* Variant C — Dark Luxury 색상 토큰 */
-  --c-bg: #0b0e12;
-  --c-bg-2: #11151a;
-  --c-fg: #e8e3d9;
-  --c-fg-dim: rgba(232,227,217,0.7);
-  --c-fg-meta: rgba(232,227,217,0.5);
-  --c-blue: #7a9bbf;
-  --c-rule: rgba(232,227,217,0.15);
+  /* ===== Dark Luxury 색상 토큰 (유지) ===== */
+  --c-bg: #0b1f3a;
+  --c-bg-2: #132d52;
+  --c-fg: #f5f0e8;
+  --c-fg-dim: rgba(245,240,232,0.7);
+  --c-fg-meta: rgba(245,240,232,0.5);
+  --c-blue: #c9a84c;
+  --c-rule: rgba(201,168,76,0.20);
 
+  /* ===== 레이아웃 ===== */
   --section-py: clamp(80px, 9vw, 120px);
   --section-px: clamp(20px, 5vw, 80px);
   --container-max: 1200px;
@@ -64,16 +82,16 @@
   --ease-out: cubic-bezier(0.25, 0.46, 0.45, 0.94);
   --duration: 0.6s;
 
-  /* ===== 변호사 프로필 전용 팔레트 (사이트 톤과 통일된 딥 스카이 블루) ===== */
+  /* ===== 변호사 프로필 전용 팔레트 (골드 계열로 통일) ===== */
   --lp-bg: transparent;
   --lp-surface: #ffffff;
-  --lp-ink: #1a1a1a;
-  --lp-ink-soft: #4a4a4a;
-  --lp-muted: #8a8a8a;
-  --lp-line: #e2e6ec;
-  --lp-accent: #3b6ea5;
-  --lp-accent-hover: #2e588a;
-  --lp-accent-soft: #e5eef7;
+  --lp-ink: #0b1f3a;
+  --lp-ink-soft: #4a5568;
+  --lp-muted: #8a97a8;
+  --lp-line: #e2e8f0;
+  --lp-accent: #c9a84c;
+  --lp-accent-hover: #b8923e;
+  --lp-accent-soft: #fdf6e3;
 
   /* ===== Word 스타일 에디터 색상 토큰 =====
      editor/modules/styles-*.js 템플릿에서 var(--token) 으로 참조한다.

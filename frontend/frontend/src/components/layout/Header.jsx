@@ -21,8 +21,10 @@ export default function Header({ heroTop, isLawyerDetail, menuOpen, onToggleMenu
               to="/"
               className="font-en hover:opacity-75 transition-opacity"
               style={{
-                letterSpacing: "0.14em",
-                color: heroTop ? "rgba(255,255,255,0.72)" : "var(--text-primary)",
+                letterSpacing: "0.16em",
+                color: "#DEC584", // 은은한 프리미엄 샴페인 골드
+                fontWeight: "600",
+                textShadow: "0 0 1px rgba(222, 197, 132, 0.2)",
                 textDecoration: "none",
               }}
               aria-label="HIGH & LAW FIRM 홈"
@@ -52,9 +54,9 @@ export default function Header({ heroTop, isLawyerDetail, menuOpen, onToggleMenu
               style={{ display: "inline-flex", alignItems: "center" }}
             >
               <img
-                src={heroTop ? "/brand/highlaw-mark-gold.png" : "/brand/highlaw-mark-navy.png"}
-                alt="HIGHLAW 법무법인 하이로"
-                style={{ height: 56, width: "auto", display: "block" }}
+                src="/brand/highlaw-mark-square.png"
+                alt="HIGHLAW 법무법인 하이로 로고"
+                style={{ height: 48, width: "auto", display: "block" }}
               />
             </Link>
           </div>

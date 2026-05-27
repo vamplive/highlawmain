@@ -52,7 +52,7 @@ export default function QnaDetailPage() {
   // 문서 제목 + Schema.org JSON-LD 주입
   useEffect(() => {
     if (!question) return;
-    document.title = `${question.title} | 법무법인 하이로 법률 Q&A`;
+    document.title = `${question.title} | 법무법인 하이로 Q&A`;
 
     const qaSchema = {
       "@context": "https://schema.org",
@@ -79,7 +79,7 @@ export default function QnaDetailPage() {
       "@type": "BreadcrumbList",
       itemListElement: [
         { "@type": "ListItem", position: 1, name: "홈", item: window.location.origin + "/" },
-        { "@type": "ListItem", position: 2, name: "법률 Q&A", item: window.location.origin + "/qna" },
+        { "@type": "ListItem", position: 2, name: "Q&A", item: window.location.origin + "/qna" },
         ...(question.breadcrumb || []).map((b, i) => ({
           "@type": "ListItem",
           position: 3 + i,
@@ -345,7 +345,7 @@ function Breadcrumb({ breadcrumb }) {
     <nav aria-label="경로" style={{ fontSize: 12, color: "var(--text-muted)" }}>
       <Link to="/" style={{ color: "inherit", textDecoration: "none" }}>홈</Link>
       <span style={{ margin: "0 8px" }}>›</span>
-      <Link to="/qna" style={{ color: "inherit", textDecoration: "none" }}>법률 Q&A</Link>
+      <Link to="/qna" style={{ color: "inherit", textDecoration: "none" }}>Q&A</Link>
       {breadcrumb.map((b) => (
         <span key={b.id}>
           <span style={{ margin: "0 8px" }}>›</span>

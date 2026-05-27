@@ -6,7 +6,7 @@ export const NAV = [
   { to: "/lawyers", label: "변호사 소개" },
   { to: "/consultation", label: "상담안내" },
   { to: "/blog", label: "블로그" },
-  { to: "/qna", label: "법률 Q&A" },
+  { to: "/qna", label: "Q&A" },
 ];
 
 export const NAV_EN = [
@@ -15,11 +15,11 @@ export const NAV_EN = [
   { to: "/lawyers", label: "Lawyers" },
   { to: "/consultation", label: "Consultation" },
   { to: "/blog", label: "Blog" },
-  { to: "/qna", label: "Legal Q&A" },
+  { to: "/qna", label: "Q&A" },
 ];
 
 export const LAYOUT_DEFAULTS = {
-  nav: { items: [{ to: "/about", label: "사무소 소개" }, { to: "/practice", label: "업무분야" }, { to: "/lawyers", label: "변호사 소개" }, { to: "/consultation", label: "상담안내" }, { to: "/blog", label: "블로그" }, { to: "/qna", label: "법률 Q&A" }] },
+  nav: { items: [{ to: "/about", label: "사무소 소개" }, { to: "/practice", label: "업무분야" }, { to: "/lawyers", label: "변호사 소개" }, { to: "/consultation", label: "상담안내" }, { to: "/blog", label: "블로그" }, { to: "/qna", label: "Q&A" }] },
   footer: { companyName: "법무법인 하이로", tagline: "Loyalty & Dignity\n불법파견·게임사기·노동·군사건 전문 로펌", address: "서울특별시 강남구 테헤란로 141, 15층", tel: "02-594-5583", fax: "02-XXX-XXXX", hours: "평일 09:00 - 18:00", note: "예약 상담 우선 진행", copyright: "© 2026 HIGH & LAW FIRM. ALL RIGHTS RESERVED. ATTORNEY ADVERTISING. PRIOR RESULTS DO NOT GUARANTEE A SIMILAR OUTCOME." },
   contact: {
     phone: "02-594-5583",

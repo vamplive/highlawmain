@@ -11,11 +11,26 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api': 'http://localhost:5001',
-      '/r': 'http://localhost:5001',
-      '/uploads': 'http://localhost:5001',
-      '/data': 'http://localhost:5001',
-      '/sitemap.xml': 'http://localhost:5001',
+      '/api': {
+        target: 'https://highlaw.co.kr',
+        changeOrigin: true,
+      },
+      '/r': {
+        target: 'https://highlaw.co.kr',
+        changeOrigin: true,
+      },
+      '/uploads': {
+        target: 'https://highlaw.co.kr',
+        changeOrigin: true,
+      },
+      '/data': {
+        target: 'https://highlaw.co.kr',
+        changeOrigin: true,
+      },
+      '/sitemap.xml': {
+        target: 'https://highlaw.co.kr',
+        changeOrigin: true,
+      },
     },
   },
   build: {
