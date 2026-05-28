@@ -23,7 +23,7 @@ export default function Header({ heroTop, isLawyerDetail, menuOpen, onToggleMenu
           <div className="flex gap-4" style={{ fontSize: 12, visibility: "hidden" }}>
             HIGH & LAW FIRM
           </div>
-          <div className="hidden md:flex gap-6 items-center" style={{ fontSize: 9, color: heroTop ? "var(--white-40)" : "var(--text-muted)" }}>
+          <div className="hidden md:flex gap-6 items-center" style={{ fontSize: 9, color: heroTop ? "var(--white-40)" : "var(--text-muted)", transition: "color 0.5s ease" }}>
             <button onClick={() => setLanguage(lang === "ko" ? "en" : "ko")}
               style={{ background: "none", border: "none", cursor: "pointer", color: "inherit", fontSize: 9, letterSpacing: "0.15em", padding: 0 }}
               aria-label="언어 전환 (한국어/English)">
@@ -39,21 +39,6 @@ export default function Header({ heroTop, isLawyerDetail, menuOpen, onToggleMenu
           {/* Burger menu shifted slightly inward (negative margin removed) */}
           <div className="flex items-center" style={{ gap: 14 }}>
             <HamburgerButton menuOpen={menuOpen} onToggle={onToggleMenu} heroTop={heroTop} />
-
-            {/* HOME이 아닐 때만 기존의 메뉴바 옆 스퀘어 로고 노출 */}
-            {!isHome && (
-              <Link
-                to="/"
-                aria-label="법무법인 하이로 HIGHLAW 홈"
-                style={{ display: "inline-flex", alignItems: "center" }}
-              >
-                <img
-                  src="/brand/highlaw-mark-square.png"
-                  alt="HIGHLAW 법무법인 하이로 로고"
-                  style={{ height: 44, width: "auto", display: "block" }}
-                />
-              </Link>
-            )}
           </div>
 
           {/* 상단 중앙 브랜드 엠블럼 + 텍스트 세트 (엠블럼 및 폰트 크기 증대 적용) */}
@@ -73,7 +58,7 @@ export default function Header({ heroTop, isLawyerDetail, menuOpen, onToggleMenu
             <LogoCanvas
               size={34}
               color={heroTop ? "rgb(241, 190, 90)" : "#111111"}
-              style={{ display: "block" }}
+              style={{ display: "block", transition: "color 0.5s ease" }}
             />
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", lineHeight: 1.25 }}>
               <span
@@ -84,6 +69,7 @@ export default function Header({ heroTop, isLawyerDetail, menuOpen, onToggleMenu
                   color: heroTop ? "#ffffff" : "var(--text-primary)",
                   fontWeight: "600",
                   textTransform: "uppercase",
+                  transition: "color 0.5s ease",
                 }}
               >
                 HIGHLAW LAW FIRM
@@ -96,6 +82,7 @@ export default function Header({ heroTop, isLawyerDetail, menuOpen, onToggleMenu
                   color: heroTop ? "rgba(255,255,255,0.7)" : "var(--text-secondary)",
                   fontWeight: "400",
                   marginTop: 2,
+                  transition: "color 0.5s ease",
                 }}
               >
                 법무법인 하이로
@@ -122,6 +109,7 @@ export default function Header({ heroTop, isLawyerDetail, menuOpen, onToggleMenu
                     : (heroTop ? "rgba(255,255,255,0.65)" : "var(--text-muted)"),
                   paddingBottom: 4,
                   borderBottom: isActive ? `1.5px solid ${heroTop ? "rgba(255,255,255,0.7)" : "var(--accent-gold)"}` : "1.5px solid transparent",
+                  transition: "color 0.5s ease, border-color 0.5s ease",
                 })}
               >
                 {item.label}

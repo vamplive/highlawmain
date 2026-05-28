@@ -22,7 +22,8 @@ export default function Layout() {
 
   const isHome = pathname === "/";
   const isLawyerDetail = pathname.startsWith("/lawyers/");
-  const heroTop = (isHome || isLawyerDetail) && !scrolled && !menuOpen;
+  const isAbout = pathname === "/about";
+  const heroTop = (isHome || isLawyerDetail || isAbout) && !scrolled && !menuOpen;
 
   // 라우트 변경 시 메뉴 닫고 페이지 최상단으로 스크롤
   useEffect(() => {
