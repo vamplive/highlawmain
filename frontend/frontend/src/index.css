@@ -177,9 +177,9 @@ a {
 ::selection { background: var(--accent-gold); color: #fff; }
 
 .container {
-  max-width: var(--container-max);
+  max-width: 100%;
   margin: 0 auto;
-  padding: 0 var(--section-px);
+  padding: 0 clamp(16px, 4vw, 48px);
 }
 
 .section { padding: var(--section-py) 0; }
@@ -258,6 +258,12 @@ main > .section:first-child {
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== SLIDE IN (좌측 사이드바) ===== */
+@keyframes slideIn {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
 }
 
 /* ===== SCROLL DOWN ===== */

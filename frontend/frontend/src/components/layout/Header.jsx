@@ -19,12 +19,12 @@ export default function Header({ heroTop, isLawyerDetail, menuOpen, onToggleMenu
           <div className="flex gap-4" style={{ fontSize: 12 }}>
             <Link
               to="/"
-              className="font-en hover:opacity-75 transition-opacity"
+              className="font-serif hover:opacity-75 transition-opacity"
               style={{
-                letterSpacing: "0.16em",
-                color: "#DEC584", // 은은한 프리미엄 샴페인 골드
-                fontWeight: "600",
-                textShadow: "0 0 1px rgba(222, 197, 132, 0.2)",
+                letterSpacing: "0.25em",
+                color: heroTop ? "#ffffff" : "var(--text-primary)",
+                fontWeight: "400",
+                textTransform: "uppercase",
                 textDecoration: "none",
               }}
               aria-label="HIGH & LAW FIRM 홈"
@@ -45,7 +45,7 @@ export default function Header({ heroTop, isLawyerDetail, menuOpen, onToggleMenu
       {/* Main header */}
       <div className="container" style={{ height: 78 }}>
         <div className="flex items-center justify-between h-full" style={{ gap: 20 }}>
-          <div className="flex items-center" style={{ gap: 14 }}>
+          <div className="flex items-center" style={{ gap: 14, marginLeft: "-16px" }}>
             <HamburgerButton menuOpen={menuOpen} onToggle={onToggleMenu} heroTop={heroTop} />
 
             <Link
