@@ -8,7 +8,7 @@ import { api } from "../../utils/api";
 import useReveal from "../../hooks/useReveal";
 import { findNodeBySlug, qnaDetailUrl, qnaCategoryUrl, formatKoreanDate, truncate } from "./qnaUtils";
 
-export default function QnaHubPage({ hideHero = false }) {
+export default function QnaHubPage() {
   const ref = useReveal();
   const { slug } = useParams();
   const navigate = useNavigate();
@@ -86,27 +86,25 @@ export default function QnaHubPage({ hideHero = false }) {
   return (
     <div ref={ref}>
       {/* 히어로 */}
-      {!hideHero && (
-        <section className="relative flex items-center justify-center overflow-hidden" style={{ height: "55vh", minHeight: 400 }}>
-          <div className="absolute inset-0" style={{ backgroundImage: "url(/construction-hero3.jpg)", backgroundSize: "cover", backgroundPosition: "center 30%" }} />
-          <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, rgba(10,15,20,0.90) 0%, rgba(17,29,42,0.80) 40%, rgba(22,36,51,0.82) 70%, rgba(13,21,32,0.92) 100%)" }} />
-          <div className="absolute bottom-0 left-0 right-0" style={{ height: 120, background: "linear-gradient(to top, #fff, transparent)" }} />
+      <section className="relative flex items-center justify-center overflow-hidden" style={{ height: "55vh", minHeight: 400 }}>
+        <div className="absolute inset-0" style={{ backgroundImage: "url(/construction-hero3.jpg)", backgroundSize: "cover", backgroundPosition: "center 30%" }} />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, rgba(10,15,20,0.90) 0%, rgba(17,29,42,0.80) 40%, rgba(22,36,51,0.82) 70%, rgba(13,21,32,0.92) 100%)" }} />
+        <div className="absolute bottom-0 left-0 right-0" style={{ height: 120, background: "linear-gradient(to top, #fff, transparent)" }} />
 
-          <div className="relative text-center" style={{ maxWidth: 760, padding: "0 24px", zIndex: 2 }}>
-            <div className="reveal" style={{ marginBottom: 28 }}>
-              <span className="font-en inline-block" style={{ fontSize: 11, letterSpacing: "0.35em", color: "#fff", borderBottom: "1px solid rgba(255,255,255,0.3)", paddingBottom: 8 }}>
-                LEGAL Q&A
-              </span>
-            </div>
-            <h1 className="font-serif-kr reveal" style={{ fontSize: "clamp(2rem, 5vw, 3.2rem)", fontWeight: 300, color: "#fff", lineHeight: 1.4, marginBottom: 20 }}>
-              {currentNav.node ? currentNav.node.name : <><span style={{ fontWeight: 500 }}>Q&amp;A</span></>}
-            </h1>
-            <p className="reveal" style={{ fontSize: 15, color: "var(--white-60)", lineHeight: 1.9, fontWeight: 300, maxWidth: 560, margin: "0 auto" }}>
-              {currentNav.node?.description || "전문 변호사가 답변하는 법률 질의응답입니다."}
-            </p>
+        <div className="relative text-center" style={{ maxWidth: 760, padding: "0 24px", zIndex: 2 }}>
+          <div className="reveal" style={{ marginBottom: 28 }}>
+            <span className="font-en inline-block" style={{ fontSize: 11, letterSpacing: "0.35em", color: "#fff", borderBottom: "1px solid rgba(255,255,255,0.3)", paddingBottom: 8 }}>
+              LEGAL Q&A
+            </span>
           </div>
-        </section>
-      )}
+          <h1 className="font-serif-kr reveal" style={{ fontSize: "clamp(2rem, 5vw, 3.2rem)", fontWeight: 300, color: "#fff", lineHeight: 1.4, marginBottom: 20 }}>
+            {currentNav.node ? currentNav.node.name : <><span style={{ fontWeight: 500 }}>Q&amp;A</span></>}
+          </h1>
+          <p className="reveal" style={{ fontSize: 15, color: "var(--white-60)", lineHeight: 1.9, fontWeight: 300, maxWidth: 560, margin: "0 auto" }}>
+            {currentNav.node?.description || "전문 변호사가 답변하는 법률 질의응답입니다."}
+          </p>
+        </div>
+      </section>
 
       {/* 브레드크럼 + 검색 + 질문하기 */}
       <section style={{ background: "#f7f8fa", borderBottom: "1px solid var(--border-subtle)" }}>

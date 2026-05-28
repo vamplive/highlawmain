@@ -26,8 +26,6 @@ const PracticePage = lazy(() => import("./pages/practice/PracticePage"));
 const PracticeDetailPage = lazy(() => import("./pages/practice/PracticeDetailPage"));
 const LectureDetailPage = lazy(() => import("./pages/lawyers/LectureDetailPage"));
 const ConsultationPage = lazy(() => import("./pages/consultation"));
-const InquiryPage = lazy(() => import("./pages/consultation/InquiryPage"));
-const RecruitPage = lazy(() => import("./pages/recruit/RecruitPage"));
 const NotFoundPage = lazy(() => import("./pages/public/NotFoundPage"));
 const PrivacyPage = lazy(() => import("./pages/public/PrivacyPage"));
 const TermsPage = lazy(() => import("./pages/public/TermsPage"));
@@ -217,14 +215,7 @@ export default function App() {
           <Route path="/lawyers" element={<ErrorBoundary><LazyRoute><LawyersPage /></LazyRoute></ErrorBoundary>} />
           <Route path="/lawyers/:id" element={<ErrorBoundary><LazyRoute><LawyerDetailPage /></LazyRoute></ErrorBoundary>} />
           <Route path="/lectures/:id" element={<ErrorBoundary><LazyRoute><LectureDetailPage /></LazyRoute></ErrorBoundary>} />
-          {/* Inquiry (상담 & Q&A 통합) — 지연 로딩 */}
-          <Route path="/inquiry" element={<ErrorBoundary><LazyRoute><InquiryPage /></LazyRoute></ErrorBoundary>} />
-          
-          {/* 구버전 상담 경로 호환 — 리다이렉트 */}
-          <Route path="/consultation" element={<Navigate to="/inquiry?tab=guide" replace />} />
-
-          {/* Recruit (인재채용) — 지연 로딩 */}
-          <Route path="/recruit" element={<ErrorBoundary><LazyRoute><RecruitPage /></LazyRoute></ErrorBoundary>} />
+          <Route path="/consultation" element={<ErrorBoundary><LazyRoute><ConsultationPage /></LazyRoute></ErrorBoundary>} />
 
           {/* 블로그 — 지연 로딩 */}
           <Route path="/blog" element={<ErrorBoundary><LazyRoute><BlogPage /></LazyRoute></ErrorBoundary>} />
@@ -232,17 +223,14 @@ export default function App() {
 
           {/* 사례/후기 — 지연 로딩 */}
           {/* /cases는 법률 Q&A로 대체됨 — 기존 링크 유지를 위해 리다이렉트 */}
-          <Route path="/cases" element={<Navigate to="/inquiry?tab=qna" replace />} />
+          <Route path="/cases" element={<Navigate to="/qna" replace />} />
           <Route path="/reviews" element={<ErrorBoundary><LazyRoute><ReviewsPage /></LazyRoute></ErrorBoundary>} />
 
-          {/* 법률 Q&A — 지연 로딩 (Inquiry 페이지 내부 탭 연동을 기본으로 하되 리다이렉트 및 단독 상세/질문 뷰 유지) */}
-          <Route path="/qna" element={<Navigate to="/inquiry?tab=qna" replace />} />
-          <Route path="/Q&A" element={<Navigate to="/inquiry?tab=qna" replace />} />
-          <Route path="/inquiry/question/:slug" element={<ErrorBoundary><LazyRoute><QnaDetailPage /></LazyRoute></ErrorBoundary>} />
-          <Route path="/inquiry/ask" element={<ErrorBoundary><LazyRoute><QnaAskPage /></LazyRoute></ErrorBoundary>} />
-          <Route path="/qna/category/:slug" element={<Navigate to="/inquiry?tab=qna" replace />} />
-          <Route path="/qna/question/:slug" element={<Navigate to="/inquiry/question/:slug" replace />} />
-          <Route path="/qna/ask" element={<Navigate to="/inquiry/ask" replace />} />
+          {/* 법률 Q&A — 지연 로딩 */}
+          <Route path="/qna" element={<ErrorBoundary><LazyRoute><QnaHubPage /></LazyRoute></ErrorBoundary>} />
+          <Route path="/qna/category/:slug" element={<ErrorBoundary><LazyRoute><QnaHubPage /></LazyRoute></ErrorBoundary>} />
+          <Route path="/qna/question/:slug" element={<ErrorBoundary><LazyRoute><QnaDetailPage /></LazyRoute></ErrorBoundary>} />
+          <Route path="/qna/ask" element={<ErrorBoundary><LazyRoute><QnaAskPage /></LazyRoute></ErrorBoundary>} />
           <Route path="/auth/kakao/callback" element={<ErrorBoundary><LazyRoute><KakaoCallbackPage /></LazyRoute></ErrorBoundary>} />
 
           {/* 공개 수신거부 — 토큰 쿼리로 접근 */}
