@@ -24,18 +24,29 @@ export default function HomePeopleSection({ copy }) {
   }, []);
 
   return (
-    <section className="hp-section" style={{ background: C.bgLight }}>
+    <section className="hp-section" style={{ background: "#ffffff" }}>
       <div className="hp-section-inner">
-        <p className="hp-kicker">{copy.peopleKicker}</p>
-        <h2 className="hp-title">{copy.peopleTitle}</h2>
+        <div className="hp-section-centered">
+          <p className="hp-kicker">{copy.peopleKicker}</p>
+          <h2 className="hp-title">{copy.peopleTitle}</h2>
+        </div>
 
-        <div className="hp-grid hp-grid-people">
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            justifyContent: "center",
+            gap: "30px",
+            marginTop: "48px",
+            width: "100%",
+          }}
+        >
           {lawyerList.map((lawyer) => (
             <LawyerCard key={lawyer.id} lawyer={lawyer} />
           ))}
         </div>
         {usingFallback && (
-          <p className="hp-data-note" role="status">
+          <p className="hp-data-note" role="status" style={{ textAlign: "center", marginTop: 24 }}>
             현재 기본 프로필 정보를 표시하고 있습니다.
           </p>
         )}
@@ -51,6 +62,7 @@ function LawyerCard({ lawyer }) {
     <Link
       to={`/lawyers/${lawyer.slug || lawyer.id}`}
       className="hp-lawyer-card"
+      style={{ width: "280px", flexShrink: 0 }}
     >
       {lawyer.photoUrl ? (
         <img

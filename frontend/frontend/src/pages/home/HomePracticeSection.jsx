@@ -6,10 +6,12 @@ export default function HomePracticeSection({ lang = "ko", copy }) {
   const isEnglish = lang === "en";
 
   return (
-    <section className="hp-section" style={{ background: C.bg }}>
+    <section className="hp-section" style={{ background: "#f5f7fa" }}>
       <div className="hp-section-inner">
-        <p className="hp-kicker">{copy.practiceKicker}</p>
-        <h2 className="hp-title">{copy.practiceTitle}</h2>
+        <div className="hp-section-centered">
+          <p className="hp-kicker">{copy.practiceKicker}</p>
+          <h2 className="hp-title">{copy.practiceTitle}</h2>
+        </div>
 
         <div className="hp-grid hp-grid-practice">
           {PRACTICE_AREAS.map((area) => (

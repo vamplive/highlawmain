@@ -1,3 +1,11 @@
+.hp-snap-container {
+  scroll-snap-type: y mandatory;
+  overflow-y: auto;
+  height: 100vh;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
 .hp-hero {
   position: relative;
   display: flex;
@@ -7,6 +15,8 @@
   height: 100vh;
   min-height: 720px;
   background: #0a1628;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
 }
 
 .hp-hero-video {

@@ -80,7 +80,11 @@ export default function Footer({ isLawyerDetail, lang = "ko" }) {
                 LOCATION
               </p>
               <p style={{ fontSize: 14, color: "rgba(255,255,255,0.8)", lineHeight: 1.7, margin: 0 }}>
-                {isEnglish ? "15F, 141 Teheran-ro, Gangnam-gu, Seoul" : "서울특별시 강남구 테헤란로 141, 15층"}
+                {isEnglish ? (
+                  <>15F, 141 Teheran-ro, Gangnam-gu, Seoul<br />(06135)</>
+                ) : (
+                  <>서울특별시 강남구 테헤란로 141, 15층<br />(우: 06135)</>
+                )}
               </p>
             </div>
 
@@ -99,7 +103,7 @@ export default function Footer({ isLawyerDetail, lang = "ko" }) {
                 CONTACT
               </p>
               <p style={{ fontSize: 14, color: "rgba(255,255,255,0.8)", lineHeight: 1.7, margin: 0 }}>
-                T 02-594-5583<br />info@highlaw.co.kr
+                T. 02-6925-6757<br />E. mingukang@highlaw.net
               </p>
             </div>
 
@@ -119,9 +123,9 @@ export default function Footer({ isLawyerDetail, lang = "ko" }) {
               </p>
               <p style={{ fontSize: 14, color: "rgba(255,255,255,0.8)", lineHeight: 1.7, margin: 0 }}>
                 {isEnglish ? (
-                  <>Weekdays 09:00 — 18:00<br />Weekends by appointment</>
+                  <>Weekdays 10:00 — 18:00<br />Weekends by appointment</>
                 ) : (
-                  <>평일 09:00 — 18:00<br />주말·공휴일 사전예약</>
+                  <>평일 10:00 — 18:00<br />주말·공휴일 사전예약</>
                 )}
               </p>
             </div>
@@ -164,7 +168,7 @@ export default function Footer({ isLawyerDetail, lang = "ko" }) {
           </div>
         )}
 
-        {/* Row 2 — 링크 + 저작권 */}
+        {/* Row 2 — 링크 + 저작권 (자연스러운 세로 스택 & 가장 좌측 정렬 통일) */}
         <div
           className="footer-modern-row2"
           style={{
@@ -172,8 +176,9 @@ export default function Footer({ isLawyerDetail, lang = "ko" }) {
             paddingTop: 24,
             borderTop: "1px solid rgba(255,255,255,0.15)",
             display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
+            flexDirection: "column",
+            alignItems: "flex-start",
+            gap: 20,
           }}
         >
           {/* 좌측 링크 */}
@@ -214,24 +219,27 @@ export default function Footer({ isLawyerDetail, lang = "ko" }) {
             </button>
           </div>
 
-          {/* 우측 저작권 + 사업자 정보 */}
+          {/* 저작권 + 사업자 정보 (가장 좌측 "법무법인 하이로"와 세로 시작 위치 수평 일치) */}
           <span
             className="font-mono"
             style={{
               fontSize: 11,
               color: "rgba(255,255,255,0.4)",
-              textAlign: "right",
+              textAlign: "left",
+              lineHeight: 1.6,
             }}
           >
             {isEnglish ? (
               <>
-                HIGH &amp; LAW FIRM · Reg. No. 433-86-04078<br />
-                © 2026 HIGH &amp; LAW FIRM. All rights reserved.
+                HIGH &amp; LAW FIRM | Attorneys : Deok Jae Cho, Beom Kim, Min Gu Kang | Reg. No. : 433-86-04078<br />
+                © 2026 HIGH &amp; LAW FIRM. ALL RIGHTS RESERVED.<br />
+                ATTORNEY ADVERTISING. PRIOR RESULTS DO NOT GUARANTEE A SIMILAR OUTCOME.
               </>
             ) : (
               <>
-                법무법인 하이로 · 대표변호사 조덕재·김범·강민구 · 사업자등록번호 433-86-04078<br />
-                © 2026 HIGH &amp; LAW FIRM. All rights reserved.
+                법무법인 하이로 | 대표변호사 : 조덕재, 김범, 강민구 | 사업자등록번호 : 433-86-04078<br />
+                © 2026 HIGH &amp; LAW FIRM. ALL RIGHTS RESERVED.<br />
+                ATTORNEY ADVERTISING. PRIOR RESULTS DO NOT GUARANTEE A SIMILAR OUTCOME.
               </>
             )}
           </span>

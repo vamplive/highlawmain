@@ -6,16 +6,21 @@ export default function useHeaderScroll() {
 
   useEffect(() => {
     let rafId = null;
+    const snapContainer = document.querySelector(".hp-snap-container");
+    const target = snapContainer || window;
+
     const fn = () => {
       if (rafId) return;
       rafId = requestAnimationFrame(() => {
-        setScrolled(window.scrollY > 60);
+        const scrollPos = snapContainer ? snapContainer.scrollTop : window.scrollY;
+        setScrolled(scrollPos > 60);
         rafId = null;
       });
     };
-    window.addEventListener("scroll", fn, { passive: true });
+
+    target.addEventListener("scroll", fn, { passive: true });
     return () => {
-      window.removeEventListener("scroll", fn);
+      target.removeEventListener("scroll", fn);
       if (rafId) cancelAnimationFrame(rafId);
     };
   }, []);

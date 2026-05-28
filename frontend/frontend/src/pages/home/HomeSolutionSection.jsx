@@ -5,7 +5,7 @@ export default function HomeSolutionSection({ lang = "ko", copy }) {
   const isEnglish = lang === "en";
 
   return (
-    <section className="hp-section" style={{ background: C.bgLight }}>
+    <section className="hp-section" style={{ background: "#fbf9f4" }}>
       <div className="hp-section-inner">
         <div className="hp-section-centered">
           <p className="hp-kicker">{copy.solutionKicker}</p>

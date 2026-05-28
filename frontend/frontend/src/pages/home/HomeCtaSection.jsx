@@ -3,21 +3,24 @@ import { Link } from "react-router-dom";
 
 export default function HomeCtaSection({ copy }) {
   return (
-    <section className="hp-cta-section">
-      <h2 className="hp-cta-title">
-        {copy.ctaTitle}
-      </h2>
+    <section className="hp-section hp-cta-section" style={{ background: "#0a1628" }}>
+      <div className="hp-section-inner" style={{ alignItems: "center" }}>
+        <h2 className="hp-cta-title" style={{ margin: 0 }}>
+          {copy.ctaTitle}
+        </h2>
 
-      <p className="hp-cta-copy">
-        {copy.ctaDescription}
-      </p>
+        <p className="hp-cta-copy" style={{ margin: "24px 0 0" }}>
+          {copy.ctaDescription}
+        </p>
 
-      <Link
-        to="/consultation"
-        className="hp-cta-button"
-      >
-        {copy.ctaButton}
-      </Link>
+        <Link
+          to="/consultation"
+          className="hp-cta-button"
+          style={{ marginTop: 40 }}
+        >
+          {copy.ctaButton}
+        </Link>
+      </div>
     </section>
   );
 }

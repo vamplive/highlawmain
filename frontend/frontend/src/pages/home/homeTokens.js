@@ -37,7 +37,7 @@ export const SOLUTION_CARDS = [
 
 export const HOME_COPY = {
   ko: {
-    seoTitle: "불법파견·게임사기·노동·군사건 전문 로펌",
+    seoTitle: "법무법인 하이로",
     seoDescription: "법무법인 하이로 — 강남 테헤란로. 불법파견·게임사기·노동·군사건만 전문으로 다루는 특화 로펌. 전문 변호사가 직접 상담합니다.",
     heroPrimary: "30초 무료 사건 진단",
     heroSecondary: "전화 상담 02-594-5583",
@@ -53,7 +53,7 @@ export const HOME_COPY = {
     ctaButton: "상담 신청하기",
   },
   en: {
-    seoTitle: "Illegal Dispatch · Game Fraud · Labor · Military Law",
+    seoTitle: "HIGH & LAW FIRM",
     seoDescription: "HIGH & LAW FIRM provides direct attorney consultation focused on illegal dispatch, game fraud, labor disputes, and military cases in Gangnam, Seoul.",
     heroPrimary: "Request Consultation",
     heroSecondary: "View Practice Areas",
@@ -88,30 +88,57 @@ export const HOME_DEFAULTS = {
 };
 
 export const RESPONSIVE_STYLES = `
-  .hp-section { padding: 104px 64px; }
-  .hp-section-inner { max-width: 1160px; margin: 0 auto; }
+  .hp-section {
+    height: 100vh;
+    min-height: 720px;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    padding: 64px 48px;
+    overflow: hidden;
+  }
+  .hp-section-inner {
+    width: 100%;
+    max-width: 1160px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
   .hp-kicker {
-    font-family: ${F.mono};
-    font-size: 11px;
-    letter-spacing: 0.18em;
-    color: ${C.accent};
-    margin: 0 0 12px;
+    font-family: var(--font-serif);
+    font-size: 13px;
+    letter-spacing: 0.25em;
+    color: var(--accent-gold);
+    margin: 0 auto 16px;
     text-transform: uppercase;
+    text-align: center !important;
+    font-weight: 500;
   }
   .hp-title {
-    font-family: ${F.serif};
+    font-family: var(--font-serif);
     font-size: clamp(1.8rem, 3.4vw, 2.8rem);
     font-weight: 400;
     color: ${C.text};
     line-height: 1.35;
-    margin: 0;
+    margin: 0 auto;
+    text-align: center !important;
   }
   .hp-copy {
     font-family: ${F.sans};
     font-size: 15px;
     color: ${C.textMid};
     line-height: 1.85;
-    margin: 16px 0 0;
+    margin: 16px auto 0;
+    text-align: center !important;
+    max-width: 600px;
+  }
+  .hp-section-centered {
+    text-align: center !important;
+    margin-bottom: 56px;
   }
   .hp-card {
     border: 1px solid ${C.border};
@@ -127,7 +154,11 @@ export const RESPONSIVE_STYLES = `
   .hp-scroll-indicator {}
 
   @media (max-width: 768px) {
-    .hp-section { padding: 72px 20px; }
+    .hp-section {
+      height: 100vh;
+      min-height: 560px;
+      padding: 40px 20px;
+    }
     .hp-scroll-indicator { display: none !important; }
   }
 

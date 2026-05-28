@@ -66,7 +66,7 @@ export default function Layout() {
 
       <main id="main-content" className="flex-1" tabIndex={-1}><Outlet /></main>
 
-      <Footer isLawyerDetail={isLawyerDetail} lang={lang} />
+      {!isHome && <Footer isLawyerDetail={isLawyerDetail} lang={lang} />}
 
       {/* 플로팅 위젯 — 카카오톡 + 전화 스택 */}
       <ChatWidget />

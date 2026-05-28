@@ -28,8 +28,9 @@ export default function MobileMenu({ open, onClose, navItems }) {
         aria-modal="true"
         aria-label="전체 메뉴"
         style={{
-          background: "#050505", // 파비콘 배경에 맞춘 프리미엄 리치 블랙
-          boxShadow: "10px 0 30px rgba(0,0,0,0.5)",
+          background: "#0b1f3a", // 로펌 브랜드 칼라 다크블루
+          boxShadow: "10px 0 40px rgba(0,0,0,0.3)",
+          backdropFilter: "blur(16px)",
           animation: "slideIn 0.3s ease-out forwards",
         }}
       >
@@ -64,7 +65,7 @@ export default function MobileMenu({ open, onClose, navItems }) {
                 fontSize: "clamp(18px, 4vw, 22px)",
                 fontWeight: 300,
                 letterSpacing: "0.1em",
-                color: isActive ? "#DEC584" : "rgba(255, 255, 255, 0.6)",
+                color: isActive ? "#DEC584" : "rgba(255, 255, 255, 0.7)",
                 textDecoration: "none",
               })}
             >
@@ -80,7 +81,7 @@ export default function MobileMenu({ open, onClose, navItems }) {
                   fontSize: "clamp(18px, 4vw, 22px)",
                   fontWeight: 300,
                   letterSpacing: "0.1em",
-                  color: isActive ? "#DEC584" : "rgba(255, 255, 255, 0.6)",
+                  color: isActive ? "#DEC584" : "rgba(255, 255, 255, 0.7)",
                   textDecoration: "none",
                 })}
               >
@@ -91,7 +92,7 @@ export default function MobileMenu({ open, onClose, navItems }) {
         </div>
 
         {/* 하단 관리자 링크 */}
-        <div style={{ paddingTop: 28, borderTop: "1px solid rgba(255, 255, 255, 0.08)" }}>
+        <div style={{ paddingTop: 28, borderTop: "1px solid rgba(255, 255, 255, 0.1)" }}>
           <Link
             to="/admin"
             onClick={onClose}
