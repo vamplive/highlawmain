@@ -27,6 +27,8 @@ const PracticeDetailPage = lazy(() => import("./pages/practice/PracticeDetailPag
 const LectureDetailPage = lazy(() => import("./pages/lawyers/LectureDetailPage"));
 const ConsultationPage = lazy(() => import("./pages/consultation"));
 const NotFoundPage = lazy(() => import("./pages/public/NotFoundPage"));
+const RecruitPage = lazy(() => import("./pages/recruit/RecruitPage"));
+const RecruitApplyPage = lazy(() => import("./pages/recruit/RecruitApplyPage"));
 const PrivacyPage = lazy(() => import("./pages/public/PrivacyPage"));
 const TermsPage = lazy(() => import("./pages/public/TermsPage"));
 
@@ -81,6 +83,7 @@ const AdminCourtDates = lazy(() => import("./pages/admin/court-dates"));
 const AdminTrustAccounts = lazy(() => import("./pages/admin/trust-accounts"));
 const AdminLawyerRevenue = lazy(() => import("./pages/admin/lawyer-revenue"));
 const AdminArAging = lazy(() => import("./pages/admin/ar-aging"));
+const AdminRecruit = lazy(() => import("./pages/admin/recruit"));
 
 /* ── 공개 초대/서명 청크: 지연 로딩 ── */
 const InviteEntryPage = lazy(() => import("./pages/public/InviteEntryPage"));
@@ -192,6 +195,7 @@ function AdminArea() {
           <Route path="trust-accounts" element={<LazyRoute><AdminTrustAccounts /></LazyRoute>} />
           <Route path="lawyer-revenue" element={<LazyRoute><AdminLawyerRevenue /></LazyRoute>} />
           <Route path="ar-aging" element={<LazyRoute><AdminArAging /></LazyRoute>} />
+          <Route path="recruit" element={<LazyRoute><AdminRecruit /></LazyRoute>} />
         </Routes>
       </AdminLayout>
     </LazyRoute>
@@ -244,6 +248,8 @@ export default function App() {
           {/* 약관/개인정보 — 지연 로딩 */}
           <Route path="/privacy" element={<ErrorBoundary><LazyRoute><PrivacyPage /></LazyRoute></ErrorBoundary>} />
           <Route path="/terms" element={<ErrorBoundary><LazyRoute><TermsPage /></LazyRoute></ErrorBoundary>} />
+          <Route path="/recruit" element={<ErrorBoundary><LazyRoute><RecruitPage /></LazyRoute></ErrorBoundary>} />
+          <Route path="/recruit/apply-form" element={<ErrorBoundary><LazyRoute><RecruitApplyPage /></LazyRoute></ErrorBoundary>} />
 
           {/* 404 — 공개 레이아웃 내부에서 처리, lazy */}
           <Route path="*" element={<LazyRoute><NotFoundPage /></LazyRoute>} />

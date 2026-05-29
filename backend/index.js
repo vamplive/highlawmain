@@ -314,6 +314,7 @@ app.use("/api/qna", require("./routes/qna"));
 app.use("/api/portal", require("./routes/portal"));
 app.use("/api/sitemap", require("./routes/sitemap"));
 app.use("/sitemap.xml", require("./routes/sitemap"));
+app.use("/api/recruit", require("./routes/recruit"));
 
 // API 문서 (Swagger UI + OpenAPI 스펙)
 app.use("/api/docs", require("./routes/docs"));

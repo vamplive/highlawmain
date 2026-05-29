@@ -857,6 +857,36 @@ const invoiceActivityLog = sqliteTable("invoice_activity_log", {
   details: text("details"),          // JSON 문자열 (변경 전/후 값 등)
 });
 
+// =============================================
+// recruit_posts — 채용 공고
+// =============================================
+const RECRUIT_CATEGORIES = [
+  "new_lawyer",     // 신입변호사
+  "experienced_lawyer", // 경력변호사
+  "military_lawyer", // 군법무관
+  "staff",          // 직원
+];
+
+const RECRUIT_STATUSES = ["open", "closed"];
+
+const recruitPosts = sqliteTable("recruit_posts", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  category: text("category").notNull().default("new_lawyer"),
+  title: text("title").notNull(),
+  description: text("description"),
+  requirements: text("requirements"),
+  benefits: text("benefits"),
+  applicationDeadline: text("application_deadline"),
+  // 지원서 다운로드 파일 URL
+  applicationFileUrl: text("application_file_url"),
+  applicationFileName: text("application_file_name"),
+  status: text("status").notNull().default("open"),
+  isPublished: integer("is_published").notNull().default(0),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+});
+
 const newsletterSubscribers = sqliteTable("newsletter_subscribers", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   email: text("email").notNull(),
@@ -934,6 +964,10 @@ module.exports = {
   QNA_STATUSES,
   QNA_ANONYMITY_TIERS,
   newsletterSubscribers,
+
+  RECRUIT_CATEGORIES,
+  RECRUIT_STATUSES,
+  recruitPosts,
 
   INVOICE_TYPES,
   INVOICE_STATUSES,

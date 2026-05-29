@@ -2,7 +2,7 @@ import { marked } from "marked";
 import DOMPurify from "dompurify";
 
 export const CATEGORY_LABELS = {
-  construction_realestate: "건설부동산 이야기",
+  construction_realestate: "하이로 뉴스",
   case_analysis: "판례 분석",
   law_guide: "법률 가이드",
 };

@@ -12,7 +12,7 @@ import { PublicHero, SurfaceCard } from "../../components/public/PublicDesign";
 /** 블로그 카테고리 라벨/키 매핑 */
 const CATEGORY_OPTIONS = [
   { key: null, label: "전체" },
-  { key: "construction_realestate", label: "건설부동산 이야기" },
+  { key: "construction_realestate", label: "하이로 뉴스" },
   { key: "case_analysis", label: "판례 분석" },
   { key: "law_guide", label: "법률 가이드" },
 ];

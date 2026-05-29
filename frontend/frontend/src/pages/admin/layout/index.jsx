@@ -87,6 +87,7 @@ const MENU_TREE = [
     children: [
       { to: "/admin/site-manager", label: "홈페이지" },
       { to: "/admin/lawyers", label: "변호사" },
+      { to: "/admin/recruit", label: "채용 공고" },
     ],
   },
   {

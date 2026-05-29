@@ -110,6 +110,16 @@ const pages = [
     title: `이용약관 | ${siteName}`,
     description: "법무법인 하이로 홈페이지 이용약관입니다.",
   },
+  {
+    path: "/recruit",
+    title: `인재채용 | ${siteName}`,
+    description: "법무법인 하이로와 함께할 유능한 인재를 모십니다. 신입 및 경력 변호사, 군법무관, 행정직원 공고를 확인하세요.",
+  },
+  {
+    path: "/recruit/apply-form",
+    title: `온라인 입사지원 | ${siteName}`,
+    description: "법무법인 하이로 온라인 입사지원 시스템. 약관 동의 및 입사지원 서식 업로드 단계로 지원할 수 있습니다.",
+  },
 ];
 
 function escapeAttr(value) {

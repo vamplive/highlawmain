@@ -10,27 +10,27 @@ import { PublicHero, SectionHeading, SurfaceCard } from "../../components/public
 
 const VALUES = [
   {
-    title: "신뢰",
-    subtitle: "TRUST",
-    desc: "진행 상황을 투명하게 공유하고 의사결정의 모든 과정에 의뢰인을 참여시킵니다.",
+    title: "신의성실",
+    subtitle: "LOYALTY",
+    desc: "의뢰인의 신뢰를 가장 소중한 가치로 여기며, 어떠한 순간에도 의뢰인의 이익과 권리를 최우선으로 수호합니다.",
     icon: Handshake,
+  },
+  {
+    title: "품격",
+    subtitle: "DIGNITY",
+    desc: "깊이 있는 학문적 성찰과 품위 있는 변론을 통해, 하이엔드 서비스에 걸맞은 차별화된 사법적 결과를 창출합니다.",
+    icon: Landmark,
+  },
+  {
+    title: "정직",
+    subtitle: "INTEGRITY",
+    desc: "사건의 실체를 투명하게 공유하고, 흔들림 없는 법조 윤리를 준수하며 타협하지 않는 정의를 지향합니다.",
+    icon: Scale,
   },
   {
     title: "전문성",
     subtitle: "EXPERTISE",
-    desc: "불법파견·게임사기·노동·군사건 등 특수 분야에 한정해 깊이 있는 실무 경험을 축적했습니다.",
-    icon: Scale,
-  },
-  {
-    title: "헌신",
-    subtitle: "DEDICATION",
-    desc: "의뢰인의 사건을 비즈니스처럼 정교하게 관리하며, 최선의 결론을 만들기 위해 함께합니다.",
-    icon: Landmark,
-  },
-  {
-    title: "혁신",
-    subtitle: "INNOVATION",
-    desc: "최신 판례와 데이터 분석을 활용한 선진적 법률 서비스를 지향합니다.",
+    desc: "대형 로펌 출신의 풍부한 실무 경험과 고도의 정밀 법리 분석으로 클라이언트에게 가장 정교한 솔루션을 제시합니다.",
     icon: Lightbulb,
   },
 ];
@@ -39,10 +39,10 @@ const ABOUT_DEFAULTS = {
   hero: { heading: "사무소 소개", subheading: "ABOUT HIGHLAW LAWFIRM", description: "노무·인사, 기업, 국제, 엔터테인먼트, 게임, 방산 등 각 분야의 인정받은 변호사들이 최적화된 법률 솔루션을 제공합니다." },
   philosophy: { heading: "특수 분야의 깊이로\n결과를 만드는 로펌", description: "법무법인 하이로는 불법파견·게임사기·노동·군사건의 4개 분야만 집중적으로 다룹니다. 첫 상담부터 사건 종결까지, 해당 분야의 절차와 판례를 깊이 이해하는 변호사가 직접 사건을 진행합니다." },
   values: { items: [
-    { title: "신뢰", subtitle: "TRUST", desc: "진행 상황을 투명하게 공유하고 의사결정의 모든 과정에 의뢰인을 참여시킵니다." },
-    { title: "전문성", subtitle: "EXPERTISE", desc: "불법파견·게임사기·노동·군사건 등 특수 분야에 한정해 깊이 있는 실무 경험을 축적했습니다." },
-    { title: "헌신", subtitle: "DEDICATION", desc: "의뢰인의 사건을 비즈니스처럼 정교하게 관리하며, 최선의 결론을 만들기 위해 함께합니다." },
-    { title: "혁신", subtitle: "INNOVATION", desc: "최신 판례와 데이터 분석을 활용한 선진적 법률 서비스를 지향합니다." },
+    { title: "신의성실", subtitle: "LOYALTY", desc: "의뢰인의 신뢰를 가장 소중한 가치로 여기며, 어떠한 순간에도 의뢰인의 이익과 권리를 최우선으로 수호합니다." },
+    { title: "품격", subtitle: "DIGNITY", desc: "깊이 있는 학문적 성찰과 품위 있는 변론을 통해, 하이엔드 서비스에 걸맞은 차별화된 사법적 결과를 창출합니다." },
+    { title: "정직", subtitle: "INTEGRITY", desc: "사건의 실체를 투명하게 공유하고, 흔들림 없는 법조 윤리를 준수하며 타협하지 않는 정의를 지향합니다." },
+    { title: "전문성", subtitle: "EXPERTISE", desc: "대형 로펌 출신의 풍부한 실무 경험과 고도의 정밀 법리 분석으로 클라이언트에게 가장 정교한 솔루션을 제시합니다." },
   ] },
   history: { items: [
     { year: "설립", text: "법무법인 하이로 출범 — 불법파견·게임사기·노동·군사건 특화" },
@@ -135,18 +135,22 @@ export default function AboutPage() {
         }
       `}</style>
 
-      {/* ==================== 5개 탭 네비게이션 ==================== */}
-      <div 
-        style={{
-          borderBottom: "1px solid var(--border-subtle)",
-          background: "#fff",
-          position: "sticky",
-          top: 78,
-          zIndex: 10,
-        }}
-      >
-        <div className="container" style={{ maxWidth: 800, padding: 0 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", overflowX: "auto", whiteSpace: "nowrap" }} className="lp-tab-scroll">
+      {/* ==================== 탭 및 본문 통합 섹션 (소식 페이지 스타일 적용) ==================== */}
+      <section className="section" style={{ background: "#fff" }}>
+        <div className="container" style={{ maxWidth: 1000 }}>
+          
+          {/* ==================== 5개 탭 네비게이션 ==================== */}
+          <div 
+            role="tablist"
+            aria-label="소개 섹션 선택" 
+            style={{ 
+              display: "flex", 
+              justifyContent: "center", 
+              gap: "12px", 
+              flexWrap: "wrap",
+              marginBottom: 56
+            }}
+          >
             {TABS.map((tab) => {
               const isActive = activeTab === tab.id;
               const targetPath = tab.id === "greetings" ? "/about" : `/about/${tab.id}`;
@@ -155,57 +159,37 @@ export default function AboutPage() {
                   key={tab.id}
                   to={targetPath}
                   style={{
-                    flex: 1,
-                    background: "none",
-                    border: "none",
-                    padding: "20px 10px",
+                    padding: "10px 24px",
+                    minHeight: 44,
+                    fontSize: 13,
+                    fontWeight: isActive ? 600 : 400,
+                    border: "1px solid",
+                    borderColor: isActive ? "var(--accent-gold)" : "rgba(0,0,0,0.12)",
+                    borderRadius: 24,
+                    background: isActive ? "var(--accent-gold)" : "transparent",
+                    color: isActive ? "#fff" : "var(--gray-500)",
                     cursor: "pointer",
-                    textAlign: "center",
-                    position: "relative",
-                    textDecoration: "none",
                     transition: "all 0.3s ease",
-                    display: "block",
+                    letterSpacing: "0.05em",
+                    textDecoration: "none",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
                   }}
                   aria-selected={isActive}
                   role="tab"
                 >
-                  <span
-                    style={{
-                      fontSize: 14,
-                      fontWeight: isActive ? 600 : 400,
-                      color: isActive ? "var(--accent-gold)" : "var(--text-secondary)",
-                      transition: "color 0.3s ease",
-                    }}
-                  >
-                    {tab.label}
-                  </span>
-                  {isActive && (
-                    <div
-                      style={{
-                        position: "absolute",
-                        bottom: 0,
-                        left: "15%",
-                        right: "15%",
-                        height: 2,
-                        background: "var(--accent-gold)",
-                        transition: "all 0.3s ease",
-                      }}
-                    />
-                  )}
+                  {tab.label}
                 </Link>
               );
             })}
           </div>
-        </div>
-      </div>
 
-      {/* ==================== 탭별 본문 내용 ==================== */}
-      <section className="section" style={{ background: "#fff" }}>
-        <div className="container" style={{ maxWidth: 800 }}>
+          {/* ==================== 탭별 본문 내용 ==================== */}
           
           {/* 1. 인사말 탭 */}
           {activeTab === "greetings" && (
-            <div className="tab-content-active" key="greetings">
+            <div className="tab-content-active" key="greetings" style={{ maxWidth: 760, margin: "0 auto" }}>
               <SectionHeading
                 eyebrow="Introduction"
                 title="Message from Partners"
@@ -240,18 +224,18 @@ export default function AboutPage() {
                 eyebrow="OUR PHILOSOPHY"
                 title="하이로의 철학"
               />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 stagger" style={{ marginBottom: 40 }}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 stagger" style={{ marginBottom: 40 }}>
                 {settings.values.items.map((v, i) => {
                   const Icon = VALUES[i]?.icon;
                   return (
                     <SurfaceCard
                       key={i}
-                      style={{ padding: "36px 32px" }}
+                      style={{ padding: "36px 28px", display: "flex", flexDirection: "column", height: "100%" }}
                     >
-                      {Icon && <div style={{ marginBottom: 12 }}><Icon size={30} strokeWidth={1.3} color="var(--accent-gold)" /></div>}
+                      {Icon && <div style={{ marginBottom: 16 }}><Icon size={30} strokeWidth={1.3} color="var(--accent-gold)" /></div>}
                       <h3 style={{ fontSize: 18, fontWeight: 500, color: "var(--text-primary)", marginBottom: 4 }}>{v.title}</h3>
                       <p className="font-en" style={{ fontSize: 10, letterSpacing: "0.2em", color: "var(--accent-gold)", marginBottom: 16 }}>{v.subtitle}</p>
-                      <p style={{ fontSize: 14, color: "var(--gray-500)", lineHeight: 1.8, fontWeight: 300 }}>{v.desc}</p>
+                      <p style={{ fontSize: 13.5, color: "var(--gray-500)", lineHeight: 1.8, fontWeight: 300, flexGrow: 1 }}>{v.desc}</p>
                     </SurfaceCard>
                   );
                 })}
@@ -261,23 +245,23 @@ export default function AboutPage() {
 
           {/* 3. 오시는 길 탭 */}
           {activeTab === "directions" && (
-            <div className="tab-content-active" key="directions">
+            <div className="tab-content-active" key="directions" style={{ maxWidth: 900, margin: "0 auto" }}>
               <SectionHeading
                 eyebrow="DIRECTIONS"
                 title="법무법인 하이로 서울 오피스"
               />
               
               {/* 세련된 위치 지도 카드 */}
-              <SurfaceCard style={{ padding: 0, overflow: "hidden", marginBottom: 36 }}>
-                <div style={{ width: "100%", height: 360, position: "relative", borderBottom: "1px solid var(--border-subtle)" }}>
-                  <iframe 
-                    src="https://m.map.naver.com/menu/bmarker.naver?lng=127.0364&lat=37.5006&title=%EB%B2%95%EB%AC%B5%EB%B2%95%EC%9D%B8%20%ED%95%98%EC%9D%B4%EB%A1%9C" 
-                    title="네이버 지도 - 법무법인 하이로"
-                    width="100%" 
-                    height="100%" 
-                    style={{ border: 0 }} 
-                    allowFullScreen="" 
-                    loading="lazy"
+              <SurfaceCard style={{ padding: 0, overflow: "hidden", marginBottom: 36, border: "1px solid var(--border-subtle)" }}>
+                <div style={{ width: "100%", position: "relative" }}>
+                  <img 
+                    src="/directions-map.svg" 
+                    alt="법무법인 하이로 오시는 길 지도 (역삼역 4번 출구 도보 1분)" 
+                    style={{
+                      width: "100%",
+                      height: "auto",
+                      display: "block",
+                    }}
                   />
                 </div>
                 
@@ -391,7 +375,7 @@ export default function AboutPage() {
                 eyebrow="PRO BONO"
                 title="사회적 책임과 온기를 채우는 하이로의 공익 활동"
               />
-              <div style={{ color: "var(--text-secondary)", fontWeight: 300, fontSize: 15, lineHeight: 1.8, marginBottom: 32 }}>
+              <div style={{ color: "var(--text-secondary)", fontWeight: 300, fontSize: 15, lineHeight: 1.8, marginBottom: 40, maxWidth: 800, margin: "0 auto 40px" }}>
                 법무법인 하이로는 법치주의 확립과 사회 구성원 모두의 보편적 인권 옹호를 중요한 사명으로 여깁니다. 우리가 지닌 법률 전문성을 바탕으로 정의의 온기가 사회 곳곳에 미치도록 지속 가능한 사회공헌 활동을 실천합니다.
               </div>
 
@@ -418,12 +402,12 @@ export default function AboutPage() {
                     badge: "무료 교육 나눔"
                   }
                 ].map((activity, idx) => (
-                  <SurfaceCard key={idx} style={{ padding: "32px 28px" }} className="reveal">
-                    <div style={{ display: "inline-block", background: "var(--accent-gold-light)", color: "var(--accent-gold)", fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 4, marginBottom: 12 }}>
+                  <SurfaceCard key={idx} style={{ padding: "32px 28px", display: "flex", flexDirection: "column", height: "100%" }} className="reveal">
+                    <div style={{ alignSelf: "flex-start", background: "var(--accent-gold-light)", color: "var(--accent-gold)", fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 4, marginBottom: 16 }}>
                       {activity.badge}
                     </div>
                     <h4 style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)", marginBottom: 8 }}>{activity.title}</h4>
-                    <p style={{ fontSize: 13.5, color: "var(--gray-500)", lineHeight: 1.7, fontWeight: 300 }}>{activity.desc}</p>
+                    <p style={{ fontSize: 13.5, color: "var(--gray-500)", lineHeight: 1.7, fontWeight: 300, flexGrow: 1 }}>{activity.desc}</p>
                   </SurfaceCard>
                 ))}
               </div>
@@ -432,7 +416,7 @@ export default function AboutPage() {
 
           {/* 5. 연혁 탭 */}
           {activeTab === "history" && (
-            <div className="tab-content-active" key="history">
+            <div className="tab-content-active" key="history" style={{ maxWidth: 760, margin: "0 auto" }}>
               <SectionHeading
                 eyebrow="HISTORY"
                 title="어제를 돌아보며 내일을 준비하는 하이로의 발자취"
@@ -462,7 +446,6 @@ export default function AboutPage() {
                   }
                 ].map((item, idx) => (
                   <div key={idx} style={{ position: "relative", marginBottom: 40 }} className="reveal">
-                    {/* 타임라인 포인트 동그라미 */}
                     <div 
                       style={{ 
                         position: "absolute", 

@@ -10,229 +10,165 @@
 
   <rect width="840" height="540" fill="#f5f3ef" rx="8"/>
 
-  <!-- 타이틀 -->
-  <rect x="0" y="0" width="840" height="46" fill="#1a1a2e" rx="8"/>
-  <rect x="0" y="34" width="840" height="16" fill="#1a1a2e"/>
-  <text x="420" y="30" text-anchor="middle" fill="#c8a97e" font-size="13" font-weight="500" letter-spacing="3">오시는 길 — 교대역 4번 출구 도보 약 3분</text>
+  <!-- 타이틀 바 -->
+  <rect x="0" y="0" width="840" height="46" fill="#0f1d32" rx="8"/>
+  <rect x="0" y="34" width="840" height="16" fill="#0f1d32"/>
+  <text x="420" y="30" text-anchor="middle" fill="#c8a97e" font-size="13" font-weight="500" letter-spacing="3">오시는 길 — 역삼역 4번 출구 도보 약 1분 (100m 직진)</text>
 
   <!-- ============================================================ -->
-  <!-- 도로                                                          -->
+  <!-- 도로 레이아웃 (역삼역 사거리 기준)                               -->
   <!-- ============================================================ -->
 
-  <!-- 서초대로 (동서 대로) — 지도의 중앙 가로 도로 -->
-  <rect x="20" y="260" width="800" height="44" fill="#e5e2db" rx="2"/>
-  <line x1="20" y1="282" x2="820" y2="282" stroke="#d6d2ca" stroke-width="1.2" stroke-dasharray="14,8"/>
-  <text x="420" y="286" text-anchor="middle" fill="#bbb" font-size="9" letter-spacing="6">서 초 대 로</text>
-  <text x="40" y="278" fill="#d0ccc5" font-size="7">← 방배·이수</text>
-  <text x="755" y="278" fill="#d0ccc5" font-size="7">서초역 →</text>
+  <!-- 테헤란로 (동서 대로) — 가로로 지나는 넓은 메인 도로 -->
+  <rect x="20" y="240" width="800" height="54" fill="#e5e2db" rx="2"/>
+  <line x1="20" y1="267" x2="820" y2="267" stroke="#d6d2ca" stroke-width="1.2" stroke-dasharray="14,8"/>
+  <text x="490" y="272" text-anchor="middle" fill="#aaa" font-size="10" font-weight="500" letter-spacing="8">테 헤 란 로</text>
+  <text x="40" y="258" fill="#c0bcb5" font-size="8">← 강남역 방면</text>
+  <text x="750" y="258" fill="#c0bcb5" font-size="8">선릉역 방면 →</text>
 
-  <!-- 법원로 / 3호선 (남북) — 교대역 서쪽을 지나는 남북 도로 -->
-  <rect x="155" y="55" width="32" height="440" fill="#eae7e1" rx="2"/>
+  <!-- 논현로 (남북 도로) — 역삼역 사거리를 형성하는 남북 도로 -->
+  <rect x="180" y="60" width="54" height="420" fill="#eae7e1" rx="2"/>
+  <line x1="207" y1="60" x2="207" y2="480" stroke="#d6d2ca" stroke-width="1.2" stroke-dasharray="14,8"/>
+  <text x="212" y="120" text-anchor="middle" fill="#aaa" font-size="9" font-weight="500" letter-spacing="4" transform="rotate(90, 212, 120)">논 현 로</text>
+  <text x="212" y="80" text-anchor="middle" fill="#c0bcb5" font-size="7">↑ 학동역 방면</text>
+  <text x="212" y="460" text-anchor="middle" fill="#c0bcb5" font-size="7">한티역 방면 ↓</text>
 
-  <!-- 2호선 노선 표시 (서초대로 아래, 연한 초록) -->
-  <line x1="20" y1="304" x2="820" y2="304" stroke="#4CAF50" stroke-width="3" opacity="0.12"/>
-
-  <!-- 3호선 노선 표시 (법원로 아래, 연한 주황) -->
-  <line x1="171" y1="55" x2="171" y2="495" stroke="#EF6C00" stroke-width="3" opacity="0.12"/>
-
-  <!-- 서초중앙로28길 (법원로 왼쪽 골목) -->
-  <rect x="75" y="60" width="18" height="195" fill="#edebe6" rx="1"/>
-
-  <!-- 서초대로52길 (교대역 남쪽 작은 동서 도로) -->
-  <rect x="230" y="390" width="350" height="14" fill="#edebe6" rx="1"/>
-  <text x="405" y="400" text-anchor="middle" fill="#d5d0c9" font-size="6" letter-spacing="1">서초대로52길</text>
+  <!-- 2호선 지하철 노선 가이드 라인 (연한 녹색 투명) -->
+  <line x1="20" y1="290" x2="820" y2="290" stroke="#22B14C" stroke-width="3.5" opacity="0.15"/>
 
   <!-- ============================================================ -->
-  <!-- 건물 블록 (지도 기반 배치)                                      -->
+  <!-- 주변 건물 및 주요 랜드마크 배치                                  -->
   <!-- ============================================================ -->
 
-  <!-- ── 서초대로 북쪽 (위) ── -->
+  <!-- 역삼역 사거리 코너 건물들 -->
+  <!-- 북서쪽 코너 (강남역/학동 방면) -->
+  <rect x="40" y="80" width="120" height="90" fill="#ddd9d2" rx="4" filter="url(#sh)"/>
+  <text x="100" y="125" text-anchor="middle" fill="#b8b3ab" font-size="9" font-weight="500">강남N타워</text>
 
-  <!-- 서울법원청사 / 서울중앙지방법원 (북서쪽, 큰 블록) -->
-  <rect x="25" y="70" width="120" height="80" fill="#ddd9d2" rx="4" filter="url(#sh)"/>
-  <text x="85" y="107" text-anchor="middle" fill="#b8b3ab" font-size="8">서울중앙</text>
-  <text x="85" y="119" text-anchor="middle" fill="#b8b3ab" font-size="8">지방법원</text>
+  <!-- 남서쪽 코너 (강남역/한티 방면) -->
+  <rect x="40" y="315" width="120" height="90" fill="#ddd9d2" rx="4" filter="url(#sh)"/>
+  <text x="100" y="360" text-anchor="middle" fill="#b8b3ab" font-size="9" font-weight="500">역삼금융센터</text>
 
-  <!-- 블루원빌딩 -->
-  <rect x="200" y="130" width="65" height="45" fill="#ddd9d2" rx="3" filter="url(#sh)"/>
-  <text x="232" y="157" text-anchor="middle" fill="#c5c0b8" font-size="7">블루원빌딩</text>
+  <!-- 남동쪽 코너 (선릉역/한티 방면) -->
+  <rect x="250" y="315" width="150" height="90" fill="#ddd9d2" rx="4" filter="url(#sh)"/>
+  <text x="325" y="355" text-anchor="middle" fill="#b8b3ab" font-size="9" font-weight="500">아세아타워</text>
+  <text x="325" y="370" text-anchor="middle" fill="#c8c3bb" font-size="7.5">신한은행 역삼역지점</text>
 
-  <!-- 우민빌딩 -->
-  <rect x="120" y="180" width="50" height="35" fill="#ddd9d2" rx="3" filter="url(#sh)"/>
-  <text x="145" y="201" text-anchor="middle" fill="#c5c0b8" font-size="7">우민빌딩</text>
+  <!-- 포스코타워 역삼 (사거리 남동쪽 대형 랜드마크) -->
+  <rect x="420" y="315" width="160" height="90" fill="#cfcac1" rx="4" filter="url(#sh)"/>
+  <text x="500" y="360" text-anchor="middle" fill="#9f9990" font-size="9.5" font-weight="500">포스코타워 역삼</text>
 
-  <!-- 사운즈커피 법원교대역점 -->
-  <rect x="280" y="165" width="80" height="40" fill="#ddd9d2" rx="3" filter="url(#sh)"/>
-  <text x="320" y="186" text-anchor="middle" fill="#c5c0b8" font-size="7">사운즈커피</text>
-  <text x="320" y="197" text-anchor="middle" fill="#d0ccc5" font-size="6">법원교대역점</text>
+  <!-- 북동쪽 코너 (선릉역/학동 방면) — 하이로 방향 라인 주요 건물들 -->
+  <!-- 역삼역 4번출구 바로 앞 건물 -->
+  <rect x="250" y="160" width="90" height="60" fill="#ddd9d2" rx="3" filter="url(#sh)"/>
+  <text x="295" y="195" text-anchor="middle" fill="#c5c0b8" font-size="8">글래스타워</text>
 
-  <!-- 노브랜드 -->
-  <rect x="430" y="195" width="55" height="35" fill="#ddd9d2" rx="3" filter="url(#sh)"/>
-  <text x="457" y="216" text-anchor="middle" fill="#c5c0b8" font-size="7">노브랜드</text>
+  <!-- 4번 출구에서 직진 시 지나치는 건물 (신한금융) -->
+  <rect x="360" y="160" width="100" height="60" fill="#ddd9d2" rx="3" filter="url(#sh)"/>
+  <text x="410" y="195" text-anchor="middle" fill="#c5c0b8" font-size="8">신한투자증권 빌딩</text>
 
-  <!-- 삼풍프라자 -->
-  <rect x="500" y="210" width="60" height="42" fill="#ddd9d2" rx="3" filter="url(#sh)"/>
-  <text x="530" y="235" text-anchor="middle" fill="#c5c0b8" font-size="7">삼풍프라자</text>
-
-  <!-- ★★★ 윤정 법률사무소 ★★★ -->
+  <!-- ★★★ 역삼KR빌딩 (법무법인 하이로 15층) ★★★ -->
   <g>
-    <rect x="600" y="206" width="110" height="48" fill="#1a1a2e" rx="5" filter="url(#sh)"/>
-    <rect x="608" y="216" width="4" height="14" fill="#c8a97e" rx="1"/>
-    <rect x="615" y="212" width="4" height="18" fill="#c8a97e" rx="1"/>
-    <rect x="622" y="218" width="4" height="12" fill="#c8a97e" rx="1"/>
-    <text x="672" y="228" text-anchor="middle" fill="#c8a97e" font-size="10" font-weight="600">윤정 법률사무소</text>
-    <text x="672" y="244" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="7">서초대로 327 · 5층</text>
+    <rect x="480" y="145" width="190" height="75" fill="#0f1d32" rx="5" stroke="#c8a97e" stroke-width="1" filter="url(#sh)"/>
+    <rect x="492" y="160" width="4" height="18" fill="#c8a97e" rx="1"/>
+    <rect x="500" y="154" width="4" height="24" fill="#c8a97e" rx="1"/>
+    <rect x="508" y="162" width="4" height="16" fill="#c8a97e" rx="1"/>
+    
+    <text x="590" y="176" fill="#c8a97e" font-size="11" font-weight="700">법무법인 하이로</text>
+    <text x="590" y="193" fill="rgba(255,255,255,0.85)" font-size="8.5" font-weight="500">역삼KR빌딩 15층</text>
+    <text x="590" y="206" fill="rgba(255,255,255,0.45)" font-size="7">(1층에 스타벅스 입점)</text>
   </g>
 
-  <!-- 베스킨라빈스 -->
-  <rect x="720" y="215" width="40" height="30" fill="#ddd9d2" rx="3" filter="url(#sh)"/>
-  <text x="740" y="234" text-anchor="middle" fill="#c5c0b8" font-size="6">베스킨라빈스</text>
-
-  <!-- 우리은행 -->
-  <rect x="766" y="215" width="45" height="30" fill="#ddd9d2" rx="3" filter="url(#sh)"/>
-  <text x="788" y="234" text-anchor="middle" fill="#c5c0b8" font-size="7">우리은행</text>
-
-  <!-- ── 서초대로 남쪽 (아래) ── -->
-
-  <!-- CU (교대역 서쪽) -->
-  <rect x="145" y="310" width="30" height="25" fill="#ddd9d2" rx="3" filter="url(#sh)"/>
-  <text x="160" y="326" text-anchor="middle" fill="#c5c0b8" font-size="7">CU</text>
-
-  <!-- 진화력 -->
-  <rect x="200" y="330" width="50" height="30" fill="#ddd9d2" rx="3" filter="url(#sh)"/>
-  <text x="225" y="349" text-anchor="middle" fill="#c5c0b8" font-size="7">진화력</text>
-
-  <!-- 파리바게뜨 -->
-  <rect x="270" y="330" width="55" height="28" fill="#ddd9d2" rx="3" filter="url(#sh)"/>
-  <text x="297" y="348" text-anchor="middle" fill="#c5c0b8" font-size="7">파리바게뜨</text>
-
-  <!-- 하나은행 -->
-  <rect x="340" y="315" width="45" height="28" fill="#ddd9d2" rx="3" filter="url(#sh)"/>
-  <text x="362" y="333" text-anchor="middle" fill="#c5c0b8" font-size="7">하나은행</text>
-
-  <!-- 올리브영 -->
-  <rect x="450" y="310" width="50" height="28" fill="#ddd9d2" rx="3" filter="url(#sh)"/>
-  <text x="475" y="328" text-anchor="middle" fill="#c5c0b8" font-size="7">올리브영</text>
-
-  <!-- 삼성스토어 -->
-  <rect x="530" y="310" width="55" height="28" fill="#ddd9d2" rx="3" filter="url(#sh)"/>
-  <text x="557" y="328" text-anchor="middle" fill="#c5c0b8" font-size="7">삼성스토어</text>
-
-  <!-- 미우미우 -->
-  <rect x="640" y="310" width="45" height="28" fill="#ddd9d2" rx="3" filter="url(#sh)"/>
-  <text x="662" y="328" text-anchor="middle" fill="#c5c0b8" font-size="7">미우미우</text>
-
-  <!-- 서관연육 교대본점 -->
-  <rect x="700" y="320" width="60" height="28" fill="#ddd9d2" rx="3" filter="url(#sh)"/>
-  <text x="730" y="338" text-anchor="middle" fill="#c5c0b8" font-size="6">서관연육 교대본점</text>
-
-  <!-- 더 남쪽: 로이어즈타워, 교대역(3호선) -->
-  <rect x="160" y="415" width="55" height="30" fill="#ddd9d2" rx="3" filter="url(#sh)"/>
-  <text x="187" y="434" text-anchor="middle" fill="#c5c0b8" font-size="6">로이어즈타워</text>
+  <!-- 테헤란로 141 (스타벅스 옆 빌딩 표기) -->
+  <rect x="685" y="160" width="100" height="60" fill="#ddd9d2" rx="3" filter="url(#sh)"/>
+  <text x="735" y="195" text-anchor="middle" fill="#c5c0b8" font-size="8">태왕빌딩</text>
 
   <!-- ============================================================ -->
-  <!-- 교대역 — 서초대로 남쪽, 2·3호선 교차 지점                        -->
+  <!-- 역삼역 지하철 및 출구 표시                                       -->
   <!-- ============================================================ -->
 
-  <!-- 역 라벨 -->
-  <text x="330" y="370" text-anchor="middle" fill="#999" font-size="11" font-weight="500">교대역</text>
-  <text x="330" y="384" text-anchor="middle" fill="#bbb" font-size="7">2호선 · 3호선</text>
-
-  <!-- 출구들 (지도 참고: 1~3번은 서초대로 바로 아래 북쪽, 동쪽부터) -->
-  <!-- 1번: 서초대로 남쪽, 가장 동쪽 -->
-  <circle cx="470" cy="310" r="7" fill="#4CAF50" opacity="0.6"/>
-  <text x="470" y="314" text-anchor="middle" fill="#fff" font-size="7" font-weight="600">1</text>
-
-  <!-- 2번 -->
-  <circle cx="420" cy="310" r="7" fill="#4CAF50" opacity="0.6"/>
-  <text x="420" y="314" text-anchor="middle" fill="#fff" font-size="7" font-weight="600">2</text>
-
-  <!-- 3번 -->
-  <circle cx="370" cy="310" r="7" fill="#4CAF50" opacity="0.6"/>
-  <text x="370" y="314" text-anchor="middle" fill="#fff" font-size="7" font-weight="600">3</text>
-
-  <!-- ★ 4번 출구 — 서초대로 바로 아래, 3번 왼쪽 -->
-  <g>
-    <circle cx="330" cy="308" r="10" fill="#c8a97e" filter="url(#sh)"/>
-    <text x="330" y="312" text-anchor="middle" fill="#fff" font-size="8" font-weight="700">4</text>
+  <!-- 역삼역 표시 (사거리 중앙) -->
+  <g transform="translate(180, 240)">
+    <!-- 지하철역 상징 원형 배지 -->
+    <rect width="54" height="54" fill="#22B14C" rx="27" opacity="0.1"/>
+    <circle cx="27" cy="27" r="14" fill="#22B14C" filter="url(#sh)"/>
+    <text x="27" cy="31" text-anchor="middle" fill="#fff" font-size="9" font-weight="700">역삼</text>
   </g>
+  <text x="207" y="312" text-anchor="middle" fill="#777" font-size="9.5" font-weight="600">역삼역 (2호선)</text>
 
-  <!-- 5번 -->
-  <circle cx="350" cy="360" r="7" fill="#4CAF50" opacity="0.5"/>
-  <text x="350" y="364" text-anchor="middle" fill="#fff" font-size="7" font-weight="600">5</text>
+  <!-- 출구 마커 배치 -->
+  <!-- 5번 출구 (북서쪽) -->
+  <circle cx="165" cy="225" r="7" fill="#22B14C" opacity="0.6"/>
+  <text x="165" y="228" text-anchor="middle" fill="#fff" font-size="7" font-weight="600">5</text>
 
-  <!-- 6번 -->
-  <circle cx="275" cy="345" r="7" fill="#4CAF50" opacity="0.5"/>
-  <text x="275" y="349" text-anchor="middle" fill="#fff" font-size="7" font-weight="600">6</text>
+  <!-- 6번 출구 (남서쪽) -->
+  <circle cx="165" cy="310" r="7" fill="#22B14C" opacity="0.6"/>
+  <text x="165" y="313" text-anchor="middle" fill="#fff" font-size="7" font-weight="600">6</text>
 
-  <!-- 7번 -->
-  <circle cx="310" cy="345" r="7" fill="#4CAF50" opacity="0.5"/>
-  <text x="310" y="349" text-anchor="middle" fill="#fff" font-size="7" font-weight="600">7</text>
+  <!-- 3번 출구 (남동쪽) -->
+  <circle cx="250" cy="310" r="7" fill="#22B14C" opacity="0.6"/>
+  <text x="250" y="313" text-anchor="middle" fill="#fff" font-size="7" font-weight="600">3</text>
 
-  <!-- 8번 (남쪽, 3호선 방향) -->
-  <circle cx="195" cy="400" r="7" fill="#EF6C00" opacity="0.5"/>
-  <text x="195" y="404" text-anchor="middle" fill="#fff" font-size="7" font-weight="600">8</text>
+  <!-- 2번 출구 (남동쪽 더 오른쪽) -->
+  <circle cx="340" cy="310" r="7" fill="#22B14C" opacity="0.6"/>
+  <text x="340" y="313" text-anchor="middle" fill="#fff" font-size="7" font-weight="600">2</text>
 
-  <!-- 10~11번 -->
-  <circle cx="175" cy="370" r="7" fill="#EF6C00" opacity="0.5"/>
-  <text x="175" y="374" text-anchor="middle" fill="#fff" font-size="6" font-weight="600">10</text>
-
-  <circle cx="200" cy="370" r="7" fill="#EF6C00" opacity="0.5"/>
-  <text x="200" y="374" text-anchor="middle" fill="#fff" font-size="6" font-weight="600">11</text>
-
-  <!-- 12번 -->
-  <circle cx="230" cy="400" r="7" fill="#EF6C00" opacity="0.5"/>
-  <text x="230" y="404" text-anchor="middle" fill="#fff" font-size="6" font-weight="600">12</text>
-
-  <!-- 13~14번 (남쪽 끝) -->
-  <circle cx="220" cy="445" r="7" fill="#EF6C00" opacity="0.5"/>
-  <text x="220" y="449" text-anchor="middle" fill="#fff" font-size="6" font-weight="600">13</text>
-
-  <circle cx="250" cy="445" r="7" fill="#EF6C00" opacity="0.5"/>
-  <text x="250" y="449" text-anchor="middle" fill="#fff" font-size="6" font-weight="600">14</text>
+  <!-- ★ 4번 출구 (추천 출구 - 북동쪽 코너) -->
+  <g>
+    <circle cx="250" cy="225" r="11" fill="#c8a97e" filter="url(#sh)"/>
+    <text x="250" y="229" text-anchor="middle" fill="#fff" font-size="9" font-weight="700">4</text>
+  </g>
+  <text x="250" y="208" text-anchor="middle" fill="#c8a97e" font-size="7.5" font-weight="600">역삼역 4번출구</text>
 
   <!-- ============================================================ -->
-  <!-- 도보 경로: 4번 출구 → 윤정 법률사무소                            -->
-  <!-- 4번에서 북쪽(서초대로)으로 나와 동쪽으로 직진                      -->
+  <!-- 도보 길찾기 경로 (4번 출구 → 역삼KR빌딩 법무법인 하이로)            -->
   <!-- ============================================================ -->
+  
+  <!-- 4번 출구에서 나와 테헤란로 인도(Sidewalk)를 따라 100m 직진 후 KR빌딩 진입 -->
   <path
-    d="M 330 298 L 330 275 L 598 275"
+    d="M 261 225 L 485 225 L 485 221"
     fill="none"
     stroke="#c8a97e"
-    stroke-width="4"
+    stroke-width="4.5"
     stroke-dasharray="10,6"
     stroke-linecap="round"
     stroke-linejoin="round"
     marker-end="url(#ag)"
-    opacity="0.9"
+    opacity="0.95"
   />
 
-  <!-- 경로 라벨 -->
-  <rect x="425" y="255" width="80" height="20" fill="#c8a97e" rx="10"/>
-  <text x="465" y="269" text-anchor="middle" fill="#fff" font-size="9" font-weight="500">도보 약 3분</text>
+  <!-- 도보 경로 배지 -->
+  <rect x="325" y="200" width="95" height="18" fill="#c8a97e" rx="9" filter="url(#sh)"/>
+  <text x="372.5" y="212" text-anchor="middle" fill="#fff" font-size="8.5" font-weight="600">도보 약 1분 (100m)</text>
+
+  <!-- 스타벅스 아이콘 위치 표기 (1층 입점 랜드마크) -->
+  <circle cx="510" cy="225" r="5" fill="#006241"/>
+  <text x="520" y="228" fill="#006241" font-size="8" font-weight="600">스타벅스 (KR빌딩 1층)</text>
 
   <!-- ============================================================ -->
-  <!-- 범례                                                          -->
+  <!-- 지도 하단 상세 범례 & 주소 명판                                   -->
   <!-- ============================================================ -->
-  <g transform="translate(40, 485)">
-    <rect width="760" height="40" fill="#fff" rx="5" stroke="rgba(0,0,0,0.06)" stroke-width="1"/>
+  <g transform="translate(40, 470)">
+    <rect width="760" height="46" fill="#fff" rx="6" stroke="rgba(0,0,0,0.06)" stroke-width="1.2" filter="url(#sh)"/>
 
-    <circle cx="20" cy="20" r="5" fill="#4CAF50" opacity="0.6"/>
-    <text x="32" y="24" fill="#888" font-size="8">2호선 출구</text>
+    <!-- 지하철 출구 범례 -->
+    <circle cx="24" cy="23" r="5.5" fill="#22B14C" opacity="0.6"/>
+    <text x="35" y="26" fill="#777" font-size="8.5" font-weight="500">2호선 출구</text>
 
-    <circle cx="105" cy="20" r="5" fill="#EF6C00" opacity="0.5"/>
-    <text x="117" y="24" fill="#888" font-size="8">3호선 출구</text>
+    <!-- 추천 출구 범례 -->
+    <circle cx="114" cy="23" r="7.5" fill="#c8a97e"/>
+    <text x="114" y="26" text-anchor="middle" fill="#fff" font-size="7.5" font-weight="700">4</text>
+    <text x="127" y="26" fill="#777" font-size="8.5" font-weight="500">추천 출구</text>
 
-    <circle cx="195" cy="20" r="7" fill="#c8a97e"/>
-    <text x="195" y="23" text-anchor="middle" fill="#fff" font-size="7" font-weight="700">4</text>
-    <text x="210" y="24" fill="#888" font-size="8">추천 출구</text>
+    <!-- 도보선 범례 -->
+    <line x1="205" y1="23" x2="235" y2="23" stroke="#c8a97e" stroke-width="3" stroke-dasharray="6,4"/>
+    <text x="242" y="26" fill="#777" font-size="8.5" font-weight="500">도보 이동 경로</text>
 
-    <line x1="280" y1="20" x2="315" y2="20" stroke="#c8a97e" stroke-width="3" stroke-dasharray="6,4"/>
-    <text x="325" y="24" fill="#888" font-size="8">도보 경로</text>
+    <!-- 하이로 빌딩 범례 -->
+    <rect x="335" y="16" width="13" height="13" fill="#0f1d32" rx="2" stroke="#c8a97e" stroke-width="0.8"/>
+    <text x="355" y="26" fill="#0f1d32" font-size="8.5" font-weight="600">법무법인 하이로 (역삼KR빌딩 15층)</text>
 
-    <rect x="400" y="13" width="12" height="12" fill="#1a1a2e" rx="2"/>
-    <text x="418" y="24" fill="#888" font-size="8">윤정 법률사무소</text>
-
-    <text x="540" y="24" fill="#aaa" font-size="7">서초대로 327, 5층</text>
+    <!-- 상세 주소 안내 -->
+    <text x="590" y="26" fill="#888" font-size="8.5" font-weight="500">서울 강남구 테헤란로 141 (역삼동 642-16) 15층</text>
   </g>
 </svg>

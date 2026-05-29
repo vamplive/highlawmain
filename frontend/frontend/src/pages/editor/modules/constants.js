@@ -39,7 +39,7 @@ export const DOC_STATUS_META = {
 
 /* ── 블로그 카테고리 ── */
 export const BLOG_CATEGORIES = [
-  { value: "construction_realestate", label: "건설부동산 이야기" },
+  { value: "construction_realestate", label: "하이로 뉴스" },
   { value: "case_analysis", label: "판례 분석" },
   { value: "law_guide", label: "법률 가이드" },
 ];

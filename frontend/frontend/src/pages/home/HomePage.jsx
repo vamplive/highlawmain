@@ -9,9 +9,9 @@ import { buildLegalServiceJsonLd } from "../../lib/seo";
 import { HOME_COPY, HOME_DEFAULTS, RESPONSIVE_STYLES } from "./homeTokens";
 import "./home.css";
 import HomeHero from "./HomeHero";
-import HomeSolutionSection from "./HomeSolutionSection";
 import HomePracticeSection from "./HomePracticeSection";
 import HomePeopleSection from "./HomePeopleSection";
+import HomeNewsSection from "./HomeNewsSection";
 import HomeCtaSection from "./HomeCtaSection";
 import Footer from "../../components/layout/Footer";
 
@@ -55,29 +55,46 @@ export default function HomePage() {
     return () => window.removeEventListener("storage", handleStorage);
   }, []);
 
-  // 스냅 컨테이너 스크롤 감지 및 활성 인덱스 업데이트
-  const handleScroll = (e) => {
-    const scrollTop = e.currentTarget.scrollTop;
-    const vh = window.innerHeight || 720;
-    // 50% 넘는 순간 바로 도트와 헤더 반응 전환이 활성화되도록 반올림 적용
-    const index = Math.min(4, Math.max(0, Math.round(scrollTop / vh)));
-    setActiveIndex(index);
-  };
+  // 윈도우 스크롤 감지 및 활성 인덱스 업데이트 (도트 하이라이트 동기화)
+  useEffect(() => {
+    const handleWindowScroll = () => {
+      const sections = document.querySelectorAll(".hp-hero, .hp-section");
+      if (sections.length === 0) return;
+      
+      const scrollPos = window.scrollY + window.innerHeight / 3;
+      let currentIdx = 0;
+      
+      sections.forEach((sec, idx) => {
+        const top = sec.offsetTop;
+        const height = sec.offsetHeight;
+        if (scrollPos >= top && scrollPos < top + height) {
+          currentIdx = idx;
+        }
+      });
+      
+      setActiveIndex(Math.min(4, Math.max(0, currentIdx)));
+    };
 
-  // 특정 섹션으로 부드러운 스냅 스크롤 이동
+    window.addEventListener("scroll", handleWindowScroll, { passive: true });
+    // 초기 감지 실행
+    handleWindowScroll();
+    
+    return () => window.removeEventListener("scroll", handleWindowScroll);
+  }, []);
+
+  // 특정 섹션으로 부드러운 스크롤 이동
   const scrollToSection = (index) => {
-    const container = document.querySelector(".hp-snap-container");
-    if (container) {
-      const vh = window.innerHeight || 720;
-      container.scrollTo({
-        top: index * vh,
+    const sections = document.querySelectorAll(".hp-hero, .hp-section");
+    const target = sections[index];
+    if (target) {
+      target.scrollIntoView({
         behavior: "smooth"
       });
     }
   };
 
   return (
-    <div ref={ref} className="hp-snap-container" onScroll={handleScroll}>
+    <div ref={ref} className="hp-scroll-container">
       <style>{RESPONSIVE_STYLES}</style>
       <Seo
         path="/"
@@ -101,6 +118,7 @@ export default function HomePage() {
       >
         {[0, 1, 2, 3, 4].map((idx) => {
           const isActive = activeIndex === idx;
+          const isDarkSection = activeIndex === 0 || activeIndex === 4;
           return (
             <button
               key={idx}
@@ -110,11 +128,21 @@ export default function HomePage() {
                 width: isActive ? "12px" : "8px",
                 height: isActive ? "12px" : "8px",
                 borderRadius: "50%",
-                background: isActive ? "var(--accent-gold)" : "rgba(255, 255, 255, 0.4)",
-                border: "none",
+                background: isActive
+                  ? "var(--accent-gold)"
+                  : isDarkSection
+                    ? "rgba(255, 255, 255, 0.45)"
+                    : "rgba(10, 22, 40, 0.35)",
+                border: isActive
+                  ? "1px solid var(--accent-gold)"
+                  : isDarkSection
+                    ? "1px solid rgba(255, 255, 255, 0.15)"
+                    : "1px solid rgba(10, 22, 40, 0.15)",
                 cursor: "pointer",
                 transition: "all 0.3s ease",
-                boxShadow: isActive ? "0 0 10px var(--accent-gold)" : "none",
+                boxShadow: isActive
+                  ? (isDarkSection ? "0 0 10px var(--accent-gold)" : "0 0 8px rgba(197, 168, 128, 0.6)")
+                  : "none",
                 padding: 0,
                 marginLeft: isActive ? "0px" : "2px",
               }}
@@ -124,9 +152,9 @@ export default function HomePage() {
       </div>
 
       <HomeHero heroVideo={heroVideo} settings={settings} copy={copy} />
-      <HomeSolutionSection lang={lang} copy={copy} />
       <HomePeopleSection copy={copy} />
       <HomePracticeSection lang={lang} copy={copy} />
+      <HomeNewsSection />
       <HomeCtaSection copy={copy} />
       
       {/* 푸터 스냅 락을 차단하기 위해 스냅 컨테이너의 일부로 최하단 푸터 배치 */}

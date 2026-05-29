@@ -40,10 +40,18 @@ export const MAP_TABS = [
 
 /** 상담 분야 옵션 */
 export const CONSULTATION_CATEGORIES = [
-  { value: "illegal-dispatch", label: "불법파견" },
-  { value: "game-fraud", label: "게임사기" },
-  { value: "labor", label: "노동" },
-  { value: "military", label: "군사건" },
+  { value: "civil", label: "민사" },
+  { value: "criminal", label: "형사" },
+  { value: "labor", label: "인사노무" },
+  { value: "serious-accident", label: "중대재해" },
+  { value: "corporate", label: "기업" },
+  { value: "defense", label: "방산" },
+  { value: "military-criminal", label: "군형사" },
+  { value: "entertainment", label: "엔터테인먼트" },
+  { value: "administrative", label: "행정" },
+  { value: "family", label: "가사 및 상속" },
+  { value: "intellectual-property", label: "지적재산권" },
+  { value: "immigration", label: "이민" },
   { value: "other", label: "기타" },
 ];
 
@@ -78,7 +86,7 @@ export const INITIAL_FORM = {
   name: "",
   phone: "",
   email: "",
-  category: "illegal-dispatch",
+  category: "civil",
   message: "",
   meetingType: "in_person",
   scheduleMode: "slot",
@@ -97,7 +105,7 @@ export const FAQ_ITEMS = [
   { q: "상담 예약은 어떻게 하나요?", a: "카카오톡 또는 위 상담 신청 폼을 통해 예약하실 수 있습니다. 예약 상담이 우선 진행됩니다." },
   { q: "방문 상담이 가능한가요?", a: "네, 서울특별시 강남구 테헤란로 141, 15층 사무소에서 직접 상담이 가능합니다. 사전 예약을 권장드립니다." },
   { q: "상담 후 수임이 필수인가요?", a: "아닙니다. 상담을 통해 사건의 방향성을 파악하신 후 자유롭게 결정하실 수 있습니다." },
-  { q: "어떤 분야를 전문으로 하나요?", a: "불법파견·게임사기·노동·군사건의 4개 특수 분야에 집중하여 실무 경험을 축적해 왔습니다." },
+  { q: "어떤 분야를 전문으로 하나요?", a: "민사, 형사, 인사노무, 중대재해, 기업, 방산, 군형사, 엔터테인먼트, 행정, 가사 및 상속, 지적재산권, 이민을 비롯한 주요 분야에 대해 검증된 실무 역량과 정교한 법리 해석을 토대로 최적의 법률 솔루션을 제공합니다." },
   { q: "비밀이 보장되나요?", a: "변호사법에 따라 상담 내용은 철저히 비밀이 보장됩니다. 모든 정보는 안전하게 관리됩니다." },
 ];
 

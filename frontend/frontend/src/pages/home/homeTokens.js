@@ -23,10 +23,12 @@ export const F = {
 };
 
 export const PRACTICE_AREAS = [
-  { ko: "불법파견", en: "Illegal Dispatch", to: "/practice/illegal-dispatch", desc: "위장도급·파견법 위반·직접고용 청구·차별시정", descEn: "Disguised contracting, dispatch-law violations, direct-hire claims, anti-discrimination remedies" },
-  { ko: "게임사기", en: "Game Fraud", to: "/practice/game-fraud", desc: "아이템 거래 사기·계정 도용·게임머니 편취·운영사 제재", descEn: "Item-trade fraud, account theft, in-game currency embezzlement, operator sanctions" },
-  { ko: "노동", en: "Labor Law", to: "/practice/labor", desc: "임금체불·부당해고·산업재해·직장 내 괴롭힘", descEn: "Wage claims, wrongful dismissal, industrial accidents, workplace harassment" },
-  { ko: "군사건", en: "Military Cases", to: "/practice/military", desc: "군형사·군징계·국가배상·병역 분쟁", descEn: "Military criminal cases, disciplinary appeals, state-compensation and service disputes" },
+  { ko: "게임사기", en: "Game Fraud", to: "/practice/game-fraud", desc: "아이템 거래 사기·계정 도용·게임머니 편취·운영사 부당 제재 등 디지털 증거를 활용하여 형사·민사상 피해를 신속히 구제합니다.", descEn: "We recover damages from item fraud, account theft, in-game currency scams, and unjust operator sanctions through digital evidence." },
+  { ko: "불법파견", en: "Illegal Dispatch", to: "/practice/illegal-dispatch", desc: "위장도급·파견법 위반·근로자지위확인 소송 및 차별시정 절차를 통해 비정규직 근로자의 정당한 직접고용 권리를 대변합니다.", descEn: "We represent irregular workers to secure direct employment rights through dispatch law litigation and anti-discrimination remedies." },
+  { ko: "인사노무", en: "Labor & HR", to: "/practice/labor", desc: "임금체불·부당해고·산업재해 및 직장 내 괴롭힘 등 다양한 노사 분쟁에서 근로기준법을 바탕으로 최선의 해법을 도출합니다.", descEn: "We resolve complex labor-management disputes including unpaid wages, unfair dismissal, and workplace harassment under labor laws." },
+  { ko: "군형사", en: "Military Criminal", to: "/practice/military-criminal", desc: "군사경찰·군검찰 수사 및 보통군사법원 재판 단계에서 군 법무관 출신 변호사가 동행하여 피의자의 방어권을 적극 보호합니다.", descEn: "Our former military prosecutors defend soldiers and military employees in military police, prosecution, and military court trials." },
+  { ko: "중대재해", en: "Serious Accidents", to: "/practice/serious-accident", desc: "중대재해처벌법 및 산업안전보건법에 따른 형사책임 예방 조치와 사고 발생 시 신속한 수사 대응으로 기업의 리스크를 방어합니다.", descEn: "We defend corporate and executive liability against serious accident penalties and industrial safety violations." },
+  { ko: "형사", en: "Criminal Law", to: "/practice/criminal", desc: "수사 단계부터 공판에 이르기까지 피의자·피고인의 권리를 철저히 옹호하며, 구속영장 청구 및 형사 절차 전반에 신속 대응합니다.", descEn: "We defend rights from investigation to trial, responding swiftly to warrants and criminal procedures." },
 ];
 
 export const SOLUTION_CARDS = [
@@ -46,7 +48,7 @@ export const HOME_COPY = {
     solutionDescription: "절차와 판례를 깊이 이해하는 변호사가 직접 사건을 다룹니다",
     practiceKicker: "Practice Areas",
     practiceTitle: "업무분야",
-    peopleKicker: "Our Lawyers",
+    peopleKicker: "Partners",
     peopleTitle: "구성원 소개",
     ctaTitle: "지금 바로 전문 변호사와 상담하세요",
     ctaDescription: "불법파견·게임사기·노동·군사건—초기 대응이 결과를 결정합니다.",
@@ -62,7 +64,7 @@ export const HOME_COPY = {
     solutionDescription: "Attorneys who actually understand the procedures and precedents in each specialized field",
     practiceKicker: "Practice Areas",
     practiceTitle: "Practice Areas",
-    peopleKicker: "Our Lawyers",
+    peopleKicker: "Partners",
     peopleTitle: "Our Lawyers",
     ctaTitle: "Speak Directly With a Specialist Attorney",
     ctaDescription: "Illegal dispatch, game fraud, labor, military cases — early response shapes the outcome.",
@@ -89,16 +91,11 @@ export const HOME_DEFAULTS = {
 
 export const RESPONSIVE_STYLES = `
   .hp-section {
-    height: 100vh;
-    min-height: 720px;
-    scroll-snap-align: start;
-    scroll-snap-stop: always;
     display: flex;
     align-items: center;
     justify-content: center;
     box-sizing: border-box;
-    padding: 64px 48px;
-    overflow: hidden;
+    padding: 100px 48px;
   }
   .hp-section-inner {
     width: 100%;
@@ -155,9 +152,8 @@ export const RESPONSIVE_STYLES = `
 
   @media (max-width: 768px) {
     .hp-section {
-      height: 100vh;
-      min-height: 560px;
-      padding: 40px 20px;
+      min-height: auto;
+      padding: 80px 20px;
     }
     .hp-scroll-indicator { display: none !important; }
   }

@@ -50,6 +50,23 @@ export default function HomePeopleSection({ copy }) {
             현재 기본 프로필 정보를 표시하고 있습니다.
           </p>
         )}
+
+        <div style={{ textAlign: "center", marginTop: "48px" }}>
+          <Link
+            to="/lawyers"
+            className="hp-hero-button hp-hero-button-secondary"
+            style={{
+              borderColor: "var(--accent-gold)",
+              color: "var(--accent-gold)",
+              background: "transparent",
+              fontSize: "14px",
+              padding: "12px 32px",
+              minHeight: "44px",
+            }}
+          >
+            구성원 전체보기 →
+          </Link>
+        </div>
       </div>
     </section>
   );

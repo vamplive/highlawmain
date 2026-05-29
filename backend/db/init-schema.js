@@ -1226,5 +1226,29 @@ module.exports = {
   try { sqlite.exec("ALTER TABLE receipts ADD COLUMN card_first4 TEXT"); } catch (e) { warnMigrationSkip(e); }
   try { sqlite.exec("CREATE INDEX IF NOT EXISTS idx_payment_cards_first4 ON payment_cards(first4)"); } catch (e) { warnMigrationSkip(e); }
 
+  // recruit_posts — 채용 공고
+  try {
+    sqlite.exec(`
+      CREATE TABLE IF NOT EXISTS recruit_posts (
+        id TEXT PRIMARY KEY,
+        category TEXT NOT NULL DEFAULT 'new_lawyer',
+        title TEXT NOT NULL,
+        description TEXT,
+        requirements TEXT,
+        benefits TEXT,
+        application_deadline TEXT,
+        application_file_url TEXT,
+        application_file_name TEXT,
+        status TEXT NOT NULL DEFAULT 'open',
+        is_published INTEGER NOT NULL DEFAULT 0,
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+      CREATE INDEX IF NOT EXISTS idx_recruit_posts_category ON recruit_posts(category);
+      CREATE INDEX IF NOT EXISTS idx_recruit_posts_is_published ON recruit_posts(is_published);
+    `);
+  } catch (e) { warnMigrationSkip(e); }
+
   },
 };

@@ -18,6 +18,23 @@ export default function HomePracticeSection({ lang = "ko", copy }) {
             <PracticeCard key={area.en} area={area} isEnglish={isEnglish} />
           ))}
         </div>
+
+        <div style={{ textAlign: "center", marginTop: "48px" }}>
+          <Link
+            to="/practice"
+            className="hp-hero-button hp-hero-button-secondary"
+            style={{
+              borderColor: "var(--accent-gold)",
+              color: "var(--accent-gold)",
+              background: "transparent",
+              fontSize: "14px",
+              padding: "12px 32px",
+              minHeight: "44px",
+            }}
+          >
+            업무분야 전체보기 →
+          </Link>
+        </div>
       </div>
     </section>
   );
