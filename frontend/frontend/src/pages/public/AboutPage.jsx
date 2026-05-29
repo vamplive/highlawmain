@@ -1,5 +1,6 @@
 /** 사무소 소개 페이지 — 법무법인 하이로 개요, 핵심 가치, 연혁, 인사말, 공익활동, 오시는 길 */
 import { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { Handshake, Scale, Landmark, Lightbulb } from "lucide-react";
 import useReveal from "../../hooks/useReveal";
 import { useSiteSettingsPage } from "../../hooks/useSiteSettings";
@@ -60,21 +61,60 @@ const TABS = [
 ];
 
 export default function AboutPage() {
-  const [activeTab, setActiveTab] = useState("greetings");
+  const location = useLocation();
+  const pathPart = location.pathname.split("/").pop();
+  const activeTab = ["greetings", "values", "directions", "probono", "history"].includes(pathPart) ? pathPart : "greetings";
+
   const ref = useReveal();
   const { settings } = useSiteSettingsPage("about", ABOUT_DEFAULTS);
+
+  const seoConfig = {
+    greetings: {
+      title: "인사말 | 법무법인 하이로",
+      description: "법무법인 하이로 대표변호사의 인사말. Loyalty, Dignity, Integrity를 핵심 가치로 삼아 하이엔드 서비스를 제공합니다.",
+      path: "/about/greetings",
+      breadcrumbName: "인사말"
+    },
+    values: {
+      title: "핵심가치 | 법무법인 하이로",
+      description: "신뢰, 전문성, 헌신, 혁신. 법무법인 하이로의 4대 약속과 로펌 철학을 소개합니다.",
+      path: "/about/values",
+      breadcrumbName: "핵심가치"
+    },
+    directions: {
+      title: "오시는 길 | 법무법인 하이로",
+      description: "법무법인 하이로 서울 오피스 찾아오시는 길. 역삼역 4번 출구 도보 1분거리, 주차 및 대중교통 안내.",
+      path: "/about/directions",
+      breadcrumbName: "오시는 길"
+    },
+    probono: {
+      title: "공익활동 | 법무법인 하이로",
+      description: "사회적 책임과 온기를 채우는 하이로의 공익 활동. 군장병 권익 보호, 비정규직 노동자 법률 구조 등 실천 사례.",
+      path: "/about/probono",
+      breadcrumbName: "공익활동"
+    },
+    history: {
+      title: "연혁 | 법무법인 하이로",
+      description: "법무법인 하이로의 발자취와 주요 역사. 설립부터 오피스 확장 및 최고 파트너십 구축 과정.",
+      path: "/about/history",
+      breadcrumbName: "연혁"
+    }
+  };
+
+  const activeSeo = seoConfig[activeTab] || seoConfig.greetings;
 
   return (
     <div ref={ref}>
       <Seo
-        path="/about"
-        title="사무소 소개"
-        description="법무법인 하이로의 핵심 가치 — 신뢰·전문성·헌신·혁신. 불법파견·게임사기·노동·군사건 특수 분야에 집중하는 로펌입니다."
+        path={activeSeo.path}
+        title={activeSeo.title}
+        description={activeSeo.description}
         jsonLd={[
           buildLegalServiceJsonLd(),
           buildBreadcrumbJsonLd([
             { name: "홈", path: "/" },
             { name: "사무소 소개", path: "/about" },
+            { name: activeSeo.breadcrumbName, path: activeSeo.path },
           ]),
         ]}
       />
@@ -109,10 +149,11 @@ export default function AboutPage() {
           <div style={{ display: "flex", justifyContent: "space-between", overflowX: "auto", whiteSpace: "nowrap" }} className="lp-tab-scroll">
             {TABS.map((tab) => {
               const isActive = activeTab === tab.id;
+              const targetPath = tab.id === "greetings" ? "/about" : `/about/${tab.id}`;
               return (
-                <button
+                <Link
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
+                  to={targetPath}
                   style={{
                     flex: 1,
                     background: "none",
@@ -121,7 +162,9 @@ export default function AboutPage() {
                     cursor: "pointer",
                     textAlign: "center",
                     position: "relative",
+                    textDecoration: "none",
                     transition: "all 0.3s ease",
+                    display: "block",
                   }}
                   aria-selected={isActive}
                   role="tab"
@@ -149,7 +192,7 @@ export default function AboutPage() {
                       }}
                     />
                   )}
-                </button>
+                </Link>
               );
             })}
           </div>

@@ -207,6 +207,11 @@ export default function App() {
         <Route element={<Layout />}>
           <Route path="/" element={<ErrorBoundary><HomePage /></ErrorBoundary>} />
           <Route path="/about" element={<ErrorBoundary><LazyRoute><AboutPage /></LazyRoute></ErrorBoundary>} />
+          <Route path="/about/greetings" element={<ErrorBoundary><LazyRoute><AboutPage /></LazyRoute></ErrorBoundary>} />
+          <Route path="/about/values" element={<ErrorBoundary><LazyRoute><AboutPage /></LazyRoute></ErrorBoundary>} />
+          <Route path="/about/directions" element={<ErrorBoundary><LazyRoute><AboutPage /></LazyRoute></ErrorBoundary>} />
+          <Route path="/about/probono" element={<ErrorBoundary><LazyRoute><AboutPage /></LazyRoute></ErrorBoundary>} />
+          <Route path="/about/history" element={<ErrorBoundary><LazyRoute><AboutPage /></LazyRoute></ErrorBoundary>} />
           <Route path="/practice" element={<ErrorBoundary><LazyRoute><PracticePage /></LazyRoute></ErrorBoundary>} />
           {/* 구버전 경로 호환 — 신규 분야로 리다이렉트 (구체 경로가 동적 라우트보다 우선) */}
           <Route path="/practice/construction" element={<Navigate to="/practice/illegal-dispatch" replace />} />

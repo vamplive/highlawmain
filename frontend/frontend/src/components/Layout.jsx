@@ -22,8 +22,17 @@ export default function Layout() {
 
   const isHome = pathname === "/";
   const isLawyerDetail = pathname.startsWith("/lawyers/");
-  const isAbout = pathname === "/about";
-  const heroTop = (isHome || isLawyerDetail || isAbout) && !scrolled && !menuOpen;
+  const isAbout = pathname === "/about" || pathname.startsWith("/about/");
+  const isPractice = pathname === "/practice" || pathname.startsWith("/practice/");
+  const isLawyers = pathname === "/lawyers";
+  const isBlog = pathname === "/blog" || pathname.startsWith("/blog/");
+  const isReviews = pathname === "/reviews";
+  const isQna = pathname === "/qna" || pathname.startsWith("/qna/");
+  const isConsultation = pathname === "/consultation";
+  const isLectures = pathname.startsWith("/lectures/");
+
+  const hasDarkHero = isHome || isLawyerDetail || isAbout || isPractice || isLawyers || isBlog || isReviews || isQna || isConsultation || isLectures;
+  const heroTop = hasDarkHero && !scrolled && !menuOpen;
 
   // 라우트 변경 시 메뉴 닫고 페이지 최상단으로 스크롤
   useEffect(() => {
