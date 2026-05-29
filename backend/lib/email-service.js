@@ -37,7 +37,7 @@ async function sendEmail(to, subject, html) {
   try {
     // UTF-8 인코딩 명시하여 한글 깨짐 방지
     const info = await getTransporter().sendMail({
-      from: `=?UTF-8?B?${Buffer.from("윤정 법률사무소").toString("base64")}?= <${GMAIL_USER}>`,
+      from: `=?UTF-8?B?${Buffer.from("법무법인 하이로").toString("base64")}?= <${GMAIL_USER}>`,
       to,
       subject,
       html,

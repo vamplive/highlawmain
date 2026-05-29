@@ -1,8 +1,8 @@
 {
-  "name": "yjlaw-backend",
+  "name": "highlaw-backend",
   "version": "1.0.0",
   "private": true,
-  "description": "윤정 법률사무소 백엔드 — Express 5 + SQLite(better-sqlite3) + Drizzle ORM + FTS5",
+  "description": "법무법인 하이로 백엔드 — Express 5 + SQLite(better-sqlite3) + Drizzle ORM + FTS5",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
@@ -17,7 +17,7 @@
     "sqlite",
     "drizzle"
   ],
-  "author": "Younjeong Law Office",
+  "author": "Highlaw Law Firm",
   "license": "UNLICENSED",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.92.0",

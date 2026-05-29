@@ -165,7 +165,7 @@ router.post("/forgot-password", async (req, res) => {
     const appUrl = process.env.APP_URL || "http://localhost:5173";
     const resetUrl = `${appUrl.replace(/\/+$/, "")}/admin/reset-password?token=${encodeURIComponent(rawToken)}`;
 
-    const subject = "[윤정 법률사무소] 관리자 비밀번호 재설정 안내";
+    const subject = "[법무법인 하이로] 관리자 비밀번호 재설정 안내";
     const html = `
       <div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
         <h2 style="color: #1a1a1a; margin: 0 0 16px;">비밀번호 재설정</h2>

@@ -517,7 +517,7 @@ async function notifyPartiesOnComplete(contractId) {
     // 각 파티의 최신 초대 토큰 찾기 (상대방용 다운로드 링크 생성)
     const inv = sqlite.prepare("SELECT token FROM invitations WHERE target_ref = ? ORDER BY created_at DESC LIMIT 1").get(p.id);
     const downloadUrl = inv ? `${PUBLIC_BASE_URL}/api/public/sign/${inv.token}/download-pdf` : null;
-    const subject = `[윤정 법률사무소] ${contract.title} 서명 완료 안내`;
+    const subject = `[법무법인 하이로] ${contract.title} 서명 완료 안내`;
     const html = `
       <div style="font-family:system-ui,-apple-system,sans-serif;max-width:560px;margin:0 auto;padding:28px 22px;color:#222">
         <h2 style="color:#b08d57">${contract.title}</h2>
@@ -531,7 +531,7 @@ async function notifyPartiesOnComplete(contractId) {
       await sendEmail(p.email, subject, html).catch(() => {});
     }
     if (p.phone_number) {
-      await sendSMS(p.phone_number, `[윤정 법률사무소] ${contract.title} 전자서명이 완료되었습니다.${downloadUrl ? " " + downloadUrl : ""}`).catch(() => {});
+      await sendSMS(p.phone_number, `[법무법인 하이로] ${contract.title} 전자서명이 완료되었습니다.${downloadUrl ? " " + downloadUrl : ""}`).catch(() => {});
     }
   }
 }

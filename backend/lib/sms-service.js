@@ -102,7 +102,7 @@ async function sendSMS(to, text, options = {}) {
   form.append("msg_type", msgType);
   form.append("testmode_yn", config.testMode);
   if (msgType === "LMS") {
-    form.append("title", (options.title || "윤정 법률사무소").slice(0, 30));
+    form.append("title", (options.title || "법무법인 하이로").slice(0, 30));
   }
 
   const controller = new AbortController();

@@ -114,7 +114,7 @@ async function requestOtp(opts) {
     challengeHash, expiresAt, MAX_ATTEMPTS, ip, ua,
   );
 
-  const text = `[법무법인 윤정] 서명 인증번호: ${code} (3분 유효)`;
+  const text = `[법무법인 하이로] 서명 인증번호: ${code} (3분 유효)`;
 
   if (dryRun) {
     return { verificationId: id, expiresAt: Date.now() + OTP_TTL_MS, sentTo: `***-${last4}`, devCode: code };
