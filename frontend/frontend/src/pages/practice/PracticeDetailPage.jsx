@@ -141,7 +141,7 @@ export default function PracticeDetailPage() {
         title={data.headline}
         description={data.description}
         primaryAction={{ to: "/consultation", label: "상담 예약", icon: <Phone size={15} /> }}
-        secondaryAction={{ href: "tel:02-XXX-XXXX", label: "02-XXX-XXXX" }}
+        secondaryAction={{ href: "tel:02-6925-6757", label: "02-6925-6757" }}
       />
 
       {/* ━━━ 의뢰인 고민 ━━━ */}
@@ -207,8 +207,8 @@ export default function PracticeDetailPage() {
             <Link to="/consultation" className="inline-flex items-center gap-2 transition-all duration-300 hover:opacity-90" style={{ background: "var(--accent-gold)", color: "#fff", padding: "16px 40px", fontSize: 15, fontWeight: 600 }}>
               <Phone size={16} /> 지금 상담 예약 <ArrowRight size={14} />
             </Link>
-            <a href="tel:02-XXX-XXXX" className="inline-flex items-center gap-2" style={{ border: "1px solid var(--white-15)", color: "var(--white-40)", padding: "16px 40px", fontSize: 15 }}>
-              02-XXX-XXXX
+            <a href="tel:02-6925-6757" className="inline-flex items-center gap-2" style={{ border: "1px solid var(--white-15)", color: "var(--white-40)", padding: "16px 40px", fontSize: 15 }}>
+              02-6925-6757
             </a>
           </div>
         </div>

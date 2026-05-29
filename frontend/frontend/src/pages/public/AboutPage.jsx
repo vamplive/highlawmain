@@ -238,7 +238,7 @@ export default function AboutPage() {
             <div className="tab-content-active" key="values">
               <SectionHeading
                 eyebrow="OUR PHILOSOPHY"
-                title="결과와 신뢰를 모두 지켜내기 위한 하이로의 4대 약속"
+                title="하이로의 철학"
               />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 stagger" style={{ marginBottom: 40 }}>
                 {settings.values.items.map((v, i) => {
@@ -269,49 +269,70 @@ export default function AboutPage() {
               
               {/* 세련된 위치 지도 카드 */}
               <SurfaceCard style={{ padding: 0, overflow: "hidden", marginBottom: 36 }}>
-                <div 
-                  style={{ 
-                    height: 300, 
-                    background: "linear-gradient(135deg, #eef1f6 0%, #d5dde6 100%)", 
-                    display: "flex", 
-                    flexDirection: "column", 
-                    alignItems: "center", 
-                    justifyContent: "center", 
-                    position: "relative",
-                    borderBottom: "1px solid var(--border-subtle)"
-                  }}
-                >
-                  <div style={{ position: "absolute", inset: 0, opacity: 0.15, background: "radial-gradient(circle, #0b1f3a 1px, transparent 1px)", backgroundSize: "20px 20px" }} />
-                  
-                  <div style={{ position: "relative", zIndex: 1, textAlign: "center" }}>
-                    <div style={{ display: "inline-flex", width: 56, height: 56, borderRadius: "50%", background: "#fff", boxShadow: "0 4px 15px rgba(0,0,0,0.1)", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent-gold)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
-                        <circle cx="12" cy="10" r="3"/>
-                      </svg>
-                    </div>
-                    <h4 style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)" }}>법무법인 하이로</h4>
-                    <p style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 4 }}>서울 강남구 테헤란로 141, 세일빌딩 15층</p>
-                  </div>
-                  
-                  <div style={{ position: "absolute", bottom: 16, display: "flex", gap: 8, zIndex: 2 }}>
-                    <a 
-                      href="https://map.kakao.com/?q=%EC%84%9C%EC%9A%B8%20%EA%B0%95%EB%82%A8%EA%B5%AC%20%ED%85%8C%ED%97%A4%EB%9E%80%EB%A1%9C%20141" 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      style={{ background: "#FEE500", color: "#191919", fontSize: 11, fontWeight: 600, padding: "8px 16px", borderRadius: 20, textDecoration: "none", boxShadow: "0 2px 8px rgba(0,0,0,0.15)", display: "flex", alignItems: "center", gap: 6 }}
-                    >
-                      카카오맵 길찾기
-                    </a>
-                    <a 
-                      href="https://map.naver.com/v5/search/%EC%84%9C%EC%9A%B8%20%EA%B0%95%EB%82%A8%EA%B5%AC%20%ED%85%8C%ED%97%A4%EB%9E%80%EB%A1%9C%20141" 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      style={{ background: "#03C75A", color: "#fff", fontSize: 11, fontWeight: 600, padding: "8px 16px", borderRadius: 20, textDecoration: "none", boxShadow: "0 2px 8px rgba(0,0,0,0.15)", display: "flex", alignItems: "center", gap: 6 }}
-                    >
-                      네이버지도 길찾기
-                    </a>
-                  </div>
+                <div style={{ width: "100%", height: 360, position: "relative", borderBottom: "1px solid var(--border-subtle)" }}>
+                  <iframe 
+                    src="https://m.map.naver.com/menu/bmarker.naver?lng=127.0364&lat=37.5006&title=%EB%B2%95%EB%AC%B5%EB%B2%95%EC%9D%B8%20%ED%95%98%EC%9D%B4%EB%A1%9C" 
+                    title="네이버 지도 - 법무법인 하이로"
+                    width="100%" 
+                    height="100%" 
+                    style={{ border: 0 }} 
+                    allowFullScreen="" 
+                    loading="lazy"
+                  />
+                </div>
+                
+                {/* 길찾기 버튼 영역 */}
+                <div style={{ display: "flex", gap: 12, justifyContent: "center", padding: "20px 28px", borderBottom: "1px solid var(--border-subtle)", background: "#fbfbfc" }}>
+                  <a 
+                    href="https://map.naver.com/v5/search/%EB%B2%95%EB%AC%B5%EB%B2%95%EC%9D%B8%20%ED%95%98%EC%9D%B4%EB%A1%9C" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    style={{ 
+                      background: "#03C75A", 
+                      color: "#fff", 
+                      fontSize: 13, 
+                      fontWeight: 600, 
+                      padding: "10px 24px", 
+                      borderRadius: 6, 
+                      textDecoration: "none", 
+                      boxShadow: "0 2px 8px rgba(3,199,90,0.2)", 
+                      display: "flex", 
+                      alignItems: "center", 
+                      gap: 8,
+                      transition: "all 0.2s"
+                    }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+                      <circle cx="12" cy="10" r="3"/>
+                    </svg>
+                    네이버지도 길찾기
+                  </a>
+                  <a 
+                    href="https://map.kakao.com/?q=%EB%B2%95%EB%AC%B5%EB%B2%95%EC%9D%B8%20%ED%95%98%EC%9D%B4%EB%A1%9C" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    style={{ 
+                      background: "#FEE500", 
+                      color: "#191919", 
+                      fontSize: 13, 
+                      fontWeight: 600, 
+                      padding: "10px 24px", 
+                      borderRadius: 6, 
+                      textDecoration: "none", 
+                      boxShadow: "0 2px 8px rgba(254,229,0,0.15)", 
+                      display: "flex", 
+                      alignItems: "center", 
+                      gap: 8,
+                      transition: "all 0.2s"
+                    }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+                      <circle cx="12" cy="10" r="3"/>
+                    </svg>
+                    카카오맵 길찾기
+                  </a>
                 </div>
 
                 <div style={{ padding: "32px 28px" }}>
@@ -320,14 +341,14 @@ export default function AboutPage() {
                       <div>
                         <h5 style={{ fontSize: 13, color: "var(--accent-gold)", fontWeight: 600, letterSpacing: "0.08em", marginBottom: 6 }}>주소</h5>
                         <p style={{ fontSize: 14, color: "var(--text-secondary)", fontWeight: 300, lineHeight: 1.6 }}>
-                          서울특별시 강남구 테헤란로 141 (세일빌딩) 15층 <br />
+                          서울특별시 강남구 테헤란로 141 (역삼KR빌딩) 15층 <br />
                           <span style={{ fontSize: 12, color: "var(--gray-400)" }}>(우편번호: 06132)</span>
                         </p>
                       </div>
                       <div>
                         <h5 style={{ fontSize: 13, color: "var(--accent-gold)", fontWeight: 600, letterSpacing: "0.08em", marginBottom: 6 }}>지하철 이용 시</h5>
                         <p style={{ fontSize: 14, color: "var(--text-secondary)", fontWeight: 300, lineHeight: 1.6 }}>
-                          <strong>2호선 역삼역 4번 출구</strong>에서 선릉역 방향으로 도보 1~2분 (약 100m 직진 후 1층에 스타벅스가 있는 세일빌딩 15층입니다.)
+                          <strong>2호선 역삼역 4번 출구</strong>에서 선릉역 방향으로 도보 1~2분 (약 100m 직진 후 1층에 스타벅스가 있는 역삼KR빌딩 15층입니다.)
                         </p>
                       </div>
                       <div>
@@ -427,7 +448,7 @@ export default function AboutPage() {
                   {
                     year: "2025",
                     title: "서울 강남 오피스 확장 이전",
-                    desc: "서울특별시 강남구 테헤란로 141 (세일빌딩) 15층으로 오피스를 확장 이전하여, 불법파견 및 게임사기 관련 주요 거점 의뢰인들과 소통할 수 있는 프리미엄 컨설팅 룸과 인프라를 확충하였습니다."
+                    desc: "서울특별시 강남구 테헤란로 141 (역삼KR빌딩) 15층으로 오피스를 확장 이전하여, 불법파견 및 게임사기 관련 주요 거점 의뢰인들과 소통할 수 있는 프리미엄 컨설팅 룸과 인프라를 확충하였습니다."
                   },
                   {
                     year: "2024",

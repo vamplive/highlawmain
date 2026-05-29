@@ -102,7 +102,7 @@ export default function LawyersPage() {
         ]}
       />
       <PublicHero
-        eyebrow="OUR LAWYERS"
+        eyebrow="PROFESSIONALS"
         title="변호사 소개"
         description={"각 분야 변호사의 실무 경험을 기반으로\n사건 초기부터 종결까지 체계적으로 대응합니다"}
       />

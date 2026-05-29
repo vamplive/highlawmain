@@ -114,7 +114,7 @@ export default function PracticePage() {
         title="특수 분야, 결과로 증명합니다"
         description={"불법파견·게임사기·노동·군사건만 깊이 파고든 전문성으로\n의뢰인의 권리와 이익을 끝까지 지켜드립니다"}
         primaryAction={{ to: "/consultation", label: "상담 예약", icon: <Phone size={15} /> }}
-        secondaryAction={{ href: "tel:02-XXX-XXXX", label: "02-XXX-XXXX" }}
+        secondaryAction={{ href: "tel:02-6925-6757", label: "02-6925-6757" }}
       />
 
       {/* ━━━ 4대 분야 임팩트 ━━━ */}
@@ -232,8 +232,8 @@ export default function PracticePage() {
             <Link to="/consultation" className="inline-flex items-center gap-2 transition-all duration-300 hover:opacity-90" style={{ background: "var(--accent-gold)", color: "#fff", padding: "16px 40px", fontSize: 15, fontWeight: 600 }}>
               <Phone size={16} /> 지금 상담 예약하기
             </Link>
-            <a href="tel:02-XXX-XXXX" className="inline-flex items-center gap-2 transition-all duration-300 hover:border-[var(--accent-gold)] hover:text-[var(--accent-gold)]" style={{ border: "1px solid var(--white-15)", color: "var(--white-40)", padding: "16px 40px", fontSize: 15 }}>
-              02-XXX-XXXX
+            <a href="tel:02-6925-6757" className="inline-flex items-center gap-2 transition-all duration-300 hover:border-[var(--accent-gold)] hover:text-[var(--accent-gold)]" style={{ border: "1px solid var(--white-15)", color: "var(--white-40)", padding: "16px 40px", fontSize: 15 }}>
+              02-6925-6757
             </a>
           </div>
         </div>
