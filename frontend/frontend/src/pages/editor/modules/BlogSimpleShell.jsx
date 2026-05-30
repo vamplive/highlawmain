@@ -10,6 +10,7 @@
  * "Word 스타일" 버튼으로 기존 EditorShell 로 폴백한다.
  */
 import { useState, useRef } from "react";
+import LogoCanvas from "../../../components/layout/LogoCanvas";
 import { EditorContent } from "@tiptap/react";
 import {
   Save, Eye, Send, MoreVertical,
@@ -218,8 +219,11 @@ export default function BlogSimpleShell({
         }}>
           <span style={{
             display: "inline-flex", alignItems: "center", justifyContent: "center",
-            width: 32, height: 32, borderRadius: 8, background: "#1a3a6b", color: "#fff", fontSize: 14,
-          }}>YJ</span>
+            width: 32, height: 32, borderRadius: 8, background: "rgba(26,58,107,0.08)",
+            border: "1px solid rgba(26,58,107,0.15)", padding: 5,
+          }}>
+            <LogoCanvas size={20} color="#1a3a6b" />
+          </span>
           <span>blog</span>
         </div>
         <span style={{ flex: 1 }} />

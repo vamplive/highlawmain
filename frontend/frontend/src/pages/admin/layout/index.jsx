@@ -162,6 +162,7 @@ function Icon({ name, size = 18 }) {
 
 import MobileBottomNav from "./MobileBottomNav";
 import "../../../components/admin/mobile.css";
+import LogoCanvas from "../../../components/layout/LogoCanvas";
 
 export default function AdminLayout({ onLogout, children }) {
   const [collapsed, setCollapsed] = useState(false);
@@ -218,17 +219,15 @@ export default function AdminLayout({ onLogout, children }) {
           borderBottom: `1px solid ${THEME.sidebarBorder}`,
           minHeight: 80,
         }}>
-          {/* 로고 마크 — 골드 악센트 */}
+          {/* 로고 마크 — 홈페이지 LogoCanvas */}
           <div style={{
             width: 36, height: 36, borderRadius: 8,
             background: THEME.accentDim,
-            border: `1px solid rgba(79,70,229,0.15)`,
+            border: `1px solid rgba(26,58,107,0.15)`,
             display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 13, fontWeight: 700, color: THEME.accent,
-            fontFamily: "'Georgia', serif", letterSpacing: "0.08em",
-            flexShrink: 0,
+            flexShrink: 0, padding: 5,
           }}>
-            YJ
+            <LogoCanvas size={22} color={THEME.accent} />
           </div>
           {(!collapsed || isMobile) && (
             <div style={{ lineHeight: 1.3, overflow: "hidden" }}>
