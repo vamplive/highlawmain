@@ -62,11 +62,7 @@ function PostModal({ post, onClose, onSaved }) {
     }
     setUploading(true);
     try {
-      const fd = new FormData();
-      fd.append("file", file);
-      const res = await fetch("/api/recruit/upload", { method: "POST", body: fd, credentials: "include" });
-      const json = await res.json();
-      if (!res.ok || json.error) throw new Error(json.error || "업로드 실패");
+      const json = await api.upload("/recruit/upload", file);
       set("applicationFileUrl", json.data.url);
       set("applicationFileName", json.data.filename);
       showToast("파일 업로드 완료", "success");

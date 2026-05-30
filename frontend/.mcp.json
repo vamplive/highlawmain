@@ -4,7 +4,8 @@
       "command": "korean-law-mcp",
       "env": {
         "LAW_OC": "yjlaw"
-      }
+      },
+      "disabled": true
     }
   }
 }
