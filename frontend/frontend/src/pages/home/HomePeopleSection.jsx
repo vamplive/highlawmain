@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { api } from "../../utils/api";
 import { C, FALLBACK_LAWYERS, parseSpecialtyList } from "./homeTokens";
 
-export default function HomePeopleSection({ copy }) {
+export default function HomePeopleSection({ copy, settings }) {
   const [lawyerList, setLawyerList] = useState(FALLBACK_LAWYERS);
   const [usingFallback, setUsingFallback] = useState(false);
 
@@ -27,8 +27,8 @@ export default function HomePeopleSection({ copy }) {
     <section className="hp-section" style={{ background: "#ffffff" }}>
       <div className="hp-section-inner">
         <div className="hp-section-centered">
-          <p className="hp-kicker">{copy.peopleKicker}</p>
-          <h2 className="hp-title">{copy.peopleTitle}</h2>
+          <p className="hp-kicker">{settings?.peopleHeader?.kicker || copy.peopleKicker}</p>
+          <h2 className="hp-title">{settings?.peopleHeader?.title || copy.peopleTitle}</h2>
         </div>
 
         <div

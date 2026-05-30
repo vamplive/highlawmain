@@ -44,7 +44,7 @@ function formatDate(dateStr) {
   return dateStr.slice(0, 10).replace(/-/g, ".");
 }
 
-export default function HomeNewsSection() {
+export default function HomeNewsSection({ settings }) {
   const [posts, setPosts] = useState(FALLBACK_POSTS);
 
   useEffect(() => {
@@ -73,11 +73,9 @@ export default function HomeNewsSection() {
     <section className="hp-section" style={{ background: "#ffffff" }}>
       <div className="hp-section-inner">
         <div className="hp-section-centered">
-          <p className="hp-kicker">BLOG & NEWS</p>
-          <h2 className="hp-title">하이로 소식 & 법률 칼럼</h2>
-          <p className="hp-copy">
-            전문 변호사들이 직접 분석한 최신 판례 분석과 특화 분야 법률 정보를 제공합니다.
-          </p>
+          <p className="hp-kicker">{settings?.newsHeader?.kicker || "BLOG & NEWS"}</p>
+          <h2 className="hp-title">{settings?.newsHeader?.title || "하이로 소식 & 법률 칼럼"}</h2>
+          <p className="hp-copy">{settings?.newsHeader?.description || "전문 변호사들이 직접 분석한 최신 판례 분석과 특화 분야 법률 정보를 제공합니다."}</p>
         </div>
 
         <div

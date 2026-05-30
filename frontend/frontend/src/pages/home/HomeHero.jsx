@@ -268,33 +268,18 @@ export default function HomeHero({ heroVideo, settings, copy }) {
           }}
         >
           <Link
-            to="/consultation"
+            to={settings?.hero?.ctaPrimaryLink || "/consultation"}
             className="hp-hero-button hp-hero-button-primary"
-            style={{
-              flex: 1,
-              minWidth: 0,
-              fontSize: 12,
-              padding: "12px 16px",
-              letterSpacing: "0.15em",
-              fontWeight: 500,
-            }}
+            style={{ flex: 1, minWidth: 0, fontSize: 12, padding: "12px 16px", letterSpacing: "0.15em", fontWeight: 500 }}
           >
-            사건 진단
+            {settings?.hero?.ctaPrimary || "사건 진단"}
           </Link>
           <a
-            href="tel:02-6925-6757"
+            href={settings?.hero?.ctaSecondaryLink || "tel:02-6925-6757"}
             className="hp-hero-button hp-hero-button-secondary"
-            style={{
-              flex: 1,
-              minWidth: 0,
-              fontSize: 12,
-              padding: "12px 16px",
-              letterSpacing: "0.15em",
-              fontWeight: 500,
-              whiteSpace: "nowrap",
-            }}
+            style={{ flex: 1, minWidth: 0, fontSize: 12, padding: "12px 16px", letterSpacing: "0.15em", fontWeight: 500, whiteSpace: "nowrap" }}
           >
-            전화 상담 02-6925-6757
+            {settings?.hero?.ctaSecondary || "전화 상담 02-6925-6757"}
           </a>
         </div>
       </div>

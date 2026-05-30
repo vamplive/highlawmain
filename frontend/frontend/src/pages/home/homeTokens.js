@@ -74,17 +74,23 @@ export const HOME_COPY = {
 
 export const HOME_DEFAULTS = {
   hero: {
-    heading: "산재·중대재해, 군사건, 게임사기",
-    subheading: "법무법인 하이로",
-    tagline: "사건 결과로 증명합니다",
-    ctaPrimary: "30초 무료 사건 진단",
+    ctaPrimary: "사건 진단",
     ctaPrimaryLink: "/consultation",
-    ctaSecondary: "전화 상담 02-594-5583",
-    ctaSecondaryLink: "tel:02-594-5583",
+    ctaSecondary: "전화 상담 02-6925-6757",
+    ctaSecondaryLink: "tel:02-6925-6757",
+  },
+  peopleHeader: {
+    kicker: "Partners",
+    title: "구성원 소개",
   },
   practiceHeader: {
     kicker: "Practice Areas",
     title: "업무분야",
+  },
+  newsHeader: {
+    kicker: "BLOG & NEWS",
+    title: "하이로 소식 & 법률 칼럼",
+    description: "전문 변호사들이 직접 분석한 최신 판례 분석과 특화 분야 법률 정보를 제공합니다.",
   },
   solution: {
     kicker: "How We Work",

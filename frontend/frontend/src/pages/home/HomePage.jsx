@@ -152,9 +152,9 @@ export default function HomePage() {
       </div>
 
       <HomeHero heroVideo={heroVideo} settings={settings} copy={copy} />
-      <HomePeopleSection copy={copy} />
+      <HomePeopleSection copy={copy} settings={settings} />
       <HomePracticeSection lang={lang} copy={copy} settings={settings} />
-      <HomeNewsSection />
+      <HomeNewsSection settings={settings} />
       <HomeCtaSection copy={copy} settings={settings} />
       
       {/* 푸터 스냅 락을 차단하기 위해 스냅 컨테이너의 일부로 최하단 푸터 배치 */}
