@@ -1,25 +1,26 @@
 /** 홈 솔루션 섹션 — 3가지 강점 카드 그리드 */
-import { C, SOLUTION_CARDS } from "./homeTokens";
+import { SOLUTION_CARDS } from "./homeTokens";
 
-export default function HomeSolutionSection({ lang = "ko", copy }) {
+export default function HomeSolutionSection({ lang = "ko", copy, settings }) {
   const isEnglish = lang === "en";
+  const sol = settings?.solution || {};
+  const kicker      = sol.kicker      || copy.solutionKicker;
+  const title       = sol.title       || copy.solutionTitle;
+  const description = sol.description || copy.solutionDescription;
+  const cards       = (sol.cards && sol.cards.length > 0) ? sol.cards : SOLUTION_CARDS;
 
   return (
     <section className="hp-section" style={{ background: "#fbf9f4" }}>
       <div className="hp-section-inner">
         <div className="hp-section-centered">
-          <p className="hp-kicker">{copy.solutionKicker}</p>
-          <h2 className="hp-title">
-            {copy.solutionTitle}
-          </h2>
-          <p className="hp-copy">
-            {copy.solutionDescription}
-          </p>
+          <p className="hp-kicker">{kicker}</p>
+          <h2 className="hp-title">{title}</h2>
+          <p className="hp-copy">{description}</p>
         </div>
 
         <div className="hp-grid hp-grid-solutions">
-          {SOLUTION_CARDS.map((card, idx) => (
-            <SolutionCard key={card.title} card={card} index={idx} isEnglish={isEnglish} />
+          {cards.map((card, idx) => (
+            <SolutionCard key={idx} card={card} index={idx} isEnglish={isEnglish} />
           ))}
         </div>
       </div>

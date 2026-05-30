@@ -153,9 +153,9 @@ export default function HomePage() {
 
       <HomeHero heroVideo={heroVideo} settings={settings} copy={copy} />
       <HomePeopleSection copy={copy} />
-      <HomePracticeSection lang={lang} copy={copy} />
+      <HomePracticeSection lang={lang} copy={copy} settings={settings} />
       <HomeNewsSection />
-      <HomeCtaSection copy={copy} />
+      <HomeCtaSection copy={copy} settings={settings} />
       
       {/* 푸터 스냅 락을 차단하기 위해 스냅 컨테이너의 일부로 최하단 푸터 배치 */}
       <div style={{ scrollSnapAlign: "start", background: "#333333", width: "100%" }}>

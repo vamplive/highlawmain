@@ -2,15 +2,17 @@
 import { Link } from "react-router-dom";
 import { C, PRACTICE_AREAS } from "./homeTokens";
 
-export default function HomePracticeSection({ lang = "ko", copy }) {
+export default function HomePracticeSection({ lang = "ko", copy, settings }) {
   const isEnglish = lang === "en";
+  const kicker = settings?.practiceHeader?.kicker || copy.practiceKicker;
+  const title  = settings?.practiceHeader?.title  || copy.practiceTitle;
 
   return (
     <section className="hp-section" style={{ background: "#f5f7fa" }}>
       <div className="hp-section-inner">
         <div className="hp-section-centered">
-          <p className="hp-kicker">{copy.practiceKicker}</p>
-          <h2 className="hp-title">{copy.practiceTitle}</h2>
+          <p className="hp-kicker">{kicker}</p>
+          <h2 className="hp-title">{title}</h2>
         </div>
 
         <div className="hp-grid hp-grid-practice">

@@ -46,7 +46,12 @@ export default function useSiteSettings() {
   const updateItem = useCallback((sectionKey, idx, field, value) => {
     setSettings((prev) => {
       const next = deepClone(prev);
-      next[sectionKey].items[idx][field] = value;
+      // field === null → 문자열 배열 (home/cta items 등)
+      if (field === null) {
+        next[sectionKey].items[idx] = value;
+      } else {
+        next[sectionKey].items[idx][field] = value;
+      }
       return next;
     });
     setDirty(true);

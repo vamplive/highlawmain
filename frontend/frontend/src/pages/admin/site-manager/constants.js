@@ -53,13 +53,33 @@ export const EMPTY_ANNOUNCEMENT = {
   isActive: true, startDate: "", endDate: "", position: "top",
 };
 
-/* ─── 기본값: 현재 하드코딩된 콘텐츠 ─── */
+/* ─── 기본값: 현재 홈페이지 실제 구조 기반 ─── */
 export const DEFAULT_SETTINGS = {
-  "home/hero": { heading: "법무법인 하이로", subheading: "HIGH & LAW FIRM", tagline: "의뢰인의 사건을 비즈니스처럼 정교하게 관리합니다.\n첫 상담부터 판결 이후까지, 리스크를 줄이고 최선의 결론을 만들기 위해 함께합니다.", ctaPrimary: "상담 신청", ctaPrimaryLink: "/consultation", ctaSecondary: "업무분야 보기", ctaSecondaryLink: "/practice" },
-  "home/stats": { items: [{ value: "1:1", label: "사건 맞춤 커뮤니케이션" }, { value: "24H", label: "신속한 초기 응답" }, { value: "100%", label: "기밀 보장 원칙" }] },
-  "home/approach": { heading: "명확한 전략, 빠른 실행, 책임 있는 결과", description: "법무법인 하이로는 사건을 단순 처리하지 않습니다. 분쟁의 원인과 증거, 상대의 전략을 정밀 분석하여 의뢰인에게 가장 실익이 큰 선택지를 제시합니다." },
-  "home/highlights": { items: [{ title: "맞춤형 전략 수립", desc: "사건의 쟁점을 빠르게 분석해 의뢰인에게 최적화된 대응 전략을 제시합니다." }, { title: "신뢰 중심 커뮤니케이션", desc: "진행 상황을 투명하게 공유하고 의사결정의 모든 과정에 의뢰인을 참여시킵니다." }, { title: "풍부한 사건 수행 경험", desc: "민사·형사·가사·행정·조세 등 다양한 분야에서 실무 경험을 축적했습니다." }] },
-  "home/cta": { message: "법률 문제로 고민이 있으신가요?", buttonText: "상담 예약하기 →", buttonLink: "/consultation" },
+  /* ── 홈페이지 ── */
+  "home/hero": {
+    heading: "산재·중대재해, 군사건, 게임사기",
+    subheading: "법무법인 하이로",
+    tagline: "사건 결과로 증명합니다",
+    ctaPrimary: "30초 무료 사건 진단",
+    ctaPrimaryLink: "/consultation",
+    ctaSecondary: "전화 상담 02-594-5583",
+    ctaSecondaryLink: "tel:02-594-5583",
+  },
+  "home/practiceHeader": {
+    kicker: "Practice Areas",
+    title: "업무분야",
+  },
+  "home/cta": {
+    title: "지금 바로 전문 변호사와 상담하세요",
+    items: [
+      "정밀한 분석 후 솔직한 진단을 알려드립니다.",
+      "관련 규정에 따른 정직한 비용만을 청구합니다.",
+      "신뢰에 대한 헌신으로 고객에게 보답합니다.",
+    ],
+    buttonText: "상담 신청하기",
+    buttonLink: "/consultation",
+  },
+  /* ── 소개 ── */
   "about/hero": { heading: "사무소 소개", subheading: "ABOUT HIGH & LAW FIRM", description: "진실된 마음으로 의뢰인의 목소리에 귀를 기울이며,\n최선의 법률적 해법을 제시합니다." },
   "about/philosophy": { heading: "신뢰를 기반으로\n결과를 만드는 로펌", description: "법무법인 하이로는 의뢰인의 사건을 비즈니스처럼 정교하게 관리합니다. 첫 상담부터 판결 이후까지, 리스크를 줄이고 최선의 결론을 만들기 위해 함께합니다." },
   "about/values": { items: [{ title: "신뢰", subtitle: "TRUST", desc: "진행 상황을 투명하게 공유하고 의사결정의 모든 과정에 의뢰인을 참여시킵니다." }, { title: "전문성", subtitle: "EXPERTISE", desc: "민사·형사·가사·행정·조세 등 다양한 분야에서 실무 경험을 축적했습니다." }, { title: "헌신", subtitle: "DEDICATION", desc: "의뢰인의 사건을 비즈니스처럼 정교하게 관리하며, 최선의 결론을 만들기 위해 함께합니다." }, { title: "혁신", subtitle: "INNOVATION", desc: "법률 기술과 데이터 분석을 활용한 선진적 법률 서비스를 지향합니다." }] },

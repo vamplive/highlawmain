@@ -82,9 +82,30 @@ export const HOME_DEFAULTS = {
     ctaSecondary: "전화 상담 02-594-5583",
     ctaSecondaryLink: "tel:02-594-5583",
   },
+  practiceHeader: {
+    kicker: "Practice Areas",
+    title: "업무분야",
+  },
+  solution: {
+    kicker: "How We Work",
+    title: "특수 분야의 깊이",
+    description: "절차와 판례를 깊이 이해하는 변호사가 직접 사건을 다룹니다",
+    cards: SOLUTION_CARDS.map((c) => ({
+      icon: c.icon,
+      title: c.title,
+      titleEn: c.titleEn,
+      desc: c.desc,
+      descEn: c.descEn,
+    })),
+  },
   cta: {
-    message: "법률 문제로 고민이 있으신가요?",
-    buttonText: "상담 예약하기 →",
+    title: "지금 바로 전문 변호사와 상담하세요",
+    items: [
+      "정밀한 분석 후 솔직한 진단을 알려드립니다.",
+      "관련 규정에 따른 정직한 비용만을 청구합니다.",
+      "신뢰에 대한 헌신으로 고객에게 보답합니다.",
+    ],
+    buttonText: "상담 신청하기",
     buttonLink: "/consultation",
   },
 };
