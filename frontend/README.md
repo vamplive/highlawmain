@@ -1,4 +1,4 @@
-# 윤정 법률사무소 홈페이지
+﻿# 법무법인 하이로 홈페이지
 
 법률사무소 공식 웹사이트 + 의뢰인 포털 + 관리자 백오피스 + MS Word 스타일 문서 에디터를 통합한 풀스택 웹 애플리케이션입니다. 프론트엔드(Vite + React)와 백엔드(Express + SQLite)로 구성됩니다.
 
@@ -21,8 +21,8 @@
 ### 1. 클론 + 의존성 설치
 
 ```bash
-git clone <repo-url> yjlawoffice
-cd yjlawoffice
+git clone <repo-url> highlaw
+cd highlaw
 
 # 백엔드
 cd backend && npm install
@@ -71,7 +71,7 @@ cd frontend && npm run dev
 | `CSRF_SECRET` | **production 필수** | 개발 임의값 | 32바이트 이상 hex. 미설정 시 재시작마다 토큰 불일치로 403 발생 |
 | `ADMIN_INITIAL_USERNAME` | 선택 | `admin` | 초기 관리자 계정 아이디 |
 | `ADMIN_INITIAL_PASSWORD` | **production 필수** | — | 8자 이상. 미설정 시 프로덕션 부팅 차단 |
-| `SITE_URL` | 선택 | `https://younjeong.com` | sitemap·JSON-LD 등 절대 URL 기준점 |
+| `SITE_URL` | 선택 | `https://highlaw.co.kr` | sitemap·JSON-LD 등 절대 URL 기준점 |
 | `STORAGE_PATH` | 선택 | `backend/data` | DB·업로드 파일 외부 스토리지 경로 |
 | `APPS_SCRIPT_WEBHOOK_URL` | 선택 | — | 상담 알림 Google Apps Script 엔드포인트 |
 | `LOG_LEVEL` | 선택 | env별 기본 | pino 로그 레벨 (`debug`/`info`/`warn`/`error`) |
@@ -85,7 +85,7 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 | 변수 | 기본값 | 설명 |
 |------|--------|------|
-| `VITE_SITE_URL` | `https://younjeong.com` | 페이지별 canonical·og:url 계산. 백엔드 `SITE_URL`과 동일하게 유지 |
+| `VITE_SITE_URL` | `https://highlaw.co.kr` | 페이지별 canonical·og:url 계산. 백엔드 `SITE_URL`과 동일하게 유지 |
 
 ---
 

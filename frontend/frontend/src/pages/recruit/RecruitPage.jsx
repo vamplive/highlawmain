@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import useReveal from "../../hooks/useReveal";
 import { api } from "../../utils/api";
 import Seo from "../../components/Seo";
-import { buildBreadcrumbJsonLd, buildLegalServiceJsonLd } from "../../lib/seo";
 import { PublicHero, SectionHeading, SurfaceCard } from "../../components/public/PublicDesign";
 
 const CATEGORY_META = {
@@ -13,7 +11,6 @@ const CATEGORY_META = {
   staff: { label: "직원", icon: "👥", color: "#e65100", light: "rgba(230,81,0,0.06)" },
 };
 
-const CATEGORIES = ["new_lawyer", "experienced_lawyer", "military_lawyer", "staff"];
 
 const TABS = [
   { id: "recruit", label: "채용 공고", labelEn: "JOB OPENINGS" },
@@ -21,37 +18,6 @@ const TABS = [
   { id: "contact", label: "채용 문의", labelEn: "CONTACT" },
 ];
 
-function CategoryTab({ activeTab, onChange }) {
-  return (
-    <div style={{ display: "flex", gap: 8, borderBottom: "1px solid #eef0f2", paddingBottom: 16, marginBottom: 28, overflowX: "auto" }}>
-      {CATEGORIES.map((key) => {
-        const isActive = activeTab === key;
-        const catMeta = CATEGORY_META[key];
-        return (
-          <button
-            key={key}
-            onClick={() => onChange(key)}
-            style={{
-              padding: "8px 16px",
-              background: isActive ? catMeta.color : "transparent",
-              color: isActive ? "#fff" : "#495057",
-              border: `1px solid ${isActive ? catMeta.color : "#ced4da"}`,
-              borderRadius: 20,
-              fontSize: 13,
-              fontWeight: isActive ? 600 : 400,
-              cursor: "pointer",
-              transition: "all 0.2s",
-              fontFamily: "inherit",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {catMeta.icon} {catMeta.label}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
 
 function PostCard({ post }) {
   const [expanded, setExpanded] = useState(false);
@@ -218,29 +184,12 @@ function PostCard({ post }) {
   );
 }
 
-function EmptyCategory({ label }) {
-  return (
-    <div style={{
-      padding: "48px 28px",
-      textAlign: "center",
-      border: "1px dashed #ced4da",
-      borderRadius: 12,
-      color: "#aaa",
-      background: "#fafafa",
-    }}>
-      <div style={{ fontSize: 36, marginBottom: 12 }}>📭</div>
-      <p style={{ margin: 0, fontSize: 14 }}>현재 <strong>{label}</strong> 채용 공고가 없습니다.</p>
-      <p style={{ margin: "6px 0 0", fontSize: 12, color: "#bbb" }}>추후 공고를 확인해 주세요.</p>
-    </div>
-  );
-}
 
 export default function RecruitPage() {
   const revealRef = useReveal();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("recruit"); // recruit, apply, contact
-  const [activeCategory, setActiveCategory] = useState("new_lawyer"); // post categories
 
   useEffect(() => {
     api.get("/recruit")
@@ -248,8 +197,6 @@ export default function RecruitPage() {
       .catch(() => setPosts([]))
       .finally(() => setLoading(false));
   }, []);
-
-  const filteredPosts = posts.filter((p) => p.category === activeCategory);
 
   return (
     <div ref={revealRef}>
@@ -332,19 +279,27 @@ export default function RecruitPage() {
             <div className="tab-content-active" key="recruit" style={{ maxWidth: 840, margin: "0 auto" }}>
               <SectionHeading
                 eyebrow="Job Openings"
-                title="진행 중인 채용 공고"
+                title="채용 공고"
               />
-              
-              {/* 분류 필터 탭 */}
-              <CategoryTab activeTab={activeCategory} onChange={setActiveCategory} />
 
               {loading ? (
                 <div style={{ textAlign: "center", padding: 60, color: "var(--gray-400)", fontSize: 14 }}>공고를 불러오는 중...</div>
-              ) : filteredPosts.length === 0 ? (
-                <EmptyCategory label={CATEGORY_META[activeCategory]?.label || activeCategory} />
+              ) : posts.length === 0 ? (
+                <div style={{
+                  padding: "48px 28px",
+                  textAlign: "center",
+                  border: "1px dashed #ced4da",
+                  borderRadius: 12,
+                  color: "#aaa",
+                  background: "#fafafa",
+                }}>
+                  <div style={{ fontSize: 36, marginBottom: 12 }}>📭</div>
+                  <p style={{ margin: 0, fontSize: 14 }}>현재 진행 중인 채용 공고가 없습니다.</p>
+                  <p style={{ margin: "6px 0 0", fontSize: 12, color: "#bbb" }}>추후 공고를 확인해 주세요.</p>
+                </div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                  {filteredPosts.map((post) => (
+                  {posts.map((post) => (
                     <PostCard key={post.id} post={post} />
                   ))}
                 </div>

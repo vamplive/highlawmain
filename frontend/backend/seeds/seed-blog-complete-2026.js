@@ -1,4 +1,4 @@
-const crypto = require("crypto");
+﻿const crypto = require("crypto");
 const path = require("path");
 const Database = require("better-sqlite3");
 
@@ -469,7 +469,7 @@ function buildArticle(topic) {
   });
 
   content += "## 마무리\n\n";
-  content += `${topic.focus} 문제는 글 하나로 결론을 단정하기 어렵습니다. 그러나 사건을 **문서, 날짜, 금액, 책임, 절차**로 나누어 정리하면 대응 방향은 훨씬 선명해집니다. 윤정 법률사무소는 사건을 비즈니스처럼 관리한다는 기준 아래, 초기 자료 정리부터 협상·소송 전략까지 단계별로 검토합니다.\n\n`;
+  content += `${topic.focus} 문제는 글 하나로 결론을 단정하기 어렵습니다. 그러나 사건을 **문서, 날짜, 금액, 책임, 절차**로 나누어 정리하면 대응 방향은 훨씬 선명해집니다. 법무법인 하이로는 사건을 비즈니스처럼 관리한다는 기준 아래, 초기 자료 정리부터 협상·소송 전략까지 단계별로 검토합니다.\n\n`;
   content += "이 글은 일반적인 법률 정보 제공을 목적으로 하며, 특정 사건에 대한 법률의견이 아닙니다. 실제 대응 전에는 개별 사실관계와 자료를 바탕으로 상담을 받으시기 바랍니다.\n";
 
   while (content.length < MIN_CONTENT_LENGTH) {
@@ -501,7 +501,7 @@ function buildPosts() {
       author: AUTHOR,
       thumbnailUrl: meta.cover,
       ogImageUrl: meta.cover,
-      seoTitle: `${topic.title} | 윤정 법률사무소`,
+      seoTitle: `${topic.title} | 법무법인 하이로`,
       seoDescription: topic.excerpt,
       publishedAt: publishedAt(index),
       viewCount: 120 + index * 17,

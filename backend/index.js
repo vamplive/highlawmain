@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Express 서버 진입점
  * - API 라우트 등록, 정적 파일 서빙, 글로벌 에러 핸들러
  */
@@ -324,7 +324,7 @@ const frontendDist = path.resolve(__dirname, "..", "frontend", "dist").replace(/
 const fs = require("fs");
 if (fs.existsSync(frontendDist)) {
   const indexPath = path.join(frontendDist, "index.html");
-  const PUBLIC_SITE_URL = (process.env.APP_URL || "https://younjeong.com").replace(/\/$/, "");
+  const PUBLIC_SITE_URL = (process.env.APP_URL || "https://highlaw.co.kr").replace(/\/$/, "");
   const { db, sqlite } = require("./db");
   const { blogPosts, qnaQuestions } = require("./db/schema");
   const { resolveBlogSlug } = require("./services/blog-service");
@@ -372,52 +372,52 @@ if (fs.existsSync(frontendDist)) {
   function routeSeo(pathname) {
     const routes = {
       "/": {
-        title: "윤정 법률사무소 | YOUNJEONG LAW OFFICE",
-        description: "윤정 법률사무소 - 건설·부동산·행정 분야 전문 법률 서비스. 전문 변호사가 직접 상담합니다.",
+        title: "법무법인 하이로 | HIGH & LAW FIRM",
+        description: "법무법인 하이로 - 건설·부동산·행정 분야 전문 법률 서비스. 전문 변호사가 직접 상담합니다.",
       },
       "/about": {
-        title: "사무소 소개 | 윤정 법률사무소",
-        description: "윤정 법률사무소의 철학, 업무 방식, 의뢰인 중심 법률 서비스를 소개합니다.",
+        title: "사무소 소개 | 법무법인 하이로",
+        description: "법무법인 하이로의 철학, 업무 방식, 의뢰인 중심 법률 서비스를 소개합니다.",
       },
       "/practice": {
-        title: "업무분야 | 윤정 법률사무소",
-        description: "건설, 부동산, 행정, 민사 등 윤정 법률사무소의 주요 법률 서비스 분야를 안내합니다.",
+        title: "업무분야 | 법무법인 하이로",
+        description: "건설, 부동산, 행정, 민사 등 법무법인 하이로의 주요 법률 서비스 분야를 안내합니다.",
       },
       "/practice/construction": {
-        title: "건설 법률 서비스 | 윤정 법률사무소",
+        title: "건설 법률 서비스 | 법무법인 하이로",
         description: "공사대금, 하자담보, 인허가, 재개발·재건축 분쟁에 대한 건설 법률 서비스를 제공합니다.",
       },
       "/practice/realestate": {
-        title: "부동산 법률 서비스 | 윤정 법률사무소",
+        title: "부동산 법률 서비스 | 법무법인 하이로",
         description: "부동산 거래, 개발, 임대차, 등기·수용 분쟁에 대한 법률 자문과 소송대리를 제공합니다.",
       },
       "/lawyers": {
-        title: "변호사 소개 | 윤정 법률사무소",
-        description: "윤정 법률사무소 소속 변호사의 주요 경력과 전문 분야를 확인하세요.",
+        title: "변호사 소개 | 법무법인 하이로",
+        description: "법무법인 하이로 소속 변호사의 주요 경력과 전문 분야를 확인하세요.",
       },
       "/consultation": {
-        title: "온라인 상담 신청 | 윤정 법률사무소",
-        description: "윤정 법률사무소에 법률 상담을 신청하고 희망 상담 일정을 선택하세요.",
+        title: "온라인 상담 신청 | 법무법인 하이로",
+        description: "법무법인 하이로에 법률 상담을 신청하고 희망 상담 일정을 선택하세요.",
       },
       "/blog": {
-        title: "법률칼럼 | 윤정 법률사무소",
+        title: "법률칼럼 | 법무법인 하이로",
         description: "건설·부동산·행정 분야의 실무 법률 칼럼과 최신 이슈를 확인하세요.",
       },
       "/qna": {
-        title: "법률 Q&A | 윤정 법률사무소",
+        title: "법률 Q&A | 법무법인 하이로",
         description: "자주 묻는 법률 질문과 실무 답변을 분야별로 확인하세요.",
       },
       "/reviews": {
-        title: "의뢰인 후기 | 윤정 법률사무소",
-        description: "윤정 법률사무소를 거쳐간 의뢰인들의 실제 후기와 평가를 확인하세요.",
+        title: "의뢰인 후기 | 법무법인 하이로",
+        description: "법무법인 하이로를 거쳐간 의뢰인들의 실제 후기와 평가를 확인하세요.",
       },
       "/privacy": {
-        title: "개인정보처리방침 | 윤정 법률사무소",
-        description: "윤정 법률사무소의 개인정보 수집·이용 동의서 및 처리방침 전문입니다.",
+        title: "개인정보처리방침 | 법무법인 하이로",
+        description: "법무법인 하이로의 개인정보 수집·이용 동의서 및 처리방침 전문입니다.",
       },
       "/terms": {
-        title: "이용약관 | 윤정 법률사무소",
-        description: "윤정 법률사무소 홈페이지 이용약관과 서비스 범위, 권리·의무, 면책 사항을 안내합니다.",
+        title: "이용약관 | 법무법인 하이로",
+        description: "법무법인 하이로 홈페이지 이용약관과 서비스 범위, 권리·의무, 면책 사항을 안내합니다.",
       },
     };
     const exact = routes[pathname];
@@ -445,7 +445,7 @@ if (fs.existsSync(frontendDist)) {
           .limit(1);
         if (post) {
           return {
-            title: `${post.title} | 윤정 법률사무소`,
+            title: `${post.title} | 법무법인 하이로`,
             description: truncateDescription(post.excerpt || post.content, fallback.description),
           };
         }
@@ -470,7 +470,7 @@ if (fs.existsSync(frontendDist)) {
           .limit(1);
         if (question) {
           return {
-            title: `Q. ${question.title} | 법률 Q&A | 윤정 법률사무소`,
+            title: `Q. ${question.title} | 법률 Q&A | 법무법인 하이로`,
             description: truncateDescription(question.metaDescription || question.body, fallback.description),
           };
         }

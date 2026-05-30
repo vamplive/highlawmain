@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Q&A 전 분야 질문 시드 — 민사/형사/가사/노동/행정/기업/IT/세금
  * 기존 건설/부동산은 건드리지 않음
  */
@@ -179,7 +179,7 @@ console.log("[seed] 전 분야 Q&A 생성 시작");
 const insert = sqlite.prepare(`
   INSERT INTO qna_questions (id, slug, category_id, title, body, display_name, anonymity_tier,
     answer, answered_by, answered_at, status, is_featured, view_count, published_at, created_at, updated_at)
-  VALUES (?, ?, ?, ?, ?, ?, 2, ?, '윤정 법률사무소', datetime('now'), 'published', 0, ?, datetime('now'), datetime('now'), datetime('now'))
+  VALUES (?, ?, ?, ?, ?, ?, 2, ?, '법무법인 하이로', datetime('now'), 'published', 0, ?, datetime('now'), datetime('now'), datetime('now'))
 `);
 
 let created = 0;
@@ -189,7 +189,7 @@ for (const q of QUESTIONS) {
   const id = crypto.randomUUID();
   const slug = slugify(q.title);
   const nick = pickNick(q.top);
-  const answer = "안녕하세요, 윤정 법률사무소 윤세환 변호사입니다.\n\n" + q.answer +
+  const answer = "안녕하세요, 법무법인 하이로 윤세환 변호사입니다.\n\n" + q.answer +
     "\n\n답변이 도움이 되셨기를 바랍니다. 추가로 궁금한 점이 있으시면 언제든 상담 신청해 주세요.";
   const views = Math.floor(Math.random() * 500) + 80;
   insert.run(id, slug, catId, q.title, q.body, nick, answer, views);

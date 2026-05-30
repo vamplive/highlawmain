@@ -22,7 +22,7 @@ export default function HomeCtaSection({ copy }) {
         }}>
           <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
             <span style={{ color: "var(--accent-gold)", fontSize: "18px", fontWeight: 700, lineHeight: 1 }}>✓</span>
-            <span style={{ lineHeight: 1.25 }}>정확한 분석 후 솔직한 진단을 알려드립니다.</span>
+            <span style={{ lineHeight: 1.25 }}>정밀한 분석 후 솔직한 진단을 알려드립니다.</span>
           </div>
           <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
             <span style={{ color: "var(--accent-gold)", fontSize: "18px", fontWeight: 700, lineHeight: 1 }}>✓</span>

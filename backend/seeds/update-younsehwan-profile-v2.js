@@ -1,4 +1,4 @@
-/** 윤세환 대표변호사 프로필 갱신 v2 — 학력·경력 운영자 제공 정보로 교체 + 강의경력은 lectures 테이블로 별도 등록.
+﻿/** 윤세환 대표변호사 프로필 갱신 v2 — 학력·경력 운영자 제공 정보로 교체 + 강의경력은 lectures 테이블로 별도 등록.
  *  멱등: lawyers 행은 UPDATE, lectures는 (lawyer_id, title) 기준으로 INSERT-OR-IGNORE. */
 const crypto = require("crypto");
 const Database = require("better-sqlite3");
@@ -16,7 +16,7 @@ const profile = {
   career: JSON.stringify([
     { period: "前", title: "DSD삼호주식회사 법무실 변호사" },
     { period: "現", title: "㈜윤정종합건설 기획이사" },
-    { period: "現", title: "윤정 법률사무소 대표변호사" },
+    { period: "現", title: "법무법인 하이로 대표변호사" },
   ]),
 };
 

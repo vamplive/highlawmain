@@ -1,4 +1,4 @@
-/** 윤세환 대표변호사 프로필 풍부화 시드.
+﻿/** 윤세환 대표변호사 프로필 풍부화 시드.
  *  기존 행이 있으면 UPDATE, 없으면 INSERT. 다른 변호사는 손대지 않는다. */
 const crypto = require("crypto");
 const Database = require("better-sqlite3");
@@ -17,7 +17,7 @@ const profile = {
   tagline: "건설과 부동산, 사람과 계약 사이의 법률 문제를 다룹니다.",
   introduction:
     "의뢰인의 사건을 비즈니스처럼 정교하게 관리합니다. 건설·부동산 분쟁에서 축적한 실무 경험을 바탕으로, 리스크를 줄이고 최선의 결론을 이끌어냅니다.",
-  email: "younsehwan@younjeong.com",
+  email: "younsehwan@highlaw.co.kr",
   phone: "02-000-0000",
   consultHours: "평일 09:30 – 18:00",
   education: JSON.stringify([
@@ -28,7 +28,7 @@ const profile = {
   career: JSON.stringify([
     { period: "前", title: "DSD삼호주식회사 법무실 변호사" },
     { period: "現", title: "㈜윤정종합건설 기획이사" },
-    { period: "現", title: "윤정 법률사무소 대표변호사" },
+    { period: "現", title: "법무법인 하이로 대표변호사" },
   ]),
   specialties: JSON.stringify(["건설", "부동산", "민사", "형사", "행정"]),
   qualifications: JSON.stringify([

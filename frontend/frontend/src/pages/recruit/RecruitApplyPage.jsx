@@ -38,7 +38,6 @@ export default function RecruitApplyPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [message, setMessage] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
 
   // Upload simulation states
@@ -114,7 +113,7 @@ export default function RecruitApplyPage() {
               staff_other: "기타 행정직원"
             }[category] || category;
 
-            const body = `지원 분야: ${group} - ${catLabel}\n이름: ${name}\n이메일: ${email}\n전화: ${phone}\n첨부파일: ${selectedFile.name}\n\n자기소개:\n${message}`;
+            const body = `지원 분야: ${group} - ${catLabel}\n이름: ${name}\n이메일: ${email}\n전화: ${phone}\n첨부파일: ${selectedFile.name}`;
             const mailtoUrl = `mailto:mingukang@highlaw.net?subject=[온라인 채용지원] ${catLabel} - ${name}&body=${encodeURIComponent(body)}`;
             window.location.href = mailtoUrl;
           }, 300);
@@ -559,21 +558,6 @@ export default function RecruitApplyPage() {
                           </div>
                         )}
                       </div>
-                    </div>
-
-                    <div style={{ marginBottom: 8 }}>
-                      <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#495057", marginBottom: 6 }}>자기소개 및 지원 동기 (선택)</label>
-                      <textarea
-                        placeholder="이력서에 다 담지 못한 핵심 강점, 가치관, 입사 포부 등을 작성해 주세요."
-                        value={message}
-                        onChange={(e) => setMessage(e.target.value)}
-                        style={{
-                          width: "100%", minHeight: 140, padding: "14px 16px", border: "1px solid #ced4da", borderRadius: 6,
-                          fontSize: 14, outline: "none", boxSizing: "border-box", resize: "vertical", transition: "all 0.2s"
-                        }}
-                        onFocus={(e) => e.target.style.borderColor = "var(--accent-gold)"}
-                        onBlur={(e) => e.target.style.borderColor = "#ced4da"}
-                      />
                     </div>
                   </SurfaceCard>
 

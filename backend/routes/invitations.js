@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 초대(invitations) 관리 API — 관리자 전용
  * - 초대 생성 + SMS/이메일 발송
  * - 목록 조회, 재발송, 취소
@@ -76,9 +76,9 @@ router.post("/:id/resend", adminAuth, async (req, res) => {
     const { renderTemplate, buildInviteUrl } = require("../lib/invite-sender");
     const { sendSMS } = require("../lib/sms-service");
     const DEFAULT = {
-      consultation: "[윤정 법률사무소] {name}님, 상담 신청 링크: {url}",
-      engagement: "[윤정 법률사무소] {name}님, 위임계약서 서명 요청: {url}",
-      settlement: "[윤정 법률사무소] {name}님, 합의서 서명 요청: {url}",
+      consultation: "[법무법인 하이로] {name}님, 상담 신청 링크: {url}",
+      engagement: "[법무법인 하이로] {name}님, 위임계약서 서명 요청: {url}",
+      settlement: "[법무법인 하이로] {name}님, 합의서 서명 요청: {url}",
     };
     const url = buildInviteUrl(row.token);
     const text = renderTemplate(DEFAULT[row.type] || DEFAULT.consultation, {

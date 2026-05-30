@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 법정 일정 알림 cron — court_dates.reminder_at 도래 시 SMS/이메일 자동 발송.
  *
  * 매분 실행되며, 다음 조건의 일정을 찾는다:
@@ -14,7 +14,7 @@
  * 발송 후 reminded=1 로 마킹하여 중복 발송 방지.
  *
  * 메시지 본문:
- *   "[윤정 법률사무소] {kind} 일정 안내
+ *   "[법무법인 하이로] {kind} 일정 안내
  *    {title}
  *    일시: 2026-05-10 14:30
  *    법원: 서울중앙지방법원 제427호
@@ -46,7 +46,7 @@ function formatStartsAt(iso) {
 
 function buildMessage(courtDate) {
   const lines = [
-    `[윤정 법률사무소] ${KIND_LABEL[courtDate.kind] || courtDate.kind} 알림`,
+    `[법무법인 하이로] ${KIND_LABEL[courtDate.kind] || courtDate.kind} 알림`,
     courtDate.title,
     `일시: ${formatStartsAt(courtDate.startsAt)}`,
   ];

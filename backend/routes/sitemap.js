@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 사이트맵 XML 생성 라우트 — SEO용 동적 사이트맵
  * - 정적 페이지 + 블로그 글 + Q&A
  */
@@ -14,7 +14,7 @@ const router = Router();
  * 사이트 기본 URL (환경변수 또는 기본값).
  * 프론트엔드 lib/seo.js의 VITE_SITE_URL 기본값과 반드시 동일하게 유지.
  */
-const SITE_URL = (process.env.SITE_URL || "https://younjeong.com").replace(/\/+$/, "");
+const SITE_URL = (process.env.SITE_URL || "https://highlaw.co.kr").replace(/\/+$/, "");
 
 function escapeXml(value) {
   return String(value || "")

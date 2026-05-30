@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 초대(invitations) 생성 + SMS/이메일 발송 통합 유틸
  * - 3종 초대(consultation / engagement / settlement)를 하나의 함수로 처리
  * - sendSMS / sendEmail / messageLogs 기록까지 일괄 수행
@@ -13,7 +13,7 @@ const { logEvent } = require("./audit-log");
 
 const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL || "http://localhost:5173";
 const DEFAULT_EXPIRES_DAYS = 14;
-const FIRM_NAME = "윤정 법률사무소";
+const FIRM_NAME = "법무법인 하이로";
 
 /** 초대 URL 조립 */
 function buildInviteUrl(token) {

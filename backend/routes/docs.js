@@ -1,4 +1,4 @@
-/**
+﻿/**
  * API 문서 라우트 — OpenAPI JSON 스펙 및 Swagger UI 서빙
  * - /api/docs/ 에서 Swagger UI 제공 (CDN 기반, npm 의존성 없음)
  * - /api/docs/openapi.json 에서 OpenAPI 3.0 스펙 제공
@@ -24,7 +24,7 @@ router.get("/", (req, res) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>윤정 법률사무소 API 문서</title>
+  <title>법무법인 하이로 API 문서</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css">
   <style nonce="${nonce}">
     body { margin: 0; padding: 0; }

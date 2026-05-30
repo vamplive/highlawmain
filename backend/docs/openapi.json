@@ -1,9 +1,9 @@
-{
+﻿{
   "openapi": "3.0.0",
   "info": {
-    "title": "윤정 법률사무소 API",
+    "title": "법무법인 하이로 API",
     "version": "1.0.0",
-    "description": "윤정 법률사무소 홈페이지 백엔드 REST API. 모든 응답은 { data, error, meta } 형식입니다."
+    "description": "법무법인 하이로 홈페이지 백엔드 REST API. 모든 응답은 { data, error, meta } 형식입니다."
   },
   "servers": [
     { "url": "/api", "description": "기본 API 서버" }

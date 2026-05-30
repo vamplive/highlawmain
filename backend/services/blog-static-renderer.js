@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 블로그 정적 SEO 아티팩트 생성기
  *
  * 운영 Nginx가 frontend/dist를 직접 서빙하는 구조에서도 검색봇이 글 제목,
@@ -10,9 +10,9 @@ const path = require("path");
 const crypto = require("crypto");
 const { sanitizeRichHtml } = require("../lib/htmlSanitizer");
 
-const SITE_URL = (process.env.SITE_URL || process.env.APP_URL || "https://younjeong.com").replace(/\/+$/, "");
-const SITE_NAME = "윤정 법률사무소";
-const DEFAULT_DESCRIPTION = "윤정 법률사무소 - 서초역 3분, 건설·부동산·민사·형사·행정 사건을 변호사가 직접 상담합니다.";
+const SITE_URL = (process.env.SITE_URL || process.env.APP_URL || "https://highlaw.co.kr").replace(/\/+$/, "");
+const SITE_NAME = "법무법인 하이로";
+const DEFAULT_DESCRIPTION = "법무법인 하이로 - 서초역 3분, 건설·부동산·민사·형사·행정 사건을 변호사가 직접 상담합니다.";
 const DEFAULT_OG_IMAGE = `${SITE_URL}/og-image.jpg`;
 const STATIC_MARKER = "<!-- yjlaw-static-blog-post -->";
 
@@ -406,7 +406,7 @@ function writeLlmsTxt(dist, posts) {
     "> 서초역 인근 법률사무소의 건설, 부동산, 민사, 형사, 행정 분야 실무 해설과 법률 칼럼.",
     "",
     "## Core Pages",
-    `- [홈](${SITE_URL}/): 윤정 법률사무소 대표 페이지`,
+    `- [홈](${SITE_URL}/): 법무법인 하이로 대표 페이지`,
     `- [업무분야](${SITE_URL}/practice): 주요 법률 서비스 분야`,
     `- [블로그](${SITE_URL}/blog): 법률 칼럼 목록`,
     "",

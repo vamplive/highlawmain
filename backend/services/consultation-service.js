@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 상담 서비스 — 상담 신청 CRUD 비즈니스 로직
  * - 상담 생성 시 고객 자동 등록 + Apps Script 웹훅 알림
  */
@@ -113,7 +113,7 @@ async function notifyApplicantReceivedBySMS(data, consultationId) {
 
   const scheduleSummary = buildRequestedScheduleSummary(data);
   const text = [
-    `[윤정 법률사무소] ${data.name}님 상담 신청이 접수되었습니다.`,
+    `[법무법인 하이로] ${data.name}님 상담 신청이 접수되었습니다.`,
     "담당자가 확인 후 연락드리겠습니다.",
     scheduleSummary ? `희망 일정: ${scheduleSummary}` : "",
     "문의 02-594-5583",
@@ -143,7 +143,7 @@ async function notifyAdminBySMS(data, consultationId) {
 
   const categoryLabel = CATEGORY_LABELS[data.category] || data.category || "일반";
   // 90바이트 SMS 범위 안에 들어오도록 간결하게 구성
-  const text = `[윤정 법률사무소] 새 상담 접수\n이름: ${data.name}\n분야: ${categoryLabel}\n연락처: ${data.phone || "-"}`;
+  const text = `[법무법인 하이로] 새 상담 접수\n이름: ${data.name}\n분야: ${categoryLabel}\n연락처: ${data.phone || "-"}`;
 
   const result = await sendSMS(ADMIN_SMS_RECEIVER, text);
   await logSmsResult({
@@ -477,7 +477,7 @@ async function confirmConsultation(id, opts = {}) {
         const startDateTime = `${slot.date} ${slot.startTime}`;
         const endDateTime = `${slot.date} ${slot.endTime}`;
         const ev = await googleCalendar.createConsultationEvent({
-          summary: `[윤정 법률사무소] ${existing.name}님 화상 상담`,
+          summary: `[법무법인 하이로] ${existing.name}님 화상 상담`,
           description: `분야: ${existing.category}\n연락처: ${existing.phone}\n\n${existing.message || ""}`,
           startDateTime, endDateTime,
           attendeeEmail: existing.email || undefined,

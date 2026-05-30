@@ -1,4 +1,4 @@
-/** 파트너변호사 3인(한샘이/김효림/김수경) 프로필 풍부화 시드.
+﻿/** 파트너변호사 3인(한샘이/김효림/김수경) 프로필 풍부화 시드.
  *  각 변호사 행이 있으면 UPDATE, 없으면 INSERT. 다른 변호사는 손대지 않는다. */
 const crypto = require("crypto");
 const Database = require("better-sqlite3");
@@ -18,7 +18,7 @@ const profiles = [
     tagline: "복잡한 가사·민사 분쟁을 차분하게 풀어냅니다.",
     introduction:
       "복잡한 법률 문제를 명확하게 풀어내고, 의뢰인과 함께 최적의 해결책을 찾아갑니다. 이혼·상속·후견 등 가사사건과 민사 분쟁에서 의뢰인의 입장을 가장 가까이에서 대변합니다.",
-    email: "hansaemi@younjeong.com",
+    email: "hansaemi@highlaw.co.kr",
     phone: "02-000-0000",
     consultHours: "평일 09:30 – 18:00",
     education: JSON.stringify([
@@ -86,7 +86,7 @@ const profiles = [
     tagline: "꼼꼼한 분석과 전략적 사고로 부동산·건설 사건을 다룹니다.",
     introduction:
       "꼼꼼한 분석과 전략적 사고로 의뢰인의 권익을 적극 보호합니다. 분양·임대차·재건축 등 부동산 사건과 공사대금·하자 분쟁에서 의뢰인에게 유리한 결과를 만듭니다.",
-    email: "kimhyorim@younjeong.com",
+    email: "kimhyorim@highlaw.co.kr",
     phone: "02-000-0000",
     consultHours: "평일 09:30 – 18:00",
     education: JSON.stringify([
@@ -145,7 +145,7 @@ const profiles = [
     tagline: "신속하고 정확한 대응으로 형사·기업 사건을 다룹니다.",
     introduction:
       "신속하고 정확한 대응으로 의뢰인이 안심할 수 있는 법률 서비스를 제공합니다. 형사사건과 기업 자문에서 사건 초기부터 결과까지 일관된 전략으로 의뢰인을 보호합니다.",
-    email: "kimsukyung@younjeong.com",
+    email: "kimsukyung@highlaw.co.kr",
     phone: "02-000-0000",
     consultHours: "평일 09:30 – 18:00",
     education: JSON.stringify([

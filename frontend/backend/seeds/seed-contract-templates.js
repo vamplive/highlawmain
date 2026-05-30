@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 기본 계약서 템플릿 시드 스크립트
  * - 표준 위임계약서, 간단 합의서 2종 시드
  * - 이미 존재하면 중복 생성하지 않음
@@ -16,7 +16,7 @@ const SETTLEMENT_TEMPLATE_TITLE = "표준 합의서";
 const ENGAGEMENT_BODY_LINES = [
   "위임계약서",
   "",
-  "법무법인 윤정(이하 \"수임인\")과 의뢰인(이하 \"위임인\")은 다음과 같이 소송/법률사무 처리를 위한 위임계약을 체결한다.",
+  "법무법인 하이로(이하 \"수임인\")과 의뢰인(이하 \"위임인\")은 다음과 같이 소송/법률사무 처리를 위한 위임계약을 체결한다.",
   "",
   "제1조 (위임의 목적)",
   "위임인은 자신의 법률사무 처리를 수임인에게 위임하고, 수임인은 이를 수락한다.",
@@ -75,7 +75,7 @@ const SETTLEMENT_BODY_LINES = [
   "",
   "을 (상대방): {{sign:상대방}}",
   "",
-  "대리인(법무법인 윤정): {{sign:변호사}}",
+  "대리인(법무법인 하이로): {{sign:변호사}}",
 ];
 
 function buildJson(lines) {
@@ -144,7 +144,7 @@ function seed() {
     insert.run(
       crypto.randomUUID(),
       ENGAGEMENT_TEMPLATE_TITLE,
-      "법무법인 윤정 기본 위임계약서 양식 (서명 2인: 의뢰인 + 변호사)",
+      "법무법인 하이로 기본 위임계약서 양식 (서명 2인: 의뢰인 + 변호사)",
       "engagement",
       buildJson(ENGAGEMENT_BODY_LINES),
       buildHtml(ENGAGEMENT_BODY_LINES),
