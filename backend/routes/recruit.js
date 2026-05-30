@@ -2,6 +2,7 @@
  * 채용 공고 API 라우트
  * GET    /api/recruit           — 공개: 발행된 채용 공고 목록
  * GET    /api/recruit/:id       — 공개: 채용 공고 상세
+ * POST   /api/recruit/upload    — 관리자: 첨부파일 업로드
  * POST   /api/recruit           — 관리자: 채용 공고 생성
  * PUT    /api/recruit/:id       — 관리자: 채용 공고 수정
  * DELETE /api/recruit/:id       — 관리자: 채용 공고 삭제
@@ -9,9 +10,41 @@
 const express = require("express");
 const router = express.Router();
 const crypto = require("crypto");
+const multer = require("multer");
+const path = require("path");
+const fsp = require("fs").promises;
 const { db } = require("../db");
 const { recruitPosts } = require("../db/schema");
 const { eq, desc, and } = require("drizzle-orm");
+const { adminAuth } = require("../lib/auth");
+
+const STORAGE_ROOT = process.env.STORAGE_PATH || path.join(__dirname, "..", "data");
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
+
+const ALLOWED_EXTS = new Set(["pdf", "jpg", "jpeg", "png", "webp", "gif", "hwp", "doc", "docx"]);
+
+// ── 관리자: 첨부파일 업로드 ──
+router.post("/upload", adminAuth, upload.single("file"), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: "파일이 필요합니다" });
+
+    const ext = path.extname(req.file.originalname).toLowerCase().replace(".", "");
+    if (!ALLOWED_EXTS.has(ext)) {
+      return res.status(400).json({ error: `지원하지 않는 형식입니다: .${ext} (허용: pdf, jpg, png, webp, gif, hwp, doc, docx)` });
+    }
+
+    const dir = path.join(STORAGE_ROOT, "uploads", "recruit");
+    await fsp.mkdir(dir, { recursive: true });
+
+    const uniqueName = `${Date.now()}-${crypto.randomUUID().split("-")[0]}.${ext}`;
+    await fsp.writeFile(path.join(dir, uniqueName), req.file.buffer);
+
+    return res.json({ data: { url: `/uploads/recruit/${uniqueName}`, filename: req.file.originalname } });
+  } catch (err) {
+    console.error("[recruit] POST /upload error:", err);
+    return res.status(500).json({ error: err.message });
+  }
+});
 
 // ── 공개: 채용 공고 목록 ──
 // ?category=new_lawyer&all=true(관리자 전용)

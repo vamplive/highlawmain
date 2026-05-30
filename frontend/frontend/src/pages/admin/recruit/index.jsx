@@ -1,5 +1,5 @@
 /** 관리자 채용 공고 관리 페이지 — 목록, 등록, 수정, 삭제 */
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { PageHeader, EmptyState, COLORS, fieldStyle, outlineBtnStyle, thStyle, tdStyle, badgeStyle } from "../../../components/admin";
 import { api } from "../../../utils/api";
 import { formatDate } from "../../../utils/formatters";
@@ -46,8 +46,43 @@ function PostModal({ post, onClose, onSaved }) {
     isPublished: Boolean(post.isPublished),
   } : INITIAL_FORM);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const fileInputRef = useRef(null);
 
   const set = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
+
+  const uploadFile = async (file) => {
+    if (!file) return;
+    const ALLOWED = ["pdf", "jpg", "jpeg", "png", "webp", "gif", "hwp", "doc", "docx"];
+    const ext = file.name.split(".").pop().toLowerCase();
+    if (!ALLOWED.includes(ext)) {
+      showToast(`지원하지 않는 형식입니다: .${ext}`);
+      return;
+    }
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/recruit/upload", { method: "POST", body: fd, credentials: "include" });
+      const json = await res.json();
+      if (!res.ok || json.error) throw new Error(json.error || "업로드 실패");
+      set("applicationFileUrl", json.data.url);
+      set("applicationFileName", json.data.filename);
+      showToast("파일 업로드 완료", "success");
+    } catch (err) {
+      showToast("업로드 실패: " + err.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleFileDrop = (e) => {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) uploadFile(file);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -129,14 +164,102 @@ function PostModal({ post, onClose, onSaved }) {
             </div>
           </div>
 
+          {/* 첨부파일 업로드 */}
           <div style={groupStyle}>
-            <label style={labelStyle}>지원서 파일 URL</label>
-            <input value={form.applicationFileUrl || ""} onChange={(e) => set("applicationFileUrl", e.target.value)} placeholder="https://..." style={fieldStyle} />
+            <label style={labelStyle}>첨부파일 (지원서, 공고문 등)</label>
+
+            {/* 현재 파일이 있을 때 */}
+            {form.applicationFileUrl ? (
+              <div style={{
+                display: "flex", alignItems: "center", gap: 10,
+                padding: "10px 14px", borderRadius: 6, border: `1px solid ${COLORS.border}`,
+                background: "#f8f9fb",
+              }}>
+                <span style={{ fontSize: 18 }}>
+                  {/\.(jpg|jpeg|png|webp|gif)$/i.test(form.applicationFileUrl) ? "🖼️" : "📄"}
+                </span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: COLORS.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {form.applicationFileName || form.applicationFileUrl.split("/").pop()}
+                  </div>
+                  <a href={form.applicationFileUrl} target="_blank" rel="noopener noreferrer"
+                    style={{ fontSize: 11, color: "#1a3a6b", textDecoration: "none" }}>
+                    미리보기 / 다운로드 ↗
+                  </a>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { set("applicationFileUrl", ""); set("applicationFileName", ""); }}
+                  style={{ ...outlineBtnStyle(COLORS.danger), fontSize: 12, padding: "4px 10px" }}
+                >
+                  삭제
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  style={{ ...outlineBtnStyle(), fontSize: 12, padding: "4px 10px" }}
+                >
+                  교체
+                </button>
+              </div>
+            ) : (
+              /* 드래그 앤 드롭 + 클릭 업로드 영역 */
+              <div
+                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={handleFileDrop}
+                onClick={() => fileInputRef.current?.click()}
+                style={{
+                  border: `2px dashed ${dragOver ? "#1a3a6b" : COLORS.border}`,
+                  borderRadius: 8,
+                  padding: "28px 20px",
+                  textAlign: "center",
+                  cursor: "pointer",
+                  background: dragOver ? "rgba(26,58,107,0.04)" : "#fafafa",
+                  transition: "all 0.15s",
+                }}
+              >
+                <div style={{ fontSize: 28, marginBottom: 8 }}>
+                  {uploading ? "⏳" : "📎"}
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: COLORS.text, marginBottom: 4 }}>
+                  {uploading ? "업로드 중..." : "파일을 드래그하거나 클릭해서 선택"}
+                </div>
+                <div style={{ fontSize: 11, color: COLORS.textMuted }}>
+                  PDF, JPG, PNG, HWP, DOCX · 최대 20MB
+                </div>
+              </div>
+            )}
+
+            {/* 숨겨진 파일 입력 */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,.hwp,.doc,.docx"
+              style={{ display: "none" }}
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadFile(f); e.target.value = ""; }}
+            />
           </div>
 
-          <div style={groupStyle}>
-            <label style={labelStyle}>지원서 파일명 (다운로드 표시명)</label>
-            <input value={form.applicationFileName || ""} onChange={(e) => set("applicationFileName", e.target.value)} placeholder="예: 하이로_지원서.hwp" style={fieldStyle} />
+          {/* 수동 URL 입력 (선택) */}
+          <div style={{ ...groupStyle, marginTop: -8 }}>
+            <label style={{ ...labelStyle, color: COLORS.textMuted, fontWeight: 400 }}>
+              또는 외부 URL 직접 입력 (선택)
+            </label>
+            <input
+              value={form.applicationFileUrl || ""}
+              onChange={(e) => set("applicationFileUrl", e.target.value)}
+              placeholder="https://..."
+              style={{ ...fieldStyle, fontSize: 12 }}
+            />
+            {form.applicationFileUrl && (
+              <input
+                value={form.applicationFileName || ""}
+                onChange={(e) => set("applicationFileName", e.target.value)}
+                placeholder="파일명 표시 (예: 하이로_지원서.pdf)"
+                style={{ ...fieldStyle, fontSize: 12, marginTop: 6 }}
+              />
+            )}
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 24 }}>
