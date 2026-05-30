@@ -6,23 +6,29 @@ import { useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import useMediaQuery from "../../../hooks/useMediaQuery";
 
-/* 프리미엄 디자인 토큰 — 클린 화이트 + 딥 블루 악센트 */
+/* 홈페이지 기반 디자인 토큰 — 딥 네이비 사이드바 + 골드 액센트 */
 const THEME = {
-  /* 사이드바 */
-  sidebarBg: "#ffffff",
-  sidebarBorder: "#edf0f4",
-  /* 악센트 — 골드 */
-  accent: "#1a3a6b",
-  accentLight: "#2a4f8a",
-  accentDim: "rgba(26,58,107,0.08)",
-  accentText: "#143058",
+  /* 사이드바 — 홈페이지 bg-dark (#0b1f3a) */
+  sidebarBg: "#0b1f3a",
+  sidebarBorder: "rgba(255,255,255,0.08)",
+  /* 골드 액센트 — 홈페이지 --accent-gold */
+  accent: "#c9a84c",
+  accentLight: "#b8923e",
+  accentDim: "rgba(201,168,76,0.14)",
+  accentText: "#c9a84c",
+  /* 사이드바 텍스트 (다크 배경 위) */
+  sidebarText: "rgba(255,255,255,0.82)",
+  sidebarTextMuted: "rgba(255,255,255,0.40)",
+  sidebarActiveText: "#c9a84c",
+  sidebarActiveBg: "rgba(201,168,76,0.12)",
+  sidebarHoverBg: "rgba(255,255,255,0.06)",
   /* 본문 */
-  pageBg: "#f8f9fb",
+  pageBg: "#f5f7fa",
   white: "#ffffff",
-  border: "#e5e8ed",
-  text: "#1e293b",
-  textSec: "#475569",
-  textMuted: "#94a3b8",
+  border: "rgba(11,31,58,0.12)",
+  text: "#0b1f3a",
+  textSec: "#4a5568",
+  textMuted: "#8a97a8",
 };
 
 /**
@@ -207,7 +213,7 @@ export default function AdminLayout({ onLogout, children }) {
           ? "transform 0.22s cubic-bezier(0.4, 0, 0.2, 1)"
           : "width 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
         display: "flex", flexDirection: "column",
-        boxShadow: "1px 0 0 #e5e8ed, 4px 0 16px rgba(0,0,0,0.04)",
+        boxShadow: "4px 0 24px rgba(0,0,0,0.18)",
         borderRight: `1px solid ${THEME.sidebarBorder}`,
       }}>
         {/* 브랜드 */}
@@ -223,7 +229,7 @@ export default function AdminLayout({ onLogout, children }) {
           <div style={{
             width: 36, height: 36, borderRadius: 8,
             background: THEME.accentDim,
-            border: `1px solid rgba(26,58,107,0.15)`,
+            border: `1px solid rgba(201,168,76,0.25)`,
             display: "flex", alignItems: "center", justifyContent: "center",
             flexShrink: 0, padding: 5,
           }}>
@@ -232,7 +238,7 @@ export default function AdminLayout({ onLogout, children }) {
           {(!collapsed || isMobile) && (
             <div style={{ lineHeight: 1.3, overflow: "hidden" }}>
               <div style={{
-                fontSize: 13, fontWeight: 600, color: THEME.text,
+                fontSize: 13, fontWeight: 600, color: "#ffffff",
                 letterSpacing: "0.22em", fontFamily: "'Georgia', serif",
               }}>
                 HIGHLAW
@@ -265,10 +271,10 @@ export default function AdminLayout({ onLogout, children }) {
               padding: isCompact ? "10px 0" : "9px 14px",
               justifyContent: isCompact ? "center" : "flex-start",
               width: "100%",
-              fontSize: 13, fontWeight: active ? 600 : 450,
+              fontSize: 13, fontWeight: active ? 600 : 400,
               letterSpacing: "0.01em",
-              color: active ? THEME.accentText : (hovered ? THEME.text : THEME.textSec),
-              background: active ? THEME.accentDim : (hovered ? "#f5f6f8" : "transparent"),
+              color: active ? THEME.accent : (hovered ? "#ffffff" : THEME.sidebarText),
+              background: active ? THEME.accentDim : (hovered ? THEME.sidebarHoverBg : "transparent"),
               borderRadius: 6, textDecoration: "none",
               borderLeft: active ? `2px solid ${THEME.accent}` : "2px solid transparent",
               transition: "background-color 150ms ease, color 150ms ease",
@@ -350,8 +356,8 @@ export default function AdminLayout({ onLogout, children }) {
                           padding: "7px 12px 7px 28px",
                           fontSize: 12.5,
                           fontWeight: isActive ? 600 : 400,
-                          color: isActive ? THEME.accentText : (hoveredItem === child.to ? THEME.text : THEME.textSec),
-                          background: isActive ? THEME.accentDim : (hoveredItem === child.to ? "#f5f6f8" : "transparent"),
+                          color: isActive ? THEME.accent : (hoveredItem === child.to ? "#ffffff" : THEME.sidebarText),
+                          background: isActive ? THEME.accentDim : (hoveredItem === child.to ? THEME.sidebarHoverBg : "transparent"),
                           borderRadius: 6,
                           textDecoration: "none",
                           borderLeft: isActive ? `2px solid ${THEME.accent}` : "2px solid transparent",
@@ -374,25 +380,25 @@ export default function AdminLayout({ onLogout, children }) {
           <Link to="/" style={{
             display: "flex", alignItems: "center", gap: 10,
             justifyContent: collapsed && !isMobile ? "center" : "flex-start",
-            fontSize: 12, color: THEME.textMuted, textDecoration: "none",
-            padding: collapsed && !isMobile ? "8px 0" : "8px 16px", borderRadius: 8,
+            fontSize: 12, color: THEME.sidebarTextMuted, textDecoration: "none",
+            padding: collapsed && !isMobile ? "8px 0" : "8px 16px", borderRadius: 6,
             transition: "all 0.2s",
           }}
-          onMouseEnter={e => { e.currentTarget.style.color = THEME.text; e.currentTarget.style.background = "#f5f6f8"; }}
-          onMouseLeave={e => { e.currentTarget.style.color = THEME.textMuted; e.currentTarget.style.background = "transparent"; }}
+          onMouseEnter={e => { e.currentTarget.style.color = "#fff"; e.currentTarget.style.background = THEME.sidebarHoverBg; }}
+          onMouseLeave={e => { e.currentTarget.style.color = THEME.sidebarTextMuted; e.currentTarget.style.background = "transparent"; }}
           >
             <Icon name="home" size={15} />{(!collapsed || isMobile) && "홈페이지"}
           </Link>
           <button onClick={onLogout} style={{
             display: "flex", alignItems: "center", gap: 10, width: "100%",
             justifyContent: collapsed && !isMobile ? "center" : "flex-start",
-            fontSize: 12, color: THEME.textMuted, background: "none",
+            fontSize: 12, color: THEME.sidebarTextMuted, background: "none",
             border: "none", cursor: "pointer",
-            padding: collapsed && !isMobile ? "8px 0" : "8px 16px", borderRadius: 8,
+            padding: collapsed && !isMobile ? "8px 0" : "8px 16px", borderRadius: 6,
             transition: "all 0.2s",
           }}
-          onMouseEnter={e => { e.currentTarget.style.color = THEME.text; e.currentTarget.style.background = "#f5f6f8"; }}
-          onMouseLeave={e => { e.currentTarget.style.color = THEME.textMuted; e.currentTarget.style.background = "transparent"; }}
+          onMouseEnter={e => { e.currentTarget.style.color = "#fff"; e.currentTarget.style.background = THEME.sidebarHoverBg; }}
+          onMouseLeave={e => { e.currentTarget.style.color = THEME.sidebarTextMuted; e.currentTarget.style.background = "transparent"; }}
           >
             <Icon name="logout" size={15} />{(!collapsed || isMobile) && "로그아웃"}
           </button>
@@ -403,11 +409,11 @@ export default function AdminLayout({ onLogout, children }) {
               display: "flex", alignItems: "center", justifyContent: "center",
               width: "100%", marginTop: 6, padding: "7px 0",
               background: "none", border: "none", cursor: "pointer",
-              color: THEME.textMuted, borderRadius: 6,
+              color: THEME.sidebarTextMuted, borderRadius: 6,
               transition: "all 0.2s",
             }}
-            onMouseEnter={e => e.currentTarget.style.color = THEME.textSec}
-            onMouseLeave={e => e.currentTarget.style.color = THEME.textMuted}
+            onMouseEnter={e => e.currentTarget.style.color = "#fff"}
+            onMouseLeave={e => e.currentTarget.style.color = THEME.sidebarTextMuted}
           >
             <Icon name={collapsed ? "right" : "left"} size={14} />
           </button>}
