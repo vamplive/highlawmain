@@ -1,7 +1,7 @@
 /** 법무법인 하이로 카카오톡 채널 URL 상수 — 플로팅 버튼·상담 페이지·접수 후 CTA에서 공용 사용 */
 
 /** 채널 ID (pf.kakao.com/_<ID> 형식) */
-export const KAKAO_CHANNEL_ID = "_xfMTxan";
+export const KAKAO_CHANNEL_ID = "_highlawofficial";
 
 /** 채널 홈 페이지 */
 export const KAKAO_CHANNEL_HOME = `https://pf.kakao.com/${KAKAO_CHANNEL_ID}`;

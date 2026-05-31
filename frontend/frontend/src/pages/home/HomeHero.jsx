@@ -81,11 +81,7 @@ export default function HomeHero({ heroVideo, settings }) {
       <div className="hp-hero-overlay" />
 
       <div
-        className="hp-hero-content"
-        style={{
-          transform: "translateY(24vh)", // 화면 중앙선보다 더 하단에 우아하게 안착
-          transition: "transform 0.5s ease",
-        }}
+        className="hp-hero-content hp-hero-content-shifted"
         onClick={(e) => e.stopPropagation()}
       >
         {/* 통합 검색창 영역 — 샴페인 골드 테두리 & 반투명 다크 스타일 */}
@@ -255,15 +251,13 @@ export default function HomeHero({ heroVideo, settings }) {
         {/* 검색창 아래 여백을 20px로 가깝게 좁히고, 검색창의 560px 너비에 정합하여 반반 배치 */}
         <div 
           className="hp-cta-buttons" 
-          style={{ 
-            marginTop: 20, 
-            width: "100%", 
-            maxWidth: 560, 
-            margin: "20px auto 0", 
-            display: "flex", 
-            gap: 12, 
+          style={{
+            width: "100%",
+            maxWidth: 560,
+            margin: "20px auto 0",
+            display: "flex",
+            gap: 12,
             justifyContent: "space-between",
-            flexWrap: "nowrap"
           }}
         >
           <Link
@@ -276,7 +270,7 @@ export default function HomeHero({ heroVideo, settings }) {
           <a
             href={settings?.hero?.ctaSecondaryLink || "tel:02-6925-6757"}
             className="hp-hero-button hp-hero-button-secondary"
-            style={{ flex: 1, minWidth: 0, fontSize: 12, padding: "12px 16px", letterSpacing: "0.15em", fontWeight: 500, whiteSpace: "nowrap" }}
+            style={{ flex: 1, minWidth: 0, fontSize: 12, padding: "12px 16px", letterSpacing: "0.15em", fontWeight: 500 }}
           >
             {settings?.hero?.ctaSecondary || "전화 상담 02-6925-6757"}
           </a>

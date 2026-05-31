@@ -182,11 +182,23 @@ export const RESPONSIVE_STYLES = `
       min-height: auto;
       padding: 80px 20px;
     }
+    .hp-section-centered {
+      margin-bottom: 40px;
+    }
     .hp-scroll-indicator { display: none !important; }
   }
 
   @media (max-width: 480px) {
-    .hp-cta-buttons { flex-direction: column !important; gap: 16px !important; align-items: center !important; }
+    .hp-section {
+      padding: 64px 16px;
+    }
+    .hp-section-centered {
+      margin-bottom: 32px;
+    }
+    .hp-title {
+      font-size: clamp(1.5rem, 6vw, 2rem);
+    }
+    .hp-cta-buttons { flex-direction: column !important; gap: 12px !important; align-items: stretch !important; }
   }
 `;
 

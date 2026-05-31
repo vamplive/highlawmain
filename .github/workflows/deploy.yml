@@ -137,6 +137,16 @@ jobs:
              pm2 reload highlaw-api --update-env
              pm2 save'
 
+      - name: Run DB migrations
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }} \
+            'set -euo pipefail
+             cd /home/ubuntu/yjlawoffice/backend
+             for f in scripts/migrate-*.js; do
+               [ -f "$f" ] && node "$f" && echo "OK: $f" || echo "SKIP/FAIL: $f"
+             done'
+
       - name: Smoke test
         run: |
           sleep 3

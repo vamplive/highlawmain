@@ -79,7 +79,7 @@ function LawyerCard({ lawyer }) {
     <Link
       to={`/lawyers/${lawyer.slug || lawyer.id}`}
       className="hp-lawyer-card"
-      style={{ width: "280px", flexShrink: 0 }}
+      style={{ width: "min(280px, 100%)" }}
     >
       {lawyer.photoUrl ? (
         <img

@@ -159,7 +159,11 @@
   .lp-scope * { transition: none !important; animation: none !important; }
 }
 
-html { scroll-behavior: smooth; }
+html {
+  scroll-behavior: smooth;
+  /* 가로 스크롤 원천 차단 */
+  overflow-x: hidden;
+}
 
 body {
   font-family: var(--font-sans-kr);
@@ -168,6 +172,10 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   line-height: 1.8;
+  /* 모바일 가로 스크롤 방지 */
+  overflow-x: hidden;
+  /* iOS Safari 탭 하이라이트 제거 */
+  -webkit-tap-highlight-color: transparent;
 }
 
 a {

@@ -39,24 +39,44 @@ export default function FloatingContact() {
   if (!phoneEnabled && !kakaoEnabled && !telegramEnabled && !instagramEnabled && !youtubeEnabled && !naverBlogEnabled) return null;
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        bottom: 24,
-        right: 24,
-        zIndex: 9998,
-        display: "flex",
-        flexDirection: "column",
-        gap: 12,
-      }}
-    >
-      {phoneEnabled && <PhoneButton phone={phone} />}
-      {kakaoEnabled && <KakaoButton url={kakaoUrl} />}
-      {telegramEnabled && <TelegramButton url={telegramUrl} />}
-      {youtubeEnabled && <YoutubeButton url={youtubeUrl} />}
-      {instagramEnabled && <InstagramButton url={instagramUrl} />}
-      {naverBlogEnabled && <NaverBlogButton url={naverBlogUrl} />}
-    </div>
+    <>
+      {/* iOS 홈 인디케이터 및 모바일 버튼 크기 대응 */}
+      <style>{`
+        .floating-contact-stack {
+          position: fixed;
+          bottom: 24px;
+          right: 16px;
+          z-index: 9998;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+        @supports (bottom: env(safe-area-inset-bottom)) {
+          .floating-contact-stack {
+            bottom: calc(env(safe-area-inset-bottom) + 16px);
+          }
+        }
+        @media (max-width: 768px) {
+          .floating-contact-stack {
+            right: 12px;
+            gap: 8px;
+          }
+          .floating-btn-shell {
+            width: 48px !important;
+            height: 48px !important;
+            min-width: 48px !important;
+          }
+        }
+      `}</style>
+      <div className="floating-contact-stack">
+        {phoneEnabled && <PhoneButton phone={phone} />}
+        {kakaoEnabled && <KakaoButton url={kakaoUrl} />}
+        {telegramEnabled && <TelegramButton url={telegramUrl} />}
+        {youtubeEnabled && <YoutubeButton url={youtubeUrl} />}
+        {instagramEnabled && <InstagramButton url={instagramUrl} />}
+        {naverBlogEnabled && <NaverBlogButton url={naverBlogUrl} />}
+      </div>
+    </>
   );
 }
 
@@ -210,6 +230,7 @@ function FloatingButtonShell({ as = "button", children, label, background, hover
   return (
     <Tag
       {...rest}
+      className="floating-btn-shell"
       style={baseStyle}
       onMouseEnter={() => onHoverChange(true)}
       onMouseLeave={() => onHoverChange(false)}

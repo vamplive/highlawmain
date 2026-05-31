@@ -110,7 +110,7 @@ export default function QnaHubPage() {
       <section style={{ background: "#f7f8fa", borderBottom: "1px solid var(--border-subtle)" }}>
         <div className="container" style={{ maxWidth: 1080, padding: "16px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
           <Breadcrumb path={currentNav.path} />
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             <form onSubmit={(e) => { e.preventDefault(); setSearchActive((v) => !v); }} style={{ display: "flex", gap: 4 }}>
               <input
                 type="text"
@@ -119,7 +119,7 @@ export default function QnaHubPage() {
                 placeholder="질문 검색..."
                 style={{
                   padding: "8px 12px", fontSize: 13, border: "1px solid var(--border-color)",
-                  borderRadius: 3, width: 180, fontFamily: "inherit",
+                  borderRadius: 3, width: "min(180px, 40vw)", fontFamily: "inherit",
                 }}
               />
               <button type="submit" style={{

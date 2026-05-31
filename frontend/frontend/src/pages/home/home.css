@@ -346,9 +346,29 @@
   .hp-hero-copy { font-size: 15px; }
   .hp-scroll-indicator { display: none; }
   .hp-cta-section { padding: 72px 20px; }
+
+  /* 히어로 콘텐츠: 모바일에서 하강 폭 축소 */
+  .hp-hero-content-shifted {
+    transform: translateY(14vh);
+    transition: transform 0.5s ease;
+  }
+
+  /* 업무분야 카드 패딩 축소 */
+  .hp-solution-card {
+    padding: 32px 20px;
+  }
 }
 
 @media (max-width: 480px) {
+  .hp-hero {
+    min-height: 580px;
+  }
+
+  /* 소형 폰에서 히어로 하강 폭 더 축소 */
+  .hp-hero-content-shifted {
+    transform: translateY(8vh);
+  }
+
   .hp-cta-buttons {
     flex-direction: column;
     align-items: stretch;
@@ -357,5 +377,18 @@
   .hp-hero-button,
   .hp-cta-button {
     width: 100%;
+    min-width: 0;
+  }
+
+  .hp-solution-card {
+    padding: 24px 16px;
+  }
+}
+
+/* 데스크톱에서 히어로 하강 */
+@media (min-width: 769px) {
+  .hp-hero-content-shifted {
+    transform: translateY(24vh);
+    transition: transform 0.5s ease;
   }
 }
