@@ -74,7 +74,15 @@ export default function PortalLogin() {
           </div>
 
           {error && (
-            <p style={{ fontSize: 13, color: "#c62828", marginBottom: 16, textAlign: "center" }}>{error}</p>
+            <p style={{
+              fontSize: 13,
+              color: error.includes("승인 대기") ? "#e65100" : "#c62828",
+              marginBottom: 16,
+              textAlign: "center",
+              background: error.includes("승인 대기") ? "#fff3e0" : "transparent",
+              padding: error.includes("승인 대기") ? "10px 12px" : 0,
+              borderRadius: 6,
+            }}>{error}</p>
           )}
 
           <button

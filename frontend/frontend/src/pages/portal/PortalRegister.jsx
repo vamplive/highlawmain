@@ -38,7 +38,7 @@ export default function PortalRegister() {
         phone: form.phone.trim(),
         password: form.password,
       });
-      showToast("회원가입이 완료되었습니다. 로그인해주세요.", "success");
+      showToast("회원가입 신청이 완료되었습니다. 관리자 승인 후 로그인하실 수 있습니다.", "success");
       navigate("/portal/login", { replace: true });
     } catch (err) {
       setError(err.message || "회원가입에 실패했습니다");
@@ -64,7 +64,7 @@ export default function PortalRegister() {
           <h1 style={{ fontSize: 20, fontWeight: 700, color: T.text, fontFamily: "'Noto Serif KR', serif", marginBottom: 8 }}>
             회원가입
           </h1>
-          <p style={{ fontSize: 13, color: T.textSec }}>의뢰인 포털 계정을 생성합니다</p>
+          <p style={{ fontSize: 13, color: T.textSec }}>가입 후 관리자 승인이 필요합니다</p>
         </div>
 
         <form onSubmit={handleSubmit}>

@@ -97,6 +97,14 @@ const MENU_TREE = [
     ],
   },
   {
+    id: "portal",
+    label: "포털 관리",
+    icon: "users",
+    children: [
+      { to: "/admin/portal-users", label: "회원 관리" },
+    ],
+  },
+  {
     id: "system",
     label: "시스템",
     icon: "settings",

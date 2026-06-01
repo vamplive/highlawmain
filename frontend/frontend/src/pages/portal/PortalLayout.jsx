@@ -20,12 +20,12 @@ export default function PortalLayout() {
   }, []);
 
   if (authState === "checking") return null;
-  if (authState === "unauthed") return <Navigate to="/portal/login" replace />;
+  if (authState === "unauthed") return <Navigate to="/login" replace />;
 
   const handleLogout = async () => {
     // 쿠키 삭제는 서버가 Set-Cookie로 처리한다
     try { await portalApi.post("/logout"); } catch { /* 네트워크 오류 무시 */ }
-    navigate("/portal/login", { replace: true });
+    navigate("/login", { replace: true });
   };
 
   return (
@@ -43,8 +43,11 @@ export default function PortalLayout() {
         </Link>
 
         <nav style={{ display: "flex", alignItems: "center", gap: 20 }}>
-          <Link to="/portal" style={{ fontSize: 13, color: T.text, textDecoration: "none", fontWeight: 500 }}>
-            대시보드
+          <Link to="/portal/dashboard" style={{ fontSize: 13, color: T.text, textDecoration: "none", fontWeight: 500 }}>
+            사건 목록
+          </Link>
+          <Link to="/portal/time-tracking" style={{ fontSize: 13, color: T.text, textDecoration: "none", fontWeight: 500 }}>
+            타임트래킹
           </Link>
           <button
             onClick={handleLogout}

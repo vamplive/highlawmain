@@ -91,20 +91,39 @@ export default function MobileMenu({ open, onClose, navItems }) {
           </nav>
         </div>
 
-        {/* 하단 관리자 링크 */}
-        <div style={{ paddingTop: 28, borderTop: "1px solid rgba(255, 255, 255, 0.1)" }}>
+        {/* 하단 링크 */}
+        <div style={{ paddingTop: 28, borderTop: "1px solid rgba(255, 255, 255, 0.1)", display: "flex", flexDirection: "column", gap: 12 }}>
+          <Link
+            to="/login"
+            onClick={onClose}
+            style={{
+              display: "block",
+              padding: "12px 20px",
+              fontSize: 13,
+              fontWeight: 600,
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+              textDecoration: "none",
+              color: "#c9a84c",
+              border: "1.5px solid rgba(201,168,76,0.4)",
+              borderRadius: 6,
+              textAlign: "center",
+            }}
+          >
+            포털 로그인
+          </Link>
           <Link
             to="/admin"
             onClick={onClose}
-            className="view-more"
             style={{
-              color: "#DEC584",
-              borderColor: "rgba(255, 255, 255, 0.15)",
-              fontSize: 12,
+              fontSize: 11,
+              color: "rgba(255,255,255,0.3)",
               textDecoration: "none",
+              textAlign: "center",
+              letterSpacing: "0.06em",
             }}
           >
-            관리자 페이지
+            관리자
           </Link>
         </div>
       </div>

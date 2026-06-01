@@ -84,6 +84,10 @@ const AdminTrustAccounts = lazy(() => import("./pages/admin/trust-accounts"));
 const AdminLawyerRevenue = lazy(() => import("./pages/admin/lawyer-revenue"));
 const AdminArAging = lazy(() => import("./pages/admin/ar-aging"));
 const AdminRecruit = lazy(() => import("./pages/admin/recruit"));
+const AdminPortalUsers = lazy(() => import("./pages/admin/portal-users"));
+
+/* ── 로그인/포털 진입 청크: 지연 로딩 ── */
+const LoginPage = lazy(() => import("./pages/public/LoginPage"));
 
 /* ── 공개 초대/서명 청크: 지연 로딩 ── */
 const InviteEntryPage = lazy(() => import("./pages/public/InviteEntryPage"));
@@ -97,6 +101,8 @@ const PortalRegister = lazy(() => import("./pages/portal/PortalRegister"));
 const PortalDashboard = lazy(() => import("./pages/portal/PortalDashboard"));
 const PortalCaseDetail = lazy(() => import("./pages/portal/PortalCaseDetail"));
 const PortalCaseRecords = lazy(() => import("./pages/portal/PortalCaseRecords"));
+const PortalCaseRegister = lazy(() => import("./pages/portal/PortalCaseRegister"));
+const PortalTimeTracking = lazy(() => import("./pages/portal/PortalTimeTracking"));
 const PortalContracts = lazy(() => import("./pages/portal/PortalContracts"));
 const PortalContractSign = lazy(() => import("./pages/portal/PortalContractSign"));
 
@@ -196,6 +202,7 @@ function AdminArea() {
           <Route path="lawyer-revenue" element={<LazyRoute><AdminLawyerRevenue /></LazyRoute>} />
           <Route path="ar-aging" element={<LazyRoute><AdminArAging /></LazyRoute>} />
           <Route path="recruit" element={<LazyRoute><AdminRecruit /></LazyRoute>} />
+          <Route path="portal-users" element={<LazyRoute><AdminPortalUsers /></LazyRoute>} />
         </Routes>
       </AdminLayout>
     </LazyRoute>
@@ -255,13 +262,19 @@ export default function App() {
           <Route path="*" element={<LazyRoute><NotFoundPage /></LazyRoute>} />
         </Route>
 
+        {/* /login — 통합 로그인/회원가입 페이지 (Layout 없이 풀스크린) */}
+        <Route path="/login" element={<ErrorBoundary><LazyRoute><LoginPage /></LazyRoute></ErrorBoundary>} />
+
         {/* 포털 — 지연 로딩 */}
         <Route path="/portal" element={<ErrorBoundary><LazyRoute><PortalLayout /></LazyRoute></ErrorBoundary>}>
-          <Route path="login" element={<LazyRoute><PortalLogin /></LazyRoute>} />
-          <Route path="register" element={<LazyRoute><PortalRegister /></LazyRoute>} />
+          {/* /portal/login → /login 으로 통합 (기존 링크 북마크 호환) */}
+          <Route path="login" element={<Navigate to="/login" replace />} />
+          <Route path="register" element={<Navigate to="/login" replace />} />
           <Route path="dashboard" element={<LazyRoute><PortalDashboard /></LazyRoute>} />
+          <Route path="cases/register" element={<LazyRoute><PortalCaseRegister /></LazyRoute>} />
           <Route path="cases/:id" element={<LazyRoute><PortalCaseDetail /></LazyRoute>} />
           <Route path="cases/:id/records" element={<LazyRoute><PortalCaseRecords /></LazyRoute>} />
+          <Route path="time-tracking" element={<LazyRoute><PortalTimeTracking /></LazyRoute>} />
           <Route path="contracts" element={<LazyRoute><PortalContracts /></LazyRoute>} />
           <Route path="contracts/:id" element={<LazyRoute><PortalContractSign /></LazyRoute>} />
         </Route>

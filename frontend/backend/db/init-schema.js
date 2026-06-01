@@ -1464,5 +1464,32 @@ module.exports = {
   try { sqlite.exec("ALTER TABLE qna_questions ADD COLUMN kakao_user_id TEXT"); } catch (e) { warnMigrationSkip(e); }
   try { sqlite.exec("CREATE INDEX IF NOT EXISTS idx_qna_questions_kakao_user ON qna_questions(kakao_user_id)"); } catch (e) { warnMigrationSkip(e); }
 
+  // portal_users — 구글 캘린더 OAuth2 토큰 컬럼 (포털 사용자 개인 캘린더 연동용)
+  try { sqlite.exec("ALTER TABLE portal_users ADD COLUMN google_access_token TEXT"); } catch (e) { warnMigrationSkip(e); }
+  try { sqlite.exec("ALTER TABLE portal_users ADD COLUMN google_refresh_token TEXT"); } catch (e) { warnMigrationSkip(e); }
+  try { sqlite.exec("ALTER TABLE portal_users ADD COLUMN google_token_expires_at INTEGER"); } catch (e) { warnMigrationSkip(e); }
+
+  // portal_time_entries — 포털 사용자(직원/변호사)의 사건별 시간 기록
+  // time_entries(변호사 ERP용)와 별도로 관리하여 포털 자기서비스 방식을 지원한다.
+  try {
+    sqlite.exec(`
+      CREATE TABLE IF NOT EXISTS portal_time_entries (
+        id TEXT PRIMARY KEY,
+        portal_user_id TEXT NOT NULL REFERENCES portal_users(id) ON DELETE CASCADE,
+        case_id TEXT REFERENCES case_files(id) ON DELETE SET NULL,
+        description TEXT NOT NULL,
+        started_at TEXT NOT NULL,
+        ended_at TEXT,
+        duration_minutes INTEGER,
+        note TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+      CREATE INDEX IF NOT EXISTS idx_portal_time_entries_user ON portal_time_entries(portal_user_id, started_at);
+      CREATE INDEX IF NOT EXISTS idx_portal_time_entries_case ON portal_time_entries(case_id);
+      CREATE INDEX IF NOT EXISTS idx_portal_time_entries_active ON portal_time_entries(portal_user_id) WHERE ended_at IS NULL;
+    `);
+  } catch (e) { warnMigrationSkip(e); }
+
   },
 };

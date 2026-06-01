@@ -583,14 +583,19 @@ const pageViews = sqliteTable("page_views", {
 });
 
 // =============================================
-// portal_users — 의뢰인 포털 계정
+// portal_users — 포털 계정 (직원/의뢰인 공용)
+// isActive: 0=승인대기, 1=활성, -1=거절
 // =============================================
 const portalUsers = sqliteTable("portal_users", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   clientId: text("client_id").references(() => clients.id, { onDelete: "set null" }),
   email: text("email").notNull(),
   passwordHash: text("password_hash").notNull(),
-  isActive: integer("is_active").notNull().default(1),
+  isActive: integer("is_active").notNull().default(0),
+  // 구글 캘린더 OAuth2 토큰 (포털 사용자 개인 캘린더 연동)
+  googleAccessToken: text("google_access_token"),
+  googleRefreshToken: text("google_refresh_token"),
+  googleTokenExpiresAt: integer("google_token_expires_at"),
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
   updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
 });
@@ -991,6 +996,22 @@ const courtDates = sqliteTable("court_dates", {
   updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
 });
 
+// =============================================
+// portal_time_entries — 포털 사용자 사건별 시간 기록
+// =============================================
+const portalTimeEntries = sqliteTable("portal_time_entries", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  portalUserId: text("portal_user_id").notNull().references(() => portalUsers.id, { onDelete: "cascade" }),
+  caseId: text("case_id").references(() => caseFilesTable.id, { onDelete: "set null" }),
+  description: text("description").notNull(),
+  startedAt: text("started_at").notNull(),
+  endedAt: text("ended_at"),
+  durationMinutes: integer("duration_minutes"),
+  note: text("note"),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+});
+
 module.exports = {
   DOCUMENT_TYPES,
   DOCUMENT_STATUSES,
@@ -1081,4 +1102,6 @@ module.exports = {
   TRUST_TRANSACTION_TYPES,
   TRUST_REFERENCE_TYPES,
   trustTransactions,
+
+  portalTimeEntries,
 };

@@ -12,23 +12,23 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://highlaw.co.kr',
+        target: 'http://localhost:5001',
         changeOrigin: true,
       },
       '/r': {
-        target: 'https://highlaw.co.kr',
+        target: 'http://localhost:5001',
         changeOrigin: true,
       },
       '/uploads': {
-        target: 'https://highlaw.co.kr',
+        target: 'http://localhost:5001',
         changeOrigin: true,
       },
       '/data': {
-        target: 'https://highlaw.co.kr',
+        target: 'http://localhost:5001',
         changeOrigin: true,
       },
       '/sitemap.xml': {
-        target: 'https://highlaw.co.kr',
+        target: 'http://localhost:5001',
         changeOrigin: true,
       },
     },
