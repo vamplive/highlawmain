@@ -2,6 +2,7 @@
  * 업무분야 페이지 — 법무법인 하이로 12대 전문 분야
  * 의뢰인 고민 → 대표 분야 → 차별점 → 분야 선택 카드 → CTA
  */
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowRight, Phone,
@@ -191,8 +192,15 @@ const AREAS = [
   },
 ];
 
+const TABS = [
+  { id: "pain-points", label: "상담 필요여부" },
+  { id: "advantages", label: "하이로의 강점" },
+  { id: "areas", label: "업무 분야" },
+];
+
 export default function PracticePage() {
   const ref = useReveal();
+  const [activeTab, setActiveTab] = useState("pain-points");
 
   return (
     <div ref={ref}>
@@ -213,103 +221,180 @@ export default function PracticePage() {
         secondaryAction={{ href: "tel:02-6925-6757", label: "02-6925-6757" }}
       />
 
-      {/* ━━━ 핵심 지표 ━━━ */}
-      <section style={{ background: "#fff", padding: "0 24px" }}>
-        <div style={{ maxWidth: 1000, margin: "0 auto", transform: "translateY(-48px)" }}>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-0 reveal" style={{ background: "var(--bg-dark)", boxShadow: "0 20px 60px rgba(0,0,0,0.15)" }}>
-            {CASE_RESULTS.map((r, i) => (
-              <div key={i} className="text-center" style={{ padding: "32px 16px", borderRight: i < 3 ? "1px solid var(--white-08)" : "none" }}>
-                <p className="font-en" style={{ fontSize: 10, letterSpacing: "0.15em", color: "var(--accent-gold)", marginBottom: 8 }}>{r.category}</p>
-                <p className="font-serif" style={{ fontSize: "clamp(24px, 3vw, 32px)", fontWeight: 500, color: "#fff", lineHeight: 1 }}>
-                  {r.amount}<span style={{ fontSize: "0.5em", fontWeight: 300, color: "var(--white-60)" }}> {r.unit}</span>
-                </p>
-                <p style={{ fontSize: 12, color: "var(--white-40)", marginTop: 6 }}>{r.label}</p>
+      <style>{`
+        @keyframes tabFadeIn {
+          from { opacity: 0; transform: translateY(12px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .tab-content-active {
+          animation: tabFadeIn 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+        }
+      `}</style>
+
+      {/* ==================== 탭 네비게이션 섹션 ==================== */}
+      <section className="section" style={{ background: "#fff", paddingTop: 56, paddingBottom: 0 }}>
+        <div className="container" style={{ maxWidth: 1000 }}>
+          
+          {/* ==================== 3개 타원형(Pill) 탭 네비게이션 ==================== */}
+          <div
+            role="tablist"
+            aria-label="업무분야 섹션 선택"
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              gap: "12px",
+              flexWrap: "wrap",
+              marginBottom: 40
+            }}
+          >
+            {TABS.map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  style={{
+                    padding: "10px 24px",
+                    minHeight: 44,
+                    fontSize: 13,
+                    fontWeight: isActive ? 600 : 400,
+                    border: "1px solid",
+                    borderColor: isActive ? "var(--accent-gold)" : "rgba(0,0,0,0.12)",
+                    borderRadius: 24,
+                    background: isActive ? "var(--accent-gold)" : "transparent",
+                    color: isActive ? "#fff" : "var(--gray-500)",
+                    cursor: "pointer",
+                    transition: "all 0.3s ease",
+                    letterSpacing: "0.05em",
+                    fontFamily: "inherit",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                  aria-selected={isActive}
+                  role="tab"
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ==================== 탭별 본문 내용 ==================== */}
+
+      {/* 1. 상담 필요여부 탭 */}
+      {activeTab === "pain-points" && (
+        <div className="tab-content-active" key="pain-points">
+          <section style={{ background: "#fff", padding: "0 24px 80px" }}>
+            <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+              <SectionHeading title="이런 문제로 고민하고 계신가요?" />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 stagger">
+                {PAIN_POINTS.map((p, i) => (
+                  <SurfaceCard key={i} className="reveal flex items-center gap-4" style={{ padding: "18px 24px", background: "var(--bg-primary)", borderLeft: "3px solid var(--accent-gold)" }}>
+                    <p style={{ fontSize: 14, color: "var(--gray-600)", fontWeight: 400, lineHeight: 1.6 }}>&quot;{p.text}&quot;</p>
+                  </SurfaceCard>
+                ))}
               </div>
-            ))}
-          </div>
+              <p className="text-center reveal" style={{ marginTop: 32, fontSize: 15, color: "var(--accent-gold)", fontWeight: 500 }}>
+                법무법인 하이로가 해결의 길을 함께 찾아드립니다.
+              </p>
+            </div>
+          </section>
         </div>
-      </section>
+      )}
 
-      {/* ━━━ 의뢰인 고민 공감 ━━━ */}
-      <section style={{ background: "#fff", padding: "40px 24px 80px" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <SectionHeading title="이런 문제로 고민하고 계신가요?" />
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 stagger">
-            {PAIN_POINTS.map((p, i) => (
-              <SurfaceCard key={i} className="reveal flex items-center gap-4" style={{ padding: "18px 24px", background: "var(--bg-primary)", borderLeft: "3px solid var(--accent-gold)" }}>
-                <p style={{ fontSize: 14, color: "var(--gray-600)", fontWeight: 400, lineHeight: 1.6 }}>&quot;{p.text}&quot;</p>
-              </SurfaceCard>
-            ))}
-          </div>
-          <p className="text-center reveal" style={{ marginTop: 32, fontSize: 15, color: "var(--accent-gold)", fontWeight: 500 }}>
-            법무법인 하이로가 해결의 길을 함께 찾아드립니다.
-          </p>
-        </div>
-      </section>
-
-      {/* ━━━ 왜 특화 로펌인가 ━━━ */}
-      <section style={{ background: "var(--bg-primary)", padding: "var(--section-py) 24px" }}>
-        <div style={{ maxWidth: 1000, margin: "0 auto" }}>
-          <SectionHeading eyebrow="WHY SPECIALIST" title="왜 법무법인 하이로인가" />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 stagger">
-            {ADVANTAGES.map((a, i) => {
-              const Icon = a.icon;
-              return (
-                <SurfaceCard key={i} className="reveal flex gap-5" style={{ padding: "32px 28px" }}>
-                  <div style={{ width: 52, height: 52, background: "var(--accent-gold-light)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <Icon size={24} strokeWidth={1.5} color="var(--accent-gold)" />
+      {/* 2. 하이로의 강점 탭 */}
+      {activeTab === "advantages" && (
+        <div className="tab-content-active" key="advantages">
+          {/* ━━━ 핵심 지표 ━━━ */}
+          <section style={{ background: "#fff", padding: "0 24px 40px" }}>
+            <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-0 reveal" style={{ background: "var(--bg-dark)", boxShadow: "0 20px 60px rgba(0,0,0,0.15)" }}>
+                {CASE_RESULTS.map((r, i) => (
+                  <div key={i} className="text-center" style={{ padding: "32px 16px", borderRight: i < 3 ? "1px solid var(--white-08)" : "none" }}>
+                    <p className="font-en" style={{ fontSize: 10, letterSpacing: "0.15em", color: "var(--accent-gold)", marginBottom: 8 }}>{r.category}</p>
+                    <p className="font-serif" style={{ fontSize: "clamp(24px, 3vw, 32px)", fontWeight: 500, color: "#fff", lineHeight: 1 }}>
+                      {r.amount}<span style={{ fontSize: "0.5em", fontWeight: 300, color: "var(--white-60)" }}> {r.unit}</span>
+                    </p>
+                    <p style={{ fontSize: 12, color: "var(--white-40)", marginTop: 6 }}>{r.label}</p>
                   </div>
-                  <div>
-                    <h3 style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)", marginBottom: 8 }}>{a.title}</h3>
-                    <p style={{ fontSize: 13.5, color: "var(--gray-500)", lineHeight: 1.8, fontWeight: 300 }}>{a.desc}</p>
-                  </div>
-                </SurfaceCard>
-              );
-            })}
-          </div>
-        </div>
-      </section>
+                ))}
+              </div>
+            </div>
+          </section>
 
-      {/* ━━━ 분야 선택 카드 ━━━ */}
-      <section style={{ background: "#fff", padding: "var(--section-py) 24px" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <SectionHeading eyebrow="PRACTICE AREAS" title="전문 분야를 선택하세요" />
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 stagger">
-            {AREAS.map((area, i) => {
-              const Icon = area.icon;
-              return (
-                <SurfaceCard key={i} as={Link} to={area.to} className="reveal group block" style={{ textDecoration: "none", overflow: "hidden" }}>
-                  <div className="relative overflow-hidden" style={{ height: 220 }}>
-                    <div className="absolute inset-0 transition-transform duration-700 group-hover:scale-105" style={{ backgroundImage: `url(${area.image})`, backgroundSize: "cover", backgroundPosition: "center" }} />
-                    <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.7) 100%)" }} />
-                    <div className="absolute bottom-0 left-0 right-0 flex items-end justify-between" style={{ padding: "28px 28px" }}>
-                      <div>
-                        <p className="font-en" style={{ fontSize: 11, letterSpacing: "0.3em", color: "var(--accent-gold)", marginBottom: 6 }}>{area.label}</p>
-                        <h2 className="font-serif-kr" style={{ fontSize: 28, fontWeight: 500, color: "#fff" }}>{area.title}</h2>
+          {/* ━━━ 왜 특화 로펌인가 ━━━ */}
+          <section style={{ background: "var(--bg-primary)", padding: "var(--section-py) 24px" }}>
+            <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+              <SectionHeading eyebrow="WHY SPECIALIST" title="왜 법무법인 하이로인가" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 stagger">
+                {ADVANTAGES.map((a, i) => {
+                  const Icon = a.icon;
+                  return (
+                    <SurfaceCard key={i} className="reveal flex gap-5" style={{ padding: "32px 28px" }}>
+                      <div style={{ width: 52, height: 52, background: "var(--accent-gold-light)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <Icon size={24} strokeWidth={1.5} color="var(--accent-gold)" />
                       </div>
-                      <Icon size={36} strokeWidth={1.2} color="rgba(255,255,255,0.85)" />
-                    </div>
-                  </div>
-                  <div style={{ padding: "28px 28px 32px" }}>
-                    <p style={{ fontSize: 14, color: "var(--gray-500)", lineHeight: 1.8, fontWeight: 300, marginBottom: 20 }}>{area.desc}</p>
-                    <ul style={{ listStyle: "none", padding: 0, margin: "0 0 24px" }}>
-                      {area.highlights.map((h, j) => (
-                        <li key={j} className="flex items-center gap-2" style={{ fontSize: 13.5, color: "var(--gray-600)", padding: "5px 0" }}>
-                          <CheckCircle2 size={14} color="var(--accent-gold)" strokeWidth={2} />{h}
-                        </li>
-                      ))}
-                    </ul>
-                    <span className="inline-flex items-center gap-2 font-en transition-all duration-300 group-hover:gap-3" style={{ fontSize: 12, letterSpacing: "0.12em", color: "var(--accent-gold)" }}>
-                      자세히 보기 <ArrowRight size={14} />
-                    </span>
-                  </div>
-                </SurfaceCard>
-              );
-            })}
-          </div>
+                      <div>
+                        <h3 style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)", marginBottom: 8 }}>{a.title}</h3>
+                        <p style={{ fontSize: 13.5, color: "var(--gray-500)", lineHeight: 1.8, fontWeight: 300 }}>{a.desc}</p>
+                      </div>
+                    </SurfaceCard>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
         </div>
-      </section>
+      )}
+
+      {/* 3. 업무 분야 탭 */}
+      {activeTab === "areas" && (
+        <div className="tab-content-active" key="areas">
+          {/* ━━━ 분야 선택 카드 ━━━ */}
+          <section style={{ background: "#fff", padding: "0 24px var(--section-py)" }}>
+            <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+              <SectionHeading eyebrow="PRACTICE AREAS" title="전문 분야를 선택하세요" />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 stagger">
+                {AREAS.map((area, i) => {
+                  const Icon = area.icon;
+                  return (
+                    <SurfaceCard key={i} as={Link} to={area.to} className="reveal group block" style={{ textDecoration: "none", overflow: "hidden" }}>
+                      <div className="relative overflow-hidden" style={{ height: 220 }}>
+                        <div className="absolute inset-0 transition-transform duration-700 group-hover:scale-105" style={{ backgroundImage: `url(${area.image})`, backgroundSize: "cover", backgroundPosition: "center" }} />
+                        <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.7) 100%)" }} />
+                        <div className="absolute bottom-0 left-0 right-0 flex items-end justify-between" style={{ padding: "28px 28px" }}>
+                          <div>
+                            <p className="font-en" style={{ fontSize: 11, letterSpacing: "0.3em", color: "var(--accent-gold)", marginBottom: 6 }}>{area.label}</p>
+                            <h2 className="font-serif-kr" style={{ fontSize: 28, fontWeight: 500, color: "#fff" }}>{area.title}</h2>
+                          </div>
+                          <Icon size={36} strokeWidth={1.2} color="rgba(255,255,255,0.85)" />
+                        </div>
+                      </div>
+                      <div style={{ padding: "28px 28px 32px" }}>
+                        <p style={{ fontSize: 14, color: "var(--gray-500)", lineHeight: 1.8, fontWeight: 300, marginBottom: 20 }}>{area.desc}</p>
+                        <ul style={{ listStyle: "none", padding: 0, margin: "0 0 24px" }}>
+                          {area.highlights.map((h, j) => (
+                            <li key={j} className="flex items-center gap-2" style={{ fontSize: 13.5, color: "var(--gray-600)", padding: "5px 0" }}>
+                              <CheckCircle2 size={14} color="var(--accent-gold)" strokeWidth={2} />{h}
+                            </li>
+                          ))}
+                        </ul>
+                        <span className="inline-flex items-center gap-2 font-en transition-all duration-300 group-hover:gap-3" style={{ fontSize: 12, letterSpacing: "0.12em", color: "var(--accent-gold)" }}>
+                          자세히 보기 <ArrowRight size={14} />
+                        </span>
+                      </div>
+                    </SurfaceCard>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+        </div>
+      )}
 
       {/* ━━━ CTA ━━━ */}
       <section style={{ background: "linear-gradient(135deg, #0a1628 0%, #0f1d32 100%)", padding: "80px 24px" }}>
