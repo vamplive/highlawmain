@@ -34,15 +34,15 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
           cache-dependency-path: |
-            frontend/package-lock.json
-            backend/package-lock.json
+            frontend/frontend/package-lock.json
+            frontend/backend/package-lock.json
 
       - name: Install frontend deps
-        working-directory: frontend
+        working-directory: frontend/frontend
         run: npm ci
 
       - name: Build frontend
-        working-directory: frontend
+        working-directory: frontend/frontend
         run: npm run build
 
       - name: Setup SSH
@@ -71,7 +71,7 @@ jobs:
         run: |
           rsync -az --delete \
             -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes" \
-            frontend/dist/ \
+            frontend/frontend/dist/ \
             ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }}:/home/ubuntu/yjlawoffice/frontend/dist/
 
       - name: Sync backend source
@@ -85,7 +85,7 @@ jobs:
             --exclude='.env' \
             --exclude='.env.*' \
             -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes" \
-            backend/ \
+            frontend/backend/ \
             ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }}:/home/ubuntu/yjlawoffice/backend/
 
       - name: Sync backend runtime env

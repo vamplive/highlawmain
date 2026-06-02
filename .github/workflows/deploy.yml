@@ -35,7 +35,7 @@ jobs:
           cache: npm
           cache-dependency-path: |
             frontend/frontend/package-lock.json
-            backend/package-lock.json
+            frontend/backend/package-lock.json
 
       - name: Install frontend deps
         working-directory: frontend/frontend
@@ -85,7 +85,7 @@ jobs:
             --exclude='.env' \
             --exclude='.env.*' \
             -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes" \
-            backend/ \
+            frontend/backend/ \
             ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }}:/home/ubuntu/yjlawoffice/backend/
 
       - name: Sync backend runtime env
