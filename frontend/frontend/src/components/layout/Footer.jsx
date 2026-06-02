@@ -12,7 +12,8 @@ export default function Footer({ isLawyerDetail, lang = "ko" }) {
   const contact = settings.contact || LAYOUT_DEFAULTS.contact;
   const instagramUrl = safeHttpUrl(contact.instagramUrl, "");
   const youtubeUrl = safeHttpUrl(contact.youtubeUrl, "");
-  const showSocials = !!(instagramUrl || youtubeUrl);
+  const naverBlogUrl = safeHttpUrl(contact.naverBlogUrl, "");
+  const showSocials = !!(instagramUrl || youtubeUrl || naverBlogUrl);
 
   return (
     <footer
@@ -162,6 +163,21 @@ export default function Footer({ isLawyerDetail, lang = "ko" }) {
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff" aria-hidden="true">
                   <path d="M12 2.163c3.204 0 3.584.012 4.85.07 1.366.062 2.633.336 3.608 1.311.975.975 1.249 2.242 1.311 3.608.058 1.266.07 1.646.07 4.85s-.012 3.584-.07 4.85c-.062 1.366-.336 2.633-1.311 3.608-.975.975-2.242 1.249-3.608 1.311-1.266.058-1.646.07-4.85.07s-3.584-.012-4.85-.07c-1.366-.062-2.633-.336-3.608-1.311-.975-.975-1.249-2.242-1.311-3.608C2.175 15.747 2.163 15.367 2.163 12s.012-3.584.07-4.85c.062-1.366.336-2.633 1.311-3.608.975-.975 2.242-1.249 3.608-1.311C8.416 2.175 8.796 2.163 12 2.163zm0 1.838c-3.15 0-3.51.012-4.74.068-1.024.047-1.578.218-1.948.362-.49.19-.84.418-1.207.785-.367.367-.595.717-.785 1.207-.144.37-.315.924-.362 1.948-.056 1.23-.068 1.59-.068 4.74s.012 3.51.068 4.74c.047 1.024.218 1.578.362 1.948.19.49.418.84.785 1.207.367.367.717.595 1.207.785.37.144.924.315 1.948.362 1.23.056 1.59.068 4.74.068s3.51-.012 4.74-.068c1.024-.047 1.578-.218 1.948-.362.49-.19.84-.418 1.207-.785.367-.367.595-.717.785-1.207.144-.37.315-.924.362-1.948.056-1.23.068-1.59.068-4.74s-.012-3.51-.068-4.74c-.047-1.024-.218-1.578-.362-1.948-.19-.49-.418-.84-.785-1.207-.367-.367-.717-.595-1.207-.785-.37-.144-.924-.315-1.948-.362-1.23-.056-1.59-.068-4.74-.068zm0 3.155A4.844 4.844 0 1 1 12 16.84a4.844 4.844 0 0 1 0-9.688zm0 7.99a3.146 3.146 0 1 0 0-6.293 3.146 3.146 0 0 0 0 6.293zm6.16-8.198a1.132 1.132 0 1 1-2.265 0 1.132 1.132 0 0 1 2.265 0z" />
+                </svg>
+              </a>
+            )}
+            {naverBlogUrl && (
+              <a
+                href={naverBlogUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="네이버 블로그 — 새 창으로 열림"
+                style={socialIconStyle}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "#03C75A"; e.currentTarget.style.borderColor = "#03C75A"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)"; }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="#fff" aria-hidden="true">
+                  <path d="M16.2 3H21v18h-4.8l-8.4-12v12H3V3h4.8l8.4 12V3z"/>
                 </svg>
               </a>
             )}

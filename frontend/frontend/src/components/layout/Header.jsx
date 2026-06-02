@@ -114,33 +114,6 @@ export default function Header({ heroTop, isLawyerDetail, menuOpen, onToggleMenu
                 {item.label}
               </NavLink>
             ))}
-
-            {/* 포털 로그인 버튼 */}
-            <Link
-              to="/login"
-              style={{
-                fontFamily: "Pretendard, 'Noto Sans KR', sans-serif",
-                fontSize: 11,
-                fontWeight: 600,
-                letterSpacing: "0.12em",
-                textTransform: "uppercase",
-                textDecoration: "none",
-                padding: "7px 18px",
-                borderRadius: 4,
-                border: `1.5px solid ${heroTop ? "rgba(255,255,255,0.35)" : "var(--accent-gold)"}`,
-                color: heroTop ? "rgba(255,255,255,0.85)" : "var(--accent-gold)",
-                transition: "all 0.3s ease",
-                whiteSpace: "nowrap",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = heroTop ? "rgba(255,255,255,0.1)" : "rgba(201,168,76,0.08)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "transparent";
-              }}
-            >
-              LOGIN
-            </Link>
           </nav>
 
         </div>

@@ -107,7 +107,7 @@ export const DEFAULT_SETTINGS = {
   ] },
   "layout/nav": { items: [{ to: "/about", label: "사무소 소개" }, { to: "/practice", label: "업무분야" }, { to: "/lawyers", label: "변호사 소개" }, { to: "/consultation", label: "상담안내" }, { to: "/blog", label: "블로그" }, { to: "/cases", label: "성공 사례" }] },
   "layout/footer": { companyName: "법무법인 하이로", tagline: "진실된 마음으로 의뢰인의 목소리에 귀를 기울이며\n최선의 법률적 해법을 제시합니다", address: "서울특별시 서초구 서초대로 327, 5층", tel: "준비 중", fax: "02-594-5584", hours: "평일 09:00 - 18:00", note: "예약 상담 우선 진행", copyright: "© 2025-2026 법무법인 하이로 HIGH & LAW FIRM. All Rights Reserved." },
-  "layout/contact": { phone: "준비 중", kakaoUrl: "https://pf.kakao.com/_xfMTxan/chat", telegramUrl: "https://t.me/YounSeHwan", telegramEnabled: true, kakaoEnabled: true, phoneEnabled: true },
+  "layout/contact": { phone: "준비 중", kakaoUrl: "https://pf.kakao.com/_xfMTxan/chat", telegramUrl: "https://t.me/YounSeHwan", instagramUrl: "https://www.instagram.com/highlaw.official?igsh=ZGg2N3hmaDNkZjJw", naverBlogUrl: "https://blog.naver.com/highlaw", youtubeUrl: "https://www.youtube.com/@%ED%95%98%EC%9D%B4%EB%A1%9C%EC%8A%A4%ED%8A%9C%EB%94%94%EC%98%A4", telegramEnabled: true, kakaoEnabled: true, phoneEnabled: true, instagramEnabled: true, naverBlogEnabled: true, youtubeEnabled: true },
   "theme/colors": { accentGold: "#3b6ea5", accentGoldHover: "#2e588a", heroDark: "#0f1923", textPrimary: "#1a1a1a", textSecondary: "#555" },
   "seo/global": { defaultOgImage: "" },
 };

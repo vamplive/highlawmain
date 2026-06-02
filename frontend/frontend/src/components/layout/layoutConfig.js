@@ -34,11 +34,13 @@ export const LAYOUT_DEFAULTS = {
     telegramUrl: "",
     instagramUrl: "https://www.instagram.com/highlaw.official?igsh=ZGg2N3hmaDNkZjJw",
     youtubeUrl: "https://www.youtube.com/@%ED%95%98%EC%9D%B4%EB%A1%9C%EC%8A%A4%ED%8A%9C%EB%94%94%EC%98%A4",
+    naverBlogUrl: "https://blog.naver.com/highlaw",
     telegramEnabled: false,
     kakaoEnabled: false,
     phoneEnabled: true,
     instagramEnabled: true,
     youtubeEnabled: true,
+    naverBlogEnabled: true,
   },
 };
 

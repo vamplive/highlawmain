@@ -35,9 +35,9 @@ export default function LayoutSection({ settings, update, updateItem, addItem, r
         <FormField label="저작권 표시" value={s["layout/footer"].copyright} onChange={(v) => update("layout/footer", "copyright", v)} />
       </SectionCard>
 
-      <SectionCard title="플로팅 문의 버튼 (전화/카카오톡/텔레그램)">
+      <SectionCard title="플로팅 문의 및 SNS 버튼 (전화/카카오톡/텔레그램/인스타그램/블로그/유튜브)">
         <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 12 }}>
-          모든 페이지 우측 하단에 노출되는 플로팅 버튼입니다. 각 채널을 켜고 끌 수 있고, URL을 수정할 수 있습니다.
+          모든 페이지 우측 하단 및 푸터에 노출되는 연락처/SNS 정보입니다. 각 채널을 켜고 끌 수 있고, URL을 수정할 수 있습니다.
         </p>
         <FieldRow>
           <ToggleField label="전화 버튼 표시" checked={!!s["layout/contact"].phoneEnabled} onChange={(v) => update("layout/contact", "phoneEnabled", v)} />
@@ -51,10 +51,21 @@ export default function LayoutSection({ settings, update, updateItem, addItem, r
           <ToggleField label="텔레그램 버튼 표시" checked={!!s["layout/contact"].telegramEnabled} onChange={(v) => update("layout/contact", "telegramEnabled", v)} />
           <FormField label="텔레그램 URL" value={s["layout/contact"].telegramUrl} onChange={(v) => update("layout/contact", "telegramUrl", v)} placeholder="https://t.me/yourusername" />
         </FieldRow>
+        <FieldRow>
+          <ToggleField label="인스타그램 표시" checked={!!s["layout/contact"].instagramEnabled} onChange={(v) => update("layout/contact", "instagramEnabled", v)} />
+          <FormField label="인스타그램 URL" value={s["layout/contact"].instagramUrl} onChange={(v) => update("layout/contact", "instagramUrl", v)} placeholder="https://www.instagram.com/..." />
+        </FieldRow>
+        <FieldRow>
+          <ToggleField label="네이버 블로그 표시" checked={!!s["layout/contact"].naverBlogEnabled} onChange={(v) => update("layout/contact", "naverBlogEnabled", v)} />
+          <FormField label="네이버 블로그 URL" value={s["layout/contact"].naverBlogUrl} onChange={(v) => update("layout/contact", "naverBlogUrl", v)} placeholder="https://blog.naver.com/..." />
+        </FieldRow>
+        <FieldRow>
+          <ToggleField label="유튜브 표시" checked={!!s["layout/contact"].youtubeEnabled} onChange={(v) => update("layout/contact", "youtubeEnabled", v)} />
+          <FormField label="유튜브 URL" value={s["layout/contact"].youtubeUrl} onChange={(v) => update("layout/contact", "youtubeUrl", v)} placeholder="https://www.youtube.com/..." />
+        </FieldRow>
         <p style={{ fontSize: 12, color: "#6b7280", marginTop: 8, lineHeight: 1.6 }}>
           <strong>텔레그램 세팅:</strong> ① 모바일 텔레그램 앱 설치 → ② 설정 → 사용자 이름(@username) 등록
-          → ③ <code>https://t.me/사용자이름</code> 형식으로 URL 입력. 사무소 전용 봇을 만들고 싶으면
-          @BotFather에게 <code>/newbot</code> 명령으로 봇을 만든 뒤 봇 URL을 사용해도 됩니다.
+          → ③ <code>https://t.me/사용자이름</code> 형식으로 URL 입력.
         </p>
       </SectionCard>
     </>
