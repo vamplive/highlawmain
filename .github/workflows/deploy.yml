@@ -142,7 +142,7 @@ jobs:
           ssh -i ~/.ssh/deploy_key \
             ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }} \
             'set -euo pipefail
-             cd /home/ubuntu/yjlawoffice/backend
+             cd /home/ubuntu/highlawmain/backend
              for f in scripts/migrate-*.js; do
                [ -f "$f" ] && node "$f" && echo "OK: $f" || echo "SKIP/FAIL: $f"
              done'
