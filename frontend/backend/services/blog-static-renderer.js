@@ -31,7 +31,14 @@ const STATIC_PAGES = [
 ];
 
 function getFrontendDist() {
-  return process.env.FRONTEND_DIST_PATH || path.resolve(__dirname, "..", "..", "frontend", "dist");
+  if (process.env.FRONTEND_DIST_PATH) {
+    return process.env.FRONTEND_DIST_PATH;
+  }
+  const nestedPath = path.resolve(__dirname, "..", "..", "frontend", "frontend", "dist");
+  if (fs.existsSync(nestedPath)) {
+    return nestedPath;
+  }
+  return path.resolve(__dirname, "..", "..", "frontend", "dist");
 }
 
 function escapeHtml(value) {
