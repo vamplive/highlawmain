@@ -85,6 +85,7 @@ const AdminLawyerRevenue = lazy(() => import("./pages/admin/lawyer-revenue"));
 const AdminArAging = lazy(() => import("./pages/admin/ar-aging"));
 const AdminRecruit = lazy(() => import("./pages/admin/recruit"));
 const AdminPortalUsers = lazy(() => import("./pages/admin/portal-users"));
+const AdminChatbot = lazy(() => import("./pages/admin/chatbot"));
 
 /* ── 로그인/포털 진입 청크: 지연 로딩 ── */
 const LoginPage = lazy(() => import("./pages/public/LoginPage"));
@@ -183,6 +184,7 @@ function AdminArea() {
           <Route path="bookings" element={<LazyRoute><AdminBookings /></LazyRoute>} />
           <Route path="cases" element={<LazyRoute><AdminCases /></LazyRoute>} />
           <Route path="qna" element={<LazyRoute><AdminQna /></LazyRoute>} />
+          <Route path="chatbot" element={<LazyRoute><AdminChatbot /></LazyRoute>} />
           <Route path="lectures" element={<LazyRoute><AdminLectures /></LazyRoute>} />
           <Route path="editor" element={<LazyRoute><EditorPage /></LazyRoute>} />
           <Route path="editor/:id" element={<LazyRoute><EditorPage /></LazyRoute>} />

@@ -72,6 +72,7 @@ const MENU_TREE = [
     children: [
       { to: "/admin/blog", label: "블로그" },
       { to: "/admin/qna", label: "법률 Q&A" },
+      { to: "/admin/chatbot", label: "상담도우미 챗봇" },
       { to: "/admin/reviews", label: "후기" },
       { to: "/admin/lectures", label: "강의" },
     ],
