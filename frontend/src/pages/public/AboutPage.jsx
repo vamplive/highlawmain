@@ -118,7 +118,7 @@ export default function AboutPage() {
         ]}
       />
       <PublicHero
-        image={null}
+        image="/realestate-hero.jpg"
         eyebrow={settings.hero.subheading}
         title={settings.hero.heading}
         description={settings.hero.description}

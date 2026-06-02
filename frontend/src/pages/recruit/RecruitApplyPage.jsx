@@ -144,7 +144,7 @@ export default function RecruitApplyPage() {
       />
 
       <PublicHero
-        image={null}
+        image="/construction-hero3.jpg"
         eyebrow="ONLINE APPLICATION"
         title="온라인 입사지원"
         description="법무법인 하이로와 함께할 유능한 인재분들의 소중한 지원을 기다립니다."

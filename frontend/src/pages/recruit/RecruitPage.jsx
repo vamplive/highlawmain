@@ -207,7 +207,7 @@ export default function RecruitPage() {
       />
 
       <PublicHero
-        image={null}
+        image="/construction-hero3.jpg"
         eyebrow="CAREERS AT HIGHLAW"
         title="인재 채용"
         description="신의성실(Loyalty)과 품격(Dignity)을 바탕으로, 탁월한 법률 솔루션을 창출해 나갈 하이로의 인재를 모십니다."
