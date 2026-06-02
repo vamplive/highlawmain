@@ -66,7 +66,7 @@ const ADVANTAGES = [
 const AREAS = [
   {
     to: "/practice/game-fraud",
-    image: "/realestate-hero.jpg",
+    image: "/practice-game.png",
     icon: Target,
     label: "GAME FRAUD",
     title: "게임사기",
@@ -75,7 +75,7 @@ const AREAS = [
   },
   {
     to: "/practice/illegal-dispatch",
-    image: "/construction-hero3.jpg",
+    image: "/practice-labor.png",
     icon: Users,
     label: "ILLEGAL DISPATCH",
     title: "불법파견",
@@ -84,7 +84,7 @@ const AREAS = [
   },
   {
     to: "/practice/civil",
-    image: "/construction-hero3.jpg",
+    image: "/practice-justice.png",
     icon: Scale,
     label: "CIVIL LAW",
     title: "민사",
@@ -93,7 +93,7 @@ const AREAS = [
   },
   {
     to: "/practice/criminal",
-    image: "/realestate-hero.jpg",
+    image: "/practice-justice.png",
     icon: Shield,
     label: "CRIMINAL LAW",
     title: "형사",
@@ -102,7 +102,7 @@ const AREAS = [
   },
   {
     to: "/practice/labor",
-    image: "/construction-hero3.jpg",
+    image: "/practice-labor.png",
     icon: Briefcase,
     label: "LABOR & HR",
     title: "인사노무",
@@ -111,7 +111,7 @@ const AREAS = [
   },
   {
     to: "/practice/serious-accident",
-    image: "/realestate-hero.jpg",
+    image: "/practice-corporate.png",
     icon: HardHat,
     label: "SERIOUS ACCIDENTS",
     title: "중대재해",
@@ -120,7 +120,7 @@ const AREAS = [
   },
   {
     to: "/practice/corporate",
-    image: "/construction-hero3.jpg",
+    image: "/practice-corporate.png",
     icon: Building2,
     label: "CORPORATE LAW",
     title: "기업",
@@ -129,7 +129,7 @@ const AREAS = [
   },
   {
     to: "/practice/defense",
-    image: "/realestate-hero.jpg",
+    image: "/practice-corporate.png",
     icon: Target,
     label: "DEFENSE INDUSTRY",
     title: "방산",
@@ -138,7 +138,7 @@ const AREAS = [
   },
   {
     to: "/practice/military-criminal",
-    image: "/construction-hero3.jpg",
+    image: "/practice-justice.png",
     icon: Award,
     label: "MILITARY CRIMINAL",
     title: "군형사",
@@ -147,7 +147,7 @@ const AREAS = [
   },
   {
     to: "/practice/entertainment",
-    image: "/realestate-hero.jpg",
+    image: "/practice-entertainment.png",
     icon: Music,
     label: "ENTERTAINMENT",
     title: "엔터테인먼트",
@@ -156,7 +156,7 @@ const AREAS = [
   },
   {
     to: "/practice/administrative",
-    image: "/construction-hero3.jpg",
+    image: "/practice-justice.png",
     icon: Building,
     label: "ADMINISTRATIVE LAW",
     title: "행정",
@@ -165,7 +165,7 @@ const AREAS = [
   },
   {
     to: "/practice/family",
-    image: "/realestate-hero.jpg",
+    image: "/practice-family.png",
     icon: Heart,
     label: "FAMILY & INHERITANCE",
     title: "가사 및 상속",
@@ -174,7 +174,7 @@ const AREAS = [
   },
   {
     to: "/practice/intellectual-property",
-    image: "/construction-hero3.jpg",
+    image: "/practice-ip.png",
     icon: Key,
     label: "INTELLECTUAL PROPERTY",
     title: "지적재산권",
@@ -183,7 +183,7 @@ const AREAS = [
   },
   {
     to: "/practice/immigration",
-    image: "/realestate-hero.jpg",
+    image: "/practice-immigration.png",
     icon: Globe,
     label: "IMMIGRATION",
     title: "이민",
@@ -214,6 +214,7 @@ export default function PracticePage() {
         ])}
       />
       <PublicHero
+        image="/realestate-hero.jpg"
         eyebrow="Expertise"
         title="업무 분야"
         description={"검증된 실무 역량과 정교한 법리 해석을 결합하여,\n클라이언트의 가치를 실현하는 최적의 법률 솔루션을 제시합니다."}
@@ -232,7 +233,7 @@ export default function PracticePage() {
       `}</style>
 
       {/* ==================== 탭 네비게이션 섹션 ==================== */}
-      <section className="section" style={{ background: "#fff", paddingTop: 56, paddingBottom: 0 }}>
+      <section className="section" style={{ background: "#fff" }}>
         <div className="container" style={{ maxWidth: 1000 }}>
           
           {/* ==================== 3개 타원형(Pill) 탭 네비게이션 ==================== */}
@@ -244,7 +245,7 @@ export default function PracticePage() {
               justifyContent: "center",
               gap: "12px",
               flexWrap: "wrap",
-              marginBottom: 40
+              marginBottom: 56
             }}
           >
             {TABS.map((tab) => {
@@ -308,25 +309,35 @@ export default function PracticePage() {
       {/* 2. 하이로의 강점 탭 */}
       {activeTab === "advantages" && (
         <div className="tab-content-active" key="advantages">
-          {/* ━━━ 핵심 지표 ━━━ */}
-          <section style={{ background: "#fff", padding: "0 24px 40px" }}>
+          {/* ━━━ 핵심 지표 (고급스러운 딥 네이비 & 리얼 골드 테두리 사각 표로 리뉴얼) ━━━ */}
+          <section style={{ background: "#fff", padding: "0 24px 24px" }}>
             <div style={{ maxWidth: 1000, margin: "0 auto" }}>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-0 reveal" style={{ background: "var(--bg-dark)", boxShadow: "0 20px 60px rgba(0,0,0,0.15)" }}>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-0 reveal" style={{ 
+                background: "linear-gradient(135deg, #0b1f3a 0%, #162f50 100%)", 
+                boxShadow: "0 20px 50px rgba(11, 31, 58, 0.20)",
+                border: "1.5px solid rgba(201, 168, 76, 0.35)",
+                borderRadius: "8px",
+                overflow: "hidden"
+              }}>
                 {CASE_RESULTS.map((r, i) => (
-                  <div key={i} className="text-center" style={{ padding: "32px 16px", borderRight: i < 3 ? "1px solid var(--white-08)" : "none" }}>
-                    <p className="font-en" style={{ fontSize: 10, letterSpacing: "0.15em", color: "var(--accent-gold)", marginBottom: 8 }}>{r.category}</p>
-                    <p className="font-serif" style={{ fontSize: "clamp(24px, 3vw, 32px)", fontWeight: 500, color: "#fff", lineHeight: 1 }}>
-                      {r.amount}<span style={{ fontSize: "0.5em", fontWeight: 300, color: "var(--white-60)" }}> {r.unit}</span>
+                  <div key={i} className="text-center" style={{ 
+                    padding: "36px 20px", 
+                    borderRight: i < 3 ? "1px solid rgba(201, 168, 76, 0.15)" : "none",
+                    background: "rgba(255, 255, 255, 0.02)",
+                  }}>
+                    <p className="font-en" style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.18em", color: "var(--accent-gold)", marginBottom: 8 }}>{r.category}</p>
+                    <p className="font-serif" style={{ fontSize: "clamp(24px, 2.5vw, 32px)", fontWeight: 500, color: "#ffffff", lineHeight: 1.2 }}>
+                      {r.amount}<span style={{ fontSize: "0.55em", fontWeight: 300, color: "rgba(255, 255, 255, 0.7)", marginLeft: 2 }}> {r.unit}</span>
                     </p>
-                    <p style={{ fontSize: 12, color: "var(--white-40)", marginTop: 6 }}>{r.label}</p>
+                    <p style={{ fontSize: 13, color: "rgba(255, 255, 255, 0.5)", marginTop: 8, fontWeight: 300, wordBreak: "keep-all" }}>{r.label}</p>
                   </div>
                 ))}
               </div>
             </div>
           </section>
 
-          {/* ━━━ 왜 특화 로펌인가 ━━━ */}
-          <section style={{ background: "var(--bg-primary)", padding: "var(--section-py) 24px" }}>
+          {/* ━━━ 왜 특화 로펌인가 (간격 조절: 패딩 축소) ━━━ */}
+          <section style={{ background: "var(--bg-primary)", padding: "48px 24px 80px" }}>
             <div style={{ maxWidth: 1000, margin: "0 auto" }}>
               <SectionHeading eyebrow="WHY SPECIALIST" title="왜 법무법인 하이로인가" />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 stagger">
