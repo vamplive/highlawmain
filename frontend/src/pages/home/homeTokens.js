@@ -122,11 +122,11 @@ export const RESPONSIVE_STYLES = `
     align-items: center;
     justify-content: center;
     box-sizing: border-box;
-    padding: 100px 48px;
+    padding: 100px 32px;
   }
   .hp-section-inner {
     width: 100%;
-    max-width: 1160px;
+    max-width: 1440px;
     margin: 0 auto;
     display: flex;
     flex-direction: column;

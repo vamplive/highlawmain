@@ -4,7 +4,7 @@ const TRUST_STATS = [
   { value: "2,000+", unit: "건", label: "누적 상담건수",  sub: "Total Consultations" },
   { value: "83%",    unit: "",   label: "의뢰인 재방문률", sub: "Client Return Rate" },
   { value: "24H",    unit: "",   label: "초기 응답 시간",  sub: "Initial Response" },
-  { value: "12",     unit: "인", label: "전문 변호사",     sub: "Specialist Attorneys" },
+  { value: "3",      unit: "인", label: "대표 변호사",     sub: "Partner Attorneys" },
 ];
 
 export default function HomeTrustSection() {
