@@ -99,7 +99,7 @@ describe("사이트 설정 라우트 (/api/site-settings)", () => {
       .set("x-csrf-token", csrf)
       .send({
         settings: {
-          "seo/global": { defaultOgImage: "/og-image.jpg" },
+          "seo/global": { defaultOgImage: "/og-image.png" },
         },
       });
 
@@ -109,6 +109,6 @@ describe("사이트 설정 라우트 (/api/site-settings)", () => {
     const res = await supertest(app).get("/api/site-settings?key=seo/global");
     expect(res.status).toBe(200);
     expect(res.body.data).toHaveLength(1);
-    expect(res.body.data[0].content.defaultOgImage).toBe("/og-image.jpg");
+    expect(res.body.data[0].content.defaultOgImage).toBe("/og-image.png");
   });
 });

@@ -73,7 +73,7 @@ export default function HomeHero({ heroVideo, settings }) {
         loop
         playsInline
         preload="metadata"
-        poster="/og-image.jpg"
+        poster="/og-image.png"
         src={heroVideo}
         onCanPlay={() => setVideoReady(true)}
       />

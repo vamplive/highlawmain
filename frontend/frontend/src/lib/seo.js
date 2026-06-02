@@ -16,7 +16,7 @@ export const DEFAULT_DESCRIPTION =
   "법무법인 하이로 — 불법파견·게임사기·노동·군사건 특화 로펌. 강남 테헤란로, 전문 변호사가 직접 상담합니다.";
 
 /** OG 이미지 기본값 (1200x630 공유 이미지 권장) */
-export const DEFAULT_OG_IMAGE = `${SITE_URL}/og-image.jpg`;
+export const DEFAULT_OG_IMAGE = `${SITE_URL}/og-image.png`;
 
 /** 사무소 연락처 — JSON-LD와 페이지 푸터에서 공통 사용 */
 export const OFFICE_CONTACT = {

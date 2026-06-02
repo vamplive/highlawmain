@@ -248,7 +248,7 @@ describe("블로그 라우트 (/api/blog)", () => {
         seoTitle: "수정 SEO 제목",
         seoDescription: "수정 설명",
         canonicalUrl: "/blog/seo-test",
-        ogImageUrl: "/og-image.jpg",
+        ogImageUrl: "/og-image.png",
       });
     expect(patchRes.status).toBe(200);
     expect(patchRes.body.data.seoTitle).toBe("수정 SEO 제목");

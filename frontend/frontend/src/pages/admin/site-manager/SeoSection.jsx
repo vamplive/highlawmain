@@ -116,7 +116,7 @@ export default function SeoSection({ setToast }) {
           label="이미지 URL"
           value={globalOg}
           onChange={setGlobalOg}
-          placeholder="https://HIGHLAW.com/og-image.jpg 또는 /og-image.jpg"
+          placeholder="https://highlaw.co.kr/og-image.png 또는 /og-image.png"
         />
         <div style={{ display: "flex", gap: 8, marginTop: 8, alignItems: "center", flexWrap: "wrap" }}>
           <button onClick={() => openPicker("global")} style={btnStyle(COLORS.textSecondary)}>
@@ -200,7 +200,7 @@ export default function SeoSection({ setToast }) {
             label="OG 이미지 URL (이 페이지 전용 — 비우면 전역 기본값 사용)"
             value={data.ogImage || ""}
             onChange={(v) => updateSeo("ogImage", v)}
-            placeholder="https://example.com/og-image.jpg"
+            placeholder="https://example.com/og-image.png"
           />
           <div style={{ display: "flex", gap: 8, marginTop: 8, alignItems: "center", flexWrap: "wrap" }}>
             <button onClick={() => openPicker("page")} style={btnStyle(COLORS.textSecondary)}>

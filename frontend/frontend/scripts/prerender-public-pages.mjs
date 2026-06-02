@@ -8,7 +8,7 @@ const dist = path.join(root, "dist");
 const indexPath = path.join(dist, "index.html");
 const siteUrl = (process.env.VITE_SITE_URL || "https://highlaw.co.kr").replace(/\/+$/, "");
 const siteName = "법무법인 하이로";
-const defaultImage = `${siteUrl}/og-image.jpg`;
+const defaultImage = `${siteUrl}/og-image.png`;
 
 const pages = [
   {
