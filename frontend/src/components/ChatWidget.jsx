@@ -20,7 +20,7 @@ function getSessionId() {
   return id;
 }
 
-export default function ChatWidget({ buttonBottom = 228 }) {
+export default function ChatWidget({ buttonBottom = 228, hideToggleButton = false }) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
@@ -36,6 +36,13 @@ export default function ChatWidget({ buttonBottom = 228 }) {
       setInitialized(true);
     }
   }, [initialized]);
+
+  /** 외부에서 챗봇을 열 수 있도록 커스텀 이벤트 리스너 등록 */
+  useEffect(() => {
+    const handleOpenChat = () => handleOpen();
+    window.addEventListener("open-chatbot", handleOpenChat);
+    return () => window.removeEventListener("open-chatbot", handleOpenChat);
+  }, [handleOpen]);
 
   /** 스크롤 하단 고정 */
   useEffect(() => {
@@ -71,7 +78,7 @@ export default function ChatWidget({ buttonBottom = 228 }) {
   return (
     <>
       {/* ==================== 토글 버튼 ==================== */}
-      {!open && (
+      {!open && !hideToggleButton && (
         <button
           onClick={handleOpen}
           aria-label="법률 상담 채팅 열기"

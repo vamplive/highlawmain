@@ -79,7 +79,7 @@ export default function Layout() {
       {!isHome && <Footer isLawyerDetail={isLawyerDetail} lang={lang} />}
 
       {/* 플로팅 위젯 — 카카오톡 + 전화 스택 */}
-      <ChatWidget />
+      <ChatWidget hideToggleButton={true} />
       <FloatingContact />
       <PrivacyConsentBanner />
     </div>
