@@ -113,7 +113,7 @@ export default function MobileMenu({ open, onClose, navItems }) {
             포털 로그인
           </Link>
           <Link
-            to="/admin"
+            to="/login"
             onClick={onClose}
             style={{
               fontSize: 11,
@@ -123,7 +123,7 @@ export default function MobileMenu({ open, onClose, navItems }) {
               letterSpacing: "0.06em",
             }}
           >
-            관리자
+            로그인
           </Link>
         </div>
       </div>
