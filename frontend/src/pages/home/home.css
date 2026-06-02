@@ -256,7 +256,7 @@
 
 .hp-lawyer-photo {
   width: 100%;
-  aspect-ratio: 3 / 4;
+  aspect-ratio: 1 / 1;
   object-fit: cover;
   object-position: center top;
   display: block;
@@ -268,7 +268,7 @@
   align-items: center;
   justify-content: center;
   width: 100%;
-  aspect-ratio: 3 / 4;
+  aspect-ratio: 1 / 1;
   background: #e5e8ed;
   color: #777;
   font-size: 14px;

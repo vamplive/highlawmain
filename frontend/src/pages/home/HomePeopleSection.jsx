@@ -24,7 +24,7 @@ export default function HomePeopleSection({ copy, settings }) {
   }, []);
 
   return (
-    <section className="hp-section" style={{ background: "#ffffff" }}>
+    <section className="hp-section" style={{ background: "#ffffff", padding: "60px 48px" }}>
       <div className="hp-section-inner">
         <div className="hp-section-centered">
           <p className="hp-kicker">{settings?.peopleHeader?.kicker || copy.peopleKicker}</p>

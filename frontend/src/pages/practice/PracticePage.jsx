@@ -3,6 +3,7 @@
  * 의뢰인 고민 → 대표 분야 → 차별점 → 분야 선택 카드 → CTA
  */
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Link } from "react-router-dom";
 import {
   ArrowRight, Phone,
@@ -200,7 +201,8 @@ const TABS = [
 
 export default function PracticePage() {
   const ref = useReveal();
-  const [activeTab, setActiveTab] = useState("pain-points");
+  const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "pain-points");
 
   return (
     <div ref={ref}>

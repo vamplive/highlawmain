@@ -1,5 +1,6 @@
 /** 상담안내 페이지 — 히어로 + 3개 탭(상담 신청/진행 절차/FAQ) */
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import useReveal from "../../hooks/useReveal";
 import ConsultationHero from "./ConsultationHero";
 import ConsultationSteps from "./ConsultationSteps";
@@ -16,7 +17,8 @@ const TABS = [
 
 export default function ConsultationPage() {
   const ref = useReveal();
-  const [activeTab, setActiveTab] = useState("form");
+  const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "form");
 
   return (
     <div ref={ref}>

@@ -1,9 +1,12 @@
+import { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { setLanguage } from "../../hooks/useSiteSettings";
 import HamburgerButton from "./HamburgerButton";
 import LogoCanvas from "./LogoCanvas";
+import { NAV_DROPDOWN } from "./layoutConfig";
 
 export default function Header({ heroTop, isLawyerDetail, menuOpen, onToggleMenu, navItems, lang }) {
+  const [openDropdown, setOpenDropdown] = useState(null);
 
 
   return (
@@ -89,31 +92,93 @@ export default function Header({ heroTop, isLawyerDetail, menuOpen, onToggleMenu
             </div>
           </Link>
 
-          {/* Desktop nav — 영어 둔탁함 개선을 위해 폰트 패밀리 강제 통일 및 자간 조정 */}
+          {/* Desktop nav */}
           <nav className="hidden lg:flex items-center gap-8 flex-shrink-0" aria-label="주요 메뉴">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className="transition-colors duration-300"
-                style={({ isActive }) => ({
-                  fontFamily: "Pretendard, 'Noto Sans KR', -apple-system, sans-serif",
-                  fontSize: 12,
-                  letterSpacing: "0.1em",
-                  fontWeight: isActive ? 500 : 400,
-                  textTransform: "uppercase",
-                  textDecoration: "none",
-                  color: isActive
-                    ? (heroTop ? "#fff" : "var(--text-primary)")
-                    : (heroTop ? "rgba(255,255,255,0.65)" : "var(--text-muted)"),
-                  paddingBottom: 4,
-                  borderBottom: isActive ? `1.5px solid ${heroTop ? "rgba(255,255,255,0.7)" : "var(--accent-gold)"}` : "1.5px solid transparent",
-                  transition: "color 0.5s ease, border-color 0.5s ease",
-                })}
-              >
-                {item.label}
-              </NavLink>
-            ))}
+            {navItems.map((item) => {
+              const dropdownItems = NAV_DROPDOWN[item.to];
+              const isOpen = openDropdown === item.to;
+              return (
+                <div
+                  key={item.to}
+                  style={{ position: "relative" }}
+                  onMouseEnter={() => setOpenDropdown(item.to)}
+                  onMouseLeave={() => setOpenDropdown(null)}
+                >
+                  <NavLink
+                    to={item.to}
+                    className="transition-colors duration-300"
+                    style={({ isActive }) => ({
+                      fontFamily: "Pretendard, 'Noto Sans KR', -apple-system, sans-serif",
+                      fontSize: 12,
+                      letterSpacing: "0.1em",
+                      fontWeight: isActive ? 500 : 400,
+                      textTransform: "uppercase",
+                      textDecoration: "none",
+                      color: isActive
+                        ? (heroTop ? "#fff" : "var(--text-primary)")
+                        : (heroTop ? "rgba(255,255,255,0.65)" : "var(--text-muted)"),
+                      paddingBottom: 4,
+                      borderBottom: isActive ? `1.5px solid ${heroTop ? "rgba(255,255,255,0.7)" : "var(--accent-gold)"}` : "1.5px solid transparent",
+                      transition: "color 0.5s ease, border-color 0.5s ease",
+                      display: "block",
+                    })}
+                  >
+                    {item.label}
+                  </NavLink>
+
+                  {/* 드롭다운 */}
+                  {dropdownItems && isOpen && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "calc(100% + 12px)",
+                        left: "50%",
+                        transform: "translateX(-50%)",
+                        minWidth: 140,
+                        background: heroTop ? "rgba(10,20,38,0.96)" : "#fff",
+                        border: heroTop ? "1px solid rgba(201,168,76,0.2)" : "1px solid #e8eaed",
+                        borderRadius: 8,
+                        boxShadow: "0 8px 28px rgba(0,0,0,0.14)",
+                        backdropFilter: "blur(12px)",
+                        zIndex: 100,
+                        overflow: "hidden",
+                        animation: "dropdownFadeIn 0.15s ease",
+                      }}
+                    >
+                      {dropdownItems.map((sub) => (
+                        <Link
+                          key={sub.to}
+                          to={sub.to}
+                          onClick={() => setOpenDropdown(null)}
+                          style={{
+                            display: "block",
+                            padding: "10px 18px",
+                            fontSize: 12,
+                            fontFamily: "Pretendard, 'Noto Sans KR', sans-serif",
+                            letterSpacing: "0.04em",
+                            color: heroTop ? "rgba(255,255,255,0.80)" : "var(--text-secondary)",
+                            textDecoration: "none",
+                            whiteSpace: "nowrap",
+                            borderBottom: "1px solid " + (heroTop ? "rgba(255,255,255,0.06)" : "#f4f4f4"),
+                            transition: "background 0.15s, color 0.15s",
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = heroTop ? "rgba(201,168,76,0.12)" : "#fdf6e8";
+                            e.currentTarget.style.color = heroTop ? "#DEC584" : "var(--accent-gold)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = "transparent";
+                            e.currentTarget.style.color = heroTop ? "rgba(255,255,255,0.80)" : "var(--text-secondary)";
+                          }}
+                        >
+                          {sub.label}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </nav>
 
         </div>

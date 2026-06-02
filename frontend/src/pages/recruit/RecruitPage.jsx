@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import useReveal from "../../hooks/useReveal";
 import { api } from "../../utils/api";
 import Seo from "../../components/Seo";
@@ -189,7 +190,8 @@ export default function RecruitPage() {
   const revealRef = useReveal();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("recruit"); // recruit, apply, contact
+  const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "recruit");
 
   useEffect(() => {
     api.get("/recruit")
