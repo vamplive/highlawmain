@@ -159,6 +159,42 @@ export default function AdminLawyers() {
   // 단순 파생값 헬퍼
   const setArr = (key) => (next) => crud.setField(key, next);
 
+  const moveUp = async (index) => {
+    if (index === 0) return;
+    const current = crud.items[index];
+    const prev = crud.items[index - 1];
+    const currentOrder = current.sortOrder;
+    const prevOrder = prev.sortOrder;
+
+    try {
+      await Promise.all([
+        crud.patchItem(current.id, { sortOrder: prevOrder }),
+        crud.patchItem(prev.id, { sortOrder: currentOrder }),
+      ]);
+      crud.load();
+    } catch (err) {
+      alert("순서 변경 실패: " + err.message);
+    }
+  };
+
+  const moveDown = async (index) => {
+    if (index === crud.items.length - 1) return;
+    const current = crud.items[index];
+    const next = crud.items[index + 1];
+    const currentOrder = current.sortOrder;
+    const nextOrder = next.sortOrder;
+
+    try {
+      await Promise.all([
+        crud.patchItem(current.id, { sortOrder: nextOrder }),
+        crud.patchItem(next.id, { sortOrder: currentOrder }),
+      ]);
+      crud.load();
+    } catch (err) {
+      alert("순서 변경 실패: " + err.message);
+    }
+  };
+
   return (
     <div>
       <ErrorBanner message={crud.error} onDismiss={crud.clearError} />
@@ -245,13 +281,17 @@ export default function AdminLawyers() {
         <EmptyState icon="⚖️" message="등록된 변호사가 없습니다" />
       ) : (
         <div className="space-y-3">
-          {crud.items.map((lawyer) => (
+          {crud.items.map((lawyer, index) => (
             <LawyerCard
               key={lawyer.id}
               lawyer={lawyer}
+              index={index}
+              totalItems={crud.items.length}
               onEdit={() => crud.openEdit(lawyer)}
               onRemove={() => crud.remove(lawyer.id)}
               onToggleActive={() => crud.patchItem(lawyer.id, { isActive: lawyer.isActive ? 0 : 1 })}
+              onMoveUp={() => moveUp(index)}
+              onMoveDown={() => moveDown(index)}
             />
           ))}
         </div>
@@ -272,7 +312,7 @@ function SectionTitle({ children }) {
 }
 
 /** 변호사 목록 카드 — 단일 항목 렌더링 */
-function LawyerCard({ lawyer, onEdit, onRemove, onToggleActive }) {
+function LawyerCard({ lawyer, index, totalItems, onEdit, onRemove, onToggleActive, onMoveUp, onMoveDown }) {
   return (
     <div
       className="flex items-center gap-4"
@@ -305,6 +345,31 @@ function LawyerCard({ lawyer, onEdit, onRemove, onToggleActive }) {
       <span style={{ fontSize: 11, color: "#ccc", minWidth: 40, textAlign: "center" }}>#{lawyer.sortOrder}</span>
 
       <div className="flex gap-2">
+        <button
+          onClick={onMoveUp}
+          disabled={index === 0}
+          style={{
+            ...outlineBtnStyle(),
+            opacity: index === 0 ? 0.3 : 1,
+            cursor: index === 0 ? "default" : "pointer"
+          }}
+          title="위로 이동"
+        >
+          ▲
+        </button>
+        <button
+          onClick={onMoveDown}
+          disabled={index === totalItems - 1}
+          style={{
+            ...outlineBtnStyle(),
+            opacity: index === totalItems - 1 ? 0.3 : 1,
+            cursor: index === totalItems - 1 ? "default" : "pointer"
+          }}
+          title="아래로 이동"
+        >
+          ▼
+        </button>
+
         <button onClick={onToggleActive} title={lawyer.isActive ? "비공개" : "공개"} style={outlineBtnStyle()}>
           {lawyer.isActive ? "👁️" : "🔒"}
         </button>
