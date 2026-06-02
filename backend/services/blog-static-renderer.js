@@ -10,9 +10,9 @@ const path = require("path");
 const crypto = require("crypto");
 const { sanitizeRichHtml } = require("../lib/htmlSanitizer");
 
-const SITE_URL = (process.env.SITE_URL || process.env.APP_URL || "https://highlaw.co.kr").replace(/\/+$/, "");
+const SITE_URL = (process.env.SITE_URL || process.env.APP_URL || "https://HIGHLAW.com").replace(/\/+$/, "");
 const SITE_NAME = "법무법인 하이로";
-const DEFAULT_DESCRIPTION = "법무법인 하이로 - 서초역 3분, 건설·부동산·민사·형사·행정 사건을 변호사가 직접 상담합니다.";
+const DEFAULT_DESCRIPTION = "법무법인 하이로 - 강남 테헤란로, 불법파견·게임사기·노동·군사건 사건을 변호사가 직접 상담합니다.";
 const DEFAULT_OG_IMAGE = `${SITE_URL}/og-image.png`;
 const STATIC_MARKER = "<!-- highlaw-static-blog-post -->";
 
@@ -389,6 +389,41 @@ function writePostPages(dist, template, posts) {
   }
 }
 
+/**
+ * /blog 허브 페이지를 dist/blog/index.html 로 생성한다.
+ *
+ * WHY: writePostPages 가 dist/blog/<slug>/ 디렉토리를 만들면서
+ * dist/blog/ 디렉토리도 함께 생성된다. 그런데 Vite 빌드는 /blog 경로용
+ * index.html 을 만들어주지 않아서 dist/blog/ 안에 index 가 없는 상태가 된다.
+ * 이 상태에서 운영 Nginx 가 try_files $uri $uri/ /index.html 로 GET /blog 를
+ * 처리하면, /blog/ 디렉토리가 매치되고 그 안의 index 를 찾다가 실패해
+ * autoindex 가 꺼져 있는 기본 설정에서는 403 Forbidden 을 돌려준다.
+ * (Google Search Console 의 "액세스 금지(403)로 인해 차단됨" 경고 원인)
+ *
+ * 빈 인덱스를 같이 깔아두면 Nginx 가 정상적으로 SPA 셸을 서빙한다.
+ */
+function writeBlogHubPage(dist, template) {
+  const blogDir = path.join(dist, "blog");
+  fs.mkdirSync(blogDir, { recursive: true });
+  const seo = {
+    title: `법률칼럼 | ${SITE_NAME}`,
+    description: "불법파견·게임사기·노동·군사건 분야의 실무 법률 칼럼과 최신 이슈를 확인하세요.",
+  };
+  const url = `${SITE_URL}/blog`;
+  const title = escapeHtml(seo.title);
+  const description = escapeHtml(seo.description);
+  const escapedUrl = escapeHtml(url);
+  let html = template.replace(/<title>[\s\S]*?<\/title>/i, `<title>${title}</title>`);
+  html = replaceCanonical(html, url);
+  html = updateMeta(html, 'name="description"', `<meta name="description" content="${description}" />`);
+  html = updateMeta(html, 'property="og:title"', `<meta property="og:title" content="${title}" />`);
+  html = updateMeta(html, 'property="og:description"', `<meta property="og:description" content="${description}" />`);
+  html = updateMeta(html, 'property="og:url"', `<meta property="og:url" content="${escapedUrl}" />`);
+  html = updateMeta(html, 'name="twitter:title"', `<meta name="twitter:title" content="${title}" />`);
+  html = updateMeta(html, 'name="twitter:description"', `<meta name="twitter:description" content="${description}" />`);
+  fs.writeFileSync(path.join(blogDir, "index.html"), injectStaticCsp(html), "utf8");
+}
+
 function writeSitemap(dist, posts, qnaCategories, qnaQuestions) {
   const today = new Date().toISOString().slice(0, 10);
   const lines = ['<?xml version="1.0" encoding="UTF-8"?>', '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'];
@@ -466,6 +501,9 @@ function syncPublishedBlogStaticArtifacts(sqlite) {
 
   removeGeneratedBlogPostPages(dist);
   writePostPages(dist, template, posts);
+  // /blog 허브 인덱스 — nginx 가 dist/blog/ 디렉토리 진입 시 403 을 내지 않도록
+  // 빈 SPA 셸을 같이 깔아둔다. (writePostPages 뒤에 호출해 디렉토리 생성을 보장)
+  writeBlogHubPage(dist, template);
   writeSitemap(dist, posts, qnaCategories, qnaQuestions);
   writeLlmsTxt(dist, posts);
   writeRenderManifest(dist, posts);

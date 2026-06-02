@@ -583,14 +583,19 @@ const pageViews = sqliteTable("page_views", {
 });
 
 // =============================================
-// portal_users — 의뢰인 포털 계정
+// portal_users — 포털 계정 (직원/의뢰인 공용)
+// isActive: 0=승인대기, 1=활성, -1=거절
 // =============================================
 const portalUsers = sqliteTable("portal_users", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   clientId: text("client_id").references(() => clients.id, { onDelete: "set null" }),
   email: text("email").notNull(),
   passwordHash: text("password_hash").notNull(),
-  isActive: integer("is_active").notNull().default(1),
+  isActive: integer("is_active").notNull().default(0),
+  // 구글 캘린더 OAuth2 토큰 (포털 사용자 개인 캘린더 연동)
+  googleAccessToken: text("google_access_token"),
+  googleRefreshToken: text("google_refresh_token"),
+  googleTokenExpiresAt: integer("google_token_expires_at"),
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
   updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
 });
@@ -607,6 +612,13 @@ const caseFilesTable = sqliteTable("case_files", {
   status: text("status").notNull().default("접수"),
   lawyerId: text("lawyer_id").references(() => lawyers.id, { onDelete: "set null" }),
   description: text("description"),
+  // 전자소송 호환 필드 — 의뢰인 포털에서 자기 사건의 기록을 조회할 때 노출된다.
+  caseNumber: text("case_number"),       // 사건번호 (예: 2024가합12345)
+  court: text("court"),                  // 재판부/관할법원 (예: 서울중앙지방법원 제1민사부)
+  caseType: text("case_type"),           // 사건유형 (민사/형사/가사/행정 등)
+  plaintiff: text("plaintiff"),          // 원고
+  defendant: text("defendant"),          // 피고
+  filedAt: text("filed_at"),             // 제소일 (YYYY-MM-DD)
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
   updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
 });
@@ -617,6 +629,15 @@ const caseDocuments = sqliteTable("case_documents", {
   filename: text("filename").notNull(),
   url: text("url").notNull(),
   uploadedBy: text("uploaded_by").default("admin"),
+  // 전자소송 스타일 사건 기록 메타데이터
+  documentType: text("document_type"),     // 문서 종류 (소장/답변서/준비서면/판결문 등)
+  submitter: text("submitter"),            // 제출자 (원고/피고/법원/우리측)
+  submissionDate: text("submission_date"), // 제출일자 (YYYY-MM-DD)
+  description: text("description"),        // 문서 설명/요지 — 우측 탭에 표시
+  fileSize: integer("file_size"),          // 바이트 단위
+  mimeType: text("mime_type"),
+  originalName: text("original_name"),     // 사용자가 업로드한 원본 파일명
+  isVisibleToClient: integer("is_visible_to_client").notNull().default(1),
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
 });
 
@@ -742,9 +763,26 @@ const qnaQuestions = sqliteTable("qna_questions", {
   viewCount: integer("view_count").notNull().default(0),
   // SEO
   metaDescription: text("meta_description"),
+  // 비밀글
+  isPrivate: integer("is_private").notNull().default(0),
+  passwordHash: text("password_hash"),
+  kakaoUserId: text("kakao_user_id"),
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
   updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
   publishedAt: text("published_at"),
+});
+
+// =============================================
+// kakao_users — 카카오 로그인 사용자
+// =============================================
+const kakaoUsers = sqliteTable("kakao_users", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  kakaoId: text("kakao_id").notNull().unique(),
+  nickname: text("nickname"),
+  profileImage: text("profile_image"),
+  email: text("email"),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+  lastLoginAt: text("last_login_at").notNull().default(sql`(datetime('now'))`),
 });
 
 // =============================================
@@ -857,16 +895,127 @@ const invoiceActivityLog = sqliteTable("invoice_activity_log", {
   details: text("details"),          // JSON 문자열 (변경 전/후 값 등)
 });
 
+const newsletterSubscribers = sqliteTable("newsletter_subscribers", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  email: text("email").notNull(),
+  name: text("name"),
+  isActive: integer("is_active").notNull().default(1),
+  unsubscribeToken: text("unsubscribe_token").$defaultFn(() => crypto.randomUUID()),
+  subscribedAt: text("subscribed_at").notNull().default(sql`(datetime('now'))`),
+  unsubscribedAt: text("unsubscribed_at"),
+});
+
+// =============================================
+// ERP — Time Tracking / Tasks / Court Dates
+// =============================================
+const TIME_ENTRY_ACTIVITY_TYPES = ["work", "research", "meeting", "court", "call", "email", "travel"];
+
+const timeEntries = sqliteTable("time_entries", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  lawyerId: text("lawyer_id").notNull(),
+  clientId: text("client_id"),
+  caseId: text("case_id"),
+  contractId: text("contract_id"),
+  description: text("description").notNull(),
+  activityType: text("activity_type").notNull().default("work"),
+  startedAt: text("started_at").notNull(),
+  endedAt: text("ended_at"),
+  durationMinutes: integer("duration_minutes"),
+  hourlyRateKrw: integer("hourly_rate_krw").notNull().default(0),
+  billable: integer("billable").notNull().default(1),
+  billed: integer("billed").notNull().default(0),
+  invoiceId: text("invoice_id"),
+  memo: text("memo"),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+});
+
+const TASK_PRIORITIES = ["low", "medium", "high", "urgent"];
+const TASK_STATUSES = ["open", "in_progress", "blocked", "done", "archived"];
+
+const tasks = sqliteTable("tasks", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  title: text("title").notNull(),
+  description: text("description"),
+  assigneeLawyerId: text("assignee_lawyer_id"),
+  clientId: text("client_id"),
+  caseId: text("case_id"),
+  contractId: text("contract_id"),
+  priority: text("priority").notNull().default("medium"),
+  status: text("status").notNull().default("open"),
+  dueDate: text("due_date"),
+  reminderAt: text("reminder_at"),
+  completedAt: text("completed_at"),
+  completedBy: text("completed_by"),
+  createdBy: text("created_by"),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+});
+
+const TRUST_TRANSACTION_TYPES = ["deposit", "withdrawal", "adjustment"];
+const TRUST_REFERENCE_TYPES = ["invoice", "receipt", "manual", "refund"];
+
+const trustTransactions = sqliteTable("trust_transactions", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  clientId: text("client_id").notNull(),
+  transactionType: text("transaction_type").notNull(),
+  amountKrw: integer("amount_krw").notNull(),
+  description: text("description").notNull(),
+  referenceType: text("reference_type"),
+  referenceId: text("reference_id"),
+  occurredAt: text("occurred_at").notNull(),
+  recordedBy: text("recorded_by"),
+  memo: text("memo"),
+  voidedAt: text("voided_at"),
+  voidedBy: text("voided_by"),
+  voidReason: text("void_reason"),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+});
+
+const COURT_DATE_KINDS = ["hearing", "mediation", "examination", "sentencing", "deadline"];
+const COURT_DATE_STATUSES = ["scheduled", "completed", "postponed", "cancelled"];
+
+const courtDates = sqliteTable("court_dates", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  title: text("title").notNull(),
+  courtName: text("court_name"),
+  courtRoom: text("court_room"),
+  caseNumber: text("case_number"),
+  caseId: text("case_id"),
+  clientId: text("client_id"),
+  lawyerId: text("lawyer_id"),
+  kind: text("kind").notNull().default("hearing"),
+  startsAt: text("starts_at").notNull(),
+  endsAt: text("ends_at"),
+  reminderAt: text("reminder_at"),
+  reminded: integer("reminded").notNull().default(0),
+  memo: text("memo"),
+  status: text("status").notNull().default("scheduled"),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+});
+
+// =============================================
+// portal_time_entries — 포털 사용자 사건별 시간 기록
+// =============================================
+const portalTimeEntries = sqliteTable("portal_time_entries", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  portalUserId: text("portal_user_id").notNull().references(() => portalUsers.id, { onDelete: "cascade" }),
+  caseId: text("case_id").references(() => caseFilesTable.id, { onDelete: "set null" }),
+  description: text("description").notNull(),
+  startedAt: text("started_at").notNull(),
+  endedAt: text("ended_at"),
+  durationMinutes: integer("duration_minutes"),
+  note: text("note"),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+});
+
 // =============================================
 // recruit_posts — 채용 공고
 // =============================================
-const RECRUIT_CATEGORIES = [
-  "new_lawyer",     // 신입변호사
-  "experienced_lawyer", // 경력변호사
-  "military_lawyer", // 군법무관
-  "staff",          // 직원
-];
-
+const RECRUIT_CATEGORIES = ["new_lawyer", "experienced_lawyer", "military_lawyer", "staff"];
 const RECRUIT_STATUSES = ["open", "closed"];
 
 const recruitPosts = sqliteTable("recruit_posts", {
@@ -877,7 +1026,6 @@ const recruitPosts = sqliteTable("recruit_posts", {
   requirements: text("requirements"),
   benefits: text("benefits"),
   applicationDeadline: text("application_deadline"),
-  // 지원서 다운로드 파일 URL
   applicationFileUrl: text("application_file_url"),
   applicationFileName: text("application_file_name"),
   status: text("status").notNull().default("open"),
@@ -885,16 +1033,6 @@ const recruitPosts = sqliteTable("recruit_posts", {
   sortOrder: integer("sort_order").notNull().default(0),
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
   updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
-});
-
-const newsletterSubscribers = sqliteTable("newsletter_subscribers", {
-  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
-  email: text("email").notNull(),
-  name: text("name"),
-  isActive: integer("is_active").notNull().default(1),
-  unsubscribeToken: text("unsubscribe_token").$defaultFn(() => crypto.randomUUID()),
-  subscribedAt: text("subscribed_at").notNull().default(sql`(datetime('now'))`),
-  unsubscribedAt: text("unsubscribed_at"),
 });
 
 module.exports = {
@@ -963,11 +1101,8 @@ module.exports = {
   qnaQuestions,
   QNA_STATUSES,
   QNA_ANONYMITY_TIERS,
+  kakaoUsers,
   newsletterSubscribers,
-
-  RECRUIT_CATEGORIES,
-  RECRUIT_STATUSES,
-  recruitPosts,
 
   INVOICE_TYPES,
   INVOICE_STATUSES,
@@ -977,4 +1112,24 @@ module.exports = {
   invoicePayments,
   invoiceSequences,
   invoiceActivityLog,
+
+  // ERP
+  TIME_ENTRY_ACTIVITY_TYPES,
+  timeEntries,
+  TASK_PRIORITIES,
+  TASK_STATUSES,
+  tasks,
+  COURT_DATE_KINDS,
+  COURT_DATE_STATUSES,
+  courtDates,
+  TRUST_TRANSACTION_TYPES,
+  TRUST_REFERENCE_TYPES,
+  trustTransactions,
+
+  portalTimeEntries,
+
+  // 채용
+  RECRUIT_CATEGORIES,
+  RECRUIT_STATUSES,
+  recruitPosts,
 };

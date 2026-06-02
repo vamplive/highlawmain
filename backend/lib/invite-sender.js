@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 초대(invitations) 생성 + SMS/이메일 발송 통합 유틸
  * - 3종 초대(consultation / engagement / settlement)를 하나의 함수로 처리
  * - sendSMS / sendEmail / messageLogs 기록까지 일괄 수행

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Google Calendar + Meet 연동
  * - 예약 확정 시 캘린더 이벤트 생성 + Google Meet 링크 자동 발급
  * - 환경변수 미설정 시 graceful fallback (null 반환 → 관리자가 수동 입력)
@@ -8,7 +8,7 @@
  *  - GOOGLE_CALENDAR_OWNER : 이벤트 생성 대상 캘린더 소유자 이메일 (도메인 위임 필요)
  *  - GOOGLE_CALENDAR_ID (선택) : 기본값 "primary"
  *
- * Google Workspace(highlaw.co.kr)에서 서비스 계정에 도메인 위임 설정이 되어 있어야
+ * Google Workspace(HIGHLAW.com)에서 서비스 계정에 도메인 위임 설정이 되어 있어야
  * Meet 링크(conferenceData)가 자동 생성됩니다. 개인 Gmail은 OAuth 필요.
  */
 
@@ -51,7 +51,7 @@ async function getCalendarClient() {
       email: creds.client_email,
       key: creds.private_key,
       scopes: ["https://www.googleapis.com/auth/calendar.events"],
-      subject: OWNER, // 도메인 위임 대상 (highlaw.co.kr 계정)
+      subject: OWNER, // 도메인 위임 대상 (HIGHLAW.com 계정)
     });
     await auth.authorize();
     cachedClient = google.calendar({ version: "v3", auth });

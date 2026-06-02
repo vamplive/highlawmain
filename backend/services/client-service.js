@@ -8,6 +8,12 @@ const {
   bookingSlots, caseFilesTable,
 } = require("../db/schema");
 const { eq, desc, sql, and, like, or, inArray, gte, lte } = require("drizzle-orm");
+const ACTIVITY_LABELS = {
+  call_out: "발신 통화", call_in: "수신 통화", note: "메모",
+  file: "자료 수신", email_in: "이메일 수신", email_out: "이메일 발송",
+  visit: "내방", other: "기타",
+};
+
 const {
   ServiceError,
   validateUUID,
@@ -289,9 +295,30 @@ async function getClientTimeline(id) {
     payload: { title: c.title, description: c.description },
   }));
 
+  // 5) 소통 기록(client_activities) — client_id 기반
+  let activityRows = [];
+  try {
+    const { sqlite } = require("../db");
+    activityRows = sqlite.prepare(
+      "SELECT * FROM client_activities WHERE client_id = ? ORDER BY occurred_at DESC"
+    ).all(client.id);
+  } catch { /* 테이블 미생성 시 무시 */ }
+  activityRows.forEach((a) => events.push({
+    type: "activity",
+    id: a.id,
+    at: a.occurred_at,
+    status: a.type,
+    title: a.title || ACTIVITY_LABELS[a.type] || a.type,
+    payload: {
+      activityType: a.type, content: a.content,
+      fileUrl: a.file_url, fileName: a.file_name, fileSize: a.file_size,
+      durationSeconds: a.duration_seconds,
+    },
+  }));
+
   events.sort((a, b) => String(b.at || "").localeCompare(String(a.at || "")));
 
-  const lastMessage = events.find((e) => e.type === "message");
+  const lastMessage = events.find((e) => e.type === "message" || e.type === "activity");
 
   return {
     client,
@@ -300,6 +327,7 @@ async function getClientTimeline(id) {
       messageCount: messageRows.length,
       bookingCount: bookingRows.length,
       caseCount: caseRows.length,
+      activityCount: activityRows.length,
       lastContactedAt: lastMessage ? lastMessage.at : null,
     },
     events,

@@ -49,6 +49,12 @@ beforeAll(async () => {
       name: TEST_NAME,
       phone: TEST_PHONE,
     });
+
+  // 포털 사용자 승인 상태 활성화 (isActive = 1)
+  const { db } = await import("../../db/index.js");
+  const { portalUsers } = await import("../../db/schema.js");
+  const { eq } = await import("drizzle-orm");
+  await db.update(portalUsers).set({ isActive: 1 }).where(eq(portalUsers.email, TEST_EMAIL));
 });
 
 afterAll(() => {

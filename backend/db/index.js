@@ -59,13 +59,6 @@ try {
     }
   } catch (e) { logDbWarning("[db] 블로그 시드 실패:", e.message); }
   try {
-    const { seedRecruit } = require("../seeds/seed-recruit");
-    const result = seedRecruit(sqlite);
-    if (result.inserted) {
-      logDbInfo(`[db] 채용 공고 시드 데이터 ${result.count}건 자동 삽입 완료`);
-    }
-  } catch (e) { logDbWarning("[db] 채용 공고 시드 실패:", e.message); }
-  try {
     const { refreshBlogContent } = require("../seeds/seed-blog-complete-2026");
     const result = refreshBlogContent(sqlite);
     if (result.refreshed) {

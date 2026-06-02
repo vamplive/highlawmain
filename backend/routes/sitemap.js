@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 사이트맵 XML 생성 라우트 — SEO용 동적 사이트맵
  * - 정적 페이지 + 블로그 글 + Q&A
  */
@@ -14,7 +14,7 @@ const router = Router();
  * 사이트 기본 URL (환경변수 또는 기본값).
  * 프론트엔드 lib/seo.js의 VITE_SITE_URL 기본값과 반드시 동일하게 유지.
  */
-const SITE_URL = (process.env.SITE_URL || "https://highlaw.co.kr").replace(/\/+$/, "");
+const SITE_URL = (process.env.SITE_URL || "https://HIGHLAW.com").replace(/\/+$/, "");
 
 function escapeXml(value) {
   return String(value || "")
@@ -50,8 +50,8 @@ const STATIC_PAGES = [
   { path: "/lawyers", changefreq: "monthly", priority: "0.7" },
   { path: "/consultation", changefreq: "monthly", priority: "0.9" },
   { path: "/blog", changefreq: "weekly", priority: "0.7" },
-  { path: "/qna", changefreq: "weekly", priority: "0.8" },
-  { path: "/qna/ask", changefreq: "monthly", priority: "0.6" },
+  { path: "/inquiry", changefreq: "weekly", priority: "0.8" },
+  { path: "/inquiry/ask", changefreq: "monthly", priority: "0.6" },
   { path: "/reviews", changefreq: "monthly", priority: "0.6" },
 ];
 
@@ -99,7 +99,7 @@ router.get("/", async (req, res) => {
       .where(eq(qnaCategories.isActive, 1));
     for (const c of qnaCats) {
       xml += `  <url>\n`;
-      xml += `    <loc>${buildLoc(`/qna/category/${encodePathSegment(c.slug)}`)}</loc>\n`;
+      xml += `    <loc>${buildLoc(`/inquiry/category/${encodePathSegment(c.slug)}`)}</loc>\n`;
       xml += `    <lastmod>${today}</lastmod>\n`;
       xml += `    <changefreq>weekly</changefreq>\n`;
       xml += `    <priority>0.7</priority>\n`;
@@ -114,7 +114,7 @@ router.get("/", async (req, res) => {
     for (const q of qnaPublished) {
       const lastmod = dateOnly(q.updatedAt, new Date());
       xml += `  <url>\n`;
-      xml += `    <loc>${buildLoc(`/qna/question/${encodePathSegment(q.slug)}`)}</loc>\n`;
+      xml += `    <loc>${buildLoc(`/inquiry/question/${encodePathSegment(q.slug)}`)}</loc>\n`;
       xml += `    <lastmod>${lastmod}</lastmod>\n`;
       xml += `    <changefreq>monthly</changefreq>\n`;
       xml += `    <priority>0.7</priority>\n`;

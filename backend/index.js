@@ -15,9 +15,6 @@ function validateEnv() {
     "APP_URL",
     "PUBLIC_BASE_URL",
     "IP_HASH_SECRET",
-    "ALIGO_API_KEY",
-    "ALIGO_USER_ID",
-    "ALIGO_SENDER",
   ];
   const missingRequired = process.env.NODE_ENV === "production"
     ? requiredInProduction.filter((name) => !process.env[name])
@@ -36,6 +33,9 @@ function validateEnv() {
   if (!process.env.APP_URL) warnings.push("APP_URL 미설정 — 수신거부/추적 링크 생성 시 http://localhost:5173 을 사용합니다");
   if (!process.env.PUBLIC_BASE_URL) warnings.push("PUBLIC_BASE_URL 미설정 — 공개 초대/서명 링크 생성 시 http://localhost:5173 을 사용합니다");
   if (!process.env.IP_HASH_SECRET) warnings.push("IP_HASH_SECRET 미설정 — 개발용 IP 해시 시크릿을 사용합니다");
+  if (!process.env.ALIGO_API_KEY) warnings.push("ALIGO_API_KEY 미설정 — 문자 발송 서비스(SMS)가 제한됩니다");
+  if (!process.env.ALIGO_USER_ID) warnings.push("ALIGO_USER_ID 미설정 — 문자 발송 서비스(SMS)가 제한됩니다");
+  if (!process.env.ALIGO_SENDER) warnings.push("ALIGO_SENDER 미설정 — 문자 발송 서비스(SMS)가 제한됩니다");
   warnings.forEach(w => console.warn(`[ENV WARNING] ${w}`));
 }
 validateEnv();
@@ -48,6 +48,7 @@ const rateLimit = require("express-rate-limit");
 
 const compression = require("compression");
 const logger = require("./lib/logger");
+const { sqlite } = require("./db");
 const requestId = require("./lib/request-id");
 const { logSecurityEvent } = require("./lib/audit-log");
 
@@ -226,7 +227,7 @@ const LARGE_BODY_PATHS = [
   "/api/contract-templates",
   "/api/blog",
   "/api/site-settings",
-  "/api/qna",
+  "/api/inquiry",
   "/api/lawyers",
   "/api/lectures",
 ];
@@ -277,6 +278,22 @@ app.use("/api/lectures", require("./routes/lectures"));
 app.use("/api/consultations", require("./routes/consultations"));
 app.use("/api/privacy-consents", require("./routes/privacy-consents"));
 app.use("/api/invitations", require("./routes/invitations"));
+app.use("/api/referral-links", require("./routes/referral-links"));
+app.use("/api/auth/kakao", require("./routes/kakao-auth"));
+// 짧은 레퍼럴 리다이렉트 — /r/:code → 클릭 추적 후 /consultation
+app.get("/r/:code", (req, res) => {
+  try {
+    const row = sqlite.prepare("SELECT * FROM referral_links WHERE code = ? AND is_active = 1").get(req.params.code);
+    if (row) {
+      const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.ip;
+      const masked = ip.replace(/^::ffff:/, "").replace(/\.\d+$/, ".*");
+      sqlite.prepare("INSERT INTO referral_clicks (id, referral_link_id, ip_masked, user_agent, referrer) VALUES (?, ?, ?, ?, ?)")
+        .run(require("crypto").randomUUID(), row.id, masked, req.headers["user-agent"] || null, req.headers["referer"] || null);
+      sqlite.prepare("UPDATE referral_links SET click_count = click_count + 1, updated_at = datetime('now') WHERE id = ?").run(row.id);
+    }
+  } catch (e) { logger.error({ err: e }, "referral click failed"); }
+  res.redirect("/consultation");
+});
 app.use("/api/public/invite", require("./routes/public-invite"));
 app.use("/api/contract-templates", require("./routes/contract-templates"));
 app.use("/api/contracts", require("./routes/contracts"));
@@ -303,6 +320,7 @@ app.use("/api/analytics", require("./routes/analytics"));
 app.use("/api/dev-logs", require("./routes/dev-logs"));
 app.use("/api/audit-logs", require("./routes/audit-logs"));
 
+app.use("/api/recruit", require("./routes/recruit"));
 app.use("/api/reviews", require("./routes/reviews"));
 app.use("/api/newsletter", require("./routes/newsletter"));
 app.use("/api/bookings", require("./routes/bookings"));
@@ -310,12 +328,26 @@ app.use("/api/invoices", require("./routes/invoices"));
 app.use("/api/receipts", require("./routes/receipts"));
 app.use("/api/payment-cards", require("./routes/payment-cards"));
 app.use("/api/chatbot", require("./routes/chatbot"));
-app.use("/api/qna", require("./routes/qna"));
+app.use("/api/inquiry", require("./routes/qna"));
 app.use("/api/portal", require("./routes/portal"));
+app.use("/api/case-records", require("./routes/case-records"));
+
+// ERP — 시간 기록 / 업무 / 법정 일정 / 의뢰인 예치금 / 이해상충
+app.use("/api/time-entries", require("./routes/time-entries"));
+app.use("/api/tasks", require("./routes/tasks"));
+app.use("/api/court-dates", require("./routes/court-dates"));
+app.use("/api/trust-accounts", require("./routes/trust-accounts"));
+app.use("/api/conflicts", require("./routes/conflicts"));
+
+/* 법정 일정 알림 cron — 매분 도래한 reminder_at 을 SMS/이메일로 발송 */
+try {
+  const { startCron: startCourtReminderCron } = require("./lib/court-date-reminder");
+  startCourtReminderCron();
+} catch (err) {
+  logger.warn({ err }, "court date reminder cron not started");
+}
 app.use("/api/sitemap", require("./routes/sitemap"));
 app.use("/sitemap.xml", require("./routes/sitemap"));
-app.use("/api/recruit", require("./routes/recruit"));
-
 // API 문서 (Swagger UI + OpenAPI 스펙)
 app.use("/api/docs", require("./routes/docs"));
 
@@ -328,7 +360,7 @@ if (fs.existsSync(nestedFrontendDist)) {
 }
 if (fs.existsSync(frontendDist)) {
   const indexPath = path.join(frontendDist, "index.html");
-  const PUBLIC_SITE_URL = (process.env.APP_URL || "https://highlaw.co.kr").replace(/\/$/, "");
+  const PUBLIC_SITE_URL = (process.env.APP_URL || "https://HIGHLAW.com").replace(/\/$/, "");
   const { db, sqlite } = require("./db");
   const { blogPosts, qnaQuestions } = require("./db/schema");
   const { resolveBlogSlug } = require("./services/blog-service");
@@ -377,7 +409,7 @@ if (fs.existsSync(frontendDist)) {
     const routes = {
       "/": {
         title: "법무법인 하이로 | HIGH & LAW FIRM",
-        description: "법무법인 하이로 - 건설·부동산·행정 분야 전문 법률 서비스. 전문 변호사가 직접 상담합니다.",
+        description: "법무법인 하이로 - 불법파견·게임사기·노동·군사건 분야 전문 법률 서비스. 전문 변호사가 직접 상담합니다.",
       },
       "/about": {
         title: "사무소 소개 | 법무법인 하이로",
@@ -385,14 +417,14 @@ if (fs.existsSync(frontendDist)) {
       },
       "/practice": {
         title: "업무분야 | 법무법인 하이로",
-        description: "건설, 부동산, 행정, 민사 등 법무법인 하이로의 주요 법률 서비스 분야를 안내합니다.",
+        description: "불법파견, 게임사기, 노동, 군사건 등 법무법인 하이로의 주요 법률 서비스 분야를 안내합니다.",
       },
       "/practice/construction": {
-        title: "건설 법률 서비스 | 법무법인 하이로",
-        description: "공사대금, 하자담보, 인허가, 재개발·재건축 분쟁에 대한 건설 법률 서비스를 제공합니다.",
+        title: "불법파견 법률 서비스 | 법무법인 하이로",
+        description: "공사대금, 하자담보, 인허가, 재개발·재건축 분쟁에 대한 불법파견 법률 서비스를 제공합니다.",
       },
       "/practice/realestate": {
-        title: "부동산 법률 서비스 | 법무법인 하이로",
+        title: "노동 법률 서비스 | 법무법인 하이로",
         description: "부동산 거래, 개발, 임대차, 등기·수용 분쟁에 대한 법률 자문과 소송대리를 제공합니다.",
       },
       "/lawyers": {
@@ -405,9 +437,9 @@ if (fs.existsSync(frontendDist)) {
       },
       "/blog": {
         title: "법률칼럼 | 법무법인 하이로",
-        description: "건설·부동산·행정 분야의 실무 법률 칼럼과 최신 이슈를 확인하세요.",
+        description: "불법파견·게임사기·노동·군사건 분야의 실무 법률 칼럼과 최신 이슈를 확인하세요.",
       },
-      "/qna": {
+      "/inquiry": {
         title: "법률 Q&A | 법무법인 하이로",
         description: "자주 묻는 법률 질문과 실무 답변을 분야별로 확인하세요.",
       },
@@ -428,7 +460,7 @@ if (fs.existsSync(frontendDist)) {
     if (exact) return exact;
     if (pathname.startsWith("/lawyers/")) return routes["/lawyers"];
     if (pathname.startsWith("/blog/")) return routes["/blog"];
-    if (pathname.startsWith("/qna/")) return routes["/qna"];
+    if (pathname.startsWith("/inquiry/")) return routes["/inquiry"];
     return routes["/"];
   }
 
@@ -459,7 +491,7 @@ if (fs.existsSync(frontendDist)) {
       return fallback;
     }
 
-    const qnaMatch = pathname.match(/^\/qna\/question\/([^/]+)\/?$/);
+    const qnaMatch = pathname.match(/^\/inquiry\/question\/([^/]+)\/?$/) || pathname.match(/^\/qna\/question\/([^/]+)\/?$/);
     if (qnaMatch) {
       const slug = safeDecodePathSegment(qnaMatch[1]);
       try {

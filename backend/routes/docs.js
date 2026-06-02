@@ -1,4 +1,4 @@
-﻿/**
+/**
  * API 문서 라우트 — OpenAPI JSON 스펙 및 Swagger UI 서빙
  * - /api/docs/ 에서 Swagger UI 제공 (CDN 기반, npm 의존성 없음)
  * - /api/docs/openapi.json 에서 OpenAPI 3.0 스펙 제공

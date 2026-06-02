@@ -1,5 +1,5 @@
 /**
- * 법률 Q&A API 라우트 — 공개 조회 + 제출, 관리자 승인/답변/카테고리 CRUD
+ * 법률 Q&A API 라우트 — 공개 조회 + 제출, 비밀글 검증, 관리자 승인/답변/카테고리 CRUD
  * 비즈니스 로직은 services/qna-service.js에 위임
  */
 const { Router } = require("express");
@@ -19,6 +19,22 @@ setInterval(() => {
   }
 }, 5 * 60 * 1000).unref();
 
+/**
+ * 카카오 세션에서 사용자 ID 추출 (선택적, 없으면 null).
+ * kakao-auth 모듈이 로드 가능할 때만 동작한다.
+ */
+function extractKakaoUserId(req) {
+  try {
+    const { extractKakaoToken, getKakaoSession } = require("../lib/kakao-auth");
+    const token = extractKakaoToken(req);
+    if (!token) return null;
+    const session = getKakaoSession(token);
+    return session?.kakaoUserId || null;
+  } catch {
+    return null;
+  }
+}
+
 // =============================================
 // 공개 API
 // =============================================
@@ -31,7 +47,8 @@ router.get("/categories", wrap(async (req, res) => {
 
 // GET /api/qna/questions — 공개 질문 목록 (카테고리/featured 필터)
 router.get("/questions", wrap(async (req, res) => {
-  const result = await qnaService.listQuestions(req.query);
+  const kakaoUserId = extractKakaoUserId(req);
+  const result = await qnaService.listQuestions({ ...req.query, kakaoUserId });
   res.json({ data: result.items, error: null, meta: result.meta });
 }));
 
@@ -41,8 +58,9 @@ router.get("/questions/:slug", wrap(async (req, res) => {
   const ip = req.ip || req.socket.remoteAddress || "unknown";
   const cacheKey = `${ip}:${slug}`;
   const skipIncrement = viewCache.has(cacheKey) && Date.now() < viewCache.get(cacheKey);
+  const kakaoUserId = extractKakaoUserId(req);
 
-  const question = await qnaService.getQuestion(slug, { skipIncrement });
+  const question = await qnaService.getQuestion(slug, { skipIncrement, kakaoUserId });
   if (!skipIncrement) viewCache.set(cacheKey, Date.now() + VIEW_COOLDOWN_MS);
 
   res.json({ data: question, error: null, meta: null });
@@ -50,8 +68,19 @@ router.get("/questions/:slug", wrap(async (req, res) => {
 
 // POST /api/qna/questions — 공개 질문 제출 (상태 pending)
 router.post("/questions", wrap(async (req, res) => {
-  const result = await qnaService.submitQuestion(req.body);
+  const kakaoUserId = extractKakaoUserId(req);
+  const result = await qnaService.submitQuestion({ ...req.body, kakaoUserId });
   res.json({ data: result, error: null, meta: null });
+}));
+
+// POST /api/qna/questions/:slug/verify — 비밀글 비밀번호 검증
+router.post("/questions/:slug/verify", wrap(async (req, res) => {
+  const { password } = req.body || {};
+  if (!password) {
+    return res.status(400).json({ data: null, error: "비밀번호를 입력해 주세요", meta: null });
+  }
+  const question = await qnaService.verifyQuestionPassword(req.params.slug, password);
+  res.json({ data: question, error: null, meta: null });
 }));
 
 // =============================================

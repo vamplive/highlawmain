@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 상담 서비스 — 상담 신청 CRUD 비즈니스 로직
  * - 상담 생성 시 고객 자동 등록 + Apps Script 웹훅 알림
  */
@@ -116,7 +116,7 @@ async function notifyApplicantReceivedBySMS(data, consultationId) {
     `[법무법인 하이로] ${data.name}님 상담 신청이 접수되었습니다.`,
     "담당자가 확인 후 연락드리겠습니다.",
     scheduleSummary ? `희망 일정: ${scheduleSummary}` : "",
-    "문의 02-594-5583",
+    "문의 준비 중",
   ].filter(Boolean).join("\n");
 
   const result = await sendSMS(data.phone, text, { title: "상담 접수 안내" });

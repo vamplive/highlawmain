@@ -13,7 +13,7 @@ const INVOICE_STATUSES = [
   "draft", "issued", "sent", "partial",
   "paid", "overdue", "cancelled", "refunded",
 ];
-const INVOICE_PAYMENT_METHODS = ["bank", "card", "cash", "other"];
+const INVOICE_PAYMENT_METHODS = ["bank", "card", "cash", "trust", "other"];
 const EDITABLE_FIELDS_AFTER_ISSUE = new Set(["notes", "dueDate", "paymentMethod"]);
 
 class ServiceError extends Error {
@@ -435,6 +435,118 @@ function addPayment(invoiceId, body, actorId) {
   return getInvoiceDetail(invoiceId);
 }
 
+/**
+ * 인보이스 결제를 의뢰인 예치금에서 차감한다.
+ *
+ * 도메인 규칙:
+ *  - 인보이스에 client_id 가 있어야 함.
+ *  - 의뢰인 예치금 잔액이 결제 금액 이상이어야 함 (overdraft 방지).
+ *  - 한 트랜잭션 내에서 trust_transactions(withdrawal) + invoice_payments(method='trust')
+ *    + invoices.paid_amount/status 를 원자적으로 업데이트.
+ *  - reference_type='invoice', reference_id=invoiceId 로 이력 추적 가능.
+ *
+ * @param {string} invoiceId
+ * @param {{ amount?: number, paidAt?: string, notes?: string }} body
+ *   amount 가 없으면 (남은 금액) vs (예치금 잔액) 의 작은 값 자동 사용.
+ * @param {string} actorId
+ */
+function payFromTrust(invoiceId, body, actorId) {
+  const invoice = getInvoiceOrThrow(invoiceId);
+  if (["draft", "cancelled", "refunded"].includes(invoice.status)) {
+    throw new ServiceError("이 상태에서는 결제를 기록할 수 없습니다", 400);
+  }
+  if (!invoice.client_id) {
+    throw new ServiceError("의뢰인이 지정되지 않은 인보이스는 예치금 결제할 수 없습니다", 400);
+  }
+
+  /* 현재 의뢰인 예치금 잔액 (활성 거래 합) */
+  const balanceRow = sqlite.prepare(`
+    SELECT COALESCE(SUM(amount_krw), 0) AS balance
+      FROM trust_transactions
+     WHERE client_id = ? AND voided_at IS NULL
+  `).get(invoice.client_id);
+  const balance = balanceRow?.balance || 0;
+
+  if (balance <= 0) {
+    throw new ServiceError("의뢰인 예치금 잔액이 없습니다", 409);
+  }
+
+  const remaining = Math.max(0, invoice.total - invoice.paid_amount);
+  if (remaining <= 0) {
+    throw new ServiceError("이미 전액 결제된 인보이스입니다", 400);
+  }
+
+  let amount = toInt(body?.amount, 0);
+  if (amount <= 0) {
+    /* 자동: 남은 금액과 잔액 중 작은 값 */
+    amount = Math.min(balance, remaining);
+  } else if (amount > balance) {
+    throw new ServiceError(
+      `잔액 부족 — 예치금 ${balance.toLocaleString("ko-KR")}원, 결제 시도 ${amount.toLocaleString("ko-KR")}원`,
+      409,
+    );
+  } else if (amount > remaining) {
+    throw new ServiceError(
+      `결제 금액이 미수금을 초과합니다 — 미수금 ${remaining.toLocaleString("ko-KR")}원`,
+      400,
+    );
+  }
+
+  const paidAt = body?.paidAt || today();
+  const paymentId = crypto.randomUUID();
+  const trustTxId = crypto.randomUUID();
+
+  const tx = sqlite.transaction(() => {
+    /* 1) 예치금 출금 거래 — withdrawal, reference 로 인보이스 연결 */
+    sqlite.prepare(`
+      INSERT INTO trust_transactions (
+        id, client_id, transaction_type, amount_krw,
+        description, reference_type, reference_id,
+        occurred_at, recorded_by, memo
+      ) VALUES (?, ?, 'withdrawal', ?, ?, 'invoice', ?, ?, ?, ?)
+    `).run(
+      trustTxId, invoice.client_id, -amount,
+      `인보이스 결제 (${invoice.invoice_no || invoiceId.slice(0, 8)})`,
+      invoiceId,
+      `${paidAt} 00:00:00`,
+      actorId || null,
+      body?.notes || null,
+    );
+
+    /* 2) 인보이스 결제 기록 — method='trust' */
+    sqlite.prepare(`
+      INSERT INTO invoice_payments (
+        id, invoice_id, paid_at, amount, method, reference, notes, recorded_by
+      ) VALUES (?, ?, ?, ?, 'trust', ?, ?, ?)
+    `).run(
+      paymentId, invoiceId, paidAt, amount,
+      `trust_tx:${trustTxId}`,
+      body?.notes || `예치금 차감 결제`,
+      actorId || null,
+    );
+
+    /* 3) 인보이스 paid_amount/status 갱신 */
+    const newPaid = invoice.paid_amount + amount;
+    let newStatus = invoice.status;
+    if (newPaid >= invoice.total) newStatus = "paid";
+    else if (newPaid > 0) newStatus = "partial";
+    sqlite.prepare(`
+      UPDATE invoices SET paid_amount = ?, status = ?, updated_at = ? WHERE id = ?
+    `).run(newPaid, newStatus, nowIso(), invoiceId);
+
+    logActivity(invoiceId, "payment_added", actorId, {
+      paymentId, amount, newStatus, source: "trust", trustTxId,
+    });
+  });
+  tx();
+
+  return {
+    invoice: getInvoiceDetail(invoiceId),
+    trustTxId,
+    amount,
+  };
+}
+
 function removePayment(invoiceId, paymentId, actorId) {
   const invoice = getInvoiceOrThrow(invoiceId);
   const payment = sqlite.prepare(
@@ -504,6 +616,7 @@ module.exports = {
   issueInvoice,
   cancelInvoice,
   addPayment,
+  payFromTrust,
   removePayment,
   deleteInvoice,
   previewNextNumber,

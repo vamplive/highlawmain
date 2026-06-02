@@ -128,14 +128,15 @@ describe("submitQuestion — 입력 유효성", () => {
 });
 
 describe("generateAnonymousDisplayName", () => {
-  it("카테고리와 관계없이 '형용사 명사' 형태를 만든다", () => {
-    const name = generateAnonymousDisplayName("건설");
-    expect(name).toMatch(/^\S+(\s\S+)+$/);
+  it("카테고리 풀에서 닉네임을 뽑고 3자리 숫자 접미사를 붙인다", () => {
+    const name = generateAnonymousDisplayName("불법파견");
+    // 커뮤니티 스타일: 단어 + 3자리 숫자 (예: "파견근로자ㅇㅇ567")
+    expect(name).toMatch(/\d{3}$/);
+    expect(name.length).toBeGreaterThan(3);
   });
 
-  it("미등록 카테고리는 default 명사 세트를 쓴다", () => {
-    // 여러 번 돌려 default set의 단어 중 하나가 나오는지 확인
-    const defaults = ["의뢰인", "상담자", "질문자"];
+  it("미등록 카테고리는 default 풀의 단어를 사용한다", () => {
+    const defaults = ["익명ㅇㅇ", "법률상담", "질문있어요", "도와주세요", "궁금한사람"];
     const names = new Set();
     for (let i = 0; i < 30; i++) names.add(generateAnonymousDisplayName("모르는분야"));
     const joined = [...names].join(" ");

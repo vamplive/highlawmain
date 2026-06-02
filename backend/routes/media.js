@@ -379,4 +379,288 @@ router.delete("/:id", adminAuth, async (req, res) => {
   }
 });
 
+// AI 모델 설정 — 운영자가 .env / UI 에서 모델을 바꿀 수 있도록 한 곳에 모아둔다.
+//
+// 보안: 클라이언트가 임의의 model 문자열을 백엔드로 보낼 수 있는 만큼,
+// 반드시 ALLOWED_*_MODELS allowlist 와 대조해 통과시킨다. 통과 못 하면 기본값으로 폴백.
+const ALLOWED_PROMPT_MODELS = [
+  "claude-haiku-4-5",
+  "claude-sonnet-4-6",
+  "claude-opus-4-7",
+];
+const DEFAULT_PROMPT_MODEL = process.env.BLOG_PROMPT_MODEL && ALLOWED_PROMPT_MODELS.includes(process.env.BLOG_PROMPT_MODEL)
+  ? process.env.BLOG_PROMPT_MODEL
+  : "claude-haiku-4-5";
+
+const ALLOWED_IMAGE_MODELS = [
+  "dall-e-3",
+  "dall-e-2",
+  "gpt-image-1",
+];
+const DEFAULT_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL && ALLOWED_IMAGE_MODELS.includes(process.env.OPENAI_IMAGE_MODEL)
+  ? process.env.OPENAI_IMAGE_MODEL
+  : "dall-e-3";
+
+function pickPromptModel(requested) {
+  if (requested && ALLOWED_PROMPT_MODELS.includes(requested)) return requested;
+  return DEFAULT_PROMPT_MODEL;
+}
+
+function pickImageModel(requested) {
+  if (requested && ALLOWED_IMAGE_MODELS.includes(requested)) return requested;
+  return DEFAULT_IMAGE_MODEL;
+}
+
+// GET /api/media/ai-config — UI 모델 드롭다운에서 표시할 메타데이터
+//
+// 키 미설정도 알리고, 어떤 모델이 기본인지/어떤 모델을 고를 수 있는지를 한 번에 내려준다.
+router.get("/ai-config", adminAuth, (req, res) => {
+  res.json({
+    data: {
+      prompt: {
+        defaultModel: DEFAULT_PROMPT_MODEL,
+        allowedModels: ALLOWED_PROMPT_MODELS,
+        keyConfigured: Boolean(process.env.ANTHROPIC_API_KEY),
+      },
+      image: {
+        defaultModel: DEFAULT_IMAGE_MODEL,
+        allowedModels: ALLOWED_IMAGE_MODELS,
+        keyConfigured: Boolean(process.env.OPENAI_API_KEY),
+      },
+    },
+    error: null,
+    meta: null,
+  });
+});
+
+// POST /api/media/suggest-prompts — Claude로 블로그 본문에 어울리는 DALL-E 프롬프트 제안
+//
+// 운영자가 블로그 글을 다 쓰고 나서 "AI 본문 이미지 자동 추가"를 누르면, Claude가 본문을 읽고
+// (1) 본문에 어울리는 영문 DALL-E 프롬프트와 (2) 한국어 사용자 설명을 N개 만들어 돌려준다.
+// 사용자는 이 결과를 그대로 쓰거나 편집·삭제한 뒤 /api/media/generate 로 실제 이미지를 만든다.
+//
+// 환경변수
+//   ANTHROPIC_API_KEY — 필수. 미설정 시 503.
+//
+// 요청 body: { title?, body, count?, scope?: "cover"|"inline" }
+// 응답: { data: [{ prompt, summary }], error, meta }
+router.post("/suggest-prompts", adminAuth, async (req, res) => {
+  try {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      return res.status(503).json({
+        data: null,
+        error: "프롬프트 추천 기능이 비활성화되어 있습니다. 관리자에게 ANTHROPIC_API_KEY 설정을 요청하세요.",
+        meta: null,
+      });
+    }
+
+    const title = String(req.body?.title || "").slice(0, 200);
+    const body = String(req.body?.body || "").slice(0, 8000);
+    const count = Math.min(5, Math.max(1, Number(req.body?.count) || 3));
+    const scope = req.body?.scope === "cover" ? "cover" : "inline";
+
+    if (body.trim().length < 30 && title.trim().length < 5) {
+      return res.status(400).json({
+        data: null,
+        error: "프롬프트 추천을 위해 제목 또는 본문을 더 입력해주세요.",
+        meta: null,
+      });
+    }
+
+    const Anthropic = require("@anthropic-ai/sdk");
+    const client = new Anthropic.default({ apiKey });
+
+    const scopeHint = scope === "cover"
+      ? "이 글의 대표(썸네일) 이미지로 쓸 1장의 이미지 프롬프트를 작성하세요. 글 전체 분위기를 함축해야 합니다."
+      : `본문 흐름에 자연스럽게 삽입할 ${count}장의 일러스트 프롬프트를 작성하세요. 각각 본문의 다른 단락/주제를 보조해야 합니다.`;
+
+    const systemPrompt = `당신은 한국 법률사무소 블로그를 위한 일러스트 디렉터입니다.
+주어진 블로그 글의 분위기와 핵심 내용을 분석해, DALL-E 3 가 이해할 수 있는 영문 프롬프트를 작성합니다.
+
+원칙:
+- 한국 법률·부동산·건설 분야의 신뢰감 있는 분위기
+- 사람의 얼굴은 정면 클로즈업을 피하고 손·서류·풍경 위주
+- 사진 스타일이 아니라 모던한 일러스트 / 플랫 디자인 지향 (직관적·전문적)
+- 텍스트·로고·법원 마크 같은 글자 요소는 넣지 않음
+- 폭력적·성적·차별적 묘사 금지
+
+${scopeHint}
+
+반드시 suggest_prompts 도구를 사용해 응답하세요. 자유 텍스트 응답 금지.`;
+
+    const userMsg = `제목: ${title || "(없음)"}\n\n본문:\n${body || "(없음)"}\n\n위 글에 어울리는 ${count}장의 이미지 프롬프트를 만들어주세요.`;
+
+    const tool = {
+      name: "suggest_prompts",
+      description: "블로그 글에 어울리는 DALL-E 3 영문 프롬프트와 한국어 요약을 N개 제안",
+      input_schema: {
+        type: "object",
+        properties: {
+          prompts: {
+            type: "array",
+            minItems: 1,
+            maxItems: 5,
+            items: {
+              type: "object",
+              properties: {
+                prompt: { type: "string", description: "DALL-E 3 영문 프롬프트 (60~250자)" },
+                summary: { type: "string", description: "이 이미지가 무엇을 표현하는지 한국어 한 줄 설명 (40자 이내)" },
+              },
+              required: ["prompt", "summary"],
+            },
+          },
+        },
+        required: ["prompts"],
+      },
+    };
+
+    const promptModel = pickPromptModel(req.body?.model);
+    const completion = await client.messages.create({
+      model: promptModel,
+      max_tokens: 1500,
+      system: systemPrompt,
+      tools: [tool],
+      tool_choice: { type: "tool", name: "suggest_prompts" },
+      messages: [{ role: "user", content: userMsg }],
+    });
+
+    const toolUse = completion.content?.find((c) => c.type === "tool_use");
+    const list = toolUse?.input?.prompts || [];
+    if (!Array.isArray(list) || list.length === 0) {
+      return res.status(502).json({ data: null, error: "프롬프트 추천 결과가 비어 있습니다.", meta: null });
+    }
+
+    res.json({
+      data: list.slice(0, count),
+      error: null,
+      meta: { scope, count: list.length, model: promptModel },
+    });
+  } catch (err) {
+    handleError(res, err);
+  }
+});
+
+// POST /api/media/generate — AI 이미지 생성 (DALL-E 3)
+//
+// 운영자가 입력한 한국어 프롬프트로 OpenAI DALL-E 3 호출 → 결과를 미디어 폴더에 저장하고
+// 일반 업로드와 동일한 mediaFiles 레코드로 반영. 응답은 일반 업로드와 동일 형태.
+//
+// 환경변수
+//   OPENAI_API_KEY — 필수. 미설정 시 503 반환.
+//
+// 요청 body: { prompt: string, size?: "1024x1024"|"1792x1024"|"1024x1792", folder?: string }
+// 응답: { data: mediaFiles row, error, meta }
+router.post("/generate", adminAuth, async (req, res) => {
+  try {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      return res.status(503).json({
+        data: null,
+        error: "AI 이미지 생성이 비활성화되어 있습니다. 관리자에게 OPENAI_API_KEY 설정을 요청하세요.",
+        meta: null,
+      });
+    }
+
+    const prompt = String(req.body?.prompt || "").trim();
+    if (prompt.length < 4 || prompt.length > 1000) {
+      return res.status(400).json({
+        data: null,
+        error: "프롬프트는 4자 이상 1000자 이하로 입력해주세요.",
+        meta: null,
+      });
+    }
+
+    // DALL-E 3 가 허용하는 사이즈만 통과
+    const ALLOWED_SIZES = new Set(["1024x1024", "1792x1024", "1024x1792"]);
+    const size = ALLOWED_SIZES.has(req.body?.size) ? req.body.size : "1792x1024";
+    const folder = sanitizeFolder(req.body?.folder || "blog");
+
+    // OpenAI Images API 호출 — b64_json 으로 받아 외부 URL 만료 이슈 회피
+    const imageModel = pickImageModel(req.body?.model);
+    // gpt-image-1 / dall-e-2 는 dall-e-3 와 파라미터가 일부 다르다.
+    // dall-e-2: response_format 사용, quality 미지원, size 256/512/1024 만 허용
+    // gpt-image-1: response_format 대신 항상 b64 반환, quality 'low'|'medium'|'high'|'auto'
+    const requestBody = {
+      model: imageModel,
+      prompt,
+      n: 1,
+    };
+    if (imageModel === "dall-e-3") {
+      requestBody.size = size;
+      requestBody.quality = "standard";
+      requestBody.response_format = "b64_json";
+    } else if (imageModel === "dall-e-2") {
+      // dall-e-2 는 1792 미지원 — 1024 로 다운스케일
+      requestBody.size = size === "1024x1024" ? "1024x1024" : "1024x1024";
+      requestBody.response_format = "b64_json";
+    } else if (imageModel === "gpt-image-1") {
+      requestBody.size = size;
+      requestBody.quality = "auto";
+      // gpt-image-1 은 항상 b64_json 응답
+    }
+
+    const openaiResp = await fetch("https://api.openai.com/v1/images/generations", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!openaiResp.ok) {
+      const errText = await openaiResp.text().catch(() => "");
+      logger.warn({ status: openaiResp.status, errText: errText.slice(0, 500) }, "[Media] DALL-E 3 호출 실패");
+      return res.status(502).json({
+        data: null,
+        error: "AI 이미지 생성에 실패했습니다. 잠시 후 다시 시도해주세요.",
+        meta: null,
+      });
+    }
+
+    const json = await openaiResp.json();
+    const b64 = json?.data?.[0]?.b64_json;
+    if (!b64) {
+      return res.status(502).json({ data: null, error: "AI 이미지 응답이 비어 있습니다.", meta: null });
+    }
+
+    // 디스크에 저장 — 일반 업로드와 동일한 폴더 구조
+    const dir = path.join(MEDIA_DIR, folder);
+    await fsp.mkdir(dir, { recursive: true });
+    const filename = `media-${crypto.randomUUID()}.png`;
+    const filePath = path.join(dir, filename);
+    const buffer = Buffer.from(b64, "base64");
+    await fsp.writeFile(filePath, buffer);
+
+    // PNG 도 EXIF strip 흐름을 그대로 적용 (DALL-E 결과는 메타가 거의 없지만 일관성 유지)
+    await stripImageMetadata(filePath, "image/png");
+    let finalSize = buffer.length;
+    try {
+      const stat = await fsp.stat(filePath);
+      finalSize = stat.size;
+    } catch (_e) { /* stat 실패 시 buffer 길이 사용 */ }
+
+    const url = `/uploads/media/${folder}/${filename}`;
+    const altText = prompt.slice(0, 200);
+    const [record] = await db
+      .insert(mediaFiles)
+      .values({
+        filename,
+        originalName: `ai-generated.png`,
+        mimeType: "image/png",
+        size: finalSize,
+        url,
+        alt: altText,
+        folder,
+        uploadedBy: "admin-ai",
+      })
+      .returning();
+
+    res.status(201).json({ data: record, error: null, meta: { source: imageModel, prompt, size } });
+  } catch (err) {
+    handleError(res, err);
+  }
+});
+
 module.exports = router;

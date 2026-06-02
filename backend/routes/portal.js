@@ -1,8 +1,17 @@
 /**
- * 의뢰인 포털 API 라우트 — 회원가입/로그인(공개) + 사건 조회/메시지(인증) + 사건 관리(관리자)
- * 비즈니스 로직은 services/portal-service.js에 위임한다.
+ * 의뢰인/직원 포털 API 라우트
+ *
+ * 공개:   /register, /login
+ * 포털:   /logout, /me, /cases, /cases/:id, /messages
+ *         /cases/register (사건 직접 등록)
+ *         /time-entries/* (타임트래킹)
+ *         /google/* (구글 캘린더 OAuth2)
+ * 관리자: /admin/users (포털 사용자 승인)
+ *         /admin/cases (사건 관리)
+ *         /admin/time-entries (전체 타임트래킹 조회)
  */
 const { Router } = require("express");
+const crypto = require("crypto");
 const {
   portalAuth,
   adminAuth,
@@ -11,16 +20,17 @@ const {
   extractPortalToken,
 } = require("../lib/auth");
 const portalService = require("../services/portal-service");
+const googleCalendarOAuth = require("../lib/google-calendar-oauth");
 const { logSecurityEvent } = require("../lib/audit-log");
 const { handleError } = require("../lib/route-handler");
 
 const router = Router();
 
 // =============================================
-// 공개 엔드포인트 (인증 불필요)
+// 공개 엔드포인트
 // =============================================
 
-/** POST /api/portal/register — 포털 회원가입 */
+/** POST /api/portal/register — 포털 회원가입 (승인 대기) */
 router.post("/register", async (req, res) => {
   try {
     const result = await portalService.registerUser(req.body);
@@ -30,11 +40,7 @@ router.post("/register", async (req, res) => {
   }
 });
 
-/**
- * POST /api/portal/login — 포털 로그인
- * HttpOnly 쿠키 portal_session 발급. 응답 body의 token은 모바일 앱 등
- * 외부 클라이언트 호환을 위해 남기지만 웹 프론트엔드는 쿠키만 사용한다.
- */
+/** POST /api/portal/login */
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -42,7 +48,6 @@ router.post("/login", async (req, res) => {
     setPortalSessionCookie(res, result.token);
     res.json({ data: result, error: null, meta: null });
   } catch (e) {
-    // 자격 증명 실패만 보안 로그로 분류 (입력 형식 오류 400은 단순 사용자 오타)
     if (e?.name === "ServiceError" && (e.status === 401 || e.status === 403)) {
       const subtype = e.status === 403 ? "inactive" : "invalid";
       logSecurityEvent(req, `portal_login_fail.${subtype}`, { attemptedEmail: req.body?.email });
@@ -51,10 +56,7 @@ router.post("/login", async (req, res) => {
   }
 });
 
-/**
- * POST /api/portal/logout — 로그아웃 (인증된 사용자만)
- * 쿠키 또는 x-portal-token 헤더에서 토큰을 추출해 세션을 삭제하고 쿠키를 만료시킨다.
- */
+/** POST /api/portal/logout */
 router.post("/logout", portalAuth, (req, res) => {
   portalService.logoutUser(extractPortalToken(req));
   clearPortalSessionCookie(res);
@@ -62,10 +64,10 @@ router.post("/logout", portalAuth, (req, res) => {
 });
 
 // =============================================
-// 인증 필요 엔드포인트 (portalAuth 미들웨어)
+// 포털 인증 필요 엔드포인트
 // =============================================
 
-/** GET /api/portal/me — 현재 사용자 정보 */
+/** GET /api/portal/me */
 router.get("/me", portalAuth, async (req, res) => {
   try {
     const { userId, clientId } = req.portalUser;
@@ -86,7 +88,18 @@ router.get("/cases", portalAuth, async (req, res) => {
   }
 });
 
-/** GET /api/portal/cases/:id — 사건 상세 (문서 + 최근 메시지) */
+/** POST /api/portal/cases — 포털 사용자 직접 사건 등록 */
+router.post("/cases", portalAuth, async (req, res) => {
+  try {
+    const { clientId } = req.portalUser;
+    const result = await portalService.registerPortalCase(clientId, req.body);
+    res.status(201).json({ data: result, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+/** GET /api/portal/cases/:id */
 router.get("/cases/:id", portalAuth, async (req, res) => {
   try {
     const result = await portalService.getCaseDetail(req.params.id, req.portalUser.clientId);
@@ -96,7 +109,7 @@ router.get("/cases/:id", portalAuth, async (req, res) => {
   }
 });
 
-/** GET /api/portal/cases/:id/messages — 사건 메시지 목록 (페이지네이션) */
+/** GET /api/portal/cases/:id/messages */
 router.get("/cases/:id/messages", portalAuth, async (req, res) => {
   try {
     const { data, meta } = await portalService.getCaseMessages(
@@ -110,7 +123,7 @@ router.get("/cases/:id/messages", portalAuth, async (req, res) => {
   }
 });
 
-/** POST /api/portal/cases/:id/messages — 의뢰인 메시지 전송 */
+/** POST /api/portal/cases/:id/messages */
 router.post("/cases/:id/messages", portalAuth, async (req, res) => {
   try {
     const { clientId, userId } = req.portalUser;
@@ -127,10 +140,251 @@ router.post("/cases/:id/messages", portalAuth, async (req, res) => {
 });
 
 // =============================================
-// 관리자 엔드포인트
+// 타임트래킹 (포털 사용자)
 // =============================================
 
-/** GET /api/portal/admin/cases — 전체 사건 목록 (관리자) */
+/** GET /api/portal/time-entries — 내 타임엔트리 목록 */
+router.get("/time-entries", portalAuth, async (req, res) => {
+  try {
+    const { data, meta } = await portalService.listPortalTimeEntries(req.portalUser.userId, req.query);
+    res.json({ data, error: null, meta });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+/** GET /api/portal/time-entries/summary — 사건별 시간 합계 */
+router.get("/time-entries/summary", portalAuth, async (req, res) => {
+  try {
+    const data = await portalService.getPortalTimeSummary(req.portalUser.userId);
+    res.json({ data, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+/** GET /api/portal/time-entries/active — 진행 중 타이머 */
+router.get("/time-entries/active", portalAuth, async (req, res) => {
+  try {
+    const data = await portalService.getActivePortalTimer(req.portalUser.userId);
+    res.json({ data, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+/** POST /api/portal/time-entries — 수동 입력 */
+router.post("/time-entries", portalAuth, async (req, res) => {
+  try {
+    const row = await portalService.createPortalTimeEntry(req.portalUser.userId, req.body);
+    res.status(201).json({ data: row, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+/** POST /api/portal/time-entries/timer/start */
+router.post("/time-entries/timer/start", portalAuth, async (req, res) => {
+  try {
+    const row = await portalService.startPortalTimer(req.portalUser.userId, req.body);
+    res.status(201).json({ data: row, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+/** POST /api/portal/time-entries/timer/stop */
+router.post("/time-entries/timer/stop", portalAuth, async (req, res) => {
+  try {
+    const row = await portalService.stopPortalTimer(req.portalUser.userId);
+    res.json({ data: row, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+/** PUT /api/portal/time-entries/:id */
+router.put("/time-entries/:id", portalAuth, async (req, res) => {
+  try {
+    const row = await portalService.updatePortalTimeEntry(req.params.id, req.portalUser.userId, req.body);
+    res.json({ data: row, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+/** DELETE /api/portal/time-entries/:id */
+router.delete("/time-entries/:id", portalAuth, async (req, res) => {
+  try {
+    await portalService.deletePortalTimeEntry(req.params.id, req.portalUser.userId);
+    res.status(204).end();
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+// =============================================
+// 구글 캘린더 OAuth2 (포털 사용자 개인 캘린더)
+// =============================================
+
+/** GET /api/portal/google/auth-url — OAuth2 인증 URL 반환 */
+router.get("/google/auth-url", portalAuth, (req, res) => {
+  if (!googleCalendarOAuth.isConfigured()) {
+    return res.json({
+      data: { configured: false, message: "구글 캘린더 연동이 설정되지 않았습니다" },
+      error: null,
+      meta: null,
+    });
+  }
+  // state에 userId를 담아 callback에서 검증
+  const stateToken = `${req.portalUser.userId}:${crypto.randomBytes(16).toString("hex")}`;
+  const authUrl = googleCalendarOAuth.getAuthUrl(stateToken);
+  res.json({ data: { authUrl, configured: true }, error: null, meta: null });
+});
+
+/**
+ * GET /api/portal/google/callback — OAuth2 콜백
+ * 구글이 code와 state를 쿼리파라미터로 돌려보낸다.
+ * 이 엔드포인트는 리디렉트를 받으므로 portalAuth 미들웨어 없이 state에서 userId 추출.
+ */
+router.get("/google/callback", async (req, res) => {
+  const { code, state, error: oauthError } = req.query;
+  const appUrl = (process.env.APP_URL || "http://localhost:5173").replace(/\/$/, "");
+
+  if (oauthError) {
+    return res.redirect(`${appUrl}/portal/dashboard?googleError=${encodeURIComponent(oauthError)}`);
+  }
+
+  if (!code || !state) {
+    return res.redirect(`${appUrl}/portal/dashboard?googleError=invalid_callback`);
+  }
+
+  try {
+    // state에서 userId 추출 (형식: "userId:randomHex")
+    const [userId] = state.split(":");
+    if (!userId) throw new Error("잘못된 state 파라미터");
+
+    const tokens = await googleCalendarOAuth.exchangeCodeForTokens(code);
+    await portalService.saveGoogleTokens(userId, tokens);
+
+    res.redirect(`${appUrl}/portal/dashboard?googleConnected=1`);
+  } catch (e) {
+    console.warn("[portal/google/callback] 토큰 교환 실패:", e.message);
+    res.redirect(`${appUrl}/portal/dashboard?googleError=token_exchange_failed`);
+  }
+});
+
+/** POST /api/portal/google/sync-case/:caseId — 사건을 구글 캘린더에 추가 */
+router.post("/google/sync-case/:caseId", portalAuth, async (req, res) => {
+  try {
+    const { userId, clientId } = req.portalUser;
+
+    // 소유권 검증
+    const cases = await portalService.getUserCases(clientId);
+    const targetCase = cases.find((c) => c.id === req.params.caseId);
+    if (!targetCase) throw new Error("사건을 찾을 수 없습니다");
+
+    const tokenData = await portalService.getGoogleTokens(userId);
+    if (!tokenData?.googleRefreshToken) {
+      return res.status(400).json({ data: null, error: "구글 캘린더 연동이 필요합니다", meta: null });
+    }
+
+    const { accessToken, refreshed, newExpiry } = await googleCalendarOAuth.getValidAccessToken(tokenData);
+    if (refreshed) {
+      await portalService.saveGoogleTokens(userId, {
+        accessToken,
+        refreshToken: tokenData.googleRefreshToken,
+        expiresAt: newExpiry,
+      });
+    }
+
+    const event = await googleCalendarOAuth.createCaseEvent(accessToken, {
+      summary: `[하이로] ${targetCase.title}`,
+      description: [
+        targetCase.caseNumber && `사건번호: ${targetCase.caseNumber}`,
+        targetCase.court && `법원: ${targetCase.court}`,
+        targetCase.caseType && `유형: ${targetCase.caseType}`,
+        targetCase.plaintiff && `원고: ${targetCase.plaintiff}`,
+        targetCase.defendant && `피고: ${targetCase.defendant}`,
+      ].filter(Boolean).join("\n"),
+      date: targetCase.filedAt || targetCase.createdAt,
+    });
+
+    res.json({ data: event, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+/** DELETE /api/portal/google/disconnect — 구글 캘린더 연결 해제 */
+router.delete("/google/disconnect", portalAuth, async (req, res) => {
+  try {
+    const result = await portalService.disconnectGoogle(req.portalUser.userId);
+    res.json({ data: result, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+// =============================================
+// 관리자 엔드포인트 — 포털 사용자 관리
+// =============================================
+
+/** GET /api/portal/admin/users — 포털 사용자 목록 (상태별 필터 가능) */
+router.get("/admin/users", adminAuth, async (req, res) => {
+  try {
+    const { data, meta } = await portalService.listPortalUsers(req.query);
+    res.json({ data, error: null, meta });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+/** GET /api/portal/admin/users/:id — 포털 사용자 단건 */
+router.get("/admin/users/:id", adminAuth, async (req, res) => {
+  try {
+    const row = await portalService.getPortalUser(req.params.id);
+    res.json({ data: row, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+/** POST /api/portal/admin/users/:id/approve — 승인 */
+router.post("/admin/users/:id/approve", adminAuth, async (req, res) => {
+  try {
+    const result = await portalService.approvePortalUser(req.params.id);
+    res.json({ data: result, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+/** POST /api/portal/admin/users/:id/reject — 거절 */
+router.post("/admin/users/:id/reject", adminAuth, async (req, res) => {
+  try {
+    const result = await portalService.rejectPortalUser(req.params.id);
+    res.json({ data: result, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+/** DELETE /api/portal/admin/users/:id — 삭제 */
+router.delete("/admin/users/:id", adminAuth, async (req, res) => {
+  try {
+    const result = await portalService.deletePortalUser(req.params.id);
+    res.json({ data: result, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+// =============================================
+// 관리자 엔드포인트 — 사건 관리
+// =============================================
+
+/** GET /api/portal/admin/cases */
 router.get("/admin/cases", adminAuth, async (req, res) => {
   try {
     const { data, meta } = await portalService.listAdminCases(req.query);
@@ -140,7 +394,7 @@ router.get("/admin/cases", adminAuth, async (req, res) => {
   }
 });
 
-/** POST /api/portal/admin/cases — 사건 생성 (관리자) */
+/** POST /api/portal/admin/cases */
 router.post("/admin/cases", adminAuth, async (req, res) => {
   try {
     const result = await portalService.createAdminCase(req.body);
@@ -150,7 +404,17 @@ router.post("/admin/cases", adminAuth, async (req, res) => {
   }
 });
 
-/** PATCH /api/portal/admin/cases/:id — 사건 수정 (관리자) */
+/** GET /api/portal/admin/cases/:id */
+router.get("/admin/cases/:id", adminAuth, async (req, res) => {
+  try {
+    const result = await portalService.getAdminCase(req.params.id);
+    res.json({ data: result, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+/** PATCH /api/portal/admin/cases/:id */
 router.patch("/admin/cases/:id", adminAuth, async (req, res) => {
   try {
     const result = await portalService.updateAdminCase(req.params.id, req.body);
@@ -160,11 +424,45 @@ router.patch("/admin/cases/:id", adminAuth, async (req, res) => {
   }
 });
 
-/** POST /api/portal/admin/cases/:id/messages — 변호사 메시지 전송 (관리자) */
+/** DELETE /api/portal/admin/cases/:id */
+router.delete("/admin/cases/:id", adminAuth, async (req, res) => {
+  try {
+    const result = await portalService.deleteAdminCase(req.params.id);
+    res.json({ data: result, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+/** GET /api/portal/admin/cases/:id/messages */
+router.get("/admin/cases/:id/messages", adminAuth, async (req, res) => {
+  try {
+    const { data, meta } = await portalService.listAdminCaseMessages(req.params.id, req.query);
+    res.json({ data, error: null, meta });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+/** POST /api/portal/admin/cases/:id/messages */
 router.post("/admin/cases/:id/messages", adminAuth, async (req, res) => {
   try {
     const result = await portalService.sendLawyerMessage(req.params.id, req.body.content);
     res.json({ data: result, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+// =============================================
+// 관리자 엔드포인트 — 타임트래킹 전체 조회
+// =============================================
+
+/** GET /api/portal/admin/time-entries — 일자별/사건별/직원별 필터 */
+router.get("/admin/time-entries", adminAuth, async (req, res) => {
+  try {
+    const { data, meta } = await portalService.listAdminPortalTimeEntries(req.query);
+    res.json({ data, error: null, meta });
   } catch (e) {
     handleError(res, e);
   }

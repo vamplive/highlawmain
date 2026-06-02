@@ -267,6 +267,32 @@ router.get("/:id", adminAuth, async (req, res) => {
   }
 });
 
+// POST /api/documents/bulk/update — 다건 일괄 수정 (status/importance/documentType + 카테고리 add/remove)
+router.post("/bulk/update", adminAuth, async (req, res) => {
+  try {
+    const { ids, patch, addCategoryIds, removeCategoryIds } = req.body || {};
+    const result = await documentService.bulkUpdateDocuments(ids, {
+      patch: patch || {},
+      addCategoryIds: addCategoryIds || [],
+      removeCategoryIds: removeCategoryIds || [],
+    });
+    res.json({ data: result, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+// POST /api/documents/bulk/delete — 다건 일괄 삭제 (소프트→하드 정책)
+router.post("/bulk/delete", adminAuth, async (req, res) => {
+  try {
+    const { ids } = req.body || {};
+    const result = await documentService.bulkDeleteDocuments(ids);
+    res.json({ data: result, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
 // PATCH /api/documents/:id — update
 router.patch("/:id", adminAuth, async (req, res) => {
   try {

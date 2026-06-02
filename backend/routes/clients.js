@@ -172,4 +172,77 @@ router.delete("/:id", adminAuth, async (req, res) => {
   }
 });
 
+// =============================================
+// 의뢰인 활동(소통) 기록 CRUD
+// =============================================
+const crypto = require("crypto");
+const { sqlite } = require("../db");
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
+
+const activityUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
+
+/** GET /api/clients/:id/activities — 소통 기록 목록 */
+router.get("/:id/activities", adminAuth, (req, res) => {
+  try {
+    const { type, limit = 100, offset = 0 } = req.query;
+    const parts = ["SELECT * FROM client_activities WHERE client_id = ?"];
+    const args = [req.params.id];
+    if (type) { parts.push("AND type = ?"); args.push(type); }
+    parts.push("ORDER BY occurred_at DESC LIMIT ? OFFSET ?");
+    args.push(Math.min(Number(limit) || 100, 500), Number(offset) || 0);
+    const rows = sqlite.prepare(parts.join(" ")).all(...args);
+    const total = sqlite.prepare("SELECT count(*) as cnt FROM client_activities WHERE client_id = ?").get(req.params.id);
+    res.json({ data: rows, error: null, meta: { total: total.cnt } });
+  } catch (e) {
+    res.status(500).json({ data: null, error: e.message, meta: null });
+  }
+});
+
+/** POST /api/clients/:id/activities — 소통 기록 추가 (파일 첨부 가능) */
+router.post("/:id/activities", adminAuth, activityUpload.single("file"), (req, res) => {
+  try {
+    const { type, title, content, durationSeconds, occurredAt } = req.body || {};
+    if (!type) return res.status(400).json({ data: null, error: "type 필수", meta: null });
+
+    let fileUrl = null, fileName = null, fileSize = null;
+    if (req.file) {
+      const dir = path.join(process.env.STORAGE_PATH || path.join(__dirname, "..", "data"), "uploads", "client-files");
+      fs.mkdirSync(dir, { recursive: true });
+      const ext = path.extname(req.file.originalname) || "";
+      const fname = `${crypto.randomUUID()}${ext}`;
+      fs.writeFileSync(path.join(dir, fname), req.file.buffer);
+      fileUrl = `/uploads/client-files/${fname}`;
+      fileName = req.file.originalname;
+      fileSize = req.file.size;
+    }
+
+    const id = crypto.randomUUID();
+    sqlite.prepare(`
+      INSERT INTO client_activities (id, client_id, type, title, content, file_url, file_name, file_size, duration_seconds, occurred_at, created_by, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+    `).run(
+      id, req.params.id, type, title || null, content || null,
+      fileUrl, fileName, fileSize, durationSeconds ? Number(durationSeconds) : null,
+      occurredAt || new Date().toISOString(), req.adminUser?.userId || null,
+    );
+
+    const row = sqlite.prepare("SELECT * FROM client_activities WHERE id = ?").get(id);
+    res.json({ data: row, error: null, meta: null });
+  } catch (e) {
+    res.status(500).json({ data: null, error: e.message, meta: null });
+  }
+});
+
+/** DELETE /api/clients/:id/activities/:actId — 소통 기록 삭제 */
+router.delete("/:id/activities/:actId", adminAuth, (req, res) => {
+  try {
+    sqlite.prepare("DELETE FROM client_activities WHERE id = ? AND client_id = ?").run(req.params.actId, req.params.id);
+    res.json({ data: { deleted: true }, error: null, meta: null });
+  } catch (e) {
+    res.status(500).json({ data: null, error: e.message, meta: null });
+  }
+});
+
 module.exports = router;

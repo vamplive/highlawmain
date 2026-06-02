@@ -312,6 +312,109 @@ async function deleteDocument(id) {
   return updated;
 }
 
+/**
+ * 여러 문서를 한 번에 갱신한다.
+ *  - patch: 모든 대상 문서에 동일하게 적용할 단순 필드 (status / importance / documentType)
+ *  - addCategoryIds / removeCategoryIds: 카테고리는 ID 단위로 추가/제거(전체 교체 X)
+ *  ※ deleteDocument 와 동일한 소프트→하드 삭제 정책을 따르려면 bulkDeleteDocuments 사용.
+ *
+ * @param {string[]} ids                — 대상 문서 UUID 배열
+ * @param {object}   options
+ * @param {object}   [options.patch]               — { status?, importance?, documentType? }
+ * @param {string[]} [options.addCategoryIds]      — 추가할 카테고리 ID 들
+ * @param {string[]} [options.removeCategoryIds]   — 제거할 카테고리 ID 들
+ * @returns {{ updated: number }}
+ */
+async function bulkUpdateDocuments(ids, options = {}) {
+  if (!Array.isArray(ids) || ids.length === 0) {
+    throw new ServiceError("대상 문서 ID가 비어있습니다", 400);
+  }
+  for (const id of ids) validateUUID(id);
+
+  const { patch = {}, addCategoryIds = [], removeCategoryIds = [] } = options;
+  const ALLOWED_BULK_FIELDS = ["status", "importance", "documentType"];
+  const updateData = {};
+  for (const key of ALLOWED_BULK_FIELDS) {
+    if (patch[key] !== undefined && patch[key] !== null && patch[key] !== "") {
+      updateData[key] = key === "importance" ? parseInt(patch[key]) : patch[key];
+    }
+  }
+
+  const hasFieldUpdate = Object.keys(updateData).length > 0;
+  const hasCategoryAdd = addCategoryIds.length > 0;
+  const hasCategoryRemove = removeCategoryIds.length > 0;
+  if (!hasFieldUpdate && !hasCategoryAdd && !hasCategoryRemove) {
+    return { updated: 0 };
+  }
+
+  if (hasFieldUpdate) updateData.updatedAt = nowTimestamp();
+
+  let updated = 0;
+  const tx = sqlite.transaction(() => {
+    for (const id of ids) {
+      const [existing] = db.select().from(documents).where(eq(documents.id, id)).all();
+      if (!existing) continue;
+
+      if (hasFieldUpdate) {
+        db.update(documents).set(updateData).where(eq(documents.id, id)).run();
+      }
+
+      if (hasCategoryRemove) {
+        for (const catId of removeCategoryIds) {
+          db.delete(documentCategories)
+            .where(and(eq(documentCategories.documentId, id), eq(documentCategories.categoryId, catId)))
+            .run();
+        }
+      }
+      if (hasCategoryAdd) {
+        const existingLinks = db.select({ categoryId: documentCategories.categoryId })
+          .from(documentCategories)
+          .where(eq(documentCategories.documentId, id))
+          .all();
+        const existingSet = new Set(existingLinks.map((r) => r.categoryId));
+        const toInsert = addCategoryIds.filter((c) => !existingSet.has(c));
+        if (toInsert.length > 0) {
+          db.insert(documentCategories)
+            .values(toInsert.map((catId) => ({ documentId: id, categoryId: catId })))
+            .run();
+        }
+      }
+      updated += 1;
+    }
+  });
+  tx();
+  return { updated };
+}
+
+/** 여러 문서를 한 번에 삭제한다. 단일 deleteDocument 와 동일한 소프트→하드 정책. */
+async function bulkDeleteDocuments(ids) {
+  if (!Array.isArray(ids) || ids.length === 0) {
+    throw new ServiceError("대상 문서 ID가 비어있습니다", 400);
+  }
+  for (const id of ids) validateUUID(id);
+
+  let deleted = 0;
+  let archived = 0;
+  const tx = sqlite.transaction(() => {
+    for (const id of ids) {
+      const [existing] = db.select().from(documents).where(eq(documents.id, id)).all();
+      if (!existing) continue;
+      if (existing.status === "archived") {
+        db.delete(documents).where(eq(documents.id, id)).run();
+        deleted += 1;
+      } else {
+        db.update(documents)
+          .set({ status: "archived", updatedAt: nowTimestamp() })
+          .where(eq(documents.id, id))
+          .run();
+        archived += 1;
+      }
+    }
+  });
+  tx();
+  return { deleted, archived };
+}
+
 module.exports = {
   stripMarkdown,
   listDocuments,
@@ -320,4 +423,6 @@ module.exports = {
   createDocument,
   updateDocument,
   deleteDocument,
+  bulkUpdateDocuments,
+  bulkDeleteDocuments,
 };

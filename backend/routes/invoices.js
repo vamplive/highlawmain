@@ -150,6 +150,15 @@ router.post("/:id/payments", adminAuth, requireMinRole("manager"), (req, res) =>
   } catch (e) { handleError(e, res); }
 });
 
+// 의뢰인 예치금에서 결제 차감 — 한 트랜잭션으로 trust withdrawal + invoice payment 동시 기록.
+router.post("/:id/pay-from-trust", adminAuth, requireMinRole("manager"), (req, res) => {
+  try {
+    const actorId = req.adminUser && req.adminUser.userId;
+    const result = invoiceService.payFromTrust(req.params.id, req.body, actorId);
+    res.status(201).json({ data: result, error: null, meta: null });
+  } catch (e) { handleError(e, res); }
+});
+
 // 결제 기록 삭제: 입금/지급 흔적 제거 = 회계 무결성 영향 → super-admin 전용.
 router.delete("/:id/payments/:paymentId", adminAuth, requireRole("admin"), (req, res) => {
   try {

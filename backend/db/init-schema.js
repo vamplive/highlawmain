@@ -766,11 +766,20 @@ module.exports = {
       status TEXT NOT NULL DEFAULT '접수',
       lawyer_id TEXT,
       description TEXT,
+      case_number TEXT,
+      court TEXT,
+      case_type TEXT,
+      plaintiff TEXT,
+      defendant TEXT,
+      filed_at TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
     CREATE INDEX IF NOT EXISTS idx_case_files_client_id ON case_files(client_id);
     CREATE INDEX IF NOT EXISTS idx_case_files_status ON case_files(status);
+    -- idx_case_files_case_number 인덱스는 case_number 컬럼이 ALTER TABLE 마이그레이션으로
+    -- 추가된 뒤에 만들어야 한다. 옛 DB에는 컬럼이 없어 여기서 만들면 부팅이 죽는다.
+    -- 아래 마이그레이션 섹션의 try/catch 블록에서 멱등하게 생성한다.
 
     CREATE TABLE IF NOT EXISTS case_documents (
       id TEXT PRIMARY KEY,
@@ -778,8 +787,17 @@ module.exports = {
       filename TEXT NOT NULL,
       url TEXT NOT NULL,
       uploaded_by TEXT DEFAULT 'admin',
+      document_type TEXT,
+      submitter TEXT,
+      submission_date TEXT,
+      description TEXT,
+      file_size INTEGER,
+      mime_type TEXT,
+      original_name TEXT,
+      is_visible_to_client INTEGER NOT NULL DEFAULT 1,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+    -- case_documents 인덱스는 마이그레이션 섹션에서 멱등하게 생성 (옛 DB 호환)
 
     CREATE TABLE IF NOT EXISTS case_messages (
       id TEXT PRIMARY KEY,
@@ -1188,6 +1206,124 @@ module.exports = {
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
     CREATE INDEX IF NOT EXISTS idx_payment_cards_last4 ON payment_cards(last4);
+
+    -- ════════════════════════════════════════════════════════════════════
+    -- ERP — Time Tracking / Tasks / Court Dates
+    -- 변호사 시간 기록(시급제 청구 기반), 사건별 업무 분담, 법정 일정 관리
+    -- ════════════════════════════════════════════════════════════════════
+
+    /* time_entries — 변호사가 사건에 사용한 시간 (분 단위)
+       active(진행 중) 타이머는 ended_at IS NULL 인 행으로 표현 */
+    CREATE TABLE IF NOT EXISTS time_entries (
+      id TEXT PRIMARY KEY,
+      lawyer_id TEXT NOT NULL REFERENCES lawyers(id) ON DELETE RESTRICT,
+      client_id TEXT REFERENCES clients(id) ON DELETE SET NULL,
+      case_id TEXT,                        -- case_results.id 등 사건 식별자(FK 강제 X — 다양한 출처 허용)
+      contract_id TEXT,                    -- contracts.id 와 연결 (있을 때만)
+      description TEXT NOT NULL,
+      activity_type TEXT NOT NULL DEFAULT 'work',  -- work / research / meeting / court / call / email / travel
+      started_at TEXT NOT NULL,
+      ended_at TEXT,
+      duration_minutes INTEGER,            -- ended_at 시점에 계산 (실시간 타이머는 NULL)
+      hourly_rate_krw INTEGER NOT NULL DEFAULT 0,  -- 진행 시점 변호사 시급 스냅샷
+      billable INTEGER NOT NULL DEFAULT 1,
+      billed INTEGER NOT NULL DEFAULT 0,
+      invoice_id TEXT REFERENCES invoices(id) ON DELETE SET NULL,
+      memo TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_time_entries_lawyer ON time_entries(lawyer_id, started_at);
+    CREATE INDEX IF NOT EXISTS idx_time_entries_client ON time_entries(client_id);
+    CREATE INDEX IF NOT EXISTS idx_time_entries_case ON time_entries(case_id);
+    CREATE INDEX IF NOT EXISTS idx_time_entries_contract ON time_entries(contract_id);
+    CREATE INDEX IF NOT EXISTS idx_time_entries_started ON time_entries(started_at);
+    CREATE INDEX IF NOT EXISTS idx_time_entries_active ON time_entries(lawyer_id) WHERE ended_at IS NULL;
+    CREATE INDEX IF NOT EXISTS idx_time_entries_unbilled ON time_entries(client_id, billable, billed);
+
+    /* tasks — 사건/계약/일반 업무 단위
+       assignee_lawyer_id NULL 가능 — 미배정 상태 */
+    CREATE TABLE IF NOT EXISTS tasks (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      description TEXT,
+      assignee_lawyer_id TEXT REFERENCES lawyers(id) ON DELETE SET NULL,
+      client_id TEXT REFERENCES clients(id) ON DELETE SET NULL,
+      case_id TEXT,
+      contract_id TEXT,
+      priority TEXT NOT NULL DEFAULT 'medium',  -- low / medium / high / urgent
+      status TEXT NOT NULL DEFAULT 'open',       -- open / in_progress / blocked / done / archived
+      due_date TEXT,                              -- ISO 날짜
+      reminder_at TEXT,                           -- 이전 알림 시각
+      completed_at TEXT,
+      completed_by TEXT,
+      created_by TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_tasks_assignee ON tasks(assignee_lawyer_id, status);
+    CREATE INDEX IF NOT EXISTS idx_tasks_client ON tasks(client_id);
+    CREATE INDEX IF NOT EXISTS idx_tasks_case ON tasks(case_id);
+    CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status, due_date);
+    CREATE INDEX IF NOT EXISTS idx_tasks_due ON tasks(due_date) WHERE status NOT IN ('done', 'archived');
+
+    /* court_dates — 재판 / 변론 / 조정 등 법정 일정
+       deadline_type — 기일/기한 구분 */
+    CREATE TABLE IF NOT EXISTS court_dates (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      court_name TEXT,                       -- '서울중앙지방법원' 등
+      court_room TEXT,                        -- '제427호 법정'
+      case_number TEXT,                       -- '2026가단123456'
+      case_id TEXT,                           -- 내부 case_id 연결 (있을 때)
+      client_id TEXT REFERENCES clients(id) ON DELETE SET NULL,
+      lawyer_id TEXT REFERENCES lawyers(id) ON DELETE SET NULL,
+      kind TEXT NOT NULL DEFAULT 'hearing',   -- hearing / mediation / examination / sentencing / deadline
+      starts_at TEXT NOT NULL,
+      ends_at TEXT,
+      reminder_at TEXT,
+      reminded INTEGER NOT NULL DEFAULT 0,
+      memo TEXT,
+      status TEXT NOT NULL DEFAULT 'scheduled',  -- scheduled / completed / postponed / cancelled
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_court_dates_starts ON court_dates(starts_at, status);
+    CREATE INDEX IF NOT EXISTS idx_court_dates_lawyer ON court_dates(lawyer_id, starts_at);
+    CREATE INDEX IF NOT EXISTS idx_court_dates_client ON court_dates(client_id);
+    CREATE INDEX IF NOT EXISTS idx_court_dates_case ON court_dates(case_id);
+    CREATE INDEX IF NOT EXISTS idx_court_dates_reminder ON court_dates(reminder_at, reminded) WHERE reminder_at IS NOT NULL AND reminded = 0;
+
+    -- ════════════════════════════════════════════════════════════════════
+    -- ERP — Trust Account (의뢰인 예치금 / 신탁 계좌)
+    -- 변호사 사무실은 의뢰인 자금(예치금)을 사무실 자금과 분리 관리해야 한다.
+    -- 모든 입금/출금/조정은 ledger 행으로 기록하고, 잔액은 합산으로 도출한다.
+    -- ════════════════════════════════════════════════════════════════════
+
+    /* trust_transactions — 의뢰인별 예치금 원장
+       deposit(+) / withdrawal(-) / adjustment(±) — amount_krw 가 부호를 가진다.
+       reference_type/id 로 송장·영수증과 연결 가능 */
+    CREATE TABLE IF NOT EXISTS trust_transactions (
+      id TEXT PRIMARY KEY,
+      client_id TEXT NOT NULL REFERENCES clients(id) ON DELETE RESTRICT,
+      transaction_type TEXT NOT NULL,           -- deposit / withdrawal / adjustment
+      amount_krw INTEGER NOT NULL,              -- 부호 있는 금액 (deposit > 0, withdrawal < 0)
+      description TEXT NOT NULL,
+      reference_type TEXT,                      -- invoice / receipt / manual / refund
+      reference_id TEXT,
+      occurred_at TEXT NOT NULL,                -- 거래 실제 발생 시각
+      recorded_by TEXT,                         -- admin username
+      memo TEXT,
+      voided_at TEXT,                           -- 취소 처리 시 (잔액 계산에서 제외)
+      voided_by TEXT,
+      void_reason TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_trust_tx_client ON trust_transactions(client_id, occurred_at);
+    CREATE INDEX IF NOT EXISTS idx_trust_tx_occurred ON trust_transactions(occurred_at);
+    CREATE INDEX IF NOT EXISTS idx_trust_tx_type ON trust_transactions(transaction_type);
+    CREATE INDEX IF NOT EXISTS idx_trust_tx_active ON trust_transactions(client_id) WHERE voided_at IS NULL;
   `);
 
   // 기존 테이블에 컬럼 추가 (멱등)
@@ -1225,6 +1361,135 @@ module.exports = {
   try { sqlite.exec("ALTER TABLE payment_cards ADD COLUMN first4 TEXT"); } catch (e) { warnMigrationSkip(e); }
   try { sqlite.exec("ALTER TABLE receipts ADD COLUMN card_first4 TEXT"); } catch (e) { warnMigrationSkip(e); }
   try { sqlite.exec("CREATE INDEX IF NOT EXISTS idx_payment_cards_first4 ON payment_cards(first4)"); } catch (e) { warnMigrationSkip(e); }
+
+  // lawyers — ERP 시간 청구 기본 시급 (KRW). 0 이면 청구 불가/미설정.
+  try { sqlite.exec("ALTER TABLE lawyers ADD COLUMN default_hourly_rate_krw INTEGER NOT NULL DEFAULT 0"); } catch (e) { warnMigrationSkip(e); }
+
+  // case_files — 전자소송 호환 메타데이터 (사건번호/원고/피고/재판부 등)
+  try { sqlite.exec("ALTER TABLE case_files ADD COLUMN case_number TEXT"); } catch (e) { warnMigrationSkip(e); }
+  try { sqlite.exec("ALTER TABLE case_files ADD COLUMN court TEXT"); } catch (e) { warnMigrationSkip(e); }
+  try { sqlite.exec("ALTER TABLE case_files ADD COLUMN case_type TEXT"); } catch (e) { warnMigrationSkip(e); }
+  try { sqlite.exec("ALTER TABLE case_files ADD COLUMN plaintiff TEXT"); } catch (e) { warnMigrationSkip(e); }
+  try { sqlite.exec("ALTER TABLE case_files ADD COLUMN defendant TEXT"); } catch (e) { warnMigrationSkip(e); }
+  try { sqlite.exec("ALTER TABLE case_files ADD COLUMN filed_at TEXT"); } catch (e) { warnMigrationSkip(e); }
+  try { sqlite.exec("CREATE INDEX IF NOT EXISTS idx_case_files_case_number ON case_files(case_number)"); } catch (e) { warnMigrationSkip(e); }
+
+  // case_documents — 사건 기록 메타데이터 (제출일자/문서 종류/제출자/요지)
+  try { sqlite.exec("ALTER TABLE case_documents ADD COLUMN document_type TEXT"); } catch (e) { warnMigrationSkip(e); }
+  try { sqlite.exec("ALTER TABLE case_documents ADD COLUMN submitter TEXT"); } catch (e) { warnMigrationSkip(e); }
+  try { sqlite.exec("ALTER TABLE case_documents ADD COLUMN submission_date TEXT"); } catch (e) { warnMigrationSkip(e); }
+  try { sqlite.exec("ALTER TABLE case_documents ADD COLUMN description TEXT"); } catch (e) { warnMigrationSkip(e); }
+  try { sqlite.exec("ALTER TABLE case_documents ADD COLUMN file_size INTEGER"); } catch (e) { warnMigrationSkip(e); }
+  try { sqlite.exec("ALTER TABLE case_documents ADD COLUMN mime_type TEXT"); } catch (e) { warnMigrationSkip(e); }
+  try { sqlite.exec("ALTER TABLE case_documents ADD COLUMN original_name TEXT"); } catch (e) { warnMigrationSkip(e); }
+  try { sqlite.exec("ALTER TABLE case_documents ADD COLUMN is_visible_to_client INTEGER NOT NULL DEFAULT 1"); } catch (e) { warnMigrationSkip(e); }
+  try { sqlite.exec("CREATE INDEX IF NOT EXISTS idx_case_documents_case_file_id ON case_documents(case_file_id)"); } catch (e) { warnMigrationSkip(e); }
+  try { sqlite.exec("CREATE INDEX IF NOT EXISTS idx_case_documents_submission_date ON case_documents(submission_date)"); } catch (e) { warnMigrationSkip(e); }
+
+  // ── client_activities: 의뢰인 소통 기록 (통화/메모/자료 수신/이메일 등) ──
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS client_activities (
+      id TEXT PRIMARY KEY,
+      client_id TEXT NOT NULL,
+      type TEXT NOT NULL,          -- call_out, call_in, note, file, email_in, email_out, visit, other
+      title TEXT,
+      content TEXT,
+      file_url TEXT,
+      file_name TEXT,
+      file_size INTEGER,
+      duration_seconds INTEGER,    -- 통화 시간(초)
+      occurred_at TEXT NOT NULL DEFAULT (datetime('now')),
+      created_by TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_client_activities_client ON client_activities(client_id, occurred_at);
+    CREATE INDEX IF NOT EXISTS idx_client_activities_type ON client_activities(type);
+
+    -- ════════════════════════════════════════════════════════════════════
+    -- 레퍼럴 링크 — 상담 안내 문구 공유 + 클릭 추적
+    -- ════════════════════════════════════════════════════════════════════
+    CREATE TABLE IF NOT EXISTS referral_links (
+      id TEXT PRIMARY KEY,
+      code TEXT NOT NULL UNIQUE,
+      label TEXT,
+      memo TEXT,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      click_count INTEGER NOT NULL DEFAULT 0,
+      created_by TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_referral_links_code ON referral_links(code);
+    CREATE INDEX IF NOT EXISTS idx_referral_links_active ON referral_links(is_active);
+
+    CREATE TABLE IF NOT EXISTS referral_clicks (
+      id TEXT PRIMARY KEY,
+      referral_link_id TEXT NOT NULL,
+      ip_masked TEXT,
+      user_agent TEXT,
+      referrer TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_referral_clicks_link ON referral_clicks(referral_link_id, created_at);
+
+    -- ════════════════════════════════════════════════════════════════════
+    -- 카카오 로그인 사용자 + 세션
+    -- ════════════════════════════════════════════════════════════════════
+    CREATE TABLE IF NOT EXISTS kakao_users (
+      id TEXT PRIMARY KEY,
+      kakao_id TEXT NOT NULL UNIQUE,
+      nickname TEXT,
+      profile_image TEXT,
+      email TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      last_login_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_kakao_users_kakao_id ON kakao_users(kakao_id);
+
+    CREATE TABLE IF NOT EXISTS kakao_sessions (
+      token_hash TEXT PRIMARY KEY,
+      kakao_user_id TEXT NOT NULL,
+      kakao_id TEXT NOT NULL,
+      nickname TEXT,
+      created_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_kakao_sessions_user ON kakao_sessions(kakao_user_id);
+    CREATE INDEX IF NOT EXISTS idx_kakao_sessions_created ON kakao_sessions(created_at);
+  `);
+
+  // qna_questions — 비밀글 + 카카오 사용자 연결 컬럼
+  try { sqlite.exec("ALTER TABLE qna_questions ADD COLUMN is_private INTEGER NOT NULL DEFAULT 0"); } catch (e) { warnMigrationSkip(e); }
+  try { sqlite.exec("ALTER TABLE qna_questions ADD COLUMN password_hash TEXT"); } catch (e) { warnMigrationSkip(e); }
+  try { sqlite.exec("ALTER TABLE qna_questions ADD COLUMN kakao_user_id TEXT"); } catch (e) { warnMigrationSkip(e); }
+  try { sqlite.exec("CREATE INDEX IF NOT EXISTS idx_qna_questions_kakao_user ON qna_questions(kakao_user_id)"); } catch (e) { warnMigrationSkip(e); }
+
+  // portal_users — 구글 캘린더 OAuth2 토큰 컬럼 (포털 사용자 개인 캘린더 연동용)
+  try { sqlite.exec("ALTER TABLE portal_users ADD COLUMN google_access_token TEXT"); } catch (e) { warnMigrationSkip(e); }
+  try { sqlite.exec("ALTER TABLE portal_users ADD COLUMN google_refresh_token TEXT"); } catch (e) { warnMigrationSkip(e); }
+  try { sqlite.exec("ALTER TABLE portal_users ADD COLUMN google_token_expires_at INTEGER"); } catch (e) { warnMigrationSkip(e); }
+
+  // portal_time_entries — 포털 사용자(직원/변호사)의 사건별 시간 기록
+  // time_entries(변호사 ERP용)와 별도로 관리하여 포털 자기서비스 방식을 지원한다.
+  try {
+    sqlite.exec(`
+      CREATE TABLE IF NOT EXISTS portal_time_entries (
+        id TEXT PRIMARY KEY,
+        portal_user_id TEXT NOT NULL REFERENCES portal_users(id) ON DELETE CASCADE,
+        case_id TEXT REFERENCES case_files(id) ON DELETE SET NULL,
+        description TEXT NOT NULL,
+        started_at TEXT NOT NULL,
+        ended_at TEXT,
+        duration_minutes INTEGER,
+        note TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+      CREATE INDEX IF NOT EXISTS idx_portal_time_entries_user ON portal_time_entries(portal_user_id, started_at);
+      CREATE INDEX IF NOT EXISTS idx_portal_time_entries_case ON portal_time_entries(case_id);
+      CREATE INDEX IF NOT EXISTS idx_portal_time_entries_active ON portal_time_entries(portal_user_id) WHERE ended_at IS NULL;
+    `);
+  } catch (e) { warnMigrationSkip(e); }
 
   // recruit_posts — 채용 공고
   try {

@@ -6,7 +6,7 @@
  */
 const { db } = require("../db");
 const { qnaCategories, qnaQuestions } = require("../db/schema");
-const { eq, and, desc, count, inArray } = require("drizzle-orm");
+const { eq, and, or, desc, count, inArray, like } = require("drizzle-orm");
 const {
   ServiceError,
   validateUUID,
@@ -15,6 +15,7 @@ const {
   nowTimestamp,
 } = require("./helpers");
 const { sanitizeRichHtml } = require("../lib/htmlSanitizer");
+const { hashPassword, verifyPassword } = require("../lib/auth");
 
 /**
  * 자유 텍스트 필드 저장 전 정화.
@@ -39,6 +40,7 @@ const PUBLIC_QUESTION_FIELDS = [
   "answer", "answeredBy", "answeredAt",
   "isFeatured", "viewCount",
   "metaDescription",
+  "isPrivate",
   "publishedAt", "createdAt",
 ];
 
@@ -46,25 +48,26 @@ const PUBLIC_QUESTION_FIELDS = [
 // 익명/PII 처리
 // =============================================
 
-/** 완전 익명 표시명 — "익명의 건설업자 A" 같은 자동 생성 닉네임 */
-const ANON_ADJECTIVES = ["고민하는", "답답한", "신중한", "궁금한", "걱정되는"];
-const ANON_NOUNS_BY_CATEGORY = {
-  "건설": ["시공자", "공사 관계자", "건설업자", "발주자", "하도급자"],
-  "부동산": ["임대인", "임차인", "매수인", "매도인", "소유자"],
-  default: ["의뢰인", "상담자", "질문자"],
+/** 완전 익명 표시명 — 커뮤니티 스타일 닉네임 자동 생성 */
+const ANON_POOL = {
+  "불법파견": ["파견근로자ㅇㅇ", "용역직원", "위장도급당함", "직접고용원해", "파견3년차", "현장파견인", "협력사직원"],
+  "게임사기": ["게이머ㅇㅇ", "아이템사기당함", "계정도용당함", "현질날림", "게임머니털림", "랭커였는데", "운영자ㅠㅠ"],
+  "노동": ["직장인ㅇㅇ", "퇴사예정", "월급안나옴", "부당해고당함", "야근중", "산재당함", "직장괴롭힘피해"],
+  "군사건": ["군인ㅇㅇ", "예비역인데", "군징계받음", "병역분쟁중", "군형사상담", "현역복무중", "전역예정자"],
+  default: ["익명ㅇㅇ", "법률상담", "질문있어요", "도와주세요", "궁금한사람"],
 };
 
 /**
- * 완전 익명 티어용 표시명 생성.
- * 카테고리 키워드 기반 — "답답한 임차인", "고민하는 시공자" 형태.
- * @param {string} topCategoryName - 대분류명(건설/부동산)
+ * 완전 익명 티어용 표시명 생성 — 커뮤니티 스타일.
+ * @param {string} topCategoryName - 대분류명
  * @returns {string}
  */
 function generateAnonymousDisplayName(topCategoryName) {
-  const nouns = ANON_NOUNS_BY_CATEGORY[topCategoryName] || ANON_NOUNS_BY_CATEGORY.default;
-  const adj = ANON_ADJECTIVES[Math.floor(Math.random() * ANON_ADJECTIVES.length)];
-  const noun = nouns[Math.floor(Math.random() * nouns.length)];
-  return `${adj} ${noun}`;
+  const pool = ANON_POOL[topCategoryName] || ANON_POOL.default;
+  const name = pool[Math.floor(Math.random() * pool.length)];
+  // 숫자 서픽스로 고유성 확보
+  const suffix = Math.floor(Math.random() * 900 + 100);
+  return `${name}${suffix}`;
 }
 
 /**
@@ -196,7 +199,7 @@ async function getCategoryAncestors(categoryId) {
 
 /**
  * 대상 카테고리의 자신 + 모든 하위 카테고리 ID 목록 반환.
- * 질문 목록 필터에 사용 (예: "건설" 대분류 클릭 시 하위 전부 포함).
+ * 질문 목록 필터에 사용 (예: "불법파견" 대분류 클릭 시 하위 전부 포함).
  */
 async function getDescendantCategoryIds(categoryId) {
   const all = await db.select().from(qnaCategories);
@@ -220,12 +223,20 @@ async function getDescendantCategoryIds(categoryId) {
 
 /**
  * 공개 응답에서 PII를 제거한 질문 객체로 변환.
+ * 비밀글이면 제목/본문/답변을 마스킹한다.
  * @param {object} row
+ * @param {{ revealPrivate?: boolean }} opts
  * @returns {object}
  */
-function toPublicQuestion(row) {
+function toPublicQuestion(row, opts = {}) {
   const out = {};
   for (const f of PUBLIC_QUESTION_FIELDS) out[f] = row[f];
+  // 비밀글 마스킹 — 작성자 본인이거나 관리자가 아니면 내용 가림
+  if (row.isPrivate && !opts.revealPrivate) {
+    out.title = "비밀글입니다";
+    out.body = "";
+    out.answer = null;
+  }
   return out;
 }
 
@@ -251,6 +262,15 @@ async function listQuestions(filters) {
     conditions.push(inArray(qnaQuestions.categoryId, descendantIds));
   }
 
+  // 키워드 검색 — 제목 또는 본문에 포함
+  if (filters.search) {
+    const keyword = `%${filters.search}%`;
+    conditions.push(or(
+      like(qnaQuestions.title, keyword),
+      like(qnaQuestions.body, keyword),
+    ));
+  }
+
   const where = and(...conditions);
   const [{ total }] = await db.select({ total: count() }).from(qnaQuestions).where(where);
 
@@ -262,8 +282,11 @@ async function listQuestions(filters) {
     .limit(limit)
     .offset(offset);
 
+  const kakaoUserId = filters.kakaoUserId || null;
   return {
-    items: rows.map(toPublicQuestion),
+    items: rows.map((r) => toPublicQuestion(r, {
+      revealPrivate: kakaoUserId && r.kakaoUserId === kakaoUserId,
+    })),
     meta: buildPaginationMeta(total, page, limit),
   };
 }
@@ -271,7 +294,7 @@ async function listQuestions(filters) {
 /**
  * 슬러그로 질문 조회 + 조회수 증가.
  * @param {string} slug
- * @param {{ skipIncrement?: boolean, includePrivate?: boolean }} options
+ * @param {{ skipIncrement?: boolean, includePrivate?: boolean, kakaoUserId?: string }} options
  */
 async function getQuestion(slug, options = {}) {
   const [row] = await db.select().from(qnaQuestions).where(eq(qnaQuestions.slug, slug));
@@ -292,7 +315,11 @@ async function getQuestion(slug, options = {}) {
   const category = ancestors[ancestors.length - 1] || null;
   const breadcrumb = ancestors.map((a) => ({ id: a.id, name: a.name, slug: a.slug, depth: a.depth }));
 
-  const publicRow = options.includePrivate ? row : toPublicQuestion(row);
+  // 비밀글 접근 판정 — 관리자이거나 카카오 작성자 본인이면 전체 노출
+  const isOwner = options.kakaoUserId && row.kakaoUserId === options.kakaoUserId;
+  const publicRow = options.includePrivate
+    ? row
+    : toPublicQuestion(row, { revealPrivate: isOwner });
   return { ...publicRow, category, breadcrumb };
 }
 
@@ -310,6 +337,7 @@ async function submitQuestion(data) {
     categoryId, title, body,
     anonymityTier = 2, nickname,
     submitterName, submitterContact, submitterRegion,
+    isPrivate, password, kakaoUserId,
   } = data;
 
   if (!categoryId || !title?.trim() || !body?.trim()) {
@@ -349,6 +377,21 @@ async function submitQuestion(data) {
     displayName = generateAnonymousDisplayName(top);
   }
 
+  // 비밀글 검증 — 비밀번호 또는 카카오 로그인 필요
+  const wantPrivate = isPrivate ? 1 : 0;
+  let passwordHash = null;
+  if (wantPrivate) {
+    if (!password && !kakaoUserId) {
+      throw new ServiceError("비밀글은 비밀번호를 설정하거나 카카오 로그인이 필요합니다", 400);
+    }
+    if (password) {
+      if (password.length < 4 || password.length > 20) {
+        throw new ServiceError("비밀번호는 4~20자로 입력해 주세요", 400);
+      }
+      passwordHash = hashPassword(password);
+    }
+  }
+
   const slug = generateQuestionSlug(title);
   const now = nowTimestamp();
 
@@ -364,6 +407,9 @@ async function submitQuestion(data) {
       submitterName: submitterName || null,
       submitterContact: submitterContact || null,
       submitterRegion: submitterRegion || null,
+      isPrivate: wantPrivate,
+      passwordHash,
+      kakaoUserId: kakaoUserId || null,
       status: "pending",
       createdAt: now,
       updatedAt: now,
@@ -509,6 +555,32 @@ async function adminDeleteCategory(id) {
   return { deleted: true };
 }
 
+/**
+ * 비밀글 비밀번호 검증 — 성공 시 전체 내용 반환.
+ * @param {string} slug
+ * @param {string} password
+ */
+async function verifyQuestionPassword(slug, password) {
+  const [row] = await db.select().from(qnaQuestions).where(eq(qnaQuestions.slug, slug));
+  if (!row || row.status !== "published") {
+    throw new ServiceError("질문을 찾을 수 없습니다", 404);
+  }
+  if (!row.isPrivate) {
+    // 비밀글이 아니면 그냥 반환
+    return toPublicQuestion(row, { revealPrivate: true });
+  }
+  if (!row.passwordHash) {
+    throw new ServiceError("이 비밀글은 비밀번호로 열람할 수 없습니다", 403);
+  }
+  if (!verifyPassword(password, row.passwordHash)) {
+    throw new ServiceError("비밀번호가 일치하지 않습니다", 403);
+  }
+  const ancestors = await getCategoryAncestors(row.categoryId);
+  const category = ancestors[ancestors.length - 1] || null;
+  const breadcrumb = ancestors.map((a) => ({ id: a.id, name: a.name, slug: a.slug, depth: a.depth }));
+  return { ...toPublicQuestion(row, { revealPrivate: true }), category, breadcrumb };
+}
+
 module.exports = {
   // 공개
   getCategoryTree,
@@ -517,6 +589,7 @@ module.exports = {
   listQuestions,
   getQuestion,
   submitQuestion,
+  verifyQuestionPassword,
   // 관리자
   adminListQuestions,
   adminUpdateQuestion,

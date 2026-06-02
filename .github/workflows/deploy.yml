@@ -34,15 +34,15 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
           cache-dependency-path: |
-            frontend/frontend/package-lock.json
-            frontend/backend/package-lock.json
+            frontend/package-lock.json
+            backend/package-lock.json
 
       - name: Install frontend deps
-        working-directory: frontend/frontend
+        working-directory: frontend
         run: npm ci
 
       - name: Build frontend
-        working-directory: frontend/frontend
+        working-directory: frontend
         run: npm run build
 
       - name: Setup SSH
@@ -67,12 +67,61 @@ jobs:
           ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o BatchMode=yes \
             "$DEPLOY_USER@$DEPLOY_HOST" 'echo CONNECT_OK; whoami; pwd'
 
+      - name: Migrate server frontend path (one-time)
+        # 구조 변경: frontend/frontend/dist → frontend/dist
+        # 이전 dist 디렉토리를 심볼릭 링크로 전환해 nginx 설정 변경 없이 무중단 마이그레이션
+        run: |
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes \
+            "$DEPLOY_USER@$DEPLOY_HOST" '
+            mkdir -p /home/ubuntu/highlawmain/frontend/dist
+            OLD=/home/ubuntu/highlawmain/frontend/frontend/dist
+            if [ -d "$OLD" ] && [ ! -L "$OLD" ]; then
+              cp -a "$OLD/." /home/ubuntu/highlawmain/frontend/dist/ 2>/dev/null || true
+              rm -rf "$OLD"
+              mkdir -p "$(dirname $OLD)"
+              ln -sfn /home/ubuntu/highlawmain/frontend/dist "$OLD"
+              echo "✓ 심볼릭 링크 생성: frontend/frontend/dist → frontend/dist"
+            else
+              echo "✓ 이미 마이그레이션됨 (skip)"
+            fi
+          '
+
+      - name: Configure nginx URL redirects (idempotent)
+        # deploy/nginx-snippets/highlaw-redirects.conf 를 서버에 복사하고
+        # nginx 주 설정에 include되지 않은 경우에만 삽입한다 (멱등).
+        run: |
+          scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes \
+            deploy/nginx-snippets/highlaw-redirects.conf \
+            "$DEPLOY_USER@$DEPLOY_HOST:/tmp/highlaw-redirects.conf"
+
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes \
+            "$DEPLOY_USER@$DEPLOY_HOST" 'set -euo pipefail
+            sudo mkdir -p /etc/nginx/snippets
+            sudo cp /tmp/highlaw-redirects.conf /etc/nginx/snippets/highlaw-redirects.conf
+            sudo chmod 644 /etc/nginx/snippets/highlaw-redirects.conf
+            CONF=$(sudo grep -rl "highlaw\|5001" /etc/nginx/sites-enabled/ 2>/dev/null | head -1 || true)
+            [ -z "$CONF" ] && CONF=$(sudo grep -rl "highlaw\|5001" /etc/nginx/sites-available/ 2>/dev/null | head -1 || true)
+            [ -z "$CONF" ] && CONF=/etc/nginx/sites-available/default
+            echo "nginx config: $CONF"
+            if ! sudo grep -q "highlaw-redirects" "$CONF"; then
+              LINE=$(sudo grep -n "location / {" "$CONF" | head -1 | cut -d: -f1)
+              if [ -n "$LINE" ]; then
+                sudo sed -i "${LINE}i\\    include snippets/highlaw-redirects.conf;" "$CONF"
+                echo "include inserted at line $LINE"
+              else
+                echo "WARNING: location / block not found; include NOT inserted"
+              fi
+            else
+              echo "include already present (skip)"
+            fi
+            sudo nginx -t && sudo systemctl reload nginx && echo "nginx reload OK"'
+
       - name: Sync frontend dist
         run: |
           rsync -az --delete \
             -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes" \
-            frontend/frontend/dist/ \
-            ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }}:/home/ubuntu/highlawmain/frontend/frontend/dist/
+            frontend/dist/ \
+            ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }}:/home/ubuntu/highlawmain/frontend/dist/
 
       - name: Sync backend source
         # 서버는 GitHub 접근 권한이 없으므로 git fetch 대신 CI 러너에서 직접 rsync로 동기화한다.
@@ -85,7 +134,7 @@ jobs:
             --exclude='.env' \
             --exclude='.env.*' \
             -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes" \
-            frontend/backend/ \
+            backend/ \
             ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }}:/home/ubuntu/highlawmain/backend/
 
       - name: Sync backend runtime env

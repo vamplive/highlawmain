@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 메시지 템플릿 시드 데이터
  * - 법률사무소에서 자주 사용하는 SMS/이메일 샘플 템플릿
  * - 실행: node seed-messages.js
@@ -12,37 +12,37 @@ const SEED_TEMPLATES = [
   {
     name: "상담 접수 확인",
     channel: "sms",
-    content: "[법무법인 하이로] {name}님, 상담 신청이 접수되었습니다. 담당 변호사 배정 후 연락드리겠습니다. 문의: 02-6925-6757",
+    content: "[법무법인 하이로] {name}님, 상담 신청이 접수되었습니다. 담당 변호사 배정 후 연락드리겠습니다. 문의: 02-594-5583",
     sortOrder: 1,
   },
   {
     name: "상담 일정 확정",
     channel: "sms",
-    content: "[법무법인 하이로] {name}님, {category} 관련 상담이 확정되었습니다. 일시: {date}. 장소: 서울시 강남구 테헤란로 141 (역삼KR빌딩) 15층. 문의: 02-6925-6757",
+    content: "[법무법인 하이로] {name}님, {category} 관련 상담이 확정되었습니다. 일시: {date}. 장소: 서울시 서초구 서초대로 327, 5층. 문의: 02-594-5583",
     sortOrder: 2,
   },
   {
     name: "상담 일정 변경 안내",
     channel: "sms",
-    content: "[법무법인 하이로] {name}님, 예약하신 상담 일정이 변경되었습니다. 변경된 일시는 별도 안내 예정입니다. 문의: 02-6925-6757",
+    content: "[법무법인 하이로] {name}님, 예약하신 상담 일정이 변경되었습니다. 변경된 일시는 별도 안내 예정입니다. 문의: 02-594-5583",
     sortOrder: 3,
   },
   {
     name: "상담 리마인더",
     channel: "sms",
-    content: "[법무법인 하이로] {name}님, 내일 예약하신 상담이 있습니다. 준비 서류가 있으시면 지참 부탁드립니다. 장소: 강남구 테헤란로 141 (역삼KR빌딩) 15층. 문의: 02-6925-6757",
+    content: "[법무법인 하이로] {name}님, 내일 예약하신 상담이 있습니다. 준비 서류가 있으시면 지참 부탁드립니다. 장소: 서초구 서초대로 327, 5층. 문의: 02-594-5583",
     sortOrder: 4,
   },
   {
     name: "상담 완료 감사",
     channel: "sms",
-    content: "[법무법인 하이로] {name}님, 상담에 참석해주셔서 감사합니다. 추가 문의 사항이 있으시면 언제든 연락 주시기 바랍니다. 02-6925-6757",
+    content: "[법무법인 하이로] {name}님, 상담에 참석해주셔서 감사합니다. 추가 문의 사항이 있으시면 언제든 연락 주시기 바랍니다. 02-594-5583",
     sortOrder: 5,
   },
   {
     name: "서류 제출 요청",
     channel: "sms",
-    content: "[법무법인 하이로] {name}님, {category} 사건 진행을 위해 관련 서류 제출이 필요합니다. 자세한 안내는 이메일 또는 전화로 드리겠습니다. 02-6925-6757",
+    content: "[법무법인 하이로] {name}님, {category} 사건 진행을 위해 관련 서류 제출이 필요합니다. 자세한 안내는 이메일 또는 전화로 드리겠습니다. 02-594-5583",
     sortOrder: 6,
   },
 
@@ -66,8 +66,8 @@ const SEED_TEMPLATES = [
   <p>추가 문의 사항이 있으시면 아래 연락처로 연락 주시기 바랍니다.</p>
   <div style="margin-top:24px;padding-top:16px;border-top:1px solid #e0e0e0;font-size:12px;color:#888">
     <p style="margin:0"><strong>법무법인 하이로</strong></p>
-    <p style="margin:4px 0">서울특별시 강남구 테헤란로 141 (역삼KR빌딩) 15층</p>
-    <p style="margin:4px 0">전화: 02-6925-6757 | 이메일: contact@highlaw.co.kr</p>
+    <p style="margin:4px 0">서울특별시 서초구 서초대로 327, 5층</p>
+    <p style="margin:4px 0">전화: 02-594-5583 | 이메일: younsehwan@highlaw.co.kr</p>
   </div>
 </div>`,
     sortOrder: 1,
@@ -86,7 +86,7 @@ const SEED_TEMPLATES = [
   <div style="background:#f0f4ff;padding:20px;border-radius:8px;margin:20px 0;border-left:4px solid #b08d57">
     <p style="margin:0;font-size:15px;font-weight:600;color:#1a1a2e">상담 일정 안내</p>
     <p style="margin:10px 0 4px;font-size:14px"><strong>일시:</strong> {date}</p>
-    <p style="margin:4px 0;font-size:14px"><strong>장소:</strong> 서울특별시 강남구 테헤란로 141 (역삼KR빌딩) 15층</p>
+    <p style="margin:4px 0;font-size:14px"><strong>장소:</strong> 서울특별시 서초구 서초대로 327, 5층</p>
     <p style="margin:4px 0;font-size:14px"><strong>분야:</strong> {category}</p>
   </div>
   <p><strong>준비 사항:</strong></p>
@@ -98,7 +98,7 @@ const SEED_TEMPLATES = [
   <p>시간 변경이 필요하시면 사전에 연락 부탁드립니다.</p>
   <div style="margin-top:24px;padding-top:16px;border-top:1px solid #e0e0e0;font-size:12px;color:#888">
     <p style="margin:0"><strong>법무법인 하이로</strong></p>
-    <p style="margin:4px 0">전화: 02-6925-6757 | 이메일: contact@highlaw.co.kr</p>
+    <p style="margin:4px 0">전화: 02-594-5583 | 이메일: younsehwan@highlaw.co.kr</p>
   </div>
 </div>`,
     sortOrder: 2,
@@ -119,8 +119,8 @@ const SEED_TEMPLATES = [
   <p style="margin-top:20px">감사합니다.</p>
   <div style="margin-top:24px;padding-top:16px;border-top:1px solid #e0e0e0;font-size:12px;color:#888">
     <p style="margin:0"><strong>법무법인 하이로</strong></p>
-    <p style="margin:4px 0">서울특별시 강남구 테헤란로 141 (역삼KR빌딩) 15층</p>
-    <p style="margin:4px 0">전화: 02-6925-6757 | 이메일: contact@highlaw.co.kr</p>
+    <p style="margin:4px 0">서울특별시 서초구 서초대로 327, 5층</p>
+    <p style="margin:4px 0">전화: 02-594-5583 | 이메일: younsehwan@highlaw.co.kr</p>
   </div>
 </div>`,
     sortOrder: 3,
