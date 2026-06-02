@@ -30,8 +30,9 @@ export default function Layout() {
   const isQna = pathname === "/inquiry" || pathname.startsWith("/inquiry/");
   const isConsultation = pathname === "/consultation";
   const isLectures = pathname.startsWith("/lectures/");
+  const isRecruit = pathname === "/recruit" || pathname.startsWith("/recruit/");
 
-  const hasDarkHero = isHome || isLawyerDetail || isAbout || isPractice || isLawyers || isBlog || isReviews || isQna || isConsultation || isLectures;
+  const hasDarkHero = isHome || isLawyerDetail || isAbout || isPractice || isLawyers || isBlog || isReviews || isQna || isConsultation || isLectures || isRecruit;
   const heroTop = hasDarkHero && !scrolled && !menuOpen;
 
   // 라우트 변경 시 메뉴 닫고 페이지 최상단으로 스크롤
