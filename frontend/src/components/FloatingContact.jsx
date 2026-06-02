@@ -9,6 +9,7 @@
  * - 오시는 길: /about/directions 이동.
  * - 디자인 테마: 법무법인 하이로 브랜드 아이덴티티에 최적화된 Deep Navy (#0b1f3a) & Gold (#c9a84c) 명품 럭셔리 스타일.
  */
+import { useState, useEffect } from "react";
 import { useSiteSettingsPage, useLanguage } from "../hooks/useSiteSettings";
 import { LAYOUT_DEFAULTS } from "./layout/layoutConfig";
 import { KAKAO_CHANNEL_CHAT } from "../utils/kakaoChannel";
@@ -28,6 +29,17 @@ export default function FloatingContact() {
   const telegramUrl = safeHttpUrl(contact.telegramUrl, TELEGRAM_CONTACT_URL);
 
   const tel = normalizeTel(phone);
+
+  const [chatbotOpen, setChatbotOpen] = useState(false);
+
+  // 챗봇 개폐 상태 수신
+  useEffect(() => {
+    const handleChatbotState = (e) => {
+      setChatbotOpen(!!e.detail?.open);
+    };
+    window.addEventListener("chatbot-state", handleChatbotState);
+    return () => window.removeEventListener("chatbot-state", handleChatbotState);
+  }, []);
 
   // 챗봇 열기 커스텀 이벤트 디스패치
   const triggerChatbot = (e) => {
@@ -50,7 +62,7 @@ export default function FloatingContact() {
           flex-direction: column;
           font-family: var(--font-sans-kr);
           filter: drop-shadow(0 15px 35px rgba(11, 31, 58, 0.22));
-          transition: all 0.3s ease;
+          transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
           border-radius: 12px;
           border: 1px solid rgba(201, 168, 76, 0.2); /* 은은한 골드 테두리 */
           overflow: visible;
@@ -204,10 +216,17 @@ export default function FloatingContact() {
             transform: scale(0.8);
             transform-origin: bottom right;
           }
+          
+          /* 모바일에서 챗봇이 열릴 때 퀵메뉴를 깔끔히 페이드아웃하여 겹침 방지 */
+          .quick-menu-container.chatbot-active {
+            opacity: 0 !important;
+            pointer-events: none !important;
+            transform: scale(0.7) translateY(20px) !important;
+          }
         }
       `}</style>
 
-      <div className="quick-menu-container">
+      <div className={`quick-menu-container ${chatbotOpen ? "chatbot-active" : ""}`}>
         {/* 헤더 버튼: 법률상담도우미 (클릭 시 챗봇 실행) */}
         <button onClick={triggerChatbot} className="quick-menu-header" aria-label="법률상담도우미 열기">
           <div className="quick-menu-tab">

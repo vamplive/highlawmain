@@ -44,6 +44,12 @@ export default function ChatWidget({ buttonBottom = 228, hideToggleButton = fals
     return () => window.removeEventListener("open-chatbot", handleOpenChat);
   }, [handleOpen]);
 
+  /** 챗봇 개폐 상태를 전역으로 브로드캐스트 (퀵메뉴 등과 레이아웃 연동) */
+  useEffect(() => {
+    const event = new CustomEvent("chatbot-state", { detail: { open } });
+    window.dispatchEvent(event);
+  }, [open]);
+
   /** 스크롤 하단 고정 */
   useEffect(() => {
     if (listRef.current) {
@@ -100,20 +106,43 @@ export default function ChatWidget({ buttonBottom = 228, hideToggleButton = fals
         </button>
       )}
 
+      <style>{`
+        .chatbot-window {
+          position: fixed;
+          bottom: 24px;
+          right: 138px; /* 데스크톱에서 퀵메뉴와 나란히 배치하도록 오프셋 조정 */
+          z-index: 9999;
+          width: 360px;
+          height: 480px;
+          background: #ffffff;
+          border-radius: 14px;
+          box-shadow: 0 10px 35px rgba(11, 31, 58, 0.16);
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+          transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+          border: 1px solid rgba(11, 31, 58, 0.08);
+        }
+
+        @media (max-width: 768px) {
+          .chatbot-window {
+            right: 16px !important;
+            bottom: 16px !important;
+            width: calc(100vw - 32px) !important;
+            height: calc(100vh - 100px) !important;
+            border-radius: 12px !important;
+          }
+        }
+      `}</style>
+
       {/* ==================== 채팅 창 ==================== */}
       {open && (
         <div
           role="dialog"
           aria-modal="false"
           aria-label="법률 상담 채팅"
-          style={{
-          position: "fixed", bottom: 24, right: 24, zIndex: 9999,
-          width: "min(360px, calc(100vw - 32px))", height: "min(480px, calc(100vh - 120px))",
-          background: "#fff", borderRadius: 14,
-          boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
-          display: "flex", flexDirection: "column",
-          overflow: "hidden",
-        }}>
+          className="chatbot-window"
+        >
           {/* 헤더 */}
           <div style={{
             padding: "14px 18px",
