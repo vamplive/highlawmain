@@ -1,13 +1,12 @@
 /** 포털 대시보드 — 사건 목록, 사건 등록 버튼, 구글 캘린더 연동 */
 import { useState, useEffect } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { portalApi } from "../../utils/api";
 import { T } from "./portalStyles";
 import { STATUS_MAP } from "./portalConstants";
 import { showToast } from "../../utils/showToast";
 
 export default function PortalDashboard() {
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [cases, setCases] = useState([]);
   const [loading, setLoading] = useState(true);

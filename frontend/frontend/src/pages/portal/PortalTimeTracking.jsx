@@ -1,7 +1,7 @@
 /**
  * 포털 타임트래킹 — 사건별 시간 기록 + 타이머 + 취합 보기
  */
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { portalApi } from "../../utils/api";
 import { T, fieldStyle, labelStyle } from "./portalStyles";
 import { showToast } from "../../utils/showToast";
@@ -44,7 +44,7 @@ function useElapsedTime(startedAt) {
 }
 
 /** 진행 중 타이머 패널 */
-function ActiveTimerPanel({ timer, cases, onStop }) {
+function ActiveTimerPanel({ timer, onStop }) {
   const elapsed = useElapsedTime(timer?.startedAt);
   if (!timer) return null;
 
@@ -320,7 +320,7 @@ export default function PortalTimeTracking() {
       </div>
 
       {/* 진행 중 타이머 */}
-      <ActiveTimerPanel timer={activeTimer} cases={cases} onStop={handleStop} />
+      <ActiveTimerPanel timer={activeTimer} onStop={handleStop} />
 
       {/* 타이머 시작 폼 */}
       {!activeTimer && <StartTimerForm cases={cases} onStart={handleStart} />}

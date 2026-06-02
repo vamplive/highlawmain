@@ -31,7 +31,7 @@ function parseCaseNumberHint(caseNumber) {
   const match = caseNumber.match(/^(\d{4})(가합|가단|나|다|고합|고단|고독|구합|구단|헌가|헌마|행합|행단)(\d+)$/);
   if (!match) return {};
 
-  const [, year, code] = match;
+  const [, , code] = match;
   const codeMap = {
     "가합": { caseType: "민사", court: "지방법원" },
     "가단": { caseType: "민사", court: "지방법원" },

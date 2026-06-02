@@ -13,7 +13,7 @@ import "./LoginPage.css";
 
 const KOREAN_PHONE_RE = /^(01[016789]{1}|02|0[3-9]{1}[0-9]{1})\d{3,4}\d{4}$/;
 
-function cleanPhone(p) { return p.replace(/[\s\-]/g, ""); }
+function cleanPhone(p) { return p.replace(/[\s-]/g, ""); }
 
 // ──────────────────────────────────────────────────
 // 로그인 폼
@@ -229,12 +229,13 @@ export default function LoginPage() {
   const [tab, setTab] = useState("login"); // "login" | "register"
   const [registered, setRegistered] = useState(false);
   const [registeredName, setRegisteredName] = useState("");
-  const [heroVideo, setHeroVideo] = useState("/videos/manhattan-panoramic.mp4");
+  const [heroVideo, setHeroVideo] = useState(() => {
+    const cached = localStorage.getItem("activeHeroVideo");
+    return cached && isSafeHttpUrl(cached) ? cached : "/videos/manhattan-panoramic.mp4";
+  });
 
   // 활성 히어로 영상 로드 (관리자 설정 반영)
   useEffect(() => {
-    const cached = localStorage.getItem("activeHeroVideo");
-    if (cached && isSafeHttpUrl(cached)) setHeroVideo(cached);
     fetch("/api/hero-videos/active")
       .then((r) => r.json())
       .then((json) => {
@@ -252,7 +253,7 @@ export default function LoginPage() {
     portalApi.get("/me")
       .then(() => navigate("/portal/dashboard", { replace: true }))
       .catch(() => {/* 미인증 — 로그인 페이지 유지 */});
-  }, []);
+  }, [navigate]);
 
   const handleLoginSuccess = () => {
     navigate("/portal/dashboard", { replace: true });

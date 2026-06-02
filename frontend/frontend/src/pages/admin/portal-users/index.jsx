@@ -20,7 +20,6 @@ function TimeEntriesPanel() {
   const [users, setUsers] = useState([]);
   const [filters, setFilters] = useState({ from: today, to: today, caseId: "", portalUserId: "" });
   const [loading, setLoading] = useState(false);
-  const [meta, setMeta] = useState(null);
 
   useEffect(() => {
     // 포털 사용자 목록 (직원별 필터용)
@@ -41,7 +40,6 @@ function TimeEntriesPanel() {
 
       const res = await api.get(`/portal/admin/time-entries?${params}`);
       setEntries(res.data ?? []);
-      setMeta(res.meta);
     } finally {
       setLoading(false);
     }
@@ -155,14 +153,12 @@ export default function AdminPortalUsers() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null);
-  const [meta, setMeta] = useState(null);
 
   const loadUsers = async () => {
     setLoading(true);
     try {
       const res = await api.get(`/portal/admin/users?status=${tab}&limit=50`);
       setUsers(res.data ?? []);
-      setMeta(res.meta);
     } finally {
       setLoading(false);
     }

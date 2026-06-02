@@ -1,11 +1,10 @@
-import { Link, NavLink, useLocation } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import { setLanguage } from "../../hooks/useSiteSettings";
 import HamburgerButton from "./HamburgerButton";
 import LogoCanvas from "./LogoCanvas";
 
 export default function Header({ heroTop, isLawyerDetail, menuOpen, onToggleMenu, navItems, lang }) {
-  const location = useLocation();
-  const isHome = location.pathname === "/";
+
 
   return (
     <header

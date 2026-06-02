@@ -1,15 +1,14 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { api } from "../../utils/api";
 import Spinner from "../../components/ui/Spinner";
 
-export default function HomeHero({ heroVideo, settings, copy }) {
+export default function HomeHero({ heroVideo, settings }) {
   const [videoReady, setVideoReady] = useState(false);
   const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [results, setResults] = useState({ lawyers: [], posts: [], questions: [] });
-  const navigate = useNavigate();
 
   // 검색 로직
   useEffect(() => {

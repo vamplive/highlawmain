@@ -1,5 +1,4 @@
 /** 사무소 소개 페이지 — 법무법인 하이로 개요, 핵심 가치, 연혁, 인사말, 공익활동, 오시는 길 */
-import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Handshake, Scale, Landmark, Lightbulb } from "lucide-react";
 import useReveal from "../../hooks/useReveal";
