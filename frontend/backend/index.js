@@ -347,34 +347,6 @@ try {
 }
 app.use("/api/sitemap", require("./routes/sitemap"));
 app.use("/sitemap.xml", require("./routes/sitemap"));
-app.get("/api/debug-sitemap", (req, res) => {
-  const { syncPublishedBlogStaticArtifacts } = require("./services/blog-static-renderer");
-  const { sqlite } = require("./db");
-  const path = require("path");
-  const fs = require("fs");
-  
-  try {
-    const result = syncPublishedBlogStaticArtifacts(sqlite);
-    const distPath = result.dist || path.resolve(__dirname, "..", "frontend", "frontend", "dist");
-    const sitemapPath = path.join(distPath, "sitemap.xml");
-    const exists = fs.existsSync(sitemapPath);
-    const content = exists ? fs.readFileSync(sitemapPath, "utf8").substring(0, 300) : "NOT_FOUND";
-    
-    res.json({
-      FRONTEND_DIST_PATH: process.env.FRONTEND_DIST_PATH || "NOT_DEFINED",
-      result,
-      sitemapPath,
-      exists,
-      content,
-      frontendDist_var: frontendDist,
-      frontendDist_exists: fs.existsSync(frontendDist),
-      files_in_dist: fs.existsSync(frontendDist) ? fs.readdirSync(frontendDist) : []
-    });
-  } catch (err) {
-    res.json({ error: err.message, stack: err.stack });
-  }
-});
-
 // API 문서 (Swagger UI + OpenAPI 스펙)
 app.use("/api/docs", require("./routes/docs"));
 
