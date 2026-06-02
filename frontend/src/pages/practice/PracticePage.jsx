@@ -233,7 +233,7 @@ export default function PracticePage() {
       `}</style>
 
       {/* ==================== 탭 네비게이션 섹션 ==================== */}
-      <section className="section" style={{ background: "#fff", paddingTop: 48 }}>
+      <section className="section" style={{ background: "#fff", paddingTop: 48, paddingBottom: 24 }}>
         <div className="container" style={{ maxWidth: 1000 }}>
           
           {/* ==================== 3개 타원형(Pill) 탭 네비게이션 ==================== */}
