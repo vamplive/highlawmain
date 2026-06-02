@@ -134,7 +134,8 @@ jobs:
             'set -euo pipefail
              cd /home/ubuntu/highlawmain/backend
              npm ci --omit=dev
-             pm2 reload highlaw-api --update-env
+             pm2 delete highlaw-api || true
+             pm2 start index.js --name highlaw-api --update-env
              pm2 save'
 
       - name: Run DB migrations
