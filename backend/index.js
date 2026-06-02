@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Express 서버 진입점
  * - API 라우트 등록, 정적 파일 서빙, 글로벌 에러 핸들러
  */
@@ -320,8 +320,12 @@ app.use("/api/recruit", require("./routes/recruit"));
 app.use("/api/docs", require("./routes/docs"));
 
 // 프론트엔드 정적 파일 서빙 (프로덕션)
-const frontendDist = path.resolve(__dirname, "..", "frontend", "dist").replace(/\\/g, "/");
+let frontendDist = path.resolve(__dirname, "..", "frontend", "dist").replace(/\\/g, "/");
 const fs = require("fs");
+const nestedFrontendDist = path.resolve(__dirname, "..", "frontend", "frontend", "dist").replace(/\\/g, "/");
+if (fs.existsSync(nestedFrontendDist)) {
+  frontendDist = nestedFrontendDist;
+}
 if (fs.existsSync(frontendDist)) {
   const indexPath = path.join(frontendDist, "index.html");
   const PUBLIC_SITE_URL = (process.env.APP_URL || "https://highlaw.co.kr").replace(/\/$/, "");
