@@ -18,7 +18,7 @@
 const Database = require("better-sqlite3");
 const path = require("path");
 
-const DB_PATH = process.env.DB_PATH || path.join(__dirname, "..", "data", "db", "yjlaw.db");
+const DB_PATH = process.env.DB_PATH || path.join(__dirname, "..", "data", "db", "highlaw.db");
 const REGEN_ALL = process.argv.includes("--all");
 
 function htmlToPlainText(html) {

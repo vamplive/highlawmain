@@ -15,7 +15,7 @@ import os from "node:os";
 import fs from "node:fs";
 
 // DB 파일을 임시 디렉터리로 격리
-const TMP_DIR = fs.mkdtempSync(path.join(os.tmpdir(), "yjlaw-portal-test-"));
+const TMP_DIR = fs.mkdtempSync(path.join(os.tmpdir(), "highlaw-portal-test-"));
 process.env.STORAGE_PATH = TMP_DIR;
 process.env.CSRF_SECRET = "test-csrf-secret-32bytes-fixed-value-1";
 process.env.NODE_ENV = "test";

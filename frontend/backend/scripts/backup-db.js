@@ -87,7 +87,7 @@ async function main() {
     "..",
     "data",
     "db",
-    "yjlaw.db",
+    "highlaw.db",
   );
   const outDir = path.resolve(
     args.out || process.env.DB_BACKUP_DIR || path.join(__dirname, "..", "data", "backups"),

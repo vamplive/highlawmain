@@ -56,7 +56,7 @@ cd frontend && npm run dev
 
 프론트 dev 서버가 `/api/*`, `/uploads/*`, `/data/*` 요청을 백엔드(localhost:5001)로 프록시합니다. 브라우저에서 http://localhost:5173 접속.
 
-데이터베이스는 최초 실행 시 `${STORAGE_PATH:-backend/data}/db/yjlaw.db`에 자동 생성됩니다.
+데이터베이스는 최초 실행 시 `${STORAGE_PATH:-backend/data}/db/highlaw.db`에 자동 생성됩니다.
 
 ---
 
@@ -114,7 +114,7 @@ cd backend && npm run backup
 운영 배포 절차·자동화 스크립트는 [`deploy/`](./deploy/) 폴더를 참조하세요.
 
 - `deploy/setup-server.sh` — 서버 초기 셋업 스크립트
-- `deploy/com.yjlaw.db-backup.plist` — macOS launchd DB 백업 스케줄러
+- `deploy/com.highlaw.db-backup.plist` — macOS launchd DB 백업 스케줄러
 - `deploy/ops-README.md` — DB 백업 자동화·운영 작업 상세 가이드
 
 프로덕션에서는 `ALLOWED_ORIGINS`, `CSRF_SECRET`, `ADMIN_INITIAL_PASSWORD`가 반드시 설정되어 있어야 합니다(미설정 시 부팅 차단).

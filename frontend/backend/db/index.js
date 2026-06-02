@@ -17,7 +17,7 @@ const { initFTS, searchFTS: ftsSearch, searchFTSWithSnippet: ftsSearchSnippet } 
 // 미설정 시 프로젝트 내부 backend/data/db 사용
 const STORAGE_BASE = process.env.STORAGE_PATH || path.join(__dirname, "..", "data");
 const DB_DIR = path.join(STORAGE_BASE, "db");
-const DB_PATH = path.join(DB_DIR, "yjlaw.db");
+const DB_PATH = path.join(DB_DIR, "highlaw.db");
 
 if (!fs.existsSync(DB_DIR)) {
   fs.mkdirSync(DB_DIR, { recursive: true });

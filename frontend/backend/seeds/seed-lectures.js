@@ -8,7 +8,7 @@ const Database = require("better-sqlite3");
 const path = require("path");
 
 const STORAGE_PATH = process.env.STORAGE_PATH || path.join(__dirname, "..", "data");
-const DB_PATH = path.join(STORAGE_PATH, "db", "yjlaw.db");
+const DB_PATH = path.join(STORAGE_PATH, "db", "highlaw.db");
 const db = new Database(DB_PATH);
 
 // lectures 테이블 생성 (없으면)
@@ -49,7 +49,7 @@ const existing = db.prepare("SELECT count(*) as c FROM lectures WHERE lawyer_id 
 if (existing.c > 0) {
   console.log(`이미 ${existing.c}건의 강의가 등록되어 있습니다. 중복 방지를 위해 건너뜁니다.`);
   console.log("기존 데이터를 삭제하고 다시 넣으려면:");
-  console.log("  node -e \"require('better-sqlite3')('./data/db/yjlaw.db').exec('DELETE FROM lectures')\"");
+  console.log("  node -e \"require('better-sqlite3')('./data/db/highlaw.db').exec('DELETE FROM lectures')\"");
   db.close();
   process.exit(0);
 }

@@ -47,7 +47,7 @@ jobs:
           ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes \
             "$DEPLOY_USER@$DEPLOY_HOST" \
             "set -euo pipefail
-             cd /home/ubuntu/yjlawoffice/backend
+             cd /home/ubuntu/highlawoffice/backend
              SCRIPT='$SCRIPT'
              test -f \"seeds/\$SCRIPT\" || { echo \"seed not found: \$SCRIPT\"; exit 1; }
              node \"seeds/\$SCRIPT\""

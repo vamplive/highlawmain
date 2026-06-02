@@ -82,7 +82,7 @@ async function createConsultationEvent({ summary, description, startDateTime, en
   if (!calendar) return null;
 
   try {
-    const requestId = `yjlaw-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const requestId = `highlaw-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const res = await calendar.events.insert({
       calendarId: CALENDAR_ID,
       conferenceDataVersion: 1,

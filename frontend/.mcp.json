@@ -3,7 +3,7 @@
     "korean-law": {
       "command": "korean-law-mcp",
       "env": {
-        "LAW_OC": "yjlaw"
+        "LAW_OC": "highlaw"
       },
       "disabled": true
     }

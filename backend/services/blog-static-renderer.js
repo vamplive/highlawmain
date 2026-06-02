@@ -14,7 +14,7 @@ const SITE_URL = (process.env.SITE_URL || process.env.APP_URL || "https://highla
 const SITE_NAME = "법무법인 하이로";
 const DEFAULT_DESCRIPTION = "법무법인 하이로 - 서초역 3분, 건설·부동산·민사·형사·행정 사건을 변호사가 직접 상담합니다.";
 const DEFAULT_OG_IMAGE = `${SITE_URL}/og-image.jpg`;
-const STATIC_MARKER = "<!-- yjlaw-static-blog-post -->";
+const STATIC_MARKER = "<!-- highlaw-static-blog-post -->";
 
 const STATIC_PAGES = [
   { path: "/", changefreq: "weekly", priority: "1.0" },

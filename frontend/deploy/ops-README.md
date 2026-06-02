@@ -7,7 +7,7 @@
 ## 1. DB 백업 자동화 (macOS launchd)
 
 ### 개요
-- `backend/data/db/yjlaw.db` 를 하루 한 번 `backend/data/backups/` 로 스냅샷 저장
+- `backend/data/db/highlaw.db` 를 하루 한 번 `backend/data/backups/` 로 스냅샷 저장
 - better-sqlite3 의 원자적 `.backup()` API 사용 (쓰기 중에도 안전)
 - 최근 14개 파일만 보관하고 오래된 것은 자동 삭제
 - macOS `launchd` 에이전트로 **사용자 로그인 세션**에서 구동 (시스템 데몬 아님 → sudo 불필요)
@@ -31,12 +31,12 @@ npm run backup
 # 프로젝트 루트에서
 PROJECT_ROOT="$(pwd)"
 NODE_PATH="$(command -v node)"
-TARGET="$HOME/Library/LaunchAgents/com.yjlaw.db-backup.plist"
+TARGET="$HOME/Library/LaunchAgents/com.highlaw.db-backup.plist"
 
 mkdir -p "$HOME/Library/LaunchAgents"
 sed -e "s|__PROJECT_ROOT__|$PROJECT_ROOT|g" \
     -e "s|__NODE_PATH__|$NODE_PATH|g" \
-    ops/com.yjlaw.db-backup.plist > "$TARGET"
+    ops/com.highlaw.db-backup.plist > "$TARGET"
 ```
 
 > **확인**: `cat "$TARGET"` 로 플레이스홀더가 절대경로로 치환됐는지 검증.
@@ -46,18 +46,18 @@ sed -e "s|__PROJECT_ROOT__|$PROJECT_ROOT|g" \
 ```bash
 launchctl unload "$TARGET" 2>/dev/null  # 기존 등록이 있으면 해제
 launchctl load "$TARGET"                # 새로 등록
-launchctl list | grep com.yjlaw          # 등록 확인
+launchctl list | grep com.highlaw          # 등록 확인
 ```
 
 등록 성공 시 다음과 비슷한 출력:
 ```
--	0	com.yjlaw.db-backup
+-	0	com.highlaw.db-backup
 ```
 
 #### 3) 즉시 한 번 실행해서 동작 확인
 
 ```bash
-launchctl start com.yjlaw.db-backup
+launchctl start com.highlaw.db-backup
 sleep 2
 ls -lt backend/data/backups/ | head
 ```
@@ -68,8 +68,8 @@ ls -lt backend/data/backups/ | head
 ### 제거
 
 ```bash
-launchctl unload "$HOME/Library/LaunchAgents/com.yjlaw.db-backup.plist"
-rm "$HOME/Library/LaunchAgents/com.yjlaw.db-backup.plist"
+launchctl unload "$HOME/Library/LaunchAgents/com.highlaw.db-backup.plist"
+rm "$HOME/Library/LaunchAgents/com.highlaw.db-backup.plist"
 ```
 
 ### 스케줄 변경
@@ -88,8 +88,8 @@ plist 의 `StartCalendarInterval` 블록을 수정 후 `launchctl unload → loa
 ### 복원 절차
 
 1. 백엔드 중단: `kill` 실행 중인 `node index.js` 프로세스
-2. 현재 DB 파일 안전 장소로 이동: `mv backend/data/db/yjlaw.db backend/data/db/second-brain.broken.db`
-3. 복원할 스냅샷 복사: `cp backend/data/backups/second-brain_YYYY-MM-DD_HHmmss.db backend/data/db/yjlaw.db`
+2. 현재 DB 파일 안전 장소로 이동: `mv backend/data/db/highlaw.db backend/data/db/second-brain.broken.db`
+3. 복원할 스냅샷 복사: `cp backend/data/backups/second-brain_YYYY-MM-DD_HHmmss.db backend/data/db/highlaw.db`
 4. 백엔드 재시작: `cd backend && PORT=5001 node index.js`
 5. 관리자 페이지에서 레코드 개수·시점 확인
 

@@ -6,7 +6,7 @@ import path from "node:path";
 import os from "node:os";
 import fs from "node:fs";
 
-const TMP_DIR = fs.mkdtempSync(path.join(os.tmpdir(), "yjlaw-site-settings-test-"));
+const TMP_DIR = fs.mkdtempSync(path.join(os.tmpdir(), "highlaw-site-settings-test-"));
 process.env.STORAGE_PATH = TMP_DIR;
 process.env.CSRF_SECRET = "test-csrf-secret-32bytes-fixed-value-7";
 process.env.NODE_ENV = "test";

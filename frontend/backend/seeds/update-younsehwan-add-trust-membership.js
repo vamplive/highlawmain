@@ -2,7 +2,7 @@
 const Database = require("better-sqlite3");
 const path = require("path");
 
-const dbPath = path.join(__dirname, "..", "data", "db", "yjlaw.db");
+const dbPath = path.join(__dirname, "..", "data", "db", "highlaw.db");
 const db = new Database(dbPath);
 
 const NEW_ITEM = "대한변호사협회 신탁변호사회 이사";

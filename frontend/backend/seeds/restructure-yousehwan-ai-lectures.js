@@ -13,7 +13,7 @@ const Database = require("better-sqlite3");
 const path = require("path");
 const crypto = require("crypto");
 
-const DB_PATH = process.env.DB_PATH || path.join(__dirname, "..", "data", "db", "yjlaw.db");
+const DB_PATH = process.env.DB_PATH || path.join(__dirname, "..", "data", "db", "highlaw.db");
 const LAWYER_ID = "c761d3da-9111-40e8-a60a-68812542ade2"; // 윤세환
 
 // 합본 카드 4건 — 삭제 대상

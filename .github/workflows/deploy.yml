@@ -72,7 +72,7 @@ jobs:
           rsync -az --delete \
             -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes" \
             frontend/frontend/dist/ \
-            ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }}:/home/ubuntu/yjlawoffice/frontend/dist/
+            ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }}:/home/ubuntu/highlawoffice/frontend/dist/
 
       - name: Sync backend source
         # 서버는 GitHub 접근 권한이 없으므로 git fetch 대신 CI 러너에서 직접 rsync로 동기화한다.
@@ -86,7 +86,7 @@ jobs:
             --exclude='.env.*' \
             -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes" \
             frontend/backend/ \
-            ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }}:/home/ubuntu/yjlawoffice/backend/
+            ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }}:/home/ubuntu/highlawoffice/backend/
 
       - name: Sync backend runtime env
         env:
@@ -109,12 +109,12 @@ jobs:
 
           scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes \
             "$tmp_env" \
-            ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }}:/tmp/yjlaw-aligo.env
+            ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }}:/tmp/highlaw-aligo.env
 
           ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes \
             ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }} \
             'set -euo pipefail
-             cd /home/ubuntu/yjlawoffice/backend
+             cd /home/ubuntu/highlawoffice/backend
              touch .env
              chmod 600 .env
              while IFS= read -r line; do
@@ -124,8 +124,8 @@ jobs:
                printf "%s\n" "$line" >> "$tmp_file"
                cat "$tmp_file" > .env
                rm -f "$tmp_file"
-             done < /tmp/yjlaw-aligo.env
-             rm -f /tmp/yjlaw-aligo.env
+             done < /tmp/highlaw-aligo.env
+             rm -f /tmp/highlaw-aligo.env
              chmod 600 .env'
           rm -f "$tmp_env"
 
@@ -134,16 +134,16 @@ jobs:
           ssh -i ~/.ssh/deploy_key \
             ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }} \
             'set -euo pipefail
-             cd /home/ubuntu/yjlawoffice/backend
+             cd /home/ubuntu/highlawoffice/backend
              npm ci --omit=dev
-             pm2 reload yjlaw --update-env
+             pm2 reload highlaw --update-env
              pm2 save'
 
       - name: Smoke test
         run: |
           sleep 3
           for path in / /api/site-settings /api/lawyers; do
-            code=$(curl -sk -o /dev/null -w "%{http_code}" "https://younjeong.com${path}")
+            code=$(curl -sk -o /dev/null -w "%{http_code}" "https://highlaw.co.kr${path}")
             echo "GET ${path} -> HTTP ${code}"
             [[ "$code" == "200" ]] || { echo "FAIL: ${path}"; exit 1; }
           done

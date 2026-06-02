@@ -569,7 +569,7 @@ function refreshBlogContent(sqlite, options = {}) {
 if (require.main === module) {
   const dryRun = process.argv.includes("--dry-run");
   const storagePath = process.env.STORAGE_PATH || path.join(__dirname, "..", "data");
-  const dbPath = path.join(storagePath, "db", "yjlaw.db");
+  const dbPath = path.join(storagePath, "db", "highlaw.db");
   const sqlite = new Database(dbPath);
   try {
     const result = refreshBlogContent(sqlite, { dryRun });

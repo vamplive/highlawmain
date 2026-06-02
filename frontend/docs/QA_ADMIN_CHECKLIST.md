@@ -11,7 +11,7 @@
 - **실데이터 오염 방지**: 테스트로 생성한 레코드는 삭제 또는 명확한 프리픽스(예: `[QA]`)로 표시.
 - **브라우저 콘솔 항상 열어두기** (F12): 경고·에러 발생 시 즉시 인지.
 - **Network 탭 확인**: 저장 시 4xx/5xx 없는지, 응답 바디가 `{data, error, meta}` 형식인지.
-- **DB 직접 검증(선택)**: `sqlite3 backend/data/db/yjlaw.db` 로 저장 반영 재확인.
+- **DB 직접 검증(선택)**: `sqlite3 backend/data/db/highlaw.db` 로 저장 반영 재확인.
 
 ---
 

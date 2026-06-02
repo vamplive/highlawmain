@@ -11,7 +11,7 @@
     "lint": "eslint ."
   },
   "keywords": [
-    "yjlaw",
+    "highlaw",
     "law-firm",
     "express",
     "sqlite",

@@ -8,7 +8,7 @@ const Database = require("better-sqlite3");
 const crypto = require("crypto");
 const path = require("path");
 
-const dbPath = path.join(__dirname, "..", "data", "db", "yjlaw.db");
+const dbPath = path.join(__dirname, "..", "data", "db", "highlaw.db");
 const db = new Database(dbPath);
 
 const USERNAME = "admin";

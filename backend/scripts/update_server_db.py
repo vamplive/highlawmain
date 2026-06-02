@@ -4,7 +4,7 @@ import json
 import uuid
 import datetime
 
-db_path = "/home/ubuntu/highlawmain/backend/data/db/yjlaw.db"
+db_path = "/home/ubuntu/highlawmain/backend/data/db/highlaw.db"
 conn = sqlite3.connect(db_path)
 cursor = conn.cursor()
 

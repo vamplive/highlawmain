@@ -19,4 +19,4 @@ Disallow: /portal
 Disallow: /editor
 Disallow: /api/
 
-Sitemap: https://younjeong.com/sitemap.xml
+Sitemap: https://highlaw.co.kr/sitemap.xml

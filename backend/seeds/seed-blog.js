@@ -4,7 +4,7 @@ const path = require("path");
 const Database = require("better-sqlite3");
 
 const STORAGE_PATH = process.env.STORAGE_PATH || path.join(__dirname, "..", "data");
-const DB_PATH = path.join(STORAGE_PATH, "db", "yjlaw.db");
+const DB_PATH = path.join(STORAGE_PATH, "db", "highlaw.db");
 const db = new Database(DB_PATH);
 const shouldLog = process.env.NODE_ENV !== "test" && process.env.LOG_LEVEL !== "fatal";
 const log = (...args) => {

@@ -25,7 +25,7 @@ const KEY_VERSION = "v1";
 /**
  * 32바이트 키를 환경변수에서 로드한다.
  *  1순위: SECRETS_ENCRYPTION_KEY (32바이트 = 64 hex 또는 44 base64)
- *  2순위: APP_SECRET / ADMIN_SESSION_SECRET 에서 scrypt(salt="yjlaw-secrets-vault/v1") 도출
+ *  2순위: APP_SECRET / ADMIN_SESSION_SECRET 에서 scrypt(salt="highlaw-secrets-vault/v1") 도출
  *  실패: NODE_ENV !== "test" 면 즉시 throw. 테스트 환경에서는 임시 키 생성(경고).
  */
 function loadKey() {
@@ -51,12 +51,12 @@ function loadKey() {
   const fallback = process.env.APP_SECRET || process.env.ADMIN_SESSION_SECRET;
   if (fallback && typeof fallback === "string" && fallback.length > 0) {
     // scrypt 도출 — APP_SECRET 자체가 충분히 길지 않을 수 있으므로 KDF로 32바이트 정규화
-    return crypto.scryptSync(fallback, "yjlaw-secrets-vault/v1", 32);
+    return crypto.scryptSync(fallback, "highlaw-secrets-vault/v1", 32);
   }
 
   if (process.env.NODE_ENV === "test") {
     // 테스트 환경에서만 임시 키 허용 (CI/단위 테스트가 SECRETS_ENCRYPTION_KEY 없이도 동작하도록)
-    return crypto.scryptSync("test-only-vault-key", "yjlaw-secrets-vault/test", 32);
+    return crypto.scryptSync("test-only-vault-key", "highlaw-secrets-vault/test", 32);
   }
 
   throw new Error(

@@ -10,7 +10,7 @@
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.yjlaw.db-backup</string>
+    <string>com.highlaw.db-backup</string>
 
     <key>ProgramArguments</key>
     <array>

@@ -1,7 +1,7 @@
 ﻿/** 변호사 시드 데이터 */
 const crypto = require("crypto");
 const Database = require("better-sqlite3");
-const db = new Database(require("path").join(__dirname,"..","data","db","yjlaw.db"));
+const db = new Database(require("path").join(__dirname,"..","data","db","highlaw.db"));
 
 const lawyers = [
   {

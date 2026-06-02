@@ -13,7 +13,7 @@ import fs from "fs";
 vi.hoisted(() => {
   const nodePath = require("path");
   const nodeOs = require("os");
-  const tmpBase = nodePath.join(nodeOs.tmpdir(), `yjlaw-analytics-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  const tmpBase = nodePath.join(nodeOs.tmpdir(), `highlaw-analytics-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
   process.env.STORAGE_PATH = tmpBase;
   process.env.__ANALYTICS_TEST_DB_BASE = tmpBase;
 });

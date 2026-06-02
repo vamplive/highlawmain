@@ -15,7 +15,7 @@ import os from "node:os";
 import fs from "node:fs";
 
 // DB 파일을 임시 디렉터리로 격리해 다른 테스트와 충돌을 막는다
-const TMP_DIR = fs.mkdtempSync(path.join(os.tmpdir(), "yjlaw-test-"));
+const TMP_DIR = fs.mkdtempSync(path.join(os.tmpdir(), "highlaw-test-"));
 process.env.STORAGE_PATH = TMP_DIR;
 process.env.CSRF_SECRET = "test-csrf-secret-32bytes-fixed-value-0";
 process.env.NODE_ENV = "test";
