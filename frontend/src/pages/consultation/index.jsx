@@ -1,15 +1,22 @@
-/** 상담안내 페이지 — 히어로, 절차, 폼, FAQ, 지도 섹션을 조합하는 메인 컴포넌트 */
+/** 상담안내 페이지 — 히어로 + 3개 탭(상담 신청/진행 절차/FAQ) */
+import { useState } from "react";
 import useReveal from "../../hooks/useReveal";
 import ConsultationHero from "./ConsultationHero";
 import ConsultationSteps from "./ConsultationSteps";
 import ConsultationForm from "./ConsultationForm";
 import ConsultationFAQ from "./ConsultationFAQ";
-import ConsultationMap from "./ConsultationMap";
 import Seo from "../../components/Seo";
 import { buildBreadcrumbJsonLd, buildLegalServiceJsonLd } from "../../lib/seo";
 
+const TABS = [
+  { id: "form", label: "상담 신청", labelEn: "CONTACT" },
+  { id: "process", label: "진행 절차", labelEn: "PROCESS" },
+  { id: "faq", label: "FAQ", labelEn: "FAQ" },
+];
+
 export default function ConsultationPage() {
   const ref = useReveal();
+  const [activeTab, setActiveTab] = useState("form");
 
   return (
     <div ref={ref}>
@@ -26,10 +33,84 @@ export default function ConsultationPage() {
         ]}
       />
       <ConsultationHero />
-      <ConsultationSteps />
-      <ConsultationForm />
-      <ConsultationFAQ />
-      <ConsultationMap />
+
+      <style>{`
+        @keyframes tabFadeIn {
+          from { opacity: 0; transform: translateY(12px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .tab-content-active {
+          animation: tabFadeIn 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+        }
+      `}</style>
+
+      <section className="section" style={{ background: "#fff" }}>
+        <div className="container" style={{ maxWidth: 1000 }}>
+
+          {/* 탭 네비게이션 */}
+          <div
+            role="tablist"
+            aria-label="상담 섹션 선택"
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              gap: "12px",
+              flexWrap: "wrap",
+              marginBottom: 56,
+            }}
+          >
+            {TABS.map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  role="tab"
+                  aria-selected={isActive}
+                  style={{
+                    padding: "10px 24px",
+                    minHeight: 44,
+                    fontSize: 13,
+                    fontWeight: isActive ? 600 : 400,
+                    border: "1px solid",
+                    borderColor: isActive ? "var(--accent-gold)" : "rgba(0,0,0,0.12)",
+                    borderRadius: 24,
+                    background: isActive ? "var(--accent-gold)" : "transparent",
+                    color: isActive ? "#fff" : "var(--gray-500)",
+                    cursor: "pointer",
+                    transition: "all 0.3s ease",
+                    letterSpacing: "0.05em",
+                    fontFamily: "inherit",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* 탭 콘텐츠 */}
+          {activeTab === "form" && (
+            <div className="tab-content-active" key="form">
+              <ConsultationForm compact />
+            </div>
+          )}
+          {activeTab === "process" && (
+            <div className="tab-content-active" key="process">
+              <ConsultationSteps compact />
+            </div>
+          )}
+          {activeTab === "faq" && (
+            <div className="tab-content-active" key="faq">
+              <ConsultationFAQ compact />
+            </div>
+          )}
+
+        </div>
+      </section>
     </div>
   );
 }

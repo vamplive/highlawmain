@@ -82,7 +82,7 @@ export default function AboutPage() {
     },
     directions: {
       title: "오시는 길 | 법무법인 하이로",
-      description: "법무법인 하이로 서울 오피스 찾아오시는 길. 역삼역 4번 출구 도보 1분거리, 주차 및 대중교통 안내.",
+      description: "법무법인 하이로 서울 사무소 찾아오시는 길. 역삼역 4번 출구 도보 1분거리, 주차 및 대중교통 안내.",
       path: "/about/directions",
       breadcrumbName: "오시는 길"
     },
@@ -247,7 +247,7 @@ export default function AboutPage() {
             <div className="tab-content-active" key="directions" style={{ maxWidth: 900, margin: "0 auto" }}>
               <SectionHeading
                 eyebrow="DIRECTIONS"
-                title="법무법인 하이로 서울 오피스"
+                title="법무법인 하이로 서울 사무소"
               />
               
               {/* 세련된 위치 지도 카드 */}

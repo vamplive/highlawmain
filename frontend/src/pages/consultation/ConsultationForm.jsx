@@ -11,7 +11,8 @@ import { PRIVACY_POLICY_VERSION, PRIVACY_POLICY_TEXT } from "../../utils/privacy
 import PrivacyModal from "./PrivacyModal";
 import BookingSchedulePicker from "./BookingSchedulePicker";
 
-export default function ConsultationForm({ invitationToken: _invitationToken, initialValues }) {
+/** @param {{ compact?: boolean }} props compact=true 시 section/container 래퍼 생략 */
+export default function ConsultationForm({ invitationToken: _invitationToken, initialValues, compact = false }) {
   const [form, setForm] = useState(() => ({ ...INITIAL_FORM, ...(initialValues || {}) }));
   const [submitting, setSubmitting] = useState(false);
   const [submitResult, setSubmitResult] = useState(null);
@@ -105,23 +106,22 @@ export default function ConsultationForm({ invitationToken: _invitationToken, in
     setPrivacyOpen(false);
   }
 
-  return (
-    <section className="section" style={{ background: "#f7f8fa", borderTop: "1px solid var(--border-subtle)" }}>
-      <div className="container" style={{ maxWidth: 880 }}>
-        {/* 섹션 제목 */}
-        <div className="text-center reveal" style={{ marginBottom: 48 }}>
-          <p className="font-en" style={{ fontSize: 11, letterSpacing: "0.25em", color: "var(--accent-gold)", marginBottom: 14 }}>
-            CONTACT FORM
-          </p>
-          <h2 className="font-serif" style={{ fontSize: "clamp(1.3rem, 2.5vw, 1.8rem)", fontWeight: 300, color: "var(--text-primary)", marginBottom: 12 }}>
-            온라인 상담 신청
-          </h2>
-          <p style={{ fontSize: 14, color: "var(--text-muted)", fontWeight: 300 }}>
-            아래 양식을 작성해 주시면 빠른 시일 내에 연락드리겠습니다
-          </p>
-        </div>
+  const inner = (
+    <div style={{ maxWidth: 880, margin: "0 auto" }}>
+      {/* 섹션 제목 */}
+      <div className="text-center reveal" style={{ marginBottom: 48 }}>
+        <p className="font-en" style={{ fontSize: 11, letterSpacing: "0.25em", color: "var(--accent-gold)", marginBottom: 14 }}>
+          CONTACT FORM
+        </p>
+        <h2 className="font-serif" style={{ fontSize: "clamp(1.3rem, 2.5vw, 1.8rem)", fontWeight: 300, color: "var(--text-primary)", marginBottom: 12 }}>
+          온라인 상담 신청
+        </h2>
+        <p style={{ fontSize: 14, color: "var(--text-muted)", fontWeight: 300 }}>
+          아래 양식을 작성해 주시면 빠른 시일 내에 연락드리겠습니다
+        </p>
+      </div>
 
-        <form onSubmit={handleFormSubmit} className="reveal" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <form onSubmit={handleFormSubmit} className="reveal" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           {/* 이름 + 연락처 */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField id="consult-name" label="이름" required>
@@ -181,7 +181,6 @@ export default function ConsultationForm({ invitationToken: _invitationToken, in
             </Button>
           </div>
         </form>
-      </div>
 
       {/* 개인정보 동의서 모달 */}
       {privacyOpen && (
@@ -190,6 +189,14 @@ export default function ConsultationForm({ invitationToken: _invitationToken, in
           onAgreed={handlePrivacyAgreed}
         />
       )}
+    </div>
+  );
+
+  if (compact) return inner;
+
+  return (
+    <section className="section" style={{ background: "#f7f8fa", borderTop: "1px solid var(--border-subtle)" }}>
+      <div className="container">{inner}</div>
     </section>
   );
 }
