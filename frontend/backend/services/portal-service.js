@@ -14,7 +14,7 @@ const {
   lawyers,
   portalTimeEntries,
 } = require("../db/schema");
-const { eq, desc, and, sql, gte, lte, between, asc } = require("drizzle-orm");
+const { eq, desc, and, sql, gte, lte, between, asc, like } = require("drizzle-orm");
 const { hashPassword, verifyPassword, dummyVerifyPassword } = require("../lib/auth");
 const { createPortalSession, deletePortalSession } = require("../lib/auth");
 const {
@@ -851,6 +851,7 @@ async function listAdminPortalTimeEntries(query) {
   if (query.to) condition = and(condition, lte(portalTimeEntries.startedAt, query.to + "T23:59:59"));
   if (query.caseId) condition = and(condition, eq(portalTimeEntries.caseId, query.caseId));
   if (query.portalUserId) condition = and(condition, eq(portalTimeEntries.portalUserId, query.portalUserId));
+  if (query.description) condition = and(condition, like(portalTimeEntries.description, `%${query.description}%`));
 
   const rows = await db
     .select({

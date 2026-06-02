@@ -18,13 +18,19 @@ function TimeEntriesPanel() {
   const today = new Date().toISOString().substring(0, 10);
   const [entries, setEntries] = useState([]);
   const [users, setUsers] = useState([]);
-  const [filters, setFilters] = useState({ from: today, to: today, caseId: "", portalUserId: "" });
+  const [cases, setCases] = useState([]);
+  const [filters, setFilters] = useState({ from: today, to: today, caseId: "", portalUserId: "", description: "" });
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     // 포털 사용자 목록 (직원별 필터용)
     api.get("/portal/admin/users?status=active&limit=100")
       .then((r) => setUsers(r.data ?? []))
+      .catch(() => {});
+
+    // 전체 사건 목록 (사건별 필터용 - 다른 직원이 등록한 사건도 포함)
+    api.get("/portal/admin/cases?limit=500")
+      .then((r) => setCases(r.data ?? []))
       .catch(() => {});
   }, []);
 
@@ -36,6 +42,7 @@ function TimeEntriesPanel() {
       if (filters.to) params.set("to", filters.to);
       if (filters.caseId) params.set("caseId", filters.caseId);
       if (filters.portalUserId) params.set("portalUserId", filters.portalUserId);
+      if (filters.description) params.set("description", filters.description);
       params.set("limit", "100");
 
       const res = await api.get(`/portal/admin/time-entries?${params}`);
@@ -76,11 +83,32 @@ function TimeEntriesPanel() {
         <div>
           <div style={{ fontSize: 11, fontWeight: 600, color: "#666", marginBottom: 4 }}>직원</div>
           <select style={{ ...fieldStyle, minWidth: 160 }} value={filters.portalUserId} onChange={f("portalUserId")}>
-            <option value="">전체</option>
+            <option value="">전체 직원</option>
             {users.map((u) => (
               <option key={u.id} value={u.id}>{u.clientName || u.email}</option>
             ))}
           </select>
+        </div>
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: "#666", marginBottom: 4 }}>사건</div>
+          <select style={{ ...fieldStyle, minWidth: 200, maxWidth: 300 }} value={filters.caseId} onChange={f("caseId")}>
+            <option value="">전체 사건 (다른 직원 사건 포함)</option>
+            {cases.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.title} {c.caseNumber ? `(${c.caseNumber})` : ""}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: "#666", marginBottom: 4 }}>유형/작업내용 검색</div>
+          <input
+            type="text"
+            style={fieldStyle}
+            value={filters.description}
+            onChange={f("description")}
+            placeholder="예: 미팅, 준비서면, 통화..."
+          />
         </div>
         <div style={{ display: "flex", alignItems: "flex-end" }}>
           <button
@@ -123,7 +151,13 @@ function TimeEntriesPanel() {
             ) : entries.map((e, i) => (
               <tr key={e.id} style={{ borderBottom: i < entries.length - 1 ? "1px solid #f0f0f0" : "none" }}>
                 <td style={{ padding: "10px 14px", color: "#666" }}>
-                  {e.startedAt ? new Date(e.startedAt).toLocaleDateString("ko-KR") : "-"}
+                  <div>{e.startedAt ? new Date(e.startedAt).toLocaleDateString("ko-KR") : "-"}</div>
+                  {e.startedAt && (
+                    <div style={{ fontSize: 11, color: "#888", marginTop: 2 }}>
+                      {new Date(e.startedAt).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false })}
+                      {e.endedAt && ` ~ ${new Date(e.endedAt).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false })}`}
+                    </div>
+                  )}
                 </td>
                 <td style={{ padding: "10px 14px" }}>
                   <div style={{ fontWeight: 500 }}>{e.clientName || e.userEmail?.split("@")[0]}</div>
