@@ -224,7 +224,7 @@ export default function RecruitPage() {
       `}</style>
 
       {/* ==================== 탭 및 본문 통합 섹션 ==================== */}
-      <section className="section" style={{ background: "#fff" }}>
+      <section className="section" style={{ background: "#fff", paddingTop: 48 }}>
         <div className="container" style={{ maxWidth: 1000 }}>
           
           {/* ==================== 3개 타원형(Pill) 탭 네비게이션 ==================== */}

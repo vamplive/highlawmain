@@ -135,7 +135,7 @@ export default function AboutPage() {
       `}</style>
 
       {/* ==================== 탭 및 본문 통합 섹션 (소식 페이지 스타일 적용) ==================== */}
-      <section className="section" style={{ background: "#fff" }}>
+      <section className="section" style={{ background: "#fff", paddingTop: 48 }}>
         <div className="container" style={{ maxWidth: 1000 }}>
           
           {/* ==================== 5개 탭 네비게이션 ==================== */}
