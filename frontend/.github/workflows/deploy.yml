@@ -1,6 +1,6 @@
 name: Deploy to Lightsail
 
-# main 브랜치에 push되면 자동으로 운영서버(15.164.128.160)에 배포한다.
+# main 브랜치에 push되면 자동으로 운영서버(52.78.113.191)에 배포한다.
 # 빌드는 GitHub Actions에서 수행하고, 결과물(frontend/dist)만 서버로 rsync 한다.
 # 서버 RAM이 약 914MB로 작아 운영서버에서 vite 빌드 시 OOM 위험이 있기 때문.
 
@@ -17,7 +17,7 @@ env:
   NODE_VERSION: "24"
   # SSH 사용자명·운영서버 IP는 비밀이 아니므로 직접 박아둠 (Secrets 등록 실패에도 동작 보장)
   DEPLOY_USER: ubuntu
-  DEPLOY_HOST: 15.164.128.160
+  DEPLOY_HOST: 52.78.113.191
 
 jobs:
   build-and-deploy:
