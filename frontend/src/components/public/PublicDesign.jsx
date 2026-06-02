@@ -9,6 +9,7 @@ export function PublicHero({
   imagePosition = "center 30%",
   primaryAction,
   secondaryAction,
+  children,
 }) {
   return (
     <section className="public-hero relative flex items-center justify-center overflow-hidden">
@@ -41,6 +42,7 @@ export function PublicHero({
             ))}
           </p>
         )}
+        {children}
         {(primaryAction || secondaryAction) && (
           <div className="reveal flex flex-wrap justify-center gap-3" style={{ marginTop: 34 }}>
             {primaryAction && <HeroAction action={primaryAction} variant="primary" />}

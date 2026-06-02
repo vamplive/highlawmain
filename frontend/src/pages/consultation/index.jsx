@@ -44,7 +44,7 @@ export default function ConsultationPage() {
         }
       `}</style>
 
-      <section className="section" style={{ background: "#fff" }}>
+      <section className="section" style={{ background: "#fff", paddingTop: 48 }}>
         <div className="container" style={{ maxWidth: 1000 }}>
 
           {/* 탭 네비게이션 */}
