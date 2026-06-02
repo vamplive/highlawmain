@@ -33,13 +33,18 @@ const STATIC_PAGES = [
 function getFrontendDist() {
   let distPath = process.env.FRONTEND_DIST_PATH;
   if (distPath) {
+    if (distPath.includes("yjlawoffice")) {
+      distPath = distPath.replace("yjlawoffice", "highlawmain");
+    }
     if (distPath.endsWith("frontend/dist") || distPath.endsWith("frontend\\dist")) {
       const corrected = distPath.replace(/frontend[/\\]dist$/, "frontend/frontend/dist");
       if (fs.existsSync(corrected)) {
         return corrected;
       }
     }
-    return distPath;
+    if (fs.existsSync(distPath)) {
+      return distPath;
+    }
   }
   const nestedPath = path.resolve(__dirname, "..", "..", "frontend", "frontend", "dist");
   if (fs.existsSync(nestedPath)) {
