@@ -15,9 +15,6 @@ function validateEnv() {
     "APP_URL",
     "PUBLIC_BASE_URL",
     "IP_HASH_SECRET",
-    "ALIGO_API_KEY",
-    "ALIGO_USER_ID",
-    "ALIGO_SENDER",
   ];
   const missingRequired = process.env.NODE_ENV === "production"
     ? requiredInProduction.filter((name) => !process.env[name])
@@ -36,6 +33,9 @@ function validateEnv() {
   if (!process.env.APP_URL) warnings.push("APP_URL 미설정 — 수신거부/추적 링크 생성 시 http://localhost:5173 을 사용합니다");
   if (!process.env.PUBLIC_BASE_URL) warnings.push("PUBLIC_BASE_URL 미설정 — 공개 초대/서명 링크 생성 시 http://localhost:5173 을 사용합니다");
   if (!process.env.IP_HASH_SECRET) warnings.push("IP_HASH_SECRET 미설정 — 개발용 IP 해시 시크릿을 사용합니다");
+  if (!process.env.ALIGO_API_KEY) warnings.push("ALIGO_API_KEY 미설정 — 문자 발송 서비스(SMS)가 제한됩니다");
+  if (!process.env.ALIGO_USER_ID) warnings.push("ALIGO_USER_ID 미설정 — 문자 발송 서비스(SMS)가 제한됩니다");
+  if (!process.env.ALIGO_SENDER) warnings.push("ALIGO_SENDER 미설정 — 문자 발송 서비스(SMS)가 제한됩니다");
   warnings.forEach(w => console.warn(`[ENV WARNING] ${w}`));
 }
 validateEnv();
