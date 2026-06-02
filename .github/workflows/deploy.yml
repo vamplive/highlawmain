@@ -72,7 +72,7 @@ jobs:
           rsync -az --delete \
             -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes" \
             frontend/frontend/dist/ \
-            ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }}:/home/ubuntu/highlawoffice/frontend/dist/
+            ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }}:/home/ubuntu/highlawmain/frontend/dist/
 
       - name: Sync backend source
         # 서버는 GitHub 접근 권한이 없으므로 git fetch 대신 CI 러너에서 직접 rsync로 동기화한다.
@@ -86,7 +86,7 @@ jobs:
             --exclude='.env.*' \
             -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes" \
             frontend/backend/ \
-            ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }}:/home/ubuntu/highlawoffice/backend/
+            ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }}:/home/ubuntu/highlawmain/backend/
 
       - name: Sync backend runtime env
         env:
@@ -114,7 +114,7 @@ jobs:
           ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes \
             ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }} \
             'set -euo pipefail
-             cd /home/ubuntu/highlawoffice/backend
+             cd /home/ubuntu/highlawmain/backend
              touch .env
              chmod 600 .env
              while IFS= read -r line; do
@@ -134,9 +134,9 @@ jobs:
           ssh -i ~/.ssh/deploy_key \
             ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }} \
             'set -euo pipefail
-             cd /home/ubuntu/highlawoffice/backend
+             cd /home/ubuntu/highlawmain/backend
              npm ci --omit=dev
-             pm2 reload highlaw --update-env
+             pm2 reload highlaw-api --update-env
              pm2 save'
 
       - name: Smoke test
