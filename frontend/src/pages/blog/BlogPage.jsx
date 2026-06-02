@@ -108,7 +108,7 @@ export default function BlogPage() {
       />
 
       {/* ==================== 카테고리 필터 ==================== */}
-      <section className="section" style={{ background: "#fff" }}>
+      <section className="section" style={{ background: "#fff", paddingTop: 48 }}>
         <div className="container" style={{ maxWidth: 1000 }}>
           <div role="radiogroup" aria-label="카테고리 선택" className="flex flex-wrap justify-center gap-3 reveal visible" style={{ marginBottom: 48 }}>
             {CATEGORY_OPTIONS.map((cat) => {
