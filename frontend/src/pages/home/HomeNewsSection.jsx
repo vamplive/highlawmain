@@ -1,4 +1,4 @@
-/** 홈 소식 섹션 — 좌측 CTA 카드 + 우측 탭별 기사 목록 */
+/** 홈 소식 섹션 — 섹션 헤더 + 좌측 CTA 카드 + 우측 탭별 기사 목록 */
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../../utils/api";
@@ -74,19 +74,32 @@ export default function HomeNewsSection() {
   const filteredPosts = posts.filter((p) => p.category === activeTab).slice(0, 5);
 
   return (
-    <section className="hp-section" style={{ background: "#f4f6f9" }}>
+    <section className="hp-section" style={{ background: "#f2f4f8" }}>
       <div className="hp-section-inner">
+
+        {/* ── 섹션 헤더 ── */}
+        <div className="hp-section-centered">
+          <p className="hp-kicker">NEWS &amp; INSIGHT</p>
+          <h2 className="hp-title" style={{ fontSize: "clamp(1.6rem, 3vw, 2.4rem)" }}>
+            하이로 뉴스 &amp; 법률 인사이트
+          </h2>
+          <p className="hp-copy">
+            전문 변호사가 직접 분석한 최신 판례와 특화 분야 법률 정보를 제공합니다.
+          </p>
+        </div>
+
+        {/* ── 2컬럼 본문 ── */}
         <div
           style={{
             display: "grid",
             gridTemplateColumns: "1fr 1.65fr",
-            gap: 24,
+            gap: 20,
             alignItems: "stretch",
           }}
         >
-          {/* ── 좌측: CTA 카드 2개 ── */}
+          {/* 좌측: CTA 카드 2개 */}
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            {/* 카카오톡 상담 카드 */}
+            {/* 카카오톡 상담 */}
             <a
               href={KAKAO_CHANNEL_CHAT}
               target="_blank"
@@ -97,32 +110,37 @@ export default function HomeNewsSection() {
                 flexDirection: "column",
                 justifyContent: "space-between",
                 padding: "32px 28px",
-                background: "#f0ebe0",
-                borderRadius: 12,
+                background: "#ede8de",
+                borderRadius: 10,
                 textDecoration: "none",
-                overflow: "hidden",
                 transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                border: "1px solid rgba(0,0,0,0.04)",
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 10px 28px rgba(0,0,0,0.09)"; }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 12px 32px rgba(0,0,0,0.10)"; }}
               onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}
             >
               <div>
-                <p style={{ fontSize: 10, letterSpacing: "0.22em", color: "#9a8a68", marginBottom: 10, textTransform: "uppercase", fontWeight: 500 }}>
+                <p style={{ fontSize: 10, letterSpacing: "0.24em", color: "#8a7550", marginBottom: 12, textTransform: "uppercase", fontWeight: 600 }}>
                   QUICK CONTACT
                 </p>
-                <h3 style={{ fontSize: 19, fontWeight: 600, color: "#1a1a1a", marginBottom: 8, lineHeight: 1.3 }}>
+                <h3 style={{ fontSize: 20, fontWeight: 700, color: "#111", marginBottom: 8, letterSpacing: "-0.01em" }}>
                   카카오톡 상담
                 </h3>
-                <p style={{ fontSize: 13, color: "#666", fontWeight: 300, lineHeight: 1.65 }}>
+                <p style={{ fontSize: 13, color: "#555", fontWeight: 300, lineHeight: 1.7 }}>
                   카카오톡으로 빠른 답변을 받아 보세요
                 </p>
               </div>
-              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
-                <span style={{ fontSize: 18, color: "#9a8a68", fontWeight: 300 }}>→</span>
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 24 }}>
+                <span style={{
+                  width: 34, height: 34, borderRadius: "50%",
+                  background: "rgba(138,117,80,0.15)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 15, color: "#8a7550",
+                }}>→</span>
               </div>
             </a>
 
-            {/* 상담 신청 카드 */}
+            {/* 상담 신청 */}
             <Link
               to="/consultation"
               style={{
@@ -131,61 +149,60 @@ export default function HomeNewsSection() {
                 flexDirection: "column",
                 justifyContent: "space-between",
                 padding: "32px 28px",
-                background: "linear-gradient(145deg, #0b1f3a 0%, #163355 100%)",
-                borderRadius: 12,
+                background: "linear-gradient(150deg, #0b1f3a 0%, #1a3a6b 100%)",
+                borderRadius: 10,
                 textDecoration: "none",
-                overflow: "hidden",
                 transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                border: "1px solid rgba(201,168,76,0.18)",
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 10px 28px rgba(11,31,58,0.30)"; }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 12px 32px rgba(11,31,58,0.32)"; }}
               onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}
             >
               <div>
-                <p style={{ fontSize: 10, letterSpacing: "0.22em", color: "rgba(222,197,132,0.72)", marginBottom: 10, textTransform: "uppercase", fontWeight: 500 }}>
+                <p style={{ fontSize: 10, letterSpacing: "0.24em", color: "rgba(201,168,76,0.75)", marginBottom: 12, textTransform: "uppercase", fontWeight: 600 }}>
                   1:1 LEGAL CONSULTATION
                 </p>
-                <h3 style={{ fontSize: 19, fontWeight: 600, color: "#fff", marginBottom: 8, lineHeight: 1.3 }}>
+                <h3 style={{ fontSize: 20, fontWeight: 700, color: "#fff", marginBottom: 8, letterSpacing: "-0.01em" }}>
                   상담 신청
                 </h3>
-                <p style={{ fontSize: 13, color: "rgba(255,255,255,0.60)", fontWeight: 300, lineHeight: 1.65 }}>
-                  1:1 맞춤 상담을 신청해 보세요
+                <p style={{ fontSize: 13, color: "rgba(255,255,255,0.58)", fontWeight: 300, lineHeight: 1.7 }}>
+                  1:1 맞춤 법률 상담을 신청하세요
                 </p>
               </div>
-              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
-                <span style={{ fontSize: 18, color: "var(--accent-gold)", fontWeight: 300 }}>→</span>
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 24 }}>
+                <span style={{
+                  width: 34, height: 34, borderRadius: "50%",
+                  background: "rgba(201,168,76,0.18)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 15, color: "var(--accent-gold)",
+                }}>→</span>
               </div>
             </Link>
           </div>
 
-          {/* ── 우측: 소식과 자료 패널 ── */}
+          {/* 우측: 소식과 자료 패널 */}
           <div
             style={{
               background: "#fff",
-              borderRadius: 12,
-              padding: "32px 36px 28px",
+              borderRadius: 10,
+              padding: "28px 32px 24px",
               display: "flex",
               flexDirection: "column",
-              border: "1px solid #e8eaed",
+              border: "1px solid #e2e5ea",
+              boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
             }}
           >
-            {/* 헤더 + 탭 필터 */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                flexWrap: "wrap",
-                gap: 12,
-                marginBottom: 18,
-              }}
-            >
-              <h2
-                className="font-serif-kr"
-                style={{ fontSize: 17, fontWeight: 600, color: "#0b0e14", margin: 0, letterSpacing: "-0.01em" }}
-              >
-                소식과 자료
-              </h2>
-              <div style={{ display: "flex", gap: 7 }}>
+            {/* 패널 헤더 + 탭 */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 14 }}>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                <span style={{ fontSize: 10, letterSpacing: "0.22em", color: "var(--accent-gold)", fontWeight: 700, textTransform: "uppercase" }}>
+                  LATEST
+                </span>
+                <h3 style={{ fontSize: 16, fontWeight: 700, color: "#0b0e14", margin: 0, letterSpacing: "-0.01em" }}>
+                  소식과 자료
+                </h3>
+              </div>
+              <div style={{ display: "flex", gap: 6 }}>
                 {TABS.map((tab) => {
                   const isActive = activeTab === tab.id;
                   return (
@@ -193,19 +210,19 @@ export default function HomeNewsSection() {
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id)}
                       style={{
-                        padding: "5px 15px",
-                        fontSize: 12,
+                        padding: "5px 14px",
+                        fontSize: 11.5,
                         fontWeight: isActive ? 600 : 400,
                         borderRadius: 20,
                         border: "1px solid",
-                        borderColor: isActive ? "#c9a84c" : "#dde0e5",
+                        borderColor: isActive ? "#c9a84c" : "#dde1e8",
                         background: isActive ? "#fdf6e8" : "transparent",
-                        color: isActive ? "#8a6520" : "#7a8090",
+                        color: isActive ? "#8a6520" : "#6b7280",
                         cursor: "pointer",
                         transition: "all 0.2s",
                         fontFamily: "inherit",
+                        minHeight: 28,
                         lineHeight: 1,
-                        minHeight: 30,
                       }}
                     >
                       {tab.label}
@@ -216,12 +233,12 @@ export default function HomeNewsSection() {
             </div>
 
             {/* 구분선 */}
-            <div style={{ height: 1, background: "#ececec", marginBottom: 4 }} />
+            <div style={{ height: 1, background: "linear-gradient(to right, var(--accent-gold), transparent)", opacity: 0.4, marginBottom: 4 }} />
 
             {/* 기사 목록 */}
             <div style={{ flex: 1 }}>
               {filteredPosts.length === 0 ? (
-                <p style={{ padding: "48px 0", textAlign: "center", fontSize: 13, color: "#bbb" }}>
+                <p style={{ padding: "40px 0", textAlign: "center", fontSize: 13, color: "#ccc" }}>
                   게시된 글이 없습니다.
                 </p>
               ) : (
@@ -233,21 +250,25 @@ export default function HomeNewsSection() {
                       display: "flex",
                       alignItems: "center",
                       gap: 14,
-                      padding: "13px 0",
-                      borderBottom: idx < filteredPosts.length - 1 ? "1px solid #f2f2f2" : "none",
+                      padding: "13px 8px",
+                      borderBottom: idx < filteredPosts.length - 1 ? "1px solid #f4f4f6" : "none",
                       textDecoration: "none",
                       borderRadius: 4,
-                      transition: "padding-left 0.15s",
+                      transition: "background 0.15s, padding-left 0.15s",
                     }}
-                    onMouseEnter={(e) => { e.currentTarget.style.paddingLeft = "6px"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.paddingLeft = "0"; }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = "#fafbfc"; e.currentTarget.style.paddingLeft = "14px"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.paddingLeft = "8px"; }}
                   >
-                    <span style={{ fontSize: 11.5, color: "#9ca3af", flexShrink: 0, letterSpacing: "0.01em" }}>
+                    {/* 날짜 */}
+                    <span style={{ fontSize: 11, color: "#adb5bd", flexShrink: 0, letterSpacing: "0.01em", minWidth: 72 }}>
                       {formatDate(post.publishedAt || post.createdAt)}
                     </span>
+                    {/* 골드 구분 점 */}
+                    <span style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--accent-gold)", flexShrink: 0, opacity: 0.6 }} />
+                    {/* 제목 */}
                     <span
                       style={{
-                        fontSize: 14,
+                        fontSize: 13.5,
                         color: "#1a1a2e",
                         lineHeight: 1.45,
                         fontWeight: 400,
@@ -265,21 +286,25 @@ export default function HomeNewsSection() {
             </div>
 
             {/* 전체보기 */}
-            <div style={{ textAlign: "right", paddingTop: 16, marginTop: "auto", borderTop: "1px solid #f0f0f0" }}>
+            <div style={{ display: "flex", justifyContent: "flex-end", paddingTop: 14, marginTop: "auto", borderTop: "1px solid #f0f2f5" }}>
               <Link
                 to="/blog"
                 style={{
-                  fontSize: 12.5,
-                  color: "#c9a84c",
+                  fontSize: 12,
+                  color: "#8a6520",
                   textDecoration: "none",
-                  fontWeight: 500,
-                  letterSpacing: "0.04em",
-                  transition: "opacity 0.2s",
+                  fontWeight: 600,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 5,
+                  transition: "gap 0.2s",
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.opacity = "0.7"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; }}
+                onMouseEnter={(e) => { e.currentTarget.style.gap = "10px"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.gap = "5px"; }}
               >
-                전체보기 →
+                전체보기 <span>→</span>
               </Link>
             </div>
           </div>

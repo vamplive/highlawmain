@@ -13,6 +13,7 @@ import HomePracticeSection from "./HomePracticeSection";
 import HomePeopleSection from "./HomePeopleSection";
 import HomeNewsSection from "./HomeNewsSection";
 import HomeCtaSection from "./HomeCtaSection";
+import HomeTrustSection from "./HomeTrustSection";
 import Footer from "../../components/layout/Footer";
 
 const DEFAULT_HERO_VIDEO = "/videos/manhattan-panoramic.mp4";
@@ -67,6 +68,7 @@ export default function HomePage() {
       <HomeHero heroVideo={heroVideo} settings={settings} copy={copy} />
       <HomePeopleSection copy={copy} settings={settings} />
       <HomePracticeSection lang={lang} copy={copy} settings={settings} />
+      <HomeTrustSection />
       <HomeNewsSection settings={settings} />
       <HomeCtaSection copy={copy} settings={settings} />
       

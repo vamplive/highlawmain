@@ -233,7 +233,7 @@ export default function PracticePage() {
       `}</style>
 
       {/* ==================== 탭 네비게이션 섹션 ==================== */}
-      <section className="section" style={{ background: "#fff", paddingTop: 48, paddingBottom: 24 }}>
+      <section className="section" style={{ background: "#fff", paddingTop: 48, paddingBottom: 0 }}>
         <div className="container" style={{ maxWidth: 1000 }}>
           
           {/* ==================== 3개 타원형(Pill) 탭 네비게이션 ==================== */}
@@ -290,7 +290,7 @@ export default function PracticePage() {
         <div className="tab-content-active" key="pain-points">
           <section style={{ background: "#fff", padding: "0 24px 80px" }}>
             <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-              <SectionHeading title="이런 문제로 고민하고 계신가요?" />
+              <SectionHeading eyebrow="DO YOU NEED US" title="이런 문제로 고민하고 계신가요?" />
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 stagger">
                 {PAIN_POINTS.map((p, i) => (
                   <SurfaceCard key={i} className="reveal flex items-center gap-4" style={{ padding: "18px 24px", background: "var(--bg-primary)", borderLeft: "3px solid var(--accent-gold)" }}>
