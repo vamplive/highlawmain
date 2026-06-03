@@ -17,6 +17,7 @@ const {
   portalPosts,
   portalEvents,
   adminUsers,
+  courtDates,
 } = require("../db/schema");
 const { eq, desc, and, sql, gte, lte, between, asc, like } = require("drizzle-orm");
 const { hashPassword, verifyPassword, dummyVerifyPassword } = require("../lib/auth");
@@ -1087,11 +1088,77 @@ async function deletePortalPost(id, portalUserId, isAdmin) {
 // =============================================
 
 async function listPortalEvents(portalUserId) {
-  return db
+  // 1. 사용자 정보 조회 (clientId, email 확인)
+  const [user] = await db
+    .select({
+      id: portalUsers.id,
+      email: portalUsers.email,
+      clientId: portalUsers.clientId,
+    })
+    .from(portalUsers)
+    .where(eq(portalUsers.id, portalUserId));
+
+  if (!user) return [];
+
+  // 2. 포털 사용자 개인 일정 조회
+  const userEvents = await db
     .select()
     .from(portalEvents)
     .where(eq(portalEvents.portalUserId, portalUserId))
     .orderBy(asc(portalEvents.startsAt));
+
+  // 3. 의뢰인/변호사 관련 법정 일정(court_dates) 조회
+  let clientCourtDates = [];
+  if (user.clientId) {
+    clientCourtDates = await db
+      .select()
+      .from(courtDates)
+      .where(and(eq(courtDates.clientId, user.clientId), eq(courtDates.status, "scheduled")))
+      .orderBy(asc(courtDates.startsAt));
+  }
+
+  let lawyerCourtDates = [];
+  if (user.email) {
+    const [lawyer] = await db
+      .select()
+      .from(lawyers)
+      .where(eq(lawyers.email, user.email.toLowerCase().trim()));
+    if (lawyer) {
+      lawyerCourtDates = await db
+        .select()
+        .from(courtDates)
+        .where(and(eq(courtDates.lawyerId, lawyer.id), eq(courtDates.status, "scheduled")))
+        .orderBy(asc(courtDates.startsAt));
+    }
+  }
+
+  // 4. 중복 제거를 위해 Map 사용 (id 기준)
+  const courtDatesMap = new Map();
+  for (const cd of [...clientCourtDates, ...lawyerCourtDates]) {
+    courtDatesMap.set(cd.id, cd);
+  }
+
+  // 5. 법정 일정을 캘린더 이벤트 형태로 변환
+  const courtEventsMapped = Array.from(courtDatesMap.values()).map((cd) => ({
+    id: `court-${cd.id}`,
+    portalUserId: portalUserId,
+    title: `[기일] ${cd.title}${cd.caseNumber ? ` (${cd.caseNumber})` : ""}`,
+    description: [
+      cd.courtName && `법원: ${cd.courtName} ${cd.courtRoom || ""}`,
+      cd.kind && `구분: ${cd.kind}`,
+      cd.memo && `메모: ${cd.memo}`,
+    ].filter(Boolean).join("\n"),
+    startsAt: cd.startsAt,
+    endsAt: cd.endsAt || cd.startsAt,
+    isAllDay: 0,
+    color: "#ef4444", // 법정 일정은 빨간색/로즈 계열로 강조
+    isCourtDate: true,
+  }));
+
+  // 6. 전체 일정 결합 후 정렬
+  return [...userEvents, ...courtEventsMapped].sort((a, b) => {
+    return (a.startsAt || "").localeCompare(b.startsAt || "");
+  });
 }
 
 async function createPortalEvent(portalUserId, data) {

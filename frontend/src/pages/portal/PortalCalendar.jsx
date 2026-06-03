@@ -383,7 +383,7 @@ export default function PortalCalendar() {
           }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
               <h3 style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", margin: 0 }}>
-                {isEditing ? "일정 수정 / 상세" : "새 일정 등록"}
+                {selectedEvent?.isCourtDate ? "법정 일정 상세" : (isEditing ? "일정 수정 / 상세" : "새 일정 등록")}
               </h3>
               <button
                 type="button"
@@ -403,6 +403,7 @@ export default function PortalCalendar() {
                 value={formTitle}
                 onChange={(e) => setFormTitle(e.target.value)}
                 style={fieldStyle}
+                disabled={selectedEvent?.isCourtDate}
                 required
               />
             </div>
@@ -416,6 +417,7 @@ export default function PortalCalendar() {
                   value={formStartsAt}
                   onChange={(e) => setFormStartsAt(e.target.value)}
                   style={fieldStyle}
+                  disabled={selectedEvent?.isCourtDate}
                   required
                 />
               </div>
@@ -426,6 +428,7 @@ export default function PortalCalendar() {
                   value={formEndsAt}
                   onChange={(e) => setFormEndsAt(e.target.value)}
                   style={fieldStyle}
+                  disabled={selectedEvent?.isCourtDate}
                   required
                 />
               </div>
@@ -433,10 +436,11 @@ export default function PortalCalendar() {
 
             {/* 하루 종일 설정 */}
             <div style={{ marginBottom: 16 }}>
-              <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#475569", cursor: "pointer" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#475569", cursor: selectedEvent?.isCourtDate ? "default" : "pointer" }}>
                 <input
                   type="checkbox"
                   checked={formIsAllDay}
+                  disabled={selectedEvent?.isCourtDate}
                   onChange={(e) => {
                     setFormIsAllDay(e.target.checked);
                     // 하루종일 체크 시 포맷 단순 날짜로 변환 유도
@@ -461,13 +465,14 @@ export default function PortalCalendar() {
                   <button
                     key={c.value}
                     type="button"
-                    onClick={() => setFormColor(c.value)}
+                    onClick={() => !selectedEvent?.isCourtDate && setFormColor(c.value)}
                     style={{
                       width: 24, height: 24, borderRadius: "50%", background: c.value,
                       border: formColor === c.value ? "2px solid #0f172a" : "none",
-                      boxShadow: "0 1px 3px rgba(0,0,0,0.1)", cursor: "pointer"
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.1)", cursor: selectedEvent?.isCourtDate ? "default" : "pointer"
                     }}
                     title={c.label}
+                    disabled={selectedEvent?.isCourtDate}
                   />
                 ))}
               </div>
@@ -481,12 +486,13 @@ export default function PortalCalendar() {
                 value={formDescription}
                 onChange={(e) => setFormDescription(e.target.value)}
                 style={{ ...fieldStyle, height: 80, resize: "vertical" }}
+                disabled={selectedEvent?.isCourtDate}
               />
             </div>
 
             {/* 하단 액션 버튼 */}
-            <div style={{ display: "flex", justifyContent: isEditing ? "space-between" : "flex-end", gap: 8 }}>
-              {isEditing && (
+            <div style={{ display: "flex", justifyContent: (isEditing && !selectedEvent?.isCourtDate) ? "space-between" : "flex-end", gap: 8 }}>
+              {isEditing && !selectedEvent?.isCourtDate && (
                 <button
                   type="button"
                   onClick={handleDeleteEvent}
@@ -509,18 +515,20 @@ export default function PortalCalendar() {
                     padding: "8px 14px", fontSize: 13, fontWeight: 500, cursor: "pointer"
                   }}
                 >
-                  취소
+                  {selectedEvent?.isCourtDate ? "닫기" : "취소"}
                 </button>
-                <button
-                  type="submit"
-                  style={{
-                    background: "#8b5cf6", color: "#fff", border: "none", borderRadius: 6,
-                    padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer",
-                    boxShadow: "0 2px 4px rgba(139,92,246,0.15)"
-                  }}
-                >
-                  {isEditing ? "수정 완료" : "등록"}
-                </button>
+                {!selectedEvent?.isCourtDate && (
+                  <button
+                    type="submit"
+                    style={{
+                      background: "#8b5cf6", color: "#fff", border: "none", borderRadius: 6,
+                      padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer",
+                      boxShadow: "0 2px 4px rgba(139,92,246,0.15)"
+                    }}
+                  >
+                    {isEditing ? "수정 완료" : "등록"}
+                  </button>
+                )}
               </div>
             </div>
           </form>

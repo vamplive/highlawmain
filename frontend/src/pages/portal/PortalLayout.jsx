@@ -211,8 +211,92 @@ export default function PortalLayout() {
           overflow: "hidden",
           boxSizing: "border-box"
         }}>
+          {/* 메인 메뉴 */}
+          <div style={{ padding: "16px 8px 12px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              메뉴
+            </div>
+            
+            <Link
+              to="/portal/dashboard"
+              style={{
+                display: "flex", alignItems: "center", gap: 10, padding: "8px 12px",
+                borderRadius: 6, textDecoration: "none", fontSize: 13,
+                color: location.pathname === "/portal/dashboard" ? "#7c3aed" : "#334155",
+                background: location.pathname === "/portal/dashboard" ? "#f5f3ff" : "transparent",
+                fontWeight: location.pathname === "/portal/dashboard" ? 600 : 500,
+                transition: "background 0.15s", marginBottom: 2
+              }}
+            >
+              <Home size={16} />
+              사건 목록 (홈)
+            </Link>
+
+            <Link
+              to="/portal/calendar"
+              style={{
+                display: "flex", alignItems: "center", gap: 10, padding: "8px 12px",
+                borderRadius: 6, textDecoration: "none", fontSize: 13,
+                color: location.pathname === "/portal/calendar" ? "#7c3aed" : "#334155",
+                background: location.pathname === "/portal/calendar" ? "#f5f3ff" : "transparent",
+                fontWeight: location.pathname === "/portal/calendar" ? 600 : 500,
+                transition: "background 0.15s", marginBottom: 2
+              }}
+            >
+              <Calendar size={16} />
+              일정 캘린더
+            </Link>
+
+            <Link
+              to="/portal/board"
+              style={{
+                display: "flex", alignItems: "center", gap: 10, padding: "8px 12px",
+                borderRadius: 6, textDecoration: "none", fontSize: 13,
+                color: location.pathname.startsWith("/portal/board") ? "#7c3aed" : "#334155",
+                background: location.pathname.startsWith("/portal/board") ? "#f5f3ff" : "transparent",
+                fontWeight: location.pathname.startsWith("/portal/board") ? 600 : 500,
+                transition: "background 0.15s", marginBottom: 2
+              }}
+            >
+              <FileText size={16} />
+              내부 게시판
+            </Link>
+
+            <Link
+              to="/portal/time-tracking"
+              style={{
+                display: "flex", alignItems: "center", gap: 10, padding: "8px 12px",
+                borderRadius: 6, textDecoration: "none", fontSize: 13,
+                color: location.pathname === "/portal/time-tracking" ? "#7c3aed" : "#334155",
+                background: location.pathname === "/portal/time-tracking" ? "#f5f3ff" : "transparent",
+                fontWeight: location.pathname === "/portal/time-tracking" ? 600 : 500,
+                transition: "background 0.15s", marginBottom: 2
+              }}
+            >
+              <Clock size={16} />
+              타임트래킹
+            </Link>
+
+            <Link
+              to="/portal/profile"
+              style={{
+                display: "flex", alignItems: "center", gap: 10, padding: "8px 12px",
+                borderRadius: 6, textDecoration: "none", fontSize: 13,
+                color: location.pathname === "/portal/profile" ? "#7c3aed" : "#334155",
+                background: location.pathname === "/portal/profile" ? "#f5f3ff" : "transparent",
+                fontWeight: location.pathname === "/portal/profile" ? 600 : 500,
+                transition: "background 0.15s", marginBottom: 2
+              }}
+            >
+              <User size={16} />
+              프로필 설정
+            </Link>
+          </div>
+
+          <div style={{ height: 1, background: "#f1f5f9", margin: "0 16px 12px" }} />
+
           {/* 글쓰기 버튼 */}
-          <div style={{ padding: "20px 16px 12px" }}>
+          <div style={{ padding: "8px 16px 12px" }}>
             <button
               onClick={() => navigate("/portal/board?write=true")}
               style={{
@@ -228,12 +312,15 @@ export default function PortalLayout() {
               onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.transform = "translateY(0)"; }}
             >
               <Plus size={16} />
-              글쓰기
+              게시글 쓰기
             </button>
           </div>
 
-          {/* 사이드바 메뉴 탭 */}
+          {/* 사이드바 게시판 필터 메뉴 */}
           <div style={{ padding: "0 8px 16px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              게시판 필터
+            </div>
             <Link
               to="/portal/board?filter=recent"
               style={{
