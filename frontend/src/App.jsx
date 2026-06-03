@@ -106,6 +106,12 @@ const PortalCaseRegister = lazy(() => import("./pages/portal/PortalCaseRegister"
 const PortalTimeTracking = lazy(() => import("./pages/portal/PortalTimeTracking"));
 const PortalContracts = lazy(() => import("./pages/portal/PortalContracts"));
 const PortalContractSign = lazy(() => import("./pages/portal/PortalContractSign"));
+const PortalBlog = lazy(() => import("./pages/portal/PortalBlog"));
+const PortalQna = lazy(() => import("./pages/portal/PortalQna"));
+const PortalReviews = lazy(() => import("./pages/portal/PortalReviews"));
+const PortalBoard = lazy(() => import("./pages/portal/PortalBoard"));
+const PortalCalendar = lazy(() => import("./pages/portal/PortalCalendar"));
+const PortalProfile = lazy(() => import("./pages/portal/PortalProfile"));
 
 /** 지연 로딩 컴포넌트를 Suspense로 감싸는 헬퍼 */
 function LazyRoute({ children }) {
@@ -295,8 +301,16 @@ export default function App() {
           <Route path="cases/:id" element={<LazyRoute><PortalCaseDetail /></LazyRoute>} />
           <Route path="cases/:id/records" element={<LazyRoute><PortalCaseRecords /></LazyRoute>} />
           <Route path="time-tracking" element={<LazyRoute><PortalTimeTracking /></LazyRoute>} />
+          <Route path="board" element={<LazyRoute><PortalBoard /></LazyRoute>} />
+          <Route path="calendar" element={<LazyRoute><PortalCalendar /></LazyRoute>} />
+          <Route path="profile" element={<LazyRoute><PortalProfile /></LazyRoute>} />
           <Route path="contracts" element={<LazyRoute><PortalContracts /></LazyRoute>} />
           <Route path="contracts/:id" element={<LazyRoute><PortalContractSign /></LazyRoute>} />
+          <Route path="blog" element={<LazyRoute><PortalBlog /></LazyRoute>} />
+          <Route path="qna" element={<LazyRoute><PortalQna /></LazyRoute>} />
+          <Route path="reviews" element={<LazyRoute><PortalReviews /></LazyRoute>} />
+          <Route path="editor" element={<LazyRoute><EditorPage /></LazyRoute>} />
+          <Route path="editor/:id" element={<LazyRoute><EditorPage /></LazyRoute>} />
         </Route>
 
         {/* 초대/서명 — 공개 (Layout 없음, 집중 모드) */}

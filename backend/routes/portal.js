@@ -468,4 +468,192 @@ router.get("/admin/time-entries", adminAuth, async (req, res) => {
   }
 });
 
+// =============================================
+// 포털 내부 게시판
+// =============================================
+
+router.get("/posts", portalAuth, async (req, res) => {
+  try {
+    const result = await portalService.listPortalPosts(req.query);
+    res.json(result);
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+router.post("/posts", portalAuth, async (req, res) => {
+  try {
+    const result = await portalService.createPortalPost(req.portalUser.userId, req.body);
+    res.status(201).json({ data: result, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+router.get("/posts/:id", portalAuth, async (req, res) => {
+  try {
+    const result = await portalService.getPortalPost(req.params.id);
+    res.json({ data: result, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+router.put("/posts/:id", portalAuth, async (req, res) => {
+  try {
+    const isAdmin = await portalService.checkIsAdmin(req.portalUser.email);
+    const result = await portalService.updatePortalPost(req.params.id, req.portalUser.userId, isAdmin, req.body);
+    res.json({ data: result, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+router.delete("/posts/:id", portalAuth, async (req, res) => {
+  try {
+    const isAdmin = await portalService.checkIsAdmin(req.portalUser.email);
+    const result = await portalService.deletePortalPost(req.params.id, req.portalUser.userId, isAdmin);
+    res.json({ data: result, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+// =============================================
+// 포털 일정 (캘린더)
+// =============================================
+
+router.get("/events", portalAuth, async (req, res) => {
+  try {
+    const rows = await portalService.listPortalEvents(req.portalUser.userId);
+    res.json({ data: rows, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+router.post("/events", portalAuth, async (req, res) => {
+  try {
+    const result = await portalService.createPortalEvent(req.portalUser.userId, req.body);
+    res.status(201).json({ data: result, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+router.put("/events/:id", portalAuth, async (req, res) => {
+  try {
+    const result = await portalService.updatePortalEvent(req.params.id, req.portalUser.userId, req.body);
+    res.json({ data: result, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+router.delete("/events/:id", portalAuth, async (req, res) => {
+  try {
+    const result = await portalService.deletePortalEvent(req.params.id, req.portalUser.userId);
+    res.json({ data: result, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+// =============================================
+// 포털 변호사 프로필 설정 및 어드민 기능
+// =============================================
+
+router.get("/lawyers/my-profile", portalAuth, async (req, res) => {
+  try {
+    const profile = await portalService.getLawyerProfileByEmail(req.portalUser.email);
+    res.json({ data: profile, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+router.post("/lawyers/my-profile", portalAuth, async (req, res) => {
+  try {
+    const result = await portalService.createLawyerProfile(req.portalUser.email, req.body);
+    res.status(201).json({ data: result, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+router.put("/lawyers/my-profile", portalAuth, async (req, res) => {
+  try {
+    const profile = await portalService.getLawyerProfileByEmail(req.portalUser.email);
+    if (!profile) return res.status(404).json({ data: null, error: "프로필이 존재하지 않습니다", meta: null });
+    const result = await portalService.updateLawyerProfile(profile.id, req.body);
+    res.json({ data: result, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+router.get("/lawyers/admin/check", portalAuth, async (req, res) => {
+  try {
+    const isAdmin = await portalService.checkIsAdmin(req.portalUser.email);
+    res.json({ data: { isAdmin }, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+router.get("/lawyers/admin/list", portalAuth, async (req, res) => {
+  try {
+    const isAdmin = await portalService.checkIsAdmin(req.portalUser.email);
+    if (!isAdmin) return res.status(403).json({ data: null, error: "권한이 없습니다", meta: null });
+    const list = await portalService.listAllLawyers();
+    res.json({ data: list, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+router.post("/lawyers/admin/create", portalAuth, async (req, res) => {
+  try {
+    const isAdmin = await portalService.checkIsAdmin(req.portalUser.email);
+    if (!isAdmin) return res.status(403).json({ data: null, error: "권한이 없습니다", meta: null });
+    const result = await portalService.createLawyerProfile(req.body.email || "", req.body);
+    res.status(201).json({ data: result, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+router.put("/lawyers/admin/:id", portalAuth, async (req, res) => {
+  try {
+    const isAdmin = await portalService.checkIsAdmin(req.portalUser.email);
+    if (!isAdmin) return res.status(403).json({ data: null, error: "권한이 없습니다", meta: null });
+    const result = await portalService.updateLawyerProfile(req.params.id, req.body);
+    res.json({ data: result, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+router.delete("/lawyers/admin/:id", portalAuth, async (req, res) => {
+  try {
+    const isAdmin = await portalService.checkIsAdmin(req.portalUser.email);
+    if (!isAdmin) return res.status(403).json({ data: null, error: "권한이 없습니다", meta: null });
+    const result = await portalService.deleteLawyerProfile(req.params.id);
+    res.json({ data: result, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+router.post("/lawyers/admin/reorder", portalAuth, async (req, res) => {
+  try {
+    const isAdmin = await portalService.checkIsAdmin(req.portalUser.email);
+    if (!isAdmin) return res.status(403).json({ data: null, error: "권한이 없습니다", meta: null });
+    const result = await portalService.reorderLawyerProfiles(req.body.id1, req.body.id2);
+    res.json({ data: result, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
 module.exports = router;

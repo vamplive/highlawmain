@@ -5,6 +5,7 @@
  * - 타임트래킹 (사건별 시간 기록)
  */
 const { db } = require("../db");
+const crypto = require("crypto");
 const {
   portalUsers,
   caseFilesTable,
@@ -13,6 +14,9 @@ const {
   clients,
   lawyers,
   portalTimeEntries,
+  portalPosts,
+  portalEvents,
+  adminUsers,
 } = require("../db/schema");
 const { eq, desc, and, sql, gte, lte, between, asc, like } = require("drizzle-orm");
 const { hashPassword, verifyPassword, dummyVerifyPassword } = require("../lib/auth");
@@ -938,6 +942,374 @@ async function disconnectGoogle(portalUserId) {
   return { disconnected: true };
 }
 
+// =============================================
+// 포털 게시판 (자유게시판 / 공지사항 / 업무 매뉴얼 / 양식)
+// =============================================
+
+async function listPortalPosts(query) {
+  const { page, limit, offset } = parsePagination(query);
+  const { category, search, pinnedOnly } = query;
+
+  let condition = sql`1=1`;
+  if (category) {
+    condition = and(condition, eq(portalPosts.category, category));
+  }
+  if (search) {
+    condition = and(condition, sql`(${portalPosts.title} LIKE ${'%' + search + '%'} OR ${portalPosts.content} LIKE ${'%' + search + '%'})`);
+  }
+  if (pinnedOnly === "true") {
+    condition = and(condition, eq(portalPosts.isPinned, 1));
+  }
+
+  const rows = await db
+    .select({
+      id: portalPosts.id,
+      portalUserId: portalPosts.portalUserId,
+      category: portalPosts.category,
+      title: portalPosts.title,
+      content: portalPosts.content,
+      viewCount: portalPosts.viewCount,
+      isPinned: portalPosts.isPinned,
+      isImportant: portalPosts.isImportant,
+      createdAt: portalPosts.createdAt,
+      updatedAt: portalPosts.updatedAt,
+      authorEmail: portalUsers.email,
+      authorName: clients.name,
+    })
+    .from(portalPosts)
+    .leftJoin(portalUsers, eq(portalPosts.portalUserId, portalUsers.id))
+    .leftJoin(clients, eq(portalUsers.clientId, clients.id))
+    .where(condition)
+    .orderBy(desc(portalPosts.isPinned), desc(portalPosts.createdAt))
+    .limit(limit)
+    .offset(offset);
+
+  const [{ total }] = await db
+    .select({ total: sql`count(*)` })
+    .from(portalPosts)
+    .where(condition);
+
+  return { data: rows, meta: buildPaginationMeta(total, page, limit) };
+}
+
+async function createPortalPost(portalUserId, data) {
+  const { category, title, content, isPinned, isImportant } = data;
+  if (!title || !title.trim()) throw new ServiceError("제목을 입력해주세요", 400);
+  if (!content || !content.trim()) throw new ServiceError("내용을 입력해주세요", 400);
+
+  const [inserted] = await db.insert(portalPosts).values({
+    portalUserId,
+    category: category || "free",
+    title: title.trim(),
+    content: content.trim(),
+    isPinned: isPinned ? 1 : 0,
+    isImportant: isImportant ? 1 : 0,
+  }).returning();
+
+  return inserted;
+}
+
+async function getPortalPost(id) {
+  validateUUID(id);
+  const [row] = await db
+    .select({
+      id: portalPosts.id,
+      portalUserId: portalPosts.portalUserId,
+      category: portalPosts.category,
+      title: portalPosts.title,
+      content: portalPosts.content,
+      viewCount: portalPosts.viewCount,
+      isPinned: portalPosts.isPinned,
+      isImportant: portalPosts.isImportant,
+      createdAt: portalPosts.createdAt,
+      updatedAt: portalPosts.updatedAt,
+      authorEmail: portalUsers.email,
+      authorName: clients.name,
+    })
+    .from(portalPosts)
+    .leftJoin(portalUsers, eq(portalPosts.portalUserId, portalUsers.id))
+    .leftJoin(clients, eq(portalUsers.clientId, clients.id))
+    .where(eq(portalPosts.id, id));
+
+  if (!row) throw new ServiceError("게시글을 찾을 수 없습니다", 404);
+
+  // 조회수 1 증가 (비동기 수행)
+  db.update(portalPosts)
+    .set({ viewCount: sql`${portalPosts.viewCount} + 1` })
+    .where(eq(portalPosts.id, id))
+    .run();
+
+  row.viewCount += 1; // 클라이언트 즉시 반영을 위해 로컬 값도 증가
+  return row;
+}
+
+async function updatePortalPost(id, portalUserId, isAdmin, data) {
+  validateUUID(id);
+  const [existing] = await db.select().from(portalPosts).where(eq(portalPosts.id, id));
+  if (!existing) throw new ServiceError("게시글을 찾을 수 없습니다", 404);
+
+  if (existing.portalUserId !== portalUserId && !isAdmin) {
+    throw new ServiceError("수정 권한이 없습니다", 403);
+  }
+
+  const { category, title, content, isPinned, isImportant } = data;
+  const updates = { updatedAt: sql`(datetime('now'))` };
+  if (category !== undefined) updates.category = category;
+  if (title !== undefined) updates.title = (title || "").trim();
+  if (content !== undefined) updates.content = content;
+  if (isPinned !== undefined) updates.isPinned = isPinned ? 1 : 0;
+  if (isImportant !== undefined) updates.isImportant = isImportant ? 1 : 0;
+
+  const [updated] = await db
+    .update(portalPosts)
+    .set(updates)
+    .where(eq(portalPosts.id, id))
+    .returning();
+
+  return updated;
+}
+
+async function deletePortalPost(id, portalUserId, isAdmin) {
+  validateUUID(id);
+  const [existing] = await db.select().from(portalPosts).where(eq(portalPosts.id, id));
+  if (!existing) throw new ServiceError("게시글을 찾을 수 없습니다", 404);
+
+  if (existing.portalUserId !== portalUserId && !isAdmin) {
+    throw new ServiceError("삭제 권한이 없습니다", 403);
+  }
+
+  await db.delete(portalPosts).where(eq(portalPosts.id, id));
+  return { deleted: true };
+}
+
+// =============================================
+// 포털 일정 (캘린더)
+// =============================================
+
+async function listPortalEvents(portalUserId) {
+  return db
+    .select()
+    .from(portalEvents)
+    .where(eq(portalEvents.portalUserId, portalUserId))
+    .orderBy(asc(portalEvents.startsAt));
+}
+
+async function createPortalEvent(portalUserId, data) {
+  const { title, description, startsAt, endsAt, isAllDay, color } = data;
+  if (!title || !title.trim()) throw new ServiceError("일정 제목을 입력해주세요", 400);
+  if (!startsAt) throw new ServiceError("시작 일시를 입력해주세요", 400);
+
+  const [inserted] = await db.insert(portalEvents).values({
+    portalUserId,
+    title: title.trim(),
+    description: description || null,
+    startsAt,
+    endsAt: endsAt || null,
+    isAllDay: isAllDay ? 1 : 0,
+    color: color || "#6366f1",
+  }).returning();
+
+  return inserted;
+}
+
+async function updatePortalEvent(id, portalUserId, data) {
+  validateUUID(id);
+  const [existing] = await db.select().from(portalEvents).where(eq(portalEvents.id, id));
+  if (!existing) throw new ServiceError("일정을 찾을 수 없습니다", 404);
+
+  if (existing.portalUserId !== portalUserId) {
+    throw new ServiceError("수정 권한이 없습니다", 403);
+  }
+
+  const { title, description, startsAt, endsAt, isAllDay, color } = data;
+  const updates = { updatedAt: sql`(datetime('now'))` };
+  if (title !== undefined) updates.title = (title || "").trim();
+  if (description !== undefined) updates.description = description;
+  if (startsAt !== undefined) updates.startsAt = startsAt;
+  if (endsAt !== undefined) updates.endsAt = endsAt;
+  if (isAllDay !== undefined) updates.isAllDay = isAllDay ? 1 : 0;
+  if (color !== undefined) updates.color = color;
+
+  const [updated] = await db
+    .update(portalEvents)
+    .set(updates)
+    .where(eq(portalEvents.id, id))
+    .returning();
+
+  return updated;
+}
+
+async function deletePortalEvent(id, portalUserId) {
+  validateUUID(id);
+  const [existing] = await db.select().from(portalEvents).where(eq(portalEvents.id, id));
+  if (!existing) throw new ServiceError("일정을 찾을 수 없습니다", 404);
+
+  if (existing.portalUserId !== portalUserId) {
+    throw new ServiceError("삭제 권한이 없습니다", 403);
+  }
+
+  await db.delete(portalEvents).where(eq(portalEvents.id, id));
+  return { deleted: true };
+}
+
+// =============================================
+// 포털 변호사 프로필 설정 / 편집 / 관리자 CRUD
+// =============================================
+
+async function checkIsAdmin(email) {
+  if (!email) return false;
+  const [admin] = await db
+    .select()
+    .from(adminUsers)
+    .where(and(eq(adminUsers.email, email.toLowerCase().trim()), eq(adminUsers.isActive, 1)));
+  return !!admin;
+}
+
+async function getLawyerProfileByEmail(email) {
+  if (!email) return null;
+  const [lawyer] = await db
+    .select()
+    .from(lawyers)
+    .where(eq(lawyers.email, email.toLowerCase().trim()));
+  return lawyer || null;
+}
+
+async function createLawyerProfile(email, data) {
+  const { name, nameEn, nameHanja, position, team, photoUrl, tagline, education, career, specialties, qualifications, publications, books, media, columns, cases, memberships, consultHours, blogUrl, introduction, phone } = data;
+  if (!name || !name.trim()) throw new ServiceError("이름은 필수입니다", 400);
+
+  const id = crypto.randomUUID();
+  await db.insert(lawyers).values({
+    id,
+    name: name.trim(),
+    nameEn: nameEn || null,
+    nameHanja: nameHanja || null,
+    position: position || "어소시에이트",
+    team: team || null,
+    photoUrl: photoUrl || null,
+    tagline: tagline || null,
+    education: education || null,
+    career: career || null,
+    specialties: specialties || null,
+    qualifications: qualifications || null,
+    publications: publications || null,
+    books: books || null,
+    media: media || null,
+    columns: columns || null,
+    cases: cases || null,
+    memberships: memberships || null,
+    consultHours: consultHours || null,
+    blogUrl: blogUrl || null,
+    introduction: introduction || null,
+    email: email.toLowerCase().trim(),
+    phone: phone || null,
+    sortOrder: 0,
+    isActive: 1,
+  }).run();
+
+  const created = await db.select().from(lawyers).where(eq(lawyers.id, id)).get();
+  return created;
+}
+
+async function listAllLawyers() {
+  return db
+    .select()
+    .from(lawyers)
+    .orderBy(asc(lawyers.sortOrder));
+}
+
+async function updateLawyerProfile(id, data) {
+  validateUUID(id);
+  const [existing] = await db.select().from(lawyers).where(eq(lawyers.id, id));
+  if (!existing) throw new ServiceError("변호사를 찾을 수 없습니다", 404);
+
+  const {
+    name,
+    nameEn,
+    nameHanja,
+    position,
+    team,
+    photoUrl,
+    tagline,
+    education,
+    career,
+    specialties,
+    qualifications,
+    publications,
+    books,
+    media,
+    columns,
+    cases,
+    memberships,
+    consultHours,
+    blogUrl,
+    introduction,
+    email,
+    phone,
+    sortOrder,
+    isActive,
+  } = data;
+
+  const updates = { updatedAt: sql`(datetime('now'))` };
+  if (name !== undefined) updates.name = name.trim();
+  if (nameEn !== undefined) updates.nameEn = nameEn;
+  if (nameHanja !== undefined) updates.nameHanja = nameHanja;
+  if (position !== undefined) updates.position = position;
+  if (team !== undefined) updates.team = team;
+  if (photoUrl !== undefined) updates.photoUrl = photoUrl;
+  if (tagline !== undefined) updates.tagline = tagline;
+  if (education !== undefined) updates.education = education;
+  if (career !== undefined) updates.career = career;
+  if (specialties !== undefined) updates.specialties = specialties;
+  if (qualifications !== undefined) updates.qualifications = qualifications;
+  if (publications !== undefined) updates.publications = publications;
+  if (books !== undefined) updates.books = books;
+  if (media !== undefined) updates.media = media;
+  if (columns !== undefined) updates.columns = columns;
+  if (cases !== undefined) updates.cases = cases;
+  if (memberships !== undefined) updates.memberships = memberships;
+  if (consultHours !== undefined) updates.consultHours = consultHours;
+  if (blogUrl !== undefined) updates.blogUrl = blogUrl;
+  if (introduction !== undefined) updates.introduction = introduction;
+  if (email !== undefined) updates.email = email.toLowerCase().trim();
+  if (phone !== undefined) updates.phone = phone;
+  if (sortOrder !== undefined) updates.sortOrder = sortOrder;
+  if (isActive !== undefined) updates.isActive = isActive ? 1 : 0;
+
+  const [updated] = await db
+    .update(lawyers)
+    .set(updates)
+    .where(eq(lawyers.id, id))
+    .returning();
+
+  return updated;
+}
+
+async function deleteLawyerProfile(id) {
+  validateUUID(id);
+  const [existing] = await db.select().from(lawyers).where(eq(lawyers.id, id));
+  if (!existing) throw new ServiceError("변호사를 찾을 수 없습니다", 404);
+
+  await db.delete(lawyers).where(eq(lawyers.id, id));
+  return { deleted: true };
+}
+
+async function reorderLawyerProfiles(id1, id2) {
+  validateUUID(id1);
+  validateUUID(id2);
+
+  const [lawyer1] = await db.select().from(lawyers).where(eq(lawyers.id, id1));
+  const [lawyer2] = await db.select().from(lawyers).where(eq(lawyers.id, id2));
+
+  if (!lawyer1 || !lawyer2) throw new ServiceError("변호사를 찾을 수 없습니다", 404);
+
+  const temp = lawyer1.sortOrder;
+  await db.update(lawyers).set({ sortOrder: lawyer2.sortOrder }).where(eq(lawyers.id, id1)).run();
+  await db.update(lawyers).set({ sortOrder: temp }).where(eq(lawyers.id, id2)).run();
+
+  return { success: true };
+}
+
 module.exports = {
   // 인증
   registerUser,
@@ -979,4 +1351,26 @@ module.exports = {
   saveGoogleTokens,
   getGoogleTokens,
   disconnectGoogle,
+
+  // 게시판
+  listPortalPosts,
+  createPortalPost,
+  getPortalPost,
+  updatePortalPost,
+  deletePortalPost,
+
+  // 캘린더
+  listPortalEvents,
+  createPortalEvent,
+  updatePortalEvent,
+  deletePortalEvent,
+
+  // 변호사 프로필
+  checkIsAdmin,
+  getLawyerProfileByEmail,
+  createLawyerProfile,
+  updateLawyerProfile,
+  listAllLawyers,
+  deleteLawyerProfile,
+  reorderLawyerProfiles,
 };

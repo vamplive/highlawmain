@@ -1035,6 +1035,38 @@ const recruitPosts = sqliteTable("recruit_posts", {
   updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
 });
 
+// =============================================
+// portal_posts — 포털 게시판 게시글
+// =============================================
+const portalPosts = sqliteTable("portal_posts", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  portalUserId: text("portal_user_id").notNull().references(() => portalUsers.id, { onDelete: "cascade" }),
+  category: text("category").notNull().default("free"), // 'notice' (공지사항), 'manual' (업무 매뉴얼), 'free' (자유게시판), 'template' (양식)
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  viewCount: integer("view_count").notNull().default(0),
+  isPinned: integer("is_pinned").notNull().default(0), // 필독
+  isImportant: integer("is_important").notNull().default(0), // 중요
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+});
+
+// =============================================
+// portal_events — 포털 사용자 캘린더 일정
+// =============================================
+const portalEvents = sqliteTable("portal_events", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  portalUserId: text("portal_user_id").notNull().references(() => portalUsers.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  description: text("description"),
+  startsAt: text("starts_at").notNull(),
+  endsAt: text("ends_at"),
+  isAllDay: integer("is_all_day").notNull().default(0),
+  color: text("color").default("#6366f1"),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+});
+
 module.exports = {
   DOCUMENT_TYPES,
   DOCUMENT_STATUSES,
@@ -1132,4 +1164,6 @@ module.exports = {
   RECRUIT_CATEGORIES,
   RECRUIT_STATUSES,
   recruitPosts,
+  portalPosts,
+  portalEvents,
 };

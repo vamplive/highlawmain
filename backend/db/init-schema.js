@@ -453,6 +453,34 @@ module.exports = {
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
     CREATE UNIQUE INDEX IF NOT EXISTS idx_portal_users_email ON portal_users(email);
+
+    CREATE TABLE IF NOT EXISTS portal_posts (
+      id TEXT PRIMARY KEY,
+      portal_user_id TEXT NOT NULL REFERENCES portal_users(id) ON DELETE CASCADE,
+      category TEXT NOT NULL DEFAULT 'free',
+      title TEXT NOT NULL,
+      content TEXT NOT NULL,
+      view_count INTEGER NOT NULL DEFAULT 0,
+      is_pinned INTEGER NOT NULL DEFAULT 0,
+      is_important INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_portal_posts_user_category ON portal_posts(portal_user_id, category);
+
+    CREATE TABLE IF NOT EXISTS portal_events (
+      id TEXT PRIMARY KEY,
+      portal_user_id TEXT NOT NULL REFERENCES portal_users(id) ON DELETE CASCADE,
+      title TEXT NOT NULL,
+      description TEXT,
+      starts_at TEXT NOT NULL,
+      ends_at TEXT,
+      is_all_day INTEGER NOT NULL DEFAULT 0,
+      color TEXT DEFAULT '#6366f1',
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_portal_events_user_starts ON portal_events(portal_user_id, starts_at);
   `);
 
   // 기존 admin_users에 totp_secret 컬럼 추가 (이미 있으면 무시)
