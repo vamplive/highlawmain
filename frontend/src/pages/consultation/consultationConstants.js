@@ -27,7 +27,7 @@ export const CONTACT_INFO = [
 /** 핵심 지표 */
 export const STATS = [
   { value: "1:1", label: "사건 맞춤 커뮤니케이션" },
-  { value: "24H", label: "신속한 초기 응답" },
+  { value: "12H", label: "신속한 초기 대응" },
   { value: "100%", label: "기밀 보장 원칙" },
 ];
 

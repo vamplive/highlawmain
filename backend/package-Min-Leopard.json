@@ -1,0 +1,53 @@
+{
+  "name": "hilaw-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "법무법인 하이로 백엔드 — Express 5 + SQLite(better-sqlite3) + Drizzle ORM + FTS5",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "vitest run",
+    "backup": "node scripts/backup-db.js",
+    "lint": "eslint ."
+  },
+  "keywords": [
+    "hilaw",
+    "law-firm",
+    "express",
+    "sqlite",
+    "drizzle"
+  ],
+  "author": "HIGH & LAW FIRM",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.92.0",
+    "@sentry/node": "^10.50.0",
+    "better-sqlite3": "^12.10.0",
+    "compression": "^1.8.1",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "drizzle-orm": "^0.45.1",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.3.2",
+    "googleapis": "^171.4.0",
+    "helmet": "^8.1.0",
+    "multer": "^2.1.1",
+    "nodemailer": "^8.0.4",
+    "pdf-parse": "^2.4.5",
+    "pino": "^10.3.1",
+    "pino-http": "^11.0.0",
+    "sanitize-html": "^2.17.3",
+    "sharp": "^0.34.5",
+    "tesseract.js": "^7.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.4",
+    "eslint": "^9.39.4",
+    "globals": "^17.4.0",
+    "supertest": "^7.2.2",
+    "vitest": "^4.1.2"
+  },
+  "overrides": {
+    "ip-address": "^10.1.1"
+  }
+}
