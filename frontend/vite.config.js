@@ -1,6 +1,9 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+// dev 서버 프록시 대상: VITE_API_TARGET 환경변수 또는 로컬 백엔드 기본값
+const API_TARGET = process.env.VITE_API_TARGET || 'http://localhost:5001';
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
@@ -11,26 +14,11 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api': {
-        target: 'http://localhost:5001',
-        changeOrigin: true,
-      },
-      '/r': {
-        target: 'http://localhost:5001',
-        changeOrigin: true,
-      },
-      '/uploads': {
-        target: 'http://localhost:5001',
-        changeOrigin: true,
-      },
-      '/data': {
-        target: 'http://localhost:5001',
-        changeOrigin: true,
-      },
-      '/sitemap.xml': {
-        target: 'http://localhost:5001',
-        changeOrigin: true,
-      },
+      '/api':       { target: API_TARGET, changeOrigin: true },
+      '/r':         { target: API_TARGET, changeOrigin: true },
+      '/uploads':   { target: API_TARGET, changeOrigin: true },
+      '/data':      { target: API_TARGET, changeOrigin: true },
+      '/sitemap.xml': { target: API_TARGET, changeOrigin: true },
     },
   },
   build: {

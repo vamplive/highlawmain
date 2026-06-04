@@ -8,6 +8,20 @@ dist2/
 backend/data/
 backend/uploads/
 
+# 고아 폴더 — 구버전 중첩 구조 잔재 (소스 없음, 데이터만 남은 디렉토리)
+frontend/backend/
+
+# 디자인 원본 에셋 — 대용량 바이너리, 별도 스토리지 관리
+likemonday card-1/
+likemonday card-1.zip
+likemonday logo-2/
+likemonday logo-2.zip
+변호사프로필/
+
+# 개발 편의 스크립트 (로컬 전용)
+start-dev.cmd
+start-dev.sh
+
 # OCR 학습 데이터 (Tesseract traineddata, 별도 스토리지/다운로드 권장)
 *.traineddata
 

@@ -27,65 +27,60 @@
 모든 페이지는 도메인 폴더로 묶여 있고, 각 도메인의 메인 페이지는 `index.jsx`다.
 지원 컴포넌트는 같은 폴더 내에서 PascalCase 파일명으로 구분한다.
 
+**로컬 개발 경로**: `C:\Dev\highlaw\` (OneDrive 외부 — 동기화 문제 없음)
+**GitHub**: `https://github.com/vamplive/highlawmain`
+
 ```
-highlaw/
+highlaw/                           ← git 루트 / 로컬: C:\Dev\highlaw\
 ├── CLAUDE.md
 ├── README.md
-├── deploy/                    # 배포 스크립트 + 운영(plist) 파일
-├── docs/                      # QA 체크리스트
-├── frontend/
+├── .gitignore
+├── backend/                       # Express 백엔드 (포트 5001)
 │   ├── package.json
-│   ├── vite.config.js         # dev proxy: /api → localhost:5001
+│   ├── index.js                   # 서버 진입점
+│   ├── db/                        # schema.js, init-schema.js, fts.js
+│   ├── lib/                       # auth, csrf, email, sms, logger 등
+│   ├── routes/                    # API 라우트 (/api/*)
+│   ├── services/                  # 도메인 비즈니스 로직
+│   ├── tests/                     # vitest 통합·서비스 테스트
+│   ├── scripts/                   # 백업, 마이그레이션 스크립트
+│   └── seeds/                     # 수동 실행 시드 스크립트
+├── frontend/                      # Vite + React 프론트엔드 (포트 5173)
+│   ├── package.json
+│   ├── vite.config.js             # dev proxy: /api → localhost:5001 (VITE_API_TARGET)
 │   ├── index.html
-│   ├── public/                # 정적 자산 (이미지, 비디오, 파비콘 등)
+│   ├── public/                    # 정적 자산 (이미지, 비디오, 파비콘 등)
 │   └── src/
 │       ├── main.jsx
-│       ├── App.jsx            # 라우터 (공개/에디터/관리자/포털)
-│       ├── index.css          # Tailwind + 디자인 토큰
-│       ├── assets/            # 임포트되는 이미지·로고
-│       ├── components/        # 공용 컴포넌트
-│       │   ├── Layout.jsx     # 공개 레이아웃
-│       │   ├── ErrorBoundary.jsx
-│       │   ├── Seo.jsx
+│       ├── App.jsx                # 라우터 (공개/에디터/관리자/포털)
+│       ├── index.css              # Tailwind + 디자인 토큰
+│       ├── assets/                # 임포트되는 이미지·로고
+│       ├── components/            # 공용 컴포넌트
+│       │   ├── Layout.jsx         # 공개 레이아웃
+│       │   ├── layout/            # Header, Footer, MobileMenu
 │       │   ├── auth/, signature/, lawyer-profile/, ui/, admin/
-│       ├── hooks/             # useCrudForm, useReveal, useSiteSettings 등
-│       ├── lib/               # seo, sentry, a11yDevChecker
-│       ├── utils/             # api 래퍼, formatters, contract-pdf 등
-│       └── pages/             # 페이지 — 도메인별 폴더, 메인 페이지는 index.jsx
-│           ├── home/HomePage.jsx       # / 메인 (정적 임포트)
-│           ├── public/                 # /about, /privacy, /terms, /reviews,
-│           │                           # /unsubscribe, NotFound, /invite, /sign
-│           ├── lawyers/                # /lawyers, /lawyers/:id, /lectures/:id
-│           ├── practice/               # /practice, /practice/construction, /realestate
-│           ├── consultation/           # /consultation (index.jsx)
-│           ├── blog/                   # /blog, /blog/:slug
-│           ├── qna/                    # QnaHubPage, QnaDetailPage, QnaAskPage
-│           ├── cases/                  # /cases → /qna 로 리다이렉트
-│           ├── editor/EditorPage.jsx + modules/  # MS Word 스타일 에디터
-│           ├── portal/                 # /portal/* (로그인/대시보드/계약서)
-│           └── admin/                  # 관리자 영역 — 도메인 폴더 + index.jsx
-│               ├── layout/index.jsx    # 관리자 사이드바 레이아웃
-│               ├── auth/Login.jsx      # 로그인 + Login.css
-│               ├── dashboard/          # 메인 대시보드 + 차트/카드
-│               ├── bookings/           # 예약 + ConsultationsPanel/BookingList
-│               ├── clients/            # index.jsx + ClientDetail.jsx
-│               ├── lawyers/, lectures/ # 변호사·강의 관리
-│               ├── contracts/          # index + ContractDetail/Templates/SettlementNew
-│               ├── cases/, qna/, reviews/, invitations/   # 단일 페이지
-│               ├── documents/, media/, messages/          # 분할된 페이지 + 보조
-│               ├── analytics/, hero-videos/               # 분할된 페이지 + 보조
-│               ├── settings/, site-manager/               # 분할된 페이지 + 보조
-└── backend/
-    ├── package.json
-    ├── index.js               # Express 진입점 (포트 5001)
-    ├── db/                    # index.js (부트스트랩) + init-schema.js + fts.js + schema.js (Drizzle)
-    ├── lib/                   # 인증/CSRF/이메일/SMS/sanitize/로거 등
-    ├── services/              # 도메인 서비스 (blog, client, consultation, …)
-    ├── routes/                # API 라우트 (sb- 접두사 제거됨)
-    │   ├── documents.js, lawyers.js, blog.js, qna.js, …
-    ├── tests/                 # vitest 통합·서비스 테스트
-    ├── scripts/backup-db.js   # DB 백업
-    └── seeds/                 # seed-*.js 스크립트 (수동 실행)
+│       ├── hooks/                 # useCrudForm, useReveal, useSiteSettings 등
+│       ├── lib/                   # seo, sentry, a11yDevChecker
+│       ├── utils/                 # api 래퍼, formatters, contract-pdf 등
+│       └── pages/                 # 페이지 — 도메인별 폴더, 메인 페이지는 index.jsx
+│           ├── home/              # / 메인
+│           ├── public/            # /about, /privacy, /terms, /reviews, /login
+│           ├── lawyers/           # /lawyers, /lawyers/:id, /lectures/:id
+│           ├── practice/          # /practice, /practice/:field
+│           ├── consultation/      # /consultation
+│           ├── blog/              # /blog, /blog/:slug
+│           ├── qna/               # /qna, /qna/category/:slug, /qna/question/:slug
+│           ├── recruit/           # /recruit
+│           ├── editor/            # MS Word 스타일 에디터
+│           ├── portal/            # /login, /portal/dashboard, /portal/time-tracking 등
+│           └── admin/             # /admin/* 관리자 영역
+│               ├── layout/        # 사이드바 레이아웃
+│               ├── auth/          # Login.jsx
+│               ├── portal-users/  # 포털 회원 승인 관리
+│               └── [domain]/      # cases, clients, bookings, contracts, …
+├── deploy/                        # Nginx 설정, 배포 스크립트
+├── docs/                          # QA 체크리스트 등
+└── dev-logs/                      # 개발일지 (gitignore됨, 로컬 전용)
 ```
 
 ## 라우트 구조
@@ -110,11 +105,15 @@ highlaw/
 /unsubscribe               → 마케팅 수신거부
 /cases                     → /qna 로 리다이렉트
 
-의뢰인 포털 (/portal)
-/portal/login              → 로그인
-/portal/register           → 회원가입
-/portal/dashboard          → 사건 목록
-/portal/cases/:id          → 사건 상세 (메시지 스레드 포함)
+포털 로그인
+/login                     → 통합 로그인/회원가입 페이지 (스플릿 스크린)
+
+포털 (/portal) — 로그인 후 접근, 포털 세션 쿠키 인증
+/portal/dashboard          → 사건 목록 + 구글 캘린더 연동
+/portal/cases/register     → 사건 등록 (사건번호로 법원 정보 유추)
+/portal/cases/:id          → 사건 상세 (문서 + 메시지)
+/portal/cases/:id/records  → 사건 기록
+/portal/time-tracking      → 타임트래킹 (타이머 + 수동 + 사건별 취합)
 /portal/contracts          → 내 계약서 목록
 /portal/contracts/:id      → 계약서 서명
 
@@ -204,13 +203,21 @@ history_events, documents_fts (FTS5 가상 테이블) + FTS 동기화 트리거
 ## 개발 실행
 > 사람 개발자용 셋업 가이드(환경변수, 테스트, 배포 포함)는 `README.md` 참조. 아래는 AI/빠른 참조용.
 
-```bash
-# 백엔드 (포트 5001 — macOS AirPlay Receiver가 5000을 점유하므로 5001 사용)
-cd backend && npm install && node index.js
+**로컬 개발 경로**: `C:\Dev\highlaw\` (OneDrive 외부)
 
-# 프론트엔드 (포트 5173, /api·/uploads·/data → 5001 프록시)
-cd frontend && npm install && npm run dev
+```cmd
+# 백엔드 (포트 5001)
+cd C:\Dev\highlaw\backend
+npm install
+node index.js
+
+# 프론트엔드 (포트 5173, /api → localhost:5001 프록시)
+cd C:\Dev\highlaw\frontend
+npm install
+npm run dev
 ```
+
+**한 번에 시작**: `C:\Dev\highlaw\start-dev.cmd` 실행
 
 ## 개발일지 (필수 규칙) ⚠️
 
