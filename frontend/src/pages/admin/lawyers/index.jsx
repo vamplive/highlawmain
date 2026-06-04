@@ -7,7 +7,7 @@ import {
 } from "../../../components/admin";
 import LecturesSection from "./LecturesSection";
 
-const POSITIONS = ["대표변호사", "파트너변호사", "시니어변호사", "어소시에이트", "고문변호사"];
+const POSITIONS = ["대표변호사", "변호사", "전문위원", "직원"];
 const POSITION_OPTIONS = POSITIONS.map((p) => ({ value: p, label: p }));
 
 /** JSON 문자열 → 배열, 줄바꿈 텍스트도 허용 */
@@ -22,7 +22,7 @@ function parseArray(value) {
 }
 
 const EMPTY_FORM = {
-  name: "", nameEn: "", nameHanja: "", position: "어소시에이트",
+  name: "", nameEn: "", nameHanja: "", position: "변호사",
   team: "", photoUrl: "", tagline: "", introduction: "",
   email: "", phone: "", consultHours: "", blogUrl: "",
   sortOrder: 0, isActive: 1,
@@ -45,7 +45,7 @@ function mapRowToForm(row) {
     name: row.name || "",
     nameEn: row.nameEn || "",
     nameHanja: row.nameHanja || "",
-    position: row.position || "어소시에이트",
+    position: row.position || "변호사",
     team: row.team || "",
     photoUrl: row.photoUrl || "",
     tagline: row.tagline || "",

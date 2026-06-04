@@ -21,10 +21,9 @@ import { showToast } from "../../utils/showToast";
 
 const POSITION_OPTIONS = [
   "대표변호사",
-  "파트너변호사",
-  "시니어변호사",
-  "어소시에이트",
-  "고문변호사",
+  "변호사",
+  "전문위원",
+  "직원",
 ];
 
 const SUB_TABS = [
@@ -36,7 +35,7 @@ const SUB_TABS = [
 
 const EMPTY_FORM = {
   name: "", nameEn: "", nameHanja: "",
-  position: "어소시에이트", team: "",
+  position: "변호사", team: "",
   photoUrl: "",
   tagline: "", email: "", phone: "", blogUrl: "",
   education: "", career: "", qualifications: "",
@@ -88,7 +87,7 @@ export default function PortalProfile() {
     name: prof.name || "",
     nameEn: prof.nameEn || "",
     nameHanja: prof.nameHanja || "",
-    position: prof.position || "어소시에이트",
+    position: prof.position || "변호사",
     team: prof.team || "",
     photoUrl: prof.photoUrl || "",
     tagline: prof.tagline || "",

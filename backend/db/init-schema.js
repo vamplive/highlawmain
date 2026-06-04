@@ -113,7 +113,7 @@ module.exports = {
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       name_en TEXT,
-      position TEXT NOT NULL DEFAULT '어소시에이트',
+      position TEXT NOT NULL DEFAULT '변호사',
       photo_url TEXT,
       education TEXT,
       career TEXT,

@@ -152,10 +152,9 @@ const heroVideos = sqliteTable("hero_videos", {
 // =============================================
 const LAWYER_POSITIONS = [
   "대표변호사",
-  "파트너변호사",
-  "시니어변호사",
-  "어소시에이트",
-  "고문변호사",
+  "변호사",
+  "전문위원",
+  "직원",
 ];
 
 const lawyers = sqliteTable("lawyers", {
@@ -163,7 +162,7 @@ const lawyers = sqliteTable("lawyers", {
   name: text("name").notNull(),
   nameEn: text("name_en"),
   nameHanja: text("name_hanja"),
-  position: text("position").notNull().default("어소시에이트"),
+  position: text("position").notNull().default("변호사"),
   team: text("team"),
   photoUrl: text("photo_url"),
   tagline: text("tagline"),

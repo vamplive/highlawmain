@@ -76,7 +76,7 @@ router.post("/", adminAuth, async (req, res) => {
       name,
       nameEn: nameEn || null,
       nameHanja: nameHanja || null,
-      position: position || "어소시에이트",
+      position: position || "변호사",
       team: team || null,
       photoUrl: photoUrl || null,
       tagline: tagline || null,

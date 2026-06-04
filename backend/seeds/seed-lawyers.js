@@ -1,4 +1,4 @@
-﻿/** 변호사 시드 데이터 */
+/** 변호사 시드 데이터 */
 const crypto = require("crypto");
 const Database = require("better-sqlite3");
 const db = new Database(require("path").join(__dirname,"..","data","db","highlaw.db"));
@@ -18,7 +18,7 @@ const lawyers = [
   {
     name: "한샘이",
     nameEn: "Han Saem-I",
-    position: "파트너변호사",
+    position: "변호사",
     education: JSON.stringify([]),
     career: JSON.stringify(["대한변호사협회 등록", "법무법인 하이로 파트너"]),
     specialties: JSON.stringify(["민사", "가사", "행정"]),
@@ -28,7 +28,7 @@ const lawyers = [
   {
     name: "김효림",
     nameEn: "Kim Hyo-Rim",
-    position: "파트너변호사",
+    position: "변호사",
     education: JSON.stringify([]),
     career: JSON.stringify(["대한변호사협회 등록", "법무법인 하이로 파트너"]),
     specialties: JSON.stringify(["부동산", "건설", "민사"]),
@@ -38,7 +38,7 @@ const lawyers = [
   {
     name: "김수경",
     nameEn: "Kim Su-Kyung",
-    position: "파트너변호사",
+    position: "변호사",
     education: JSON.stringify([]),
     career: JSON.stringify(["대한변호사협회 등록", "법무법인 하이로 파트너"]),
     specialties: JSON.stringify(["형사", "민사", "기업법무"]),
