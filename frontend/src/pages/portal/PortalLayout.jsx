@@ -19,7 +19,8 @@ import {
   BookOpen,
   MessageSquare,
   ChevronRight,
-  FolderOpen
+  FolderOpen,
+  Mail
 } from "lucide-react";
 
 export default function PortalLayout() {
@@ -327,6 +328,51 @@ export default function PortalLayout() {
             >
               <User size={16} />
               프로필 설정
+            </Link>
+
+            <Link
+              to="/portal/blog"
+              style={{
+                display: "flex", alignItems: "center", gap: 10, padding: "8px 12px",
+                borderRadius: 6, textDecoration: "none", fontSize: 13,
+                color: location.pathname === "/portal/blog" ? "#7c3aed" : "#334155",
+                background: location.pathname === "/portal/blog" ? "#f5f3ff" : "transparent",
+                fontWeight: location.pathname === "/portal/blog" ? 600 : 500,
+                transition: "background 0.15s", marginBottom: 2
+              }}
+            >
+              <BookOpen size={16} />
+              블로그 관리
+            </Link>
+
+            <Link
+              to="/portal/qna"
+              style={{
+                display: "flex", alignItems: "center", gap: 10, padding: "8px 12px",
+                borderRadius: 6, textDecoration: "none", fontSize: 13,
+                color: location.pathname === "/portal/qna" ? "#7c3aed" : "#334155",
+                background: location.pathname === "/portal/qna" ? "#f5f3ff" : "transparent",
+                fontWeight: location.pathname === "/portal/qna" ? 600 : 500,
+                transition: "background 0.15s", marginBottom: 2
+              }}
+            >
+              <MessageSquare size={16} />
+              법률 Q&A 관리
+            </Link>
+
+            <Link
+              to="/portal/messages"
+              style={{
+                display: "flex", alignItems: "center", gap: 10, padding: "8px 12px",
+                borderRadius: 6, textDecoration: "none", fontSize: 13,
+                color: location.pathname === "/portal/messages" ? "#7c3aed" : "#334155",
+                background: location.pathname === "/portal/messages" ? "#f5f3ff" : "transparent",
+                fontWeight: location.pathname === "/portal/messages" ? 600 : 500,
+                transition: "background 0.15s", marginBottom: 2
+              }}
+            >
+              <Mail size={16} />
+              메시지 발송
             </Link>
 
             <a

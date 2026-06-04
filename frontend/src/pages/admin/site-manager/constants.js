@@ -11,6 +11,10 @@ export const TABS = [
   { key: "seo", label: "SEO" },
   { key: "announcements", label: "공지/배너" },
   { key: "history", label: "개발 일지" },
+  { key: "partners", label: "구성원" },
+  { key: "news", label: "소식" },
+  { key: "recruit", label: "채용" },
+  { key: "consultations", label: "상담문의" },
 ];
 
 /* ─── SEO 페이지 목록 ─── */

@@ -19,9 +19,13 @@ import ThemeSection from "./ThemeSection";
 import SeoSection from "./SeoSection";
 import AnnouncementsSection from "./AnnouncementsSection";
 import HistorySection from "./HistorySection";
+import AdminLawyers from "../lawyers";
+import AdminBlog from "../blog";
+import AdminRecruit from "../recruit";
+import AdminBookings from "../bookings";
 
 /** 독립 저장을 관리하는 탭 (하단 저장 바 미표시) */
-const SELF_SAVING_TABS = ["seo", "announcements", "history", "hero-videos"];
+const SELF_SAVING_TABS = ["seo", "announcements", "history", "hero-videos", "partners", "news", "recruit", "consultations"];
 /** 미리보기 가능한 탭 */
 const PREVIEWABLE_TABS = ["home", "about", "practice", "layout"];
 
@@ -65,6 +69,10 @@ export default function AdminSiteManager() {
       case "seo": return <SeoSection toast={toast} setToast={setToast} />;
       case "announcements": return <AnnouncementsSection toast={toast} setToast={setToast} />;
       case "history": return <HistorySection />;
+      case "partners": return <AdminLawyers />;
+      case "news": return <AdminBlog />;
+      case "recruit": return <AdminRecruit />;
+      case "consultations": return <AdminBookings />;
       default: return null;
     }
   };

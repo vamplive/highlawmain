@@ -324,6 +324,7 @@ export default function App() {
           <Route path="contracts/:id" element={<LazyRoute><PortalContractSign /></LazyRoute>} />
           <Route path="blog" element={<LazyRoute><PortalBlog /></LazyRoute>} />
           <Route path="qna" element={<LazyRoute><PortalQna /></LazyRoute>} />
+          <Route path="messages" element={<LazyRoute><AdminMessages /></LazyRoute>} />
           <Route path="reviews" element={<LazyRoute><PortalReviews /></LazyRoute>} />
           <Route path="editor" element={<LazyRoute><EditorPage /></LazyRoute>} />
           <Route path="editor/:id" element={<LazyRoute><EditorPage /></LazyRoute>} />

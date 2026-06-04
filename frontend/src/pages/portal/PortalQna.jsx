@@ -60,7 +60,11 @@ export default function PortalQna() {
 
   async function handleSave(id, updates) {
     try {
-      await api.patch(`/qna/admin/questions/${id}`, updates);
+      if (id === "new") {
+        await api.post("/qna/admin/questions", updates);
+      } else {
+        await api.patch(`/qna/admin/questions/${id}`, updates);
+      }
       setSelected(null);
       await load();
     } catch (e) {
@@ -91,7 +95,26 @@ export default function PortalQna() {
   return (
     <div>
       <ErrorBanner message={error} onDismiss={() => setError(null)} />
-      <PageHeader title="법률 Q&A 관리" />
+      <PageHeader title="법률 Q&A 관리">
+        <button
+          onClick={() => setSelected({
+            id: "new",
+            status: "published",
+            title: "",
+            body: "",
+            categoryId: "",
+            answer: "",
+            answeredBy: "법무법인 하이로",
+            displayName: "관리자",
+            isPrivate: 0,
+            isFeatured: 0,
+            metaDescription: "",
+          })}
+          style={btnStyle(COLORS.primary)}
+        >
+          + 새 Q&A 작성
+        </button>
+      </PageHeader>
 
       {/* 상태 탭 */}
       <div style={{ display: "flex", gap: 8, borderBottom: `1px solid ${COLORS.border}`, marginBottom: 24 }}>
@@ -188,7 +211,11 @@ export default function PortalQna() {
 function QuestionEditor({ question, categories, onSave, onDelete, onCancel }) {
   const [title, setTitle] = useState(question.title || "");
   const [body, setBody] = useState(question.body || "");
-  const [categoryId, setCategoryId] = useState(question.categoryId || "");
+  const [categoryId, setCategoryId] = useState(() => {
+    if (question.categoryId) return question.categoryId;
+    const subcats = categories.filter((c) => c.depth === 2);
+    return subcats.length > 0 ? subcats[0].id : "";
+  });
   const [answer, setAnswer] = useState(question.answer || "");
   const [answeredBy, setAnsweredBy] = useState(question.answeredBy || "법무법인 하이로");
   const [displayName, setDisplayName] = useState(question.displayName || "");
@@ -221,6 +248,7 @@ function QuestionEditor({ question, categories, onSave, onDelete, onCancel }) {
     await onSave(question.id, {
       title, body, categoryId, displayName,
       answer, answeredBy, metaDescription,
+      status: question.status,
     });
     setSaving(false);
   }
@@ -291,9 +319,11 @@ function QuestionEditor({ question, categories, onSave, onDelete, onCancel }) {
 
       {/* 액션 버튼 */}
       <div style={{ display: "flex", gap: 8, justifyContent: "space-between", alignItems: "center", paddingTop: 16, borderTop: `1px solid ${COLORS.border}` }}>
-        <button onClick={() => onDelete(question.id)} disabled={saving} style={smallBtnStyle(COLORS.danger)}>
-          삭제
-        </button>
+        {question.id !== "new" ? (
+          <button onClick={() => onDelete(question.id)} disabled={saving} style={smallBtnStyle(COLORS.danger)}>
+            삭제
+          </button>
+        ) : <div />}
         <div style={{ display: "flex", gap: 8 }}>
           <button onClick={onCancel} disabled={saving} style={{ ...btnStyle(), background: "#fff", color: COLORS.textSecondary, border: `1px solid ${COLORS.border}` }}>취소</button>
           <button onClick={saveOnly} disabled={saving} style={btnStyle(COLORS.textSecondary)}>임시 저장</button>

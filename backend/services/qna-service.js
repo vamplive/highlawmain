@@ -513,6 +513,61 @@ async function adminDeleteQuestion(id) {
   return { deleted: true };
 }
 
+/**
+ * 관리자용 — 새 질문 생성 (직접 승인/답변/상태 포함).
+ */
+async function adminCreateQuestion(data) {
+  const {
+    categoryId, title, body, displayName,
+    answer, answeredBy, status = "published",
+    isPrivate = 0, isFeatured = 0, metaDescription,
+  } = data;
+
+  if (!categoryId || !title?.trim() || !body?.trim()) {
+    throw new ServiceError("카테고리/제목/내용은 필수입니다", 400);
+  }
+
+  const slug = generateQuestionSlug(title);
+  const now = nowTimestamp();
+
+  const [category] = await db.select().from(qnaCategories).where(eq(qnaCategories.id, categoryId));
+  if (!category) {
+    throw new ServiceError("유효하지 않은 카테고리입니다", 400);
+  }
+
+  const insertData = {
+    slug,
+    categoryId,
+    title: safeText(title),
+    body: safeText(body),
+    displayName: safeText(displayName || "관리자"),
+    status: status || "published",
+    isPrivate: isPrivate ? 1 : 0,
+    isFeatured: isFeatured ? 1 : 0,
+    metaDescription: safeText(metaDescription),
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  if (answer?.trim()) {
+    insertData.answer = safeText(answer);
+    insertData.answeredBy = safeText(answeredBy || "법무법인 하이로");
+    insertData.answeredAt = now;
+  }
+
+  if (status === "published") {
+    insertData.publishedAt = now;
+  }
+
+  const [inserted] = await db
+    .insert(qnaQuestions)
+    .values(insertData)
+    .returning();
+
+  return inserted;
+}
+
+
 // =============================================
 // 카테고리 관리 (관리자)
 // =============================================
@@ -592,6 +647,7 @@ module.exports = {
   verifyQuestionPassword,
   // 관리자
   adminListQuestions,
+  adminCreateQuestion,
   adminUpdateQuestion,
   adminDeleteQuestion,
   adminCreateCategory,
