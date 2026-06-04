@@ -95,16 +95,15 @@ export default function Header({ heroTop, isLawyerDetail, menuOpen, onToggleMenu
           {/* Desktop nav */}
           <nav
             className="hidden lg:flex items-center gap-6 xl:gap-12 flex-shrink-0"
+            style={{ position: "relative" }}
             aria-label="주요 메뉴"
             onMouseLeave={() => setIsDropdownOpen(false)}
           >
             {navItems.map((item) => {
               const dropdownItems = NAV_DROPDOWN[item.to];
-              const isOpen = isDropdownOpen;
               return (
                 <div
                   key={item.to}
-                  style={{ position: "relative" }}
                   onMouseEnter={() => {
                     if (dropdownItems) {
                       setIsDropdownOpen(true);
@@ -132,29 +131,45 @@ export default function Header({ heroTop, isLawyerDetail, menuOpen, onToggleMenu
                   >
                     {item.label}
                   </NavLink>
+                </div>
+              );
+            })}
 
-                  {/* 드롭다운 */}
-                  {dropdownItems && isOpen && (
-                    <div
-                      style={{
-                        position: "absolute",
-                        top: "100%",
-                        left: "50%",
-                        transform: "translateX(-50%)",
-                        paddingTop: 12,
-                        zIndex: 100,
-                        animation: "dropdownFadeIn 0.15s ease",
-                      }}
-                    >
+            {/* 통합 대형 직사각형 드롭다운 */}
+            {isDropdownOpen && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "100%",
+                  left: 0,
+                  right: 0,
+                  paddingTop: 12,
+                  zIndex: 100,
+                  animation: "fadeIn 0.15s ease",
+                }}
+              >
+                <div
+                  style={{
+                    background: heroTop ? "rgba(10,20,38,0.96)" : "#fff",
+                    border: heroTop ? "1px solid rgba(201,168,76,0.2)" : "1px solid #e8eaed",
+                    borderRadius: 8,
+                    boxShadow: "0 8px 28px rgba(0,0,0,0.15)",
+                    backdropFilter: "blur(12px)",
+                    padding: "20px 24px",
+                    display: "grid",
+                    gridTemplateColumns: "repeat(6, 1fr)",
+                    gap: 16,
+                  }}
+                >
+                  {navItems.map((item) => {
+                    const dropdownItems = NAV_DROPDOWN[item.to] || [];
+                    return (
                       <div
+                        key={item.to}
                         style={{
-                          minWidth: 115,
-                          background: heroTop ? "rgba(10,20,38,0.96)" : "#fff",
-                          border: heroTop ? "1px solid rgba(201,168,76,0.2)" : "1px solid #e8eaed",
-                          borderRadius: 8,
-                          boxShadow: "0 8px 28px rgba(0,0,0,0.14)",
-                          backdropFilter: "blur(12px)",
-                          overflow: "hidden",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 6, // 상하 일관된 간격
                         }}
                       >
                         {dropdownItems.map((sub) => (
@@ -164,14 +179,13 @@ export default function Header({ heroTop, isLawyerDetail, menuOpen, onToggleMenu
                             onClick={() => setIsDropdownOpen(false)}
                             style={{
                               display: "block",
-                              padding: "10px 12px",
+                              padding: "6px 8px", // 좌우 상하 일관된 여백
+                              borderRadius: 4,
                               fontSize: 11,
                               fontFamily: "Pretendard, 'Noto Sans KR', sans-serif",
                               letterSpacing: "0.04em",
                               color: heroTop ? "rgba(255,255,255,0.80)" : "var(--text-secondary)",
                               textDecoration: "none",
-                              whiteSpace: "nowrap",
-                              borderBottom: "1px solid " + (heroTop ? "rgba(255,255,255,0.06)" : "#f4f4f4"),
                               transition: "background 0.15s, color 0.15s",
                             }}
                             onMouseEnter={(e) => {
@@ -187,11 +201,11 @@ export default function Header({ heroTop, isLawyerDetail, menuOpen, onToggleMenu
                           </Link>
                         ))}
                       </div>
-                    </div>
-                  )}
+                    );
+                  })}
                 </div>
-              );
-            })}
+              </div>
+            )}
           </nav>
 
         </div>
