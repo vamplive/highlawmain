@@ -212,6 +212,7 @@ async function listPortalUsers(query) {
       clientId: portalUsers.clientId,
       clientName: clients.name,
       clientPhone: clients.phone,
+      role: portalUsers.role,
     })
     .from(portalUsers)
     .leftJoin(clients, eq(portalUsers.clientId, clients.id))
@@ -242,6 +243,7 @@ async function getPortalUser(id) {
       clientId: portalUsers.clientId,
       clientName: clients.name,
       clientPhone: clients.phone,
+      role: portalUsers.role,
     })
     .from(portalUsers)
     .leftJoin(clients, eq(portalUsers.clientId, clients.id))
@@ -294,6 +296,28 @@ async function deletePortalUser(id) {
   if (!existing) throw new ServiceError("사용자를 찾을 수 없습니다", 404);
   await db.delete(portalUsers).where(eq(portalUsers.id, id));
   return { deleted: true };
+}
+
+/**
+ * 관리자: 포털 사용자 정보 및 역할 업데이트
+ */
+async function updatePortalUser(id, data) {
+  validateUUID(id);
+  const [existing] = await db.select().from(portalUsers).where(eq(portalUsers.id, id));
+  if (!existing) throw new ServiceError("사용자를 찾을 수 없습니다", 404);
+
+  const updates = { updatedAt: sql`(datetime('now'))` };
+  if ("role" in data) {
+    updates.role = data.role || null;
+  }
+
+  const [updated] = await db
+    .update(portalUsers)
+    .set(updates)
+    .where(eq(portalUsers.id, id))
+    .returning();
+
+  return updated;
 }
 
 // =============================================
@@ -1389,6 +1413,7 @@ module.exports = {
   approvePortalUser,
   rejectPortalUser,
   deletePortalUser,
+  updatePortalUser,
   // 사건
   getUserCases,
   registerPortalCase,

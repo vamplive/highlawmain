@@ -1,4 +1,5 @@
 /** 관리자 변호사 관리 — CRUD + 학력/경력/논문 등 항목별 행 단위 편집. */
+import { useState } from "react";
 import useCrudForm from "../../../hooks/useCrudForm";
 import { api } from "../../../utils/api";
 import {
@@ -129,11 +130,14 @@ const CASE_FIELDS = [
 ];
 
 export default function AdminLawyers() {
+  const [activeTab, setActiveTab] = useState("대표변호사");
   const crud = useCrudForm("/lawyers", EMPTY_FORM, {
     queryParams: "?all=true",
     mapToForm: mapRowToForm,
     validate: (form) => !form.name.trim() ? "이름을 입력해주세요" : null,
   });
+
+  const filteredItems = crud.items.filter((item) => item.position === activeTab);
 
   // 배열 필드를 JSON 문자열로 직렬화 후 직접 API 호출 — useCrudForm.save 는 form 상태 closure 를 사용하므로 우회
   const save = async () => {
@@ -159,10 +163,10 @@ export default function AdminLawyers() {
   // 단순 파생값 헬퍼
   const setArr = (key) => (next) => crud.setField(key, next);
 
-  const moveUp = async (index) => {
-    if (index === 0) return;
-    const current = crud.items[index];
-    const prev = crud.items[index - 1];
+  const moveUp = async (filteredIndex) => {
+    if (filteredIndex === 0) return;
+    const current = filteredItems[filteredIndex];
+    const prev = filteredItems[filteredIndex - 1];
     const currentOrder = current.sortOrder;
     const prevOrder = prev.sortOrder;
 
@@ -177,10 +181,10 @@ export default function AdminLawyers() {
     }
   };
 
-  const moveDown = async (index) => {
-    if (index === crud.items.length - 1) return;
-    const current = crud.items[index];
-    const next = crud.items[index + 1];
+  const moveDown = async (filteredIndex) => {
+    if (filteredIndex === filteredItems.length - 1) return;
+    const current = filteredItems[filteredIndex];
+    const next = filteredItems[filteredIndex + 1];
     const currentOrder = current.sortOrder;
     const nextOrder = next.sortOrder;
 
@@ -199,10 +203,32 @@ export default function AdminLawyers() {
     <div>
       <ErrorBanner message={crud.error} onDismiss={crud.clearError} />
       <PageHeader
-        title="변호사 관리"
-        onAdd={() => crud.openNew({ sortOrder: crud.items.length })}
-        addLabel="+ 변호사 등록"
+        title="구성원 관리"
+        onAdd={() => crud.openNew({ position: activeTab, sortOrder: crud.items.length })}
+        addLabel={`+ ${activeTab} 등록`}
       />
+
+      {/* 구성원 유형 탭 */}
+      <div style={{ display: "flex", gap: 0, borderBottom: `2px solid ${COLORS.borderLight}`, marginBottom: 20 }}>
+        {POSITIONS.map((p) => {
+          const isActive = activeTab === p;
+          return (
+            <button
+              key={p}
+              onClick={() => { setActiveTab(p); }}
+              style={{
+                padding: "10px 22px", fontSize: 13, fontWeight: isActive ? 600 : 400,
+                color: isActive ? COLORS.accent : COLORS.textSecondary,
+                background: "none", border: "none", cursor: "pointer",
+                borderBottom: isActive ? `2px solid ${COLORS.accent}` : "2px solid transparent",
+                marginBottom: -2, whiteSpace: "nowrap", transition: "all 0.15s",
+              }}
+            >
+              {p}
+            </button>
+          );
+        })}
+      </div>
 
       {/* ── 편집 폼 ── */}
       {crud.isEditing && (
@@ -277,16 +303,16 @@ export default function AdminLawyers() {
       {/* ── 변호사 목록 ── */}
       {crud.loading ? (
         <p style={{ color: COLORS.muted, fontSize: 14 }}>로딩 중...</p>
-      ) : crud.items.length === 0 ? (
-        <EmptyState icon="⚖️" message="등록된 변호사가 없습니다" />
+      ) : filteredItems.length === 0 ? (
+        <EmptyState icon="⚖️" message={`등록된 ${activeTab}가 없습니다`} />
       ) : (
         <div className="space-y-3">
-          {crud.items.map((lawyer, index) => (
+          {filteredItems.map((lawyer, index) => (
             <LawyerCard
               key={lawyer.id}
               lawyer={lawyer}
               index={index}
-              totalItems={crud.items.length}
+              totalItems={filteredItems.length}
               onEdit={() => crud.openEdit(lawyer)}
               onRemove={() => crud.remove(lawyer.id)}
               onToggleActive={() => crud.patchItem(lawyer.id, { isActive: lawyer.isActive ? 0 : 1 })}

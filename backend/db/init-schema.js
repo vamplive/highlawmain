@@ -449,6 +449,7 @@ module.exports = {
       email TEXT NOT NULL,
       password_hash TEXT NOT NULL,
       is_active INTEGER NOT NULL DEFAULT 1,
+      role TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
@@ -1496,6 +1497,7 @@ module.exports = {
   try { sqlite.exec("ALTER TABLE portal_users ADD COLUMN google_access_token TEXT"); } catch (e) { warnMigrationSkip(e); }
   try { sqlite.exec("ALTER TABLE portal_users ADD COLUMN google_refresh_token TEXT"); } catch (e) { warnMigrationSkip(e); }
   try { sqlite.exec("ALTER TABLE portal_users ADD COLUMN google_token_expires_at INTEGER"); } catch (e) { warnMigrationSkip(e); }
+  try { sqlite.exec("ALTER TABLE portal_users ADD COLUMN role TEXT"); } catch (e) { warnMigrationSkip(e); }
 
   // portal_time_entries — 포털 사용자(직원/변호사)의 사건별 시간 기록
   // time_entries(변호사 ERP용)와 별도로 관리하여 포털 자기서비스 방식을 지원한다.

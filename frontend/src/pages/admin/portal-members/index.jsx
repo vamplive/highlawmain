@@ -7,9 +7,10 @@ import { useState, useEffect } from "react";
 import { api } from "../../../utils/api";
 
 const ROLES = [
-  { key: "lawyer",   label: "변호사",   desc: "변호사 자격을 보유한 구성원" },
-  { key: "staff",    label: "직원",     desc: "사무직 및 일반 직원" },
-  { key: "expert",   label: "전문위원", desc: "외부 전문위원 및 고문" },
+  { key: "대표변호사", label: "대표변호사", desc: "법무법인을 대표하는 변호사" },
+  { key: "변호사",     label: "변호사",     desc: "소속 변호사 및 파트너 변호사" },
+  { key: "전문위원",   label: "전문위원",   desc: "외부 전문위원 및 고문" },
+  { key: "직원",       label: "직원",       desc: "일반 직원 및 사무국 구성원" },
 ];
 
 const S = {
@@ -22,7 +23,7 @@ const S = {
 };
 
 export default function AdminPortalMembers() {
-  const [tab, setTab] = useState("lawyer");
+  const [tab, setTab] = useState("대표변호사");
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(null);
@@ -40,6 +41,13 @@ export default function AdminPortalMembers() {
       setLoading(false);
     }
   };
+
+  const filteredMembers = members.filter((m) => !m.role || m.role === tab);
+  const sortedMembers = [...filteredMembers].sort((a, b) => {
+    const aUnassigned = !a.role ? 1 : 0;
+    const bUnassigned = !b.role ? 1 : 0;
+    return bUnassigned - aUnassigned;
+  });
 
   const setRole = async (userId, role) => {
     setSaving(userId);
@@ -97,24 +105,24 @@ export default function AdminPortalMembers() {
               </tr>
             </thead>
             <tbody>
-              {members.length === 0 ? (
+              {sortedMembers.length === 0 ? (
                 <tr>
                   <td colSpan={5} style={{ padding: 40, textAlign: "center", color: S.textMuted }}>
                     구성원이 없습니다
                   </td>
                 </tr>
-              ) : members.map((m, i) => (
-                <tr key={m.id} style={{ borderBottom: i < members.length - 1 ? `1px solid ${S.border}` : "none" }}>
+              ) : sortedMembers.map((m, i) => (
+                <tr key={m.id} style={{ borderBottom: i < sortedMembers.length - 1 ? `1px solid ${S.border}` : "none" }}>
                   <td style={{ padding: "12px 16px", fontWeight: 500 }}>{m.clientName || "-"}</td>
                   <td style={{ padding: "12px 16px", color: S.textSec }}>{m.email}</td>
                   <td style={{ padding: "12px 16px", color: S.textSec }}>{m.clientPhone || "-"}</td>
                   <td style={{ padding: "12px 16px" }}>
-                    <span style={{ padding: "3px 10px", borderRadius: 10, fontSize: 11, fontWeight: 600, background: "#f0f4ff", color: "#3b4db8" }}>
+                    <span style={{ padding: "3px 10px", borderRadius: 10, fontSize: 11, fontWeight: 600, background: m.role ? "#f0f4ff" : "#fffbeb", color: m.role ? "#3b4db8" : "#d97706" }}>
                       {m.role || "미지정"}
                     </span>
                   </td>
                   <td style={{ padding: "12px 16px" }}>
-                    <div style={{ display: "flex", gap: 6 }}>
+                    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                       {ROLES.map(r => (
                         <button
                           key={r.key}
@@ -131,6 +139,21 @@ export default function AdminPortalMembers() {
                           {r.label}
                         </button>
                       ))}
+                      {m.role && (
+                        <button
+                          onClick={() => setRole(m.id, null)}
+                          disabled={saving === m.id}
+                          style={{
+                            padding: "4px 10px", fontSize: 11, fontWeight: 600,
+                            border: "1px solid #fee2e2",
+                            background: "transparent",
+                            color: "#ef4444",
+                            borderRadius: 4, cursor: "pointer",
+                          }}
+                        >
+                          지정 해제
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

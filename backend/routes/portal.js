@@ -426,6 +426,16 @@ router.delete("/admin/users/:id", adminAuth, async (req, res) => {
   }
 });
 
+/** PATCH /api/portal/admin/users/:id — 역할 및 정보 수정 */
+router.patch("/admin/users/:id", adminAuth, async (req, res) => {
+  try {
+    const result = await portalService.updatePortalUser(req.params.id, req.body);
+    res.json({ data: result, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
 // =============================================
 // 관리자 엔드포인트 — 사건 관리
 // =============================================

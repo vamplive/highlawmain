@@ -591,6 +591,7 @@ const portalUsers = sqliteTable("portal_users", {
   email: text("email").notNull(),
   passwordHash: text("password_hash").notNull(),
   isActive: integer("is_active").notNull().default(0),
+  role: text("role"),
   // 구글 캘린더 OAuth2 토큰 (포털 사용자 개인 캘린더 연동)
   googleAccessToken: text("google_access_token"),
   googleRefreshToken: text("google_refresh_token"),

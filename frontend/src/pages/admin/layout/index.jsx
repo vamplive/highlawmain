@@ -88,15 +88,7 @@ const MENU_TREE = [
       { to: "/admin/lectures", label: "강의" },
     ],
   },
-  {
-    id: "talent-profiles",
-    label: "인재 및 프로필",
-    icon: "users",
-    children: [
-      { to: "/admin/lawyers", label: "변호사 프로필" },
-      { to: "/admin/recruit", label: "채용 공고" },
-    ],
-  },
+
 
   // ── 포털(인트라넷) 관련 ───────────────────────────────
   {
