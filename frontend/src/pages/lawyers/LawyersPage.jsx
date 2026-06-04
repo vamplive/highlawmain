@@ -123,9 +123,19 @@ export default function LawyersPage() {
       />
 
       {/* ==================== 탭 컨트롤 ==================== */}
-      <div style={{ background: "#fff", paddingTop: 40, paddingBottom: 10, borderBottom: "1px solid var(--border-color)" }}>
-        <div className="container" style={{ maxWidth: 1040, display: "flex", justifyContent: "center" }}>
-          <div className="flex gap-4 md:gap-8" style={{ marginBottom: -1 }}>
+      <div style={{ background: "#fff", paddingTop: 48, paddingBottom: 0 }}>
+        <div className="container" style={{ maxWidth: 1000 }}>
+          <div
+            role="tablist"
+            aria-label="구성원 섹션 선택"
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              gap: "12px",
+              flexWrap: "wrap",
+              marginBottom: 40
+            }}
+          >
             {[
               { id: "lawyer", label: "변호사" },
               { id: "advisor", label: "전문위원" },
@@ -137,17 +147,25 @@ export default function LawyersPage() {
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   style={{
-                    background: "none",
-                    border: "none",
-                    padding: "12px 24px",
-                    cursor: "pointer",
-                    fontSize: 15,
+                    padding: "10px 24px",
+                    minHeight: 44,
+                    fontSize: 13,
                     fontWeight: isActive ? 600 : 400,
-                    color: isActive ? "var(--accent-gold)" : "var(--text-muted)",
-                    borderBottom: isActive ? "2px solid var(--accent-gold)" : "2px solid transparent",
+                    border: "1px solid",
+                    borderColor: isActive ? "var(--accent-gold)" : "rgba(0,0,0,0.12)",
+                    borderRadius: 24,
+                    background: isActive ? "var(--accent-gold)" : "transparent",
+                    color: isActive ? "#fff" : "var(--gray-500)",
+                    cursor: "pointer",
                     transition: "all 0.3s ease",
                     letterSpacing: "0.05em",
+                    fontFamily: "inherit",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
                   }}
+                  aria-selected={isActive}
+                  role="tab"
                 >
                   {tab.label}
                 </button>
