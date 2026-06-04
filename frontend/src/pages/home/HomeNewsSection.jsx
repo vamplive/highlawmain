@@ -102,8 +102,10 @@ export default function HomeNewsSection() {
                 display: "flex",
                 flexDirection: "column",
                 justifyContent: "space-between",
-                padding: "40px 36px",
-                background: "#ede8de",
+                padding: "32px 28px",
+                background: "linear-gradient(rgba(237, 232, 222, 0.82), rgba(237, 232, 222, 0.82)), url(/brand/kakao-cta-bg.png)",
+                backgroundSize: "cover",
+                backgroundPosition: "center",
                 borderRadius: 12,
                 textDecoration: "none",
                 transition: "transform 0.2s ease, box-shadow 0.2s ease",
@@ -116,19 +118,19 @@ export default function HomeNewsSection() {
                 <p style={{ fontSize: 11, letterSpacing: "0.24em", color: "#8a7550", marginBottom: 14, textTransform: "uppercase", fontWeight: 600 }}>
                   QUICK CONTACT
                 </p>
-                <h3 style={{ fontSize: 26, fontWeight: 700, color: "#111", marginBottom: 10, letterSpacing: "-0.02em", lineHeight: 1.2 }}>
+                <h3 style={{ fontSize: 24, fontWeight: 700, color: "#111", marginBottom: 10, letterSpacing: "-0.02em", lineHeight: 1.2 }}>
                   카카오톡 상담
                 </h3>
-                <p style={{ fontSize: 15, color: "#555", fontWeight: 300, lineHeight: 1.7 }}>
+                <p style={{ fontSize: 14, color: "#555", fontWeight: 300, lineHeight: 1.6 }}>
                   카카오톡으로 빠른 답변을 받아 보세요
                 </p>
               </div>
-              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 28 }}>
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
                 <span style={{
-                  width: 40, height: 40, borderRadius: "50%",
+                  width: 36, height: 36, borderRadius: "50%",
                   background: "rgba(138,117,80,0.15)",
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 18, color: "#8a7550",
+                  fontSize: 16, color: "#8a7550",
                 }}>→</span>
               </div>
             </a>
@@ -141,8 +143,10 @@ export default function HomeNewsSection() {
                 display: "flex",
                 flexDirection: "column",
                 justifyContent: "space-between",
-                padding: "40px 36px",
-                background: "linear-gradient(150deg, #0b1f3a 0%, #1a3a6b 100%)",
+                padding: "32px 28px",
+                background: "linear-gradient(150deg, rgba(11, 31, 58, 0.88) 0%, rgba(26, 58, 107, 0.88) 100%), url(/brand/consult-cta-bg.png)",
+                backgroundSize: "cover",
+                backgroundPosition: "center",
                 borderRadius: 12,
                 textDecoration: "none",
                 transition: "transform 0.2s ease, box-shadow 0.2s ease",
@@ -155,19 +159,19 @@ export default function HomeNewsSection() {
                 <p style={{ fontSize: 11, letterSpacing: "0.24em", color: "rgba(201,168,76,0.75)", marginBottom: 14, textTransform: "uppercase", fontWeight: 600 }}>
                   1:1 LEGAL CONSULTATION
                 </p>
-                <h3 style={{ fontSize: 26, fontWeight: 700, color: "#fff", marginBottom: 10, letterSpacing: "-0.02em", lineHeight: 1.2 }}>
+                <h3 style={{ fontSize: 24, fontWeight: 700, color: "#fff", marginBottom: 10, letterSpacing: "-0.02em", lineHeight: 1.2 }}>
                   상담 신청
                 </h3>
-                <p style={{ fontSize: 15, color: "rgba(255,255,255,0.58)", fontWeight: 300, lineHeight: 1.7 }}>
+                <p style={{ fontSize: 14, color: "rgba(255,255,255,0.58)", fontWeight: 300, lineHeight: 1.6 }}>
                   1:1 맞춤 법률 상담을 신청하세요
                 </p>
               </div>
-              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 28 }}>
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
                 <span style={{
-                  width: 40, height: 40, borderRadius: "50%",
+                  width: 36, height: 36, borderRadius: "50%",
                   background: "rgba(201,168,76,0.18)",
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 18, color: "var(--accent-gold)",
+                  fontSize: 16, color: "var(--accent-gold)",
                 }}>→</span>
               </div>
             </Link>
@@ -233,13 +237,13 @@ export default function HomeNewsSection() {
                       display: "flex",
                       alignItems: "center",
                       gap: 16,
-                      padding: "16px 10px",
+                      padding: "11px 10px",
                       borderBottom: idx < filteredPosts.length - 1 ? "1px solid #f0f0f4" : "none",
                       textDecoration: "none",
                       borderRadius: 4,
                       transition: "background 0.15s, padding-left 0.15s",
                     }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = "#fafbfc"; e.currentTarget.style.paddingLeft = "18px"; }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = "#fafbfc"; e.currentTarget.style.paddingLeft = "16px"; }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.paddingLeft = "10px"; }}
                   >
                     {/* 날짜 */}
@@ -251,7 +255,7 @@ export default function HomeNewsSection() {
                     {/* 제목 */}
                     <span
                       style={{
-                        fontSize: 16,
+                        fontSize: 15.5,
                         color: "#1a1a2e",
                         lineHeight: 1.45,
                         fontWeight: 400,

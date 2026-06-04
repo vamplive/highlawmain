@@ -86,12 +86,9 @@ export default function Header({ heroTop, isLawyerDetail, menuOpen, onToggleMenu
               >
                 HIGHLAW LAW FIRM
               </span>
-              {/* Mobile brand title: stacked */}
               <span
-                className="inline-flex lg:hidden font-serif"
+                className="flex lg:hidden font-serif flex-col"
                 style={{
-                  display: "flex",
-                  flexDirection: "column",
                   fontSize: 15,
                   letterSpacing: "0.18em",
                   color: heroTop ? "#ffffff" : "var(--text-primary)",

@@ -39,10 +39,8 @@ export default function HomePeopleSection({ copy, settings }) {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // 모바일인 경우 전문위원과 직원은 제외하고 변호사만 노출
-  const onlyLawyers = isMobile
-    ? lawyerList.filter((l) => l.position === "대표변호사" || l.position === "변호사")
-    : lawyerList;
+  // 대표변호사 및 변호사만 노출 (전문위원, 직원은 제외)
+  const onlyLawyers = lawyerList.filter((l) => l.position === "대표변호사" || l.position === "변호사");
 
   // 무한 루프 슬라이더를 위한 클론 생성
   const slides = onlyLawyers.length > 1
