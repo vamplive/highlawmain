@@ -6,7 +6,7 @@ import LogoCanvas from "./LogoCanvas";
 import { NAV_DROPDOWN } from "./layoutConfig";
 
 export default function Header({ heroTop, isLawyerDetail, menuOpen, onToggleMenu, navItems, lang }) {
-  const [openDropdown, setOpenDropdown] = useState(null);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
 
   return (
@@ -27,8 +27,8 @@ export default function Header({ heroTop, isLawyerDetail, menuOpen, onToggleMenu
           </div>
           <div className="hidden md:flex gap-6 items-center" style={{ fontSize: 9, color: heroTop ? "var(--white-40)" : "var(--text-muted)", transition: "color 0.5s ease" }}>
             <button onClick={() => setLanguage(lang === "ko" ? "en" : "ko")}
-              style={{ background: "none", border: "none", cursor: "pointer", color: "inherit", fontSize: 9, letterSpacing: "0.15em", padding: 0 }}
-              aria-label="언어 전환 (한국어/English)">
+               style={{ background: "none", border: "none", cursor: "pointer", color: "inherit", fontSize: 9, letterSpacing: "0.15em", padding: 0 }}
+               aria-label="언어 전환 (한국어/English)">
               한/EN
             </button>
           </div>
@@ -93,16 +93,23 @@ export default function Header({ heroTop, isLawyerDetail, menuOpen, onToggleMenu
           </Link>
 
           {/* Desktop nav */}
-          <nav className="hidden lg:flex items-center gap-8 flex-shrink-0" aria-label="주요 메뉴">
+          <nav
+            className="hidden lg:flex items-center gap-8 flex-shrink-0"
+            aria-label="주요 메뉴"
+            onMouseLeave={() => setIsDropdownOpen(false)}
+          >
             {navItems.map((item) => {
               const dropdownItems = NAV_DROPDOWN[item.to];
-              const isOpen = openDropdown === item.to;
+              const isOpen = isDropdownOpen;
               return (
                 <div
                   key={item.to}
                   style={{ position: "relative" }}
-                  onMouseEnter={() => setOpenDropdown(item.to)}
-                  onMouseLeave={() => setOpenDropdown(null)}
+                  onMouseEnter={() => {
+                    if (dropdownItems) {
+                      setIsDropdownOpen(true);
+                    }
+                  }}
                 >
                   <NavLink
                     to={item.to}
@@ -131,49 +138,55 @@ export default function Header({ heroTop, isLawyerDetail, menuOpen, onToggleMenu
                     <div
                       style={{
                         position: "absolute",
-                        top: "calc(100% + 12px)",
+                        top: "100%",
                         left: "50%",
                         transform: "translateX(-50%)",
-                        minWidth: 140,
-                        background: heroTop ? "rgba(10,20,38,0.96)" : "#fff",
-                        border: heroTop ? "1px solid rgba(201,168,76,0.2)" : "1px solid #e8eaed",
-                        borderRadius: 8,
-                        boxShadow: "0 8px 28px rgba(0,0,0,0.14)",
-                        backdropFilter: "blur(12px)",
+                        paddingTop: 12,
                         zIndex: 100,
-                        overflow: "hidden",
                         animation: "dropdownFadeIn 0.15s ease",
                       }}
                     >
-                      {dropdownItems.map((sub) => (
-                        <Link
-                          key={sub.to}
-                          to={sub.to}
-                          onClick={() => setOpenDropdown(null)}
-                          style={{
-                            display: "block",
-                            padding: "10px 18px",
-                            fontSize: 12,
-                            fontFamily: "Pretendard, 'Noto Sans KR', sans-serif",
-                            letterSpacing: "0.04em",
-                            color: heroTop ? "rgba(255,255,255,0.80)" : "var(--text-secondary)",
-                            textDecoration: "none",
-                            whiteSpace: "nowrap",
-                            borderBottom: "1px solid " + (heroTop ? "rgba(255,255,255,0.06)" : "#f4f4f4"),
-                            transition: "background 0.15s, color 0.15s",
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.background = heroTop ? "rgba(201,168,76,0.12)" : "#fdf6e8";
-                            e.currentTarget.style.color = heroTop ? "#DEC584" : "var(--accent-gold)";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.background = "transparent";
-                            e.currentTarget.style.color = heroTop ? "rgba(255,255,255,0.80)" : "var(--text-secondary)";
-                          }}
-                        >
-                          {sub.label}
-                        </Link>
-                      ))}
+                      <div
+                        style={{
+                          minWidth: 140,
+                          background: heroTop ? "rgba(10,20,38,0.96)" : "#fff",
+                          border: heroTop ? "1px solid rgba(201,168,76,0.2)" : "1px solid #e8eaed",
+                          borderRadius: 8,
+                          boxShadow: "0 8px 28px rgba(0,0,0,0.14)",
+                          backdropFilter: "blur(12px)",
+                          overflow: "hidden",
+                        }}
+                      >
+                        {dropdownItems.map((sub) => (
+                          <Link
+                            key={sub.to}
+                            to={sub.to}
+                            onClick={() => setIsDropdownOpen(false)}
+                            style={{
+                              display: "block",
+                              padding: "10px 18px",
+                              fontSize: 12,
+                              fontFamily: "Pretendard, 'Noto Sans KR', sans-serif",
+                              letterSpacing: "0.04em",
+                              color: heroTop ? "rgba(255,255,255,0.80)" : "var(--text-secondary)",
+                              textDecoration: "none",
+                              whiteSpace: "nowrap",
+                              borderBottom: "1px solid " + (heroTop ? "rgba(255,255,255,0.06)" : "#f4f4f4"),
+                              transition: "background 0.15s, color 0.15s",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = heroTop ? "rgba(201,168,76,0.12)" : "#fdf6e8";
+                              e.currentTarget.style.color = heroTop ? "#DEC584" : "var(--accent-gold)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = "transparent";
+                              e.currentTarget.style.color = heroTop ? "rgba(255,255,255,0.80)" : "var(--text-secondary)";
+                            }}
+                          >
+                            {sub.label}
+                          </Link>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
