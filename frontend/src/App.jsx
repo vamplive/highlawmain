@@ -85,6 +85,9 @@ const AdminLawyerRevenue = lazy(() => import("./pages/admin/lawyer-revenue"));
 const AdminArAging = lazy(() => import("./pages/admin/ar-aging"));
 const AdminRecruit = lazy(() => import("./pages/admin/recruit"));
 const AdminPortalUsers = lazy(() => import("./pages/admin/portal-users"));
+const AdminPortalMembers = lazy(() => import("./pages/admin/portal-members"));
+const AdminPortalBoardAdmin = lazy(() => import("./pages/admin/portal-board-admin"));
+const AdminPortalTimeOverview = lazy(() => import("./pages/admin/portal-time-overview"));
 const AdminChatbot = lazy(() => import("./pages/admin/chatbot"));
 
 /* ── 로그인/포털 진입 청크: 지연 로딩 ── */
@@ -231,6 +234,9 @@ function AdminArea() {
           <Route path="ar-aging" element={<LazyRoute><AdminArAging /></LazyRoute>} />
           <Route path="recruit" element={<LazyRoute><AdminRecruit /></LazyRoute>} />
           <Route path="portal-users" element={<LazyRoute><AdminPortalUsers /></LazyRoute>} />
+          <Route path="portal-members" element={<LazyRoute><AdminPortalMembers /></LazyRoute>} />
+          <Route path="portal-board-admin" element={<LazyRoute><AdminPortalBoardAdmin /></LazyRoute>} />
+          <Route path="portal-time-overview" element={<LazyRoute><AdminPortalTimeOverview /></LazyRoute>} />
         </Routes>
       </AdminLayout>
     </LazyRoute>
@@ -301,6 +307,8 @@ export default function App() {
 
         {/* 포털 — 지연 로딩 */}
         <Route path="/portal" element={<ErrorBoundary><LazyRoute><PortalLayout /></LazyRoute></ErrorBoundary>}>
+          {/* 포털 홈 → 일정 캘린더 */}
+          <Route index element={<Navigate to="/portal/calendar" replace />} />
           {/* /portal/login → /login 으로 통합 (기존 링크 북마크 호환) */}
           <Route path="login" element={<Navigate to="/login" replace />} />
           <Route path="register" element={<Navigate to="/login" replace />} />

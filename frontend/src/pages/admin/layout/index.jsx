@@ -33,12 +33,12 @@ const THEME = {
 
 /**
  * 2단계 트리 내비게이션
- * - 상위 8항목으로 1차 클릭 표면을 줄임 (기존 21 → 8)
- * - 하위 항목은 그룹 클릭 시 인라인으로 펼쳐지며 라우트는 기존 그대로 유지
- * - 단일 라우트 그룹(대시보드·메시지)은 children 없이 상위만 사용
+ * ─ 홈페이지(사이트) 관련 기능과 포털(인트라넷) 관련 기능을 명확히 분리
  */
 const MENU_TREE = [
   { id: "dashboard", to: "/admin", label: "대시보드", icon: "grid", end: true },
+
+  // ── 사건·고객 업무 ──────────────────────────────────
   {
     id: "casework",
     label: "사건관리",
@@ -65,44 +65,37 @@ const MENU_TREE = [
     ],
   },
   { id: "messages", to: "/admin/messages", label: "메시지", icon: "mail" },
+
+  // ── 홈페이지 관련 ────────────────────────────────────
   {
-    id: "content",
-    label: "콘텐츠",
-    icon: "edit",
+    id: "homepage",
+    label: "홈페이지",
+    icon: "globe",
     children: [
-      { to: "/admin/blog", label: "블로그" },
+      { to: "/admin/site-manager", label: "홈 편집" },
+      { to: "/admin/blog", label: "블로그·뉴스" },
       { to: "/admin/inquiry", label: "법률 Q&A" },
-      { to: "/admin/chatbot", label: "상담도우미 챗봇" },
+      { to: "/admin/chatbot", label: "상담 챗봇" },
       { to: "/admin/reviews", label: "후기" },
       { to: "/admin/lectures", label: "강의" },
-    ],
-  },
-  {
-    id: "library",
-    label: "자료실",
-    icon: "image",
-    children: [
-      { to: "/admin/documents", label: "문서" },
+      { to: "/admin/lawyers", label: "변호사 프로필" },
+      { to: "/admin/recruit", label: "채용 공고" },
+      { to: "/admin/documents", label: "자료실·문서" },
       { to: "/admin/media", label: "미디어" },
       { to: "/admin/editor", label: "에디터" },
     ],
   },
-  {
-    id: "site",
-    label: "사이트",
-    icon: "globe",
-    children: [
-      { to: "/admin/site-manager", label: "홈페이지" },
-      { to: "/admin/lawyers", label: "변호사" },
-      { to: "/admin/recruit", label: "채용 공고" },
-    ],
-  },
+
+  // ── 포털(인트라넷) 관련 ───────────────────────────────
   {
     id: "portal",
     label: "포털 관리",
     icon: "users",
     children: [
-      { to: "/admin/portal-users", label: "회원 관리" },
+      { to: "/admin/portal-users", label: "회원 승인" },
+      { to: "/admin/portal-members", label: "구성원 관리" },
+      { to: "/admin/portal-board-admin", label: "게시판 관리" },
+      { to: "/admin/portal-time-overview", label: "업무시간 현황" },
     ],
   },
   {

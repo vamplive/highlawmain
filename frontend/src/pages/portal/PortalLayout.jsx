@@ -1,4 +1,4 @@
-/** 포털 레이아웃 -- NAVER Works 스타일의 전사 인트라넷 레이아웃 */
+﻿/** 포털 레이아웃 -- NAVER Works 스타일의 전사 인트라넷 레이아웃 */
 import { useEffect, useState } from "react";
 import { Outlet, Navigate, useNavigate, Link, useLocation } from "react-router-dom";
 import { portalApi } from "../../utils/api";
@@ -133,9 +133,9 @@ export default function PortalLayout() {
         {/* 오른쪽 퀵 메뉴 및 아바타 */}
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <Link 
-            to="/portal/dashboard" 
-            style={{ padding: 8, borderRadius: 8, color: location.pathname === "/portal/dashboard" ? "#8b5cf6" : "#64748b", transition: "background 0.2s", display: "flex" }}
-            title="사건 목록"
+            to="/portal/calendar" 
+            style={{ padding: 8, borderRadius: 8, color: location.pathname === "/portal/calendar" ? "#8b5cf6" : "#64748b", transition: "background 0.2s", display: "flex" }}
+            title="일정 캘린더"
           >
             <Home size={20} />
           </Link>
@@ -147,8 +147,8 @@ export default function PortalLayout() {
             <FileText size={20} />
           </Link>
           <Link 
-            to="/portal/calendar" 
-            style={{ padding: 8, borderRadius: 8, color: location.pathname === "/portal/calendar" ? "#8b5cf6" : "#64748b", transition: "background 0.2s", display: "flex" }}
+            to="/portal/dashboard" 
+            style={{ padding: 8, borderRadius: 8, color: location.pathname === "/portal/dashboard" ? "#8b5cf6" : "#64748b", transition: "background 0.2s", display: "flex" }}
             title="캘린더 일정"
           >
             <Calendar size={20} />
@@ -218,21 +218,6 @@ export default function PortalLayout() {
             </div>
             
             <Link
-              to="/portal/dashboard"
-              style={{
-                display: "flex", alignItems: "center", gap: 10, padding: "8px 12px",
-                borderRadius: 6, textDecoration: "none", fontSize: 13,
-                color: location.pathname === "/portal/dashboard" ? "#7c3aed" : "#334155",
-                background: location.pathname === "/portal/dashboard" ? "#f5f3ff" : "transparent",
-                fontWeight: location.pathname === "/portal/dashboard" ? 600 : 500,
-                transition: "background 0.15s", marginBottom: 2
-              }}
-            >
-              <Home size={16} />
-              사건 목록 (홈)
-            </Link>
-
-            <Link
               to="/portal/calendar"
               style={{
                 display: "flex", alignItems: "center", gap: 10, padding: "8px 12px",
@@ -243,8 +228,23 @@ export default function PortalLayout() {
                 transition: "background 0.15s", marginBottom: 2
               }}
             >
+              <Home size={16} />
+              일정 캘린더 (홈)
+            </Link>
+
+            <Link
+              to="/portal/dashboard"
+              style={{
+                display: "flex", alignItems: "center", gap: 10, padding: "8px 12px",
+                borderRadius: 6, textDecoration: "none", fontSize: 13,
+                color: location.pathname === "/portal/dashboard" ? "#7c3aed" : "#334155",
+                background: location.pathname === "/portal/dashboard" ? "#f5f3ff" : "transparent",
+                fontWeight: location.pathname === "/portal/dashboard" ? 600 : 500,
+                transition: "background 0.15s", marginBottom: 2
+              }}
+            >
               <Calendar size={16} />
-              일정 캘린더
+              사건 목록
             </Link>
 
             <Link

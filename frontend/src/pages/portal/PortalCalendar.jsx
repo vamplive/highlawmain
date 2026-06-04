@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { portalApi } from "../../utils/api";
 import { T, fieldStyle, labelStyle } from "./portalStyles";
 import {
@@ -17,6 +17,8 @@ export default function PortalCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  // 일자별 업무시간 합계: { 'YYYY-MM-DD': 분 }
+  const [timeSummaryByDay, setTimeSummaryByDay] = useState({});
 
   // 모달 상태
   const [showModal, setShowModal] = useState(false);
