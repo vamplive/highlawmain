@@ -190,8 +190,8 @@ export default function RecruitPage() {
   const revealRef = useReveal();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "recruit");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get("tab") || "recruit";
 
   useEffect(() => {
     api.get("/recruit")
@@ -246,7 +246,7 @@ export default function RecruitPage() {
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => setSearchParams({ tab: tab.id })}
                   style={{
                     padding: "10px 24px",
                     minHeight: 44,

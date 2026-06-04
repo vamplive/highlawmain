@@ -2,7 +2,6 @@
  * 업무분야 페이지 — 법무법인 하이로 12대 전문 분야
  * 의뢰인 고민 → 대표 분야 → 차별점 → 분야 선택 카드 → CTA
  */
-import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Link } from "react-router-dom";
 import {
@@ -194,15 +193,16 @@ const AREAS = [
 ];
 
 const TABS = [
-  { id: "pain-points", label: "상담 필요여부" },
+  { id: "pain-points", label: "상담점검" },
   { id: "advantages", label: "하이로의 강점" },
   { id: "areas", label: "업무 분야" },
 ];
 
 export default function PracticePage() {
   const ref = useReveal();
-  const [searchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "pain-points");
+  // URL 쿼리파라미터를 단일 진실 소스로 사용 — 드롭다운 링크 클릭 시 즉시 반영
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get("tab") || "pain-points";
 
   return (
     <div ref={ref}>
@@ -255,7 +255,7 @@ export default function PracticePage() {
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => setSearchParams({ tab: tab.id })}
                   style={{
                     padding: "10px 24px",
                     minHeight: 44,

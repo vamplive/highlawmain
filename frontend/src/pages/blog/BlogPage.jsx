@@ -1,6 +1,6 @@
 /** 블로그 목록 페이지 — 카테고리 필터, 페이지네이션 */
 import { useState, useEffect, useLayoutEffect, useCallback, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { api } from "../../utils/api";
 import useReveal from "../../hooks/useReveal";
 import { SkeletonGrid } from "../../components/ui/Skeleton";
@@ -32,9 +32,11 @@ function formatDate(dateStr) {
 export default function BlogPage() {
   const ref = useReveal();
   const listRef = useRef();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [posts, setPosts] = useState([]);
   const [meta, setMeta] = useState({ total: 0, page: 1, totalPages: 1 });
-  const [selectedCategory, setSelectedCategory] = useState(null);
+  // URL ?category= 파라미터를 단일 진실 소스로 사용 — 헤더 드롭다운 링크와 연동
+  const selectedCategory = searchParams.get("category") || null;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
@@ -82,7 +84,9 @@ export default function BlogPage() {
   }, [posts]);
 
   function handleCategoryChange(key) {
-    setSelectedCategory(key);
+    // URL 파라미터 업데이트 → selectedCategory가 자동으로 변경됨
+    if (key) setSearchParams({ category: key });
+    else setSearchParams({});
   }
 
   function handlePageChange(newPage) {
