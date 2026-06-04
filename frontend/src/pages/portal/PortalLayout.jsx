@@ -1,4 +1,4 @@
-﻿/** 포털 레이아웃 -- NAVER Works 스타일의 전사 인트라넷 레이아웃 */
+/** 포털 레이아웃 -- NAVER Works 스타일의 전사 인트라넷 레이아웃 */
 import { useEffect, useState } from "react";
 import { Outlet, Navigate, useNavigate, Link, useLocation } from "react-router-dom";
 import { portalApi } from "../../utils/api";
@@ -179,6 +179,22 @@ export default function PortalLayout() {
             }} title={userProfile?.client?.name || userProfile?.user?.email}>
               {userInitial}
             </div>
+            
+            <a
+              href="/"
+              style={{
+                display: "flex", alignItems: "center", gap: 6,
+                padding: "6px 12px", fontSize: 12, fontWeight: 500,
+                color: "#475569", background: "transparent",
+                border: "1px solid #cbd5e1", borderRadius: 6, textDecoration: "none",
+                transition: "all 0.2s"
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "#f1f5f9"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+            >
+              홈페이지 가기
+            </a>
+
             <button
               onClick={handleLogout}
               style={{

@@ -248,15 +248,15 @@ export default function LoginPage() {
       .catch(() => {});
   }, []);
 
-  // 이미 로그인되어 있으면 대시보드로 이동
+  // 이미 로그인되어 있으면 캘린더 일정(홈)으로 이동
   useEffect(() => {
     portalApi.get("/me")
-      .then(() => navigate("/portal/dashboard", { replace: true }))
+      .then(() => navigate("/portal/calendar", { replace: true }))
       .catch(() => {/* 미인증 — 로그인 페이지 유지 */});
   }, [navigate]);
 
   const handleLoginSuccess = () => {
-    navigate("/portal/dashboard", { replace: true });
+    navigate("/portal/calendar", { replace: true });
   };
 
   const handleRegisterSuccess = (name) => {

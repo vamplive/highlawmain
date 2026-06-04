@@ -223,7 +223,7 @@ export default function HomeNewsSection() {
             <div style={{ height: 1, background: "linear-gradient(to right, var(--accent-gold), transparent)", opacity: 0.4, marginBottom: 4 }} />
 
             {/* 기사 목록 */}
-            <div style={{ flex: 1 }}>
+            <div style={{ flex: 1, minWidth: 0, width: "100%" }}>
               {filteredPosts.length === 0 ? (
                 <p style={{ padding: "48px 0", textAlign: "center", fontSize: 15, color: "#ccc" }}>
                   게시된 글이 없습니다.
@@ -236,30 +236,33 @@ export default function HomeNewsSection() {
                     style={{
                       display: "flex",
                       alignItems: "center",
-                      gap: 16,
+                      gap: 12,
                       padding: "11px 10px",
                       borderBottom: idx < filteredPosts.length - 1 ? "1px solid #f0f0f4" : "none",
                       textDecoration: "none",
                       borderRadius: 4,
                       transition: "background 0.15s, padding-left 0.15s",
+                      minWidth: 0,
+                      width: "100%",
                     }}
                     onMouseEnter={(e) => { e.currentTarget.style.background = "#fafbfc"; e.currentTarget.style.paddingLeft = "16px"; }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.paddingLeft = "10px"; }}
                   >
                     {/* 날짜 */}
-                    <span style={{ fontSize: 12.5, color: "#adb5bd", flexShrink: 0, letterSpacing: "0.01em", minWidth: 80 }}>
+                    <span style={{ fontSize: 12, color: "#adb5bd", flexShrink: 0, letterSpacing: "0.01em" }}>
                       {formatDate(post.publishedAt || post.createdAt)}
                     </span>
                     {/* 골드 구분 점 */}
-                    <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--accent-gold)", flexShrink: 0, opacity: 0.7 }} />
+                    <span style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--accent-gold)", flexShrink: 0, opacity: 0.7 }} />
                     {/* 제목 */}
                     <span
                       style={{
-                        fontSize: 15.5,
+                        fontSize: 15,
                         color: "#1a1a2e",
                         lineHeight: 1.45,
                         fontWeight: 400,
                         flex: 1,
+                        minWidth: 0,
                         overflow: "hidden",
                         textOverflow: "ellipsis",
                         whiteSpace: "nowrap",
@@ -276,7 +279,7 @@ export default function HomeNewsSection() {
             {/* 전체보기 */}
             <div style={{ display: "flex", justifyContent: "flex-end", paddingTop: 14, marginTop: "auto", borderTop: "1px solid #f0f2f5" }}>
               <Link
-                to="/blog"
+                to={activeTab ? `/blog?category=${activeTab}` : "/blog"}
                 style={{
                   fontSize: 12,
                   color: "#8a6520",
