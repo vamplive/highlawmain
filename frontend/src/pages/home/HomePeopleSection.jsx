@@ -5,6 +5,8 @@ import { api } from "../../utils/api";
 import { C, FALLBACK_LAWYERS, parseSpecialtyList } from "./homeTokens";
 
 export default function HomePeopleSection({ copy, settings }) {
+  const [lawyerList, setLawyerList] = useState(FALLBACK_LAWYERS);
+  const [usingFallback, setUsingFallback] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(1);
   const [isTransitioning, setIsTransitioning] = useState(false);
