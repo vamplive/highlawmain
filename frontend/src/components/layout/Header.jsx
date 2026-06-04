@@ -94,7 +94,7 @@ export default function Header({ heroTop, isLawyerDetail, menuOpen, onToggleMenu
 
           {/* Desktop nav */}
           <nav
-            className="hidden lg:flex items-center gap-6 xl:gap-12 flex-shrink-0"
+            className="hidden lg:grid grid-cols-6 items-center flex-shrink-0 lg:gap-3 xl:gap-4 lg:px-4 xl:px-6 lg:min-w-[560px] xl:min-w-[640px]"
             style={{ position: "relative" }}
             aria-label="주요 메뉴"
             onMouseLeave={() => setIsDropdownOpen(false)}
@@ -124,9 +124,13 @@ export default function Header({ heroTop, isLawyerDetail, menuOpen, onToggleMenu
                         ? (heroTop ? "#fff" : "var(--text-primary)")
                         : (heroTop ? "rgba(255,255,255,0.65)" : "var(--text-muted)"),
                       paddingBottom: 4,
+                      paddingLeft: 8,
+                      paddingRight: 8,
                       borderBottom: isActive ? `1.5px solid ${heroTop ? "rgba(255,255,255,0.7)" : "var(--accent-gold)"}` : "1.5px solid transparent",
                       transition: "color 0.5s ease, border-color 0.5s ease",
-                      display: "block",
+                      display: "inline-block",
+                      textAlign: "left",
+                      whiteSpace: "nowrap",
                     })}
                   >
                     {item.label}
@@ -149,16 +153,15 @@ export default function Header({ heroTop, isLawyerDetail, menuOpen, onToggleMenu
                 }}
               >
                 <div
+                  className="grid grid-cols-6 lg:gap-3 xl:gap-4 lg:px-4 xl:px-6"
                   style={{
                     background: heroTop ? "rgba(10,20,38,0.96)" : "#fff",
                     border: heroTop ? "1px solid rgba(201,168,76,0.2)" : "1px solid #e8eaed",
                     borderRadius: 8,
                     boxShadow: "0 8px 28px rgba(0,0,0,0.15)",
                     backdropFilter: "blur(12px)",
-                    padding: "20px 24px",
-                    display: "grid",
-                    gridTemplateColumns: "repeat(6, 1fr)",
-                    gap: 16,
+                    paddingTop: 20,
+                    paddingBottom: 20,
                   }}
                 >
                   {navItems.map((item) => {
@@ -186,6 +189,7 @@ export default function Header({ heroTop, isLawyerDetail, menuOpen, onToggleMenu
                               letterSpacing: "0.04em",
                               color: heroTop ? "rgba(255,255,255,0.80)" : "var(--text-secondary)",
                               textDecoration: "none",
+                              whiteSpace: "nowrap",
                               transition: "background 0.15s, color 0.15s",
                             }}
                             onMouseEnter={(e) => {

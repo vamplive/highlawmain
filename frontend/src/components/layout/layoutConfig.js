@@ -47,34 +47,34 @@ export const LAYOUT_DEFAULTS = {
 /** 네비게이션 hover 시 노출할 하위 탭 목록 (to 경로를 key로 매핑) */
 export const NAV_DROPDOWN = {
   "/lawyers": [
-    { to: "/lawyers",    label: "변호사 소개" },
-    { to: "/lawyers#lectures", label: "강의 활동" },
+    { to: "/lawyers",    label: "변호사소개" },
+    { to: "/lawyers#lectures", label: "강의활동" },
   ],
   "/about": [
     { to: "/about",             label: "인사말" },
     { to: "/about/core-values", label: "핵심가치" },
-    { to: "/about/directions",  label: "오시는 길" },
+    { to: "/about/directions",  label: "오시는길" },
     { to: "/about/history",     label: "연혁" },
     { to: "/about/probono",     label: "공익활동" },
   ],
   "/practice": [
-    { to: "/practice?tab=pain-points", label: "상담 필요여부" },
-    { to: "/practice?tab=advantages",  label: "하이로의 강점" },
-    { to: "/practice?tab=areas",       label: "업무 분야" },
+    { to: "/practice?tab=pain-points", label: "상담대상" },
+    { to: "/practice?tab=advantages",  label: "하이로강점" },
+    { to: "/practice?tab=areas",       label: "업무분야" },
   ],
   "/blog": [
     { to: "/blog",                            label: "전체" },
-    { to: "/blog?category=case_analysis",     label: "판례 분석" },
-    { to: "/blog?category=law_guide",         label: "법률 가이드" },
+    { to: "/blog?category=case_analysis",     label: "판례분석" },
+    { to: "/blog?category=law_guide",         label: "법률가이드" },
   ],
   "/recruit": [
-    { to: "/recruit?tab=recruit", label: "채용 공고" },
-    { to: "/recruit?tab=apply",   label: "지원 안내" },
-    { to: "/recruit?tab=contact", label: "채용 문의" },
+    { to: "/recruit?tab=recruit", label: "채용공고" },
+    { to: "/recruit?tab=apply",   label: "지원안내" },
+    { to: "/recruit?tab=contact", label: "채용문의" },
   ],
   "/consultation": [
-    { to: "/consultation?tab=form",    label: "상담 신청" },
-    { to: "/consultation?tab=process", label: "진행 절차" },
+    { to: "/consultation?tab=form",    label: "상담신청" },
+    { to: "/consultation?tab=process", label: "진행절차" },
     { to: "/consultation?tab=faq",     label: "FAQ" },
   ],
 };
