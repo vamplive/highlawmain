@@ -109,8 +109,10 @@ async function request(base, method, path, body, retryOnCsrf = true) {
 
 /** 멀티파트 파일 업로드 (Content-Type 은 브라우저가 자동 지정) */
 async function uploadFile(base, path, file, retryOnCsrf = true) {
-  const form = new FormData();
-  form.append("file", file);
+  const body = file instanceof FormData ? file : new FormData();
+  if (!(file instanceof FormData)) {
+    body.append("file", file);
+  }
   const headers = {};
   const csrf = getCookie("csrf-token");
   if (csrf) headers["x-csrf-token"] = csrf;
@@ -120,7 +122,7 @@ async function uploadFile(base, path, file, retryOnCsrf = true) {
     res = await fetch(`${base}${path}`, {
       method: "POST",
       credentials: "include",
-      body: form,
+      body,
       headers,
     });
   } catch {
@@ -160,6 +162,8 @@ export const api = {
 export const portalApi = {
   get: (path) => request(PORTAL_BASE, "GET", path),
   post: (path, body) => request(PORTAL_BASE, "POST", path, body),
+  put: (path, body) => request(PORTAL_BASE, "PUT", path, body),
   patch: (path, body) => request(PORTAL_BASE, "PATCH", path, body),
   delete: (path) => request(PORTAL_BASE, "DELETE", path),
+  upload: (path, file) => uploadFile(PORTAL_BASE, path, file),
 };

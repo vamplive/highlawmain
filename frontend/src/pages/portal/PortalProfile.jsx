@@ -127,13 +127,7 @@ export default function PortalProfile() {
       const formData = new FormData();
       formData.append("photo", file);
 
-      const res = await fetch("/api/portal/upload-photo", {
-        method: "POST",
-        credentials: "include",
-        body: formData,
-      });
-      const json = await res.json();
-      if (!res.ok || json.error) throw new Error(json.error || "업로드 실패");
+      const json = await portalApi.upload("/upload-photo", formData);
 
       setForm((prev) => ({ ...prev, photoUrl: json.data.url }));
       showToast("사진이 업로드되었습니다", "success");
