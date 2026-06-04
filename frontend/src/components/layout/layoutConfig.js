@@ -46,6 +46,10 @@ export const LAYOUT_DEFAULTS = {
 
 /** 네비게이션 hover 시 노출할 하위 탭 목록 (to 경로를 key로 매핑) */
 export const NAV_DROPDOWN = {
+  "/lawyers": [
+    { to: "/lawyers",    label: "변호사 소개" },
+    { to: "/lawyers#lectures", label: "강의 활동" },
+  ],
   "/about": [
     { to: "/about",             label: "인사말" },
     { to: "/about/core-values", label: "핵심가치" },

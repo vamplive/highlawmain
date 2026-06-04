@@ -12,6 +12,9 @@
  */
 const { Router } = require("express");
 const crypto = require("crypto");
+const path = require("path");
+const fs = require("fs");
+const multer = require("multer");
 const {
   portalAuth,
   adminAuth,
@@ -25,6 +28,35 @@ const { logSecurityEvent } = require("../lib/audit-log");
 const { handleError } = require("../lib/route-handler");
 
 const router = Router();
+
+// =============================================
+// 사진 업로드 multer 설정 (포털 변호사 프로필)
+// =============================================
+const STORAGE_PATH = process.env.STORAGE_PATH || path.join(__dirname, "..", "data");
+const LAWYERS_PHOTO_DIR = path.join(STORAGE_PATH, "uploads", "lawyers");
+
+const photoStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    fs.mkdirSync(LAWYERS_PHOTO_DIR, { recursive: true });
+    cb(null, LAWYERS_PHOTO_DIR);
+  },
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase() || ".jpg";
+    cb(null, `lawyer-${Date.now()}-${crypto.randomBytes(4).toString("hex")}${ext}`);
+  },
+});
+
+const photoUpload = multer({
+  storage: photoStorage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  fileFilter: (_req, file, cb) => {
+    if (/^image\/(jpeg|png|webp|gif)$/.test(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error("이미지 파일(JPG·PNG·WebP)만 업로드할 수 있습니다"), false);
+    }
+  },
+});
 
 // =============================================
 // 공개 엔드포인트
@@ -76,6 +108,20 @@ router.get("/me", portalAuth, async (req, res) => {
   } catch (e) {
     handleError(res, e);
   }
+});
+
+/** POST /api/portal/upload-photo — 포털 사용자 프로필 사진 업로드 */
+router.post("/upload-photo", portalAuth, (req, res) => {
+  photoUpload.single("photo")(req, res, (err) => {
+    if (err) {
+      return res.status(400).json({ data: null, error: err.message, meta: null });
+    }
+    if (!req.file) {
+      return res.status(400).json({ data: null, error: "파일이 없습니다", meta: null });
+    }
+    const url = `/uploads/lawyers/${req.file.filename}`;
+    res.json({ data: { url }, error: null, meta: null });
+  });
 });
 
 /** GET /api/portal/cases — 내 사건 목록 */
