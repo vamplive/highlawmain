@@ -89,16 +89,9 @@ export default function HomeNewsSection() {
         </div>
 
         {/* ── 2컬럼 본문 ── */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1.8fr",
-            gap: 24,
-            alignItems: "stretch",
-          }}
-        >
+        <div className="hp-news-grid">
           {/* 좌측: CTA 카드 2개 */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          <div className="hp-news-cta-col">
             {/* 카카오톡 상담 */}
             <a
               href={KAKAO_CHANNEL_CHAT}
@@ -181,19 +174,9 @@ export default function HomeNewsSection() {
           </div>
 
           {/* 우측: 소식과 자료 패널 */}
-          <div
-            style={{
-              background: "#fff",
-              borderRadius: 12,
-              padding: "36px 40px 28px",
-              display: "flex",
-              flexDirection: "column",
-              border: "1px solid #e2e5ea",
-              boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
-            }}
-          >
+          <div className="hp-news-content-col">
             {/* 패널 헤더 + 탭 */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 18 }}>
+            <div className="hp-news-panel-header">
               <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
                 <span style={{ fontSize: 11, letterSpacing: "0.22em", color: "var(--accent-gold)", fontWeight: 700, textTransform: "uppercase" }}>
                   LATEST
@@ -202,7 +185,7 @@ export default function HomeNewsSection() {
                   소식과 자료
                 </h3>
               </div>
-              <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                 {TABS.map((tab) => {
                   const isActive = activeTab === tab.id;
                   return (

@@ -56,7 +56,7 @@ function PracticeCard({ area, isEnglish }) {
         {isEnglish ? area.ko : area.en}
       </p>
 
-      <p className="hp-practice-copy">
+      <p className="hp-practice-copy hidden md:block">
         {isEnglish ? area.descEn : area.desc}
       </p>
     </Link>
