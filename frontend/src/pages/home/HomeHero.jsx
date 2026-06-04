@@ -186,7 +186,7 @@ export default function HomeHero({ heroVideo, settings }) {
                         {results.lawyers.map((l) => (
                           <Link
                             key={l.id}
-                            to={`/lawyers/${l.id}`}
+                            to={`/partners/${l.id}`}
                             style={{ display: "block", color: "#fff", textDecoration: "none", fontSize: 13, padding: "4px 8px", borderRadius: 4, transition: "background 0.2s" }}
                             onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(222, 197, 132, 0.1)")}
                             onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}

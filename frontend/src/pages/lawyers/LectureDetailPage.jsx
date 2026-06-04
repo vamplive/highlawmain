@@ -62,13 +62,13 @@ export default function LectureDetailPage() {
       <div style={{ minHeight: "60vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>
         <BookOpen size={48} strokeWidth={0.6} color="rgba(0,0,0,0.1)" />
         <p style={{ fontSize: 18, color: "var(--text-muted)" }}>강의 정보를 찾을 수 없습니다</p>
-        <Link to="/lawyers" style={{ fontSize: 14, color: "var(--accent-gold)", textDecoration: "none" }}>← 변호사 목록으로</Link>
+        <Link to="/partners" style={{ fontSize: 14, color: "var(--accent-gold)", textDecoration: "none" }}>← 구성원 목록으로</Link>
       </div>
     );
   }
 
   const lawyer = lecture.lawyer;
-  const lawyerLink = lawyer ? `/lawyers/${lawyer.slug || lawyer.id}` : "/lawyers";
+  const lawyerLink = lawyer ? `/partners/${lawyer.slug || lawyer.id}` : "/partners";
 
   return (
     <div>
@@ -92,11 +92,11 @@ export default function LectureDetailPage() {
         <div style={{ maxWidth: 900, margin: "0 auto", padding: "120px 24px 80px", position: "relative", zIndex: 2 }}>
           {/* 뒤로가기 */}
           <Link
-            to={lawyer ? lawyerLink : "/lawyers"}
+            to={lawyer ? lawyerLink : "/partners"}
             className="flex items-center gap-2"
             style={{ fontSize: 12, color: "var(--white-40)", textDecoration: "none", marginBottom: 40, letterSpacing: "0.15em", textTransform: "uppercase" }}
           >
-            <ArrowLeft size={14} /> {lawyer ? `${lawyer.name} 변호사 프로필` : "변호사 소개"}
+            <ArrowLeft size={14} /> {lawyer ? `${lawyer.name} 프로필` : "구성원"}
           </Link>
 
           <div className="flex items-center gap-3" style={{ marginBottom: 20 }}>
@@ -149,8 +149,8 @@ export default function LectureDetailPage() {
         <nav style={{ fontSize: 13, color: "var(--text-muted)" }}>
           <Link to="/" style={{ color: "var(--text-muted)", textDecoration: "none" }}>홈</Link>
           <span style={{ margin: "0 8px" }}>&rsaquo;</span>
-          <Link to={lawyer ? lawyerLink : "/lawyers"} style={{ color: "var(--text-muted)", textDecoration: "none" }}>
-            {lawyer ? lawyer.name + " 변호사" : "변호사 소개"}
+          <Link to={lawyer ? lawyerLink : "/partners"} style={{ color: "var(--text-muted)", textDecoration: "none" }}>
+            {lawyer ? lawyer.name + " 프로필" : "구성원"}
           </Link>
           <span style={{ margin: "0 8px" }}>&rsaquo;</span>
           <span style={{ color: "var(--text-primary)" }}>{lecture.title}</span>

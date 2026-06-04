@@ -54,9 +54,24 @@ function useRevealOnChange(deps) {
 
 export default function LawyersPage() {
   const [lawyers, setLawyers] = useState([]);
+  const [activeTab, setActiveTab] = useState("lawyer"); // 'lawyer', 'advisor', 'staff'
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const ref = useRevealOnChange([lawyers]);
+
+  const filteredLawyers = lawyers.filter((l) => {
+    if (activeTab === "lawyer") {
+      return l.position === "대표변호사" || l.position === "변호사";
+    }
+    if (activeTab === "advisor") {
+      return l.position === "전문위원";
+    }
+    if (activeTab === "staff") {
+      return l.position === "직원";
+    }
+    return false;
+  });
+
+  const ref = useRevealOnChange([filteredLawyers]);
 
   const loadLawyers = useCallback(() => {
     setLoading(true);
@@ -76,7 +91,7 @@ export default function LawyersPage() {
   }, [loadLawyers]);
 
   // 로딩된 변호사 각각을 Attorney JSON-LD로 변환 — 검색엔진이 인물 정보를 인덱싱
-  const attorneyJsonLds = lawyers
+  const attorneyJsonLds = filteredLawyers
     .map((l) => buildAttorneyJsonLd({
       name: l.name,
       jobTitle: l.position || "변호사",
@@ -90,25 +105,60 @@ export default function LawyersPage() {
   return (
     <div ref={ref}>
       <Seo
-        path="/lawyers"
-        title="변호사 소개"
-        description="법무법인 하이로 소속 변호사들의 경력·전문 분야·학력 정보를 확인하세요."
+        path="/partners"
+        title="구성원"
+        description="법무법인 하이로의 신뢰할 수 있는 구성원들을 소개합니다."
         jsonLd={[
           buildBreadcrumbJsonLd([
             { name: "홈", path: "/" },
-            { name: "변호사 소개", path: "/lawyers" },
+            { name: "구성원", path: "/partners" },
           ]),
           ...attorneyJsonLds,
         ]}
       />
       <PublicHero
-        eyebrow="PROFESSIONALS"
-        title="변호사 소개"
-        description={"각 분야 변호사의 실무 경험을 기반으로\n사건 초기부터 종결까지 체계적으로 대응합니다"}
+        eyebrow="PEOPLE"
+        title="구성원"
+        description={"각 분야 전문가들이 유기적으로 협력하여\n의뢰인에게 최선의 솔루션을 제공합니다"}
       />
 
-      {/* ==================== 변호사 카드 ==================== */}
-      <section className="section" style={{ background: "#fff" }}>
+      {/* ==================== 탭 컨트롤 ==================== */}
+      <div style={{ background: "#fff", paddingTop: 40, paddingBottom: 10, borderBottom: "1px solid var(--border-color)" }}>
+        <div className="container" style={{ maxWidth: 1040, display: "flex", justifyContent: "center" }}>
+          <div className="flex gap-4 md:gap-8" style={{ marginBottom: -1 }}>
+            {[
+              { id: "lawyer", label: "변호사" },
+              { id: "advisor", label: "전문위원" },
+              { id: "staff", label: "직원" }
+            ].map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    padding: "12px 24px",
+                    cursor: "pointer",
+                    fontSize: 15,
+                    fontWeight: isActive ? 600 : 400,
+                    color: isActive ? "var(--accent-gold)" : "var(--text-muted)",
+                    borderBottom: isActive ? "2px solid var(--accent-gold)" : "2px solid transparent",
+                    transition: "all 0.3s ease",
+                    letterSpacing: "0.05em",
+                  }}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* ==================== 구성원 카드 그리드 ==================== */}
+      <section className="section" style={{ background: "#fff", paddingTop: 40 }}>
         <div className="container" style={{ maxWidth: 1040 }}>
           {loading ? (
             <div
@@ -117,29 +167,28 @@ export default function LawyersPage() {
               aria-live="polite"
               aria-busy="true"
             >
-              <span className="sr-only">변호사 정보를 불러오는 중입니다</span>
+              <span className="sr-only">구성원 정보를 불러오는 중입니다</span>
               {Array.from({ length: 3 }, (_, i) => <SkeletonLawyerCard key={i} />)}
             </div>
           ) : error ? (
             <ErrorState
-              title="변호사 정보를 불러오지 못했습니다"
+              title="구성원 정보를 불러오지 못했습니다"
               message="네트워크 상태를 확인하신 후 다시 시도해 주세요."
               onRetry={loadLawyers}
             />
-          ) : lawyers.length === 0 ? (
+          ) : filteredLawyers.length === 0 ? (
             <div className="text-center reveal" style={{ padding: "80px 0", color: "var(--gray-200)" }}>
               <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}><Scale size={40} strokeWidth={1} color="#ccc" /></div>
-              <p style={{ fontSize: 16, fontWeight: 300 }}>변호사 정보가 준비 중입니다</p>
-              <p style={{ fontSize: 13, marginTop: 8 }}>관리자 페이지에서 변호사를 등록해주세요</p>
+              <p style={{ fontSize: 16, fontWeight: 300 }}>구성원 정보가 준비 중입니다</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 stagger">
-              {lawyers.map((lawyer) => (
+              {filteredLawyers.map((lawyer) => (
                 <SurfaceCard
                   as={Link}
                   key={lawyer.id}
-                  to={`/lawyers/${lawyer.slug || lawyer.id}`}
-                  aria-label={`${lawyer.name} 변호사 프로필 상세 보기`}
+                  to={`/partners/${lawyer.slug || lawyer.id}`}
+                  aria-label={`${lawyer.name} 프로필 상세 보기`}
                   className="reveal group cursor-pointer"
                   style={{
                     textDecoration: "none",
@@ -180,7 +229,7 @@ export default function LawyersPage() {
                     <p style={{ fontSize: 14, color: "var(--accent-gold)", fontWeight: 500, marginBottom: 14, letterSpacing: "0.05em" }}>
                       {lawyer.position}
                     </p>
-                    {lawyer.specialties && (
+                    {lawyer.specialties && parseList(lawyer.specialties).length > 0 && (
                       <div className="flex flex-wrap gap-1" style={{ marginBottom: 14 }}>
                         {parseList(lawyer.specialties).slice(0, 4).map((s, i) => (
                           <span key={i} style={{ fontSize: 11, color: "var(--accent-gold)", padding: "4px 12px", background: "rgba(26,58,107,0.06)", borderRadius: 2, letterSpacing: "0.02em" }}>{s}</span>

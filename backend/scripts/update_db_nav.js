@@ -30,7 +30,7 @@ const currentRecord = selectStmt.get('layout', 'nav');
 const newNavItems = {
   items: [
     { to: "/about", label: "사무소 소개" },
-    { to: "/lawyers", label: "변호사 소개" },
+    { to: "/partners", label: "구성원" },
     { to: "/practice", label: "업무 분야" },
     { to: "/blog", label: "소식" },
     { to: "/recruit", label: "채용" },

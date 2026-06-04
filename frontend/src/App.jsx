@@ -128,6 +128,12 @@ function EditorRedirect() {
   return <Navigate to={`/admin/editor/${id}`} replace />;
 }
 
+/** /lawyers/:id → /partners/:id 리다이렉트 */
+function NavigateToPartnerDetail() {
+  const { id } = useParams();
+  return <Navigate to={`/partners/${id}`} replace />;
+}
+
 /** /qna/category/:slug → /inquiry/category/:slug 리다이렉트 */
 function QnaCategoryRedirect() {
   const { slug } = useParams();
@@ -250,8 +256,10 @@ export default function App() {
           <Route path="/practice/construction" element={<Navigate to="/practice/illegal-dispatch" replace />} />
           <Route path="/practice/realestate" element={<Navigate to="/practice/game-fraud" replace />} />
           <Route path="/practice/:field" element={<ErrorBoundary><LazyRoute><PracticeDetailPage /></LazyRoute></ErrorBoundary>} />
-          <Route path="/lawyers" element={<ErrorBoundary><LazyRoute><LawyersPage /></LazyRoute></ErrorBoundary>} />
-          <Route path="/lawyers/:id" element={<ErrorBoundary><LazyRoute><LawyerDetailPage /></LazyRoute></ErrorBoundary>} />
+          <Route path="/partners" element={<ErrorBoundary><LazyRoute><LawyersPage /></LazyRoute></ErrorBoundary>} />
+          <Route path="/partners/:id" element={<ErrorBoundary><LazyRoute><LawyerDetailPage /></LazyRoute></ErrorBoundary>} />
+          <Route path="/lawyers" element={<Navigate to="/partners" replace />} />
+          <Route path="/lawyers/:id" element={<NavigateToPartnerDetail />} />
           <Route path="/lectures/:id" element={<ErrorBoundary><LazyRoute><LectureDetailPage /></LazyRoute></ErrorBoundary>} />
           <Route path="/consultation" element={<ErrorBoundary><LazyRoute><ConsultationPage /></LazyRoute></ErrorBoundary>} />
 

@@ -118,13 +118,13 @@ export default function LawyerDetailPage() {
     return (
       <div className="lp-scope" style={{ background: "var(--lp-bg)", minHeight: "60vh", padding: "80px 24px", textAlign: "center" }}>
         <p style={{ color: "var(--lp-ink)", marginBottom: 16 }}>{error || "변호사를 찾을 수 없습니다."}</p>
-        <Link to="/lawyers" style={{ color: "var(--lp-accent)" }}>← 구성원 목록으로</Link>
+        <Link to="/partners" style={{ color: "var(--lp-accent)" }}>← 구성원 목록으로</Link>
       </div>
     );
   }
 
   const ActivePanel = TABS.find((t) => t.id === active)?.Component || ProfileTab;
-  const canonicalPath = `/lawyers/${lawyer.slug || lawyer.id}`;
+  const canonicalPath = `/partners/${lawyer.slug || lawyer.id}`;
   const seoTitle = `${lawyer.name} ${lawyer.title} — 법무법인 하이로`;
   const seoDesc = lawyer.tagline || lawyer.intro || `${lawyer.name} ${lawyer.title}의 학력·경력·논문·수행사례를 소개합니다.`;
   const jsonLd = [
@@ -139,7 +139,7 @@ export default function LawyerDetailPage() {
     }),
     buildBreadcrumbJsonLd([
       { name: "홈", url: absoluteUrl("/") },
-      { name: "구성원", url: absoluteUrl("/lawyers") },
+      { name: "구성원", url: absoluteUrl("/partners") },
       { name: lawyer.name, url: absoluteUrl(canonicalPath) },
     ]),
   ];
@@ -158,7 +158,7 @@ export default function LawyerDetailPage() {
         <div className="lp-breadcrumb-inner">
           <Link to="/">홈</Link>
           <span aria-hidden="true">›</span>
-          <Link to="/lawyers">구성원</Link>
+          <Link to="/partners">구성원</Link>
           <span aria-hidden="true">›</span>
           <span aria-current="page">{lawyer.name}</span>
         </div>

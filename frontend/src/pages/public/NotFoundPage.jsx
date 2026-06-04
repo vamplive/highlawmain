@@ -5,7 +5,7 @@ import Seo from "../../components/Seo";
 const RELATED_LINKS = [
   { to: "/about", title: "사무소 소개", desc: "법무법인 하이로의 핵심 가치와 연혁" },
   { to: "/practice", title: "업무분야", desc: "불법파견·게임사기·노동·군사건 특화 서비스" },
-  { to: "/lawyers", title: "변호사 소개", desc: "전문 분야별 소속 변호사 프로필" },
+  { to: "/partners", title: "구성원", desc: "전문 분야별 소속 구성원 프로필" },
   { to: "/blog", title: "블로그", desc: "실무 이슈와 판례 해설" },
 ];
 

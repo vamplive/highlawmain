@@ -21,10 +21,10 @@ export default function Layout() {
   const navItems = lang === "en" ? NAV_EN : settings.nav.items;
 
   const isHome = pathname === "/";
-  const isLawyerDetail = pathname.startsWith("/lawyers/");
+  const isLawyerDetail = pathname.startsWith("/partners/");
   const isAbout = pathname === "/about" || pathname.startsWith("/about/");
   const isPractice = pathname === "/practice" || pathname.startsWith("/practice/");
-  const isLawyers = pathname === "/lawyers";
+  const isLawyers = pathname === "/partners";
   const isBlog = pathname === "/blog" || pathname.startsWith("/blog/");
   const isReviews = pathname === "/reviews";
   const isQna = pathname === "/inquiry" || pathname.startsWith("/inquiry/");

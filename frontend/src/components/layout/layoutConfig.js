@@ -2,7 +2,7 @@
 
 export const NAV = [
   { to: "/about", label: "소개" },
-  { to: "/lawyers", label: "변호사" },
+  { to: "/partners", label: "구성원" },
   { to: "/practice", label: "업무분야" },
   { to: "/blog", label: "소식" },
   { to: "/recruit", label: "채용" },
@@ -11,7 +11,7 @@ export const NAV = [
 
 export const NAV_EN = [
   { to: "/about", label: "THE FIRM" },
-  { to: "/lawyers", label: "PARTNERS" },
+  { to: "/partners", label: "PARTNERS" },
   { to: "/practice", label: "PRACTICES" },
   { to: "/blog", label: "NEWS" },
   { to: "/recruit", label: "RECRUIT" },
@@ -21,7 +21,7 @@ export const NAV_EN = [
 export const LAYOUT_DEFAULTS = {
   nav: { items: [
     { to: "/about", label: "소개" },
-    { to: "/lawyers", label: "변호사" },
+    { to: "/partners", label: "구성원" },
     { to: "/practice", label: "업무분야" },
     { to: "/blog", label: "소식" },
     { to: "/recruit", label: "채용" },
@@ -50,9 +50,9 @@ export const LAYOUT_DEFAULTS = {
  *  - pathname 방식 페이지(about): 실제 경로와 정확히 일치
  */
 export const NAV_DROPDOWN = {
-  "/lawyers": [
-    { to: "/lawyers",          label: "변호사 소개" },
-    { to: "/lawyers#lectures", label: "강의 활동" },
+  "/partners": [
+    { to: "/partners",          label: "구성원" },
+    { to: "/partners#lectures", label: "강의 활동" },
   ],
   "/about": [
     { to: "/about",            label: "인사말" },

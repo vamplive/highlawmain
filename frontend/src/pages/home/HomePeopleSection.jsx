@@ -53,7 +53,7 @@ export default function HomePeopleSection({ copy, settings }) {
 
         <div style={{ textAlign: "center", marginTop: "48px" }}>
           <Link
-            to="/lawyers"
+            to="/partners"
             className="hp-hero-button hp-hero-button-secondary"
             style={{
               borderColor: "var(--accent-gold)",
@@ -77,7 +77,7 @@ function LawyerCard({ lawyer }) {
 
   return (
     <Link
-      to={`/lawyers/${lawyer.slug || lawyer.id}`}
+      to={`/partners/${lawyer.slug || lawyer.id}`}
       className="hp-lawyer-card"
       style={{ width: "min(280px, 100%)" }}
     >
