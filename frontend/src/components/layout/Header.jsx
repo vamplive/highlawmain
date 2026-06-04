@@ -94,7 +94,7 @@ export default function Header({ heroTop, isLawyerDetail, menuOpen, onToggleMenu
 
           {/* Desktop nav */}
           <nav
-            className="hidden lg:flex items-center gap-8 flex-shrink-0"
+            className="hidden lg:flex items-center gap-6 xl:gap-12 flex-shrink-0"
             aria-label="주요 메뉴"
             onMouseLeave={() => setIsDropdownOpen(false)}
           >
@@ -148,7 +148,7 @@ export default function Header({ heroTop, isLawyerDetail, menuOpen, onToggleMenu
                     >
                       <div
                         style={{
-                          minWidth: 140,
+                          minWidth: 115,
                           background: heroTop ? "rgba(10,20,38,0.96)" : "#fff",
                           border: heroTop ? "1px solid rgba(201,168,76,0.2)" : "1px solid #e8eaed",
                           borderRadius: 8,
@@ -164,8 +164,8 @@ export default function Header({ heroTop, isLawyerDetail, menuOpen, onToggleMenu
                             onClick={() => setIsDropdownOpen(false)}
                             style={{
                               display: "block",
-                              padding: "10px 18px",
-                              fontSize: 12,
+                              padding: "10px 12px",
+                              fontSize: 11,
                               fontFamily: "Pretendard, 'Noto Sans KR', sans-serif",
                               letterSpacing: "0.04em",
                               color: heroTop ? "rgba(255,255,255,0.80)" : "var(--text-secondary)",
