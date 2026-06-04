@@ -57,6 +57,16 @@ function formatDate(dateStr) {
 export default function HomeNewsSection() {
   const [posts, setPosts] = useState(FALLBACK_POSTS);
   const [activeTab, setActiveTab] = useState("construction_realestate");
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -235,9 +245,10 @@ export default function HomeNewsSection() {
                     to={`/blog/${post.slug}`}
                     style={{
                       display: "flex",
-                      alignItems: "center",
-                      gap: 12,
-                      padding: "11px 10px",
+                      flexDirection: isMobile ? "column" : "row",
+                      alignItems: isMobile ? "flex-start" : "center",
+                      gap: isMobile ? 4 : 12,
+                      padding: isMobile ? "12px 10px" : "11px 10px",
                       borderBottom: idx < filteredPosts.length - 1 ? "1px solid #f0f0f4" : "none",
                       textDecoration: "none",
                       borderRadius: 4,
@@ -248,29 +259,57 @@ export default function HomeNewsSection() {
                     onMouseEnter={(e) => { e.currentTarget.style.background = "#fafbfc"; e.currentTarget.style.paddingLeft = "16px"; }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.paddingLeft = "10px"; }}
                   >
-                    {/* 날짜 */}
-                    <span style={{ fontSize: 12, color: "#adb5bd", flexShrink: 0, letterSpacing: "0.01em" }}>
-                      {formatDate(post.publishedAt || post.createdAt)}
-                    </span>
-                    {/* 골드 구분 점 */}
-                    <span style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--accent-gold)", flexShrink: 0, opacity: 0.7 }} />
-                    {/* 제목 */}
-                    <span
-                      style={{
-                        fontSize: 15,
-                        color: "#1a1a2e",
-                        lineHeight: 1.45,
-                        fontWeight: 400,
-                        flex: 1,
-                        minWidth: 0,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                        letterSpacing: "-0.01em",
-                      }}
-                    >
-                      {post.title}
-                    </span>
+                    {isMobile ? (
+                      <>
+                        {/* 제목 */}
+                        <span
+                          style={{
+                            fontSize: 14,
+                            color: "#1a1a2e",
+                            lineHeight: 1.4,
+                            fontWeight: 500,
+                            width: "100%",
+                            display: "-webkit-box",
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: "vertical",
+                            overflow: "hidden",
+                            letterSpacing: "-0.01em",
+                          }}
+                        >
+                          {post.title}
+                        </span>
+                        {/* 날짜 */}
+                        <span style={{ fontSize: 11, color: "#adb5bd", letterSpacing: "0.01em", marginTop: 2 }}>
+                          {formatDate(post.publishedAt || post.createdAt)}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        {/* 날짜 */}
+                        <span style={{ fontSize: 12, color: "#adb5bd", flexShrink: 0, letterSpacing: "0.01em" }}>
+                          {formatDate(post.publishedAt || post.createdAt)}
+                        </span>
+                        {/* 골드 구분 점 */}
+                        <span style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--accent-gold)", flexShrink: 0, opacity: 0.7 }} />
+                        {/* 제목 */}
+                        <span
+                          style={{
+                            fontSize: 15,
+                            color: "#1a1a2e",
+                            lineHeight: 1.45,
+                            fontWeight: 400,
+                            flex: 1,
+                            minWidth: 0,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                            letterSpacing: "-0.01em",
+                          }}
+                        >
+                          {post.title}
+                        </span>
+                      </>
+                    )}
                   </Link>
                 ))
               )}
@@ -295,7 +334,7 @@ export default function HomeNewsSection() {
                 onMouseEnter={(e) => { e.currentTarget.style.gap = "10px"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.gap = "5px"; }}
               >
-                전체보기 <span>→</span>
+                {TABS.find((t) => t.id === activeTab)?.label} 전체보기 <span>→</span>
               </Link>
             </div>
           </div>

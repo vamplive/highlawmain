@@ -30,7 +30,22 @@ export default function PortalLayout() {
   const [userProfile, setUserProfile] = useState(null);
   const [searchVal, setSearchVal] = useState("");
   const [boardSearch, setBoardSearch] = useState("");
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
+    if (typeof window !== "undefined") {
+      return window.innerWidth >= 768;
+    }
+    return true;
+  });
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -103,7 +118,7 @@ export default function PortalLayout() {
           >
             <Menu size={20} />
           </button>
-          <Link to="/portal/dashboard" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 8 }}>
+          <Link to="/portal/calendar" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 8 }}>
             <span style={{ fontSize: 18, fontWeight: 700, color: "#1e293b", letterSpacing: "-0.025em" }}>
               HIGH & LAW <span style={{ color: "#8b5cf6", fontWeight: 500, fontSize: 14 }}>인트라넷</span>
             </span>
@@ -111,64 +126,70 @@ export default function PortalLayout() {
         </div>
 
         {/* 가운데 검색창 */}
-        <form onSubmit={handleSearchSubmit} style={{ position: "relative", width: 360 }}>
-          <div style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#94a3b8", display: "flex" }}>
-            <Search size={16} />
-          </div>
-          <input
-            type="text"
-            placeholder="게시글 검색"
-            value={searchVal}
-            onChange={(e) => setSearchVal(e.target.value)}
-            style={{
-              width: "100%", padding: "8px 14px 8px 38px", fontSize: 13,
-              border: "1px solid #e2e8f0", borderRadius: 20, background: "#f1f5f9",
-              outline: "none", transition: "all 0.2s", boxSizing: "border-box"
-            }}
-            onFocus={(e) => { e.target.style.background = "#fff"; e.target.style.borderColor = "#a855f7"; }}
-            onBlur={(e) => { e.target.style.background = "#f1f5f9"; e.target.style.borderColor = "#e2e8f0"; }}
-          />
-        </form>
+        {!isMobile && (
+          <form onSubmit={handleSearchSubmit} style={{ position: "relative", width: 360 }}>
+            <div style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#94a3b8", display: "flex" }}>
+              <Search size={16} />
+            </div>
+            <input
+              type="text"
+              placeholder="게시글 검색"
+              value={searchVal}
+              onChange={(e) => setSearchVal(e.target.value)}
+              style={{
+                width: "100%", padding: "8px 14px 8px 38px", fontSize: 13,
+                border: "1px solid #e2e8f0", borderRadius: 20, background: "#f1f5f9",
+                outline: "none", transition: "all 0.2s", boxSizing: "border-box"
+              }}
+              onFocus={(e) => { e.target.style.background = "#fff"; e.target.style.borderColor = "#a855f7"; }}
+              onBlur={(e) => { e.target.style.background = "#f1f5f9"; e.target.style.borderColor = "#e2e8f0"; }}
+            />
+          </form>
+        )}
 
         {/* 오른쪽 퀵 메뉴 및 아바타 */}
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Link 
-            to="/portal/calendar" 
-            style={{ padding: 8, borderRadius: 8, color: location.pathname === "/portal/calendar" ? "#8b5cf6" : "#64748b", transition: "background 0.2s", display: "flex" }}
-            title="일정 캘린더"
-          >
-            <Home size={20} />
-          </Link>
-          <Link 
-            to="/portal/board" 
-            style={{ padding: 8, borderRadius: 8, color: location.pathname === "/portal/board" ? "#8b5cf6" : "#64748b", transition: "background 0.2s", display: "flex" }}
-            title="내부 게시판"
-          >
-            <FileText size={20} />
-          </Link>
-          <Link 
-            to="/portal/dashboard" 
-            style={{ padding: 8, borderRadius: 8, color: location.pathname === "/portal/dashboard" ? "#8b5cf6" : "#64748b", transition: "background 0.2s", display: "flex" }}
-            title="캘린더 일정"
-          >
-            <Calendar size={20} />
-          </Link>
-          <Link 
-            to="/portal/time-tracking" 
-            style={{ padding: 8, borderRadius: 8, color: location.pathname === "/portal/time-tracking" ? "#8b5cf6" : "#64748b", transition: "background 0.2s", display: "flex" }}
-            title="타임트래킹"
-          >
-            <Clock size={20} />
-          </Link>
-          <Link 
-            to="/portal/profile" 
-            style={{ padding: 8, borderRadius: 8, color: location.pathname === "/portal/profile" ? "#8b5cf6" : "#64748b", transition: "background 0.2s", display: "flex" }}
-            title="내 프로필 설정"
-          >
-            <User size={20} />
-          </Link>
+          {!isMobile && (
+            <>
+              <Link 
+                to="/portal/calendar" 
+                style={{ padding: 8, borderRadius: 8, color: location.pathname === "/portal/calendar" ? "#8b5cf6" : "#64748b", transition: "background 0.2s", display: "flex" }}
+                title="일정 캘린더"
+              >
+                <Home size={20} />
+              </Link>
+              <Link 
+                to="/portal/board" 
+                style={{ padding: 8, borderRadius: 8, color: location.pathname === "/portal/board" ? "#8b5cf6" : "#64748b", transition: "background 0.2s", display: "flex" }}
+                title="내부 게시판"
+              >
+                <FileText size={20} />
+              </Link>
+              <Link 
+                to="/portal/dashboard" 
+                style={{ padding: 8, borderRadius: 8, color: location.pathname === "/portal/dashboard" ? "#8b5cf6" : "#64748b", transition: "background 0.2s", display: "flex" }}
+                title="사건 목록"
+              >
+                <Calendar size={20} />
+              </Link>
+              <Link 
+                to="/portal/time-tracking" 
+                style={{ padding: 8, borderRadius: 8, color: location.pathname === "/portal/time-tracking" ? "#8b5cf6" : "#64748b", transition: "background 0.2s", display: "flex" }}
+                title="타임트래킹"
+              >
+                <Clock size={20} />
+              </Link>
+              <Link 
+                to="/portal/profile" 
+                style={{ padding: 8, borderRadius: 8, color: location.pathname === "/portal/profile" ? "#8b5cf6" : "#64748b", transition: "background 0.2s", display: "flex" }}
+                title="내 프로필 설정"
+              >
+                <User size={20} />
+              </Link>
 
-          <div style={{ height: 16, width: 1, background: "#cbd5e1", margin: "0 8px" }} />
+              <div style={{ height: 16, width: 1, background: "#cbd5e1", margin: "0 8px" }} />
+            </>
+          )}
 
           {/* 프로필 아바타 및 로그아웃 버튼 */}
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -307,6 +328,22 @@ export default function PortalLayout() {
               <User size={16} />
               프로필 설정
             </Link>
+
+            <a
+              href="/"
+              style={{
+                display: "flex", alignItems: "center", gap: 10, padding: "8px 12px",
+                borderRadius: 6, textDecoration: "none", fontSize: 13,
+                color: "#334155",
+                fontWeight: 500,
+                transition: "background 0.15s", marginBottom: 2
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "#f1f5f9"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+            >
+              <BookOpen size={16} style={{ color: "#64748b" }} />
+              홈페이지 바로가기
+            </a>
           </div>
 
           <div style={{ height: 1, background: "#f1f5f9", margin: "0 16px 12px" }} />
