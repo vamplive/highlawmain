@@ -36,7 +36,6 @@ const VALUES = [
 
 const ABOUT_DEFAULTS = {
   hero: { heading: "사무소 소개", subheading: "ABOUT HIGHLAW LAWFIRM", description: "노무·인사, 기업, 국제, 엔터테인먼트, 게임, 방산 등 각 분야의 인정받은 변호사들이 최적화된 법률 솔루션을 제공합니다." },
-  philosophy: { heading: "특수 분야의 깊이로\n결과를 만드는 로펌", description: "법무법인 하이로는 불법파견·게임사기·노동·군사건의 4개 분야만 집중적으로 다룹니다. 첫 상담부터 사건 종결까지, 해당 분야의 절차와 판례를 깊이 이해하는 변호사가 직접 사건을 진행합니다." },
   greetings: {
     title: "Message from Partners",
     eyebrow: "Introduction",

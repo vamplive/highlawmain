@@ -18,7 +18,6 @@ export default function AboutSection({ settings, update, updateItem, addItem, re
 
   const s = settings;
   const hero = s["about/hero"] || {};
-  const philosophy = s["about/philosophy"] || {};
   const greetings = s["about/greetings"] || {};
   const values = s["about/values"] || { items: [] };
   const directions = s["about/directions"] || {};
@@ -54,24 +53,15 @@ export default function AboutSection({ settings, update, updateItem, addItem, re
 
       {/* 탭 콘텐츠 */}
       {activeSubTab === "hero" && (
-        <>
-          <SectionCard title="히어로">
-            <FieldRow>
-              <FormField label="제목" value={hero.heading || ""} onChange={(v) => update("about/hero", "heading", v)} />
-              <FormField label="부제목" value={hero.subheading || ""} onChange={(v) => update("about/hero", "subheading", v)} />
-            </FieldRow>
-            <div style={{ marginTop: 12 }}>
-              <FormField label="설명" type="textarea" minHeight={48} value={hero.description || ""} onChange={(v) => update("about/hero", "description", v)} />
-            </div>
-          </SectionCard>
-
-          <SectionCard title="철학 (기본)">
-            <FormField label="제목" type="textarea" minHeight={48} value={philosophy.heading || ""} onChange={(v) => update("about/philosophy", "heading", v)} />
-            <div style={{ marginTop: 12 }}>
-              <FormField label="설명" type="textarea" minHeight={72} value={philosophy.description || ""} onChange={(v) => update("about/philosophy", "description", v)} />
-            </div>
-          </SectionCard>
-        </>
+        <SectionCard title="히어로">
+          <FieldRow>
+            <FormField label="제목" value={hero.heading || ""} onChange={(v) => update("about/hero", "heading", v)} />
+            <FormField label="부제목" value={hero.subheading || ""} onChange={(v) => update("about/hero", "subheading", v)} />
+          </FieldRow>
+          <div style={{ marginTop: 12 }}>
+            <FormField label="설명" type="textarea" minHeight={48} value={hero.description || ""} onChange={(v) => update("about/hero", "description", v)} />
+          </div>
+        </SectionCard>
       )}
 
       {activeSubTab === "greetings" && (
