@@ -1,11 +1,12 @@
 /** 관리자 블로그 관리 — 게시글 목록, 분류/상태 필터, 삭제, 에디터 진입 */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { PageHeader, EmptyState, Pagination, COLORS, badgeStyle, fieldStyle, outlineBtnStyle, thStyle, tdStyle } from "../../../components/admin";
+import { PageHeader, EmptyState, Pagination, COLORS, badgeStyle, fieldStyle, outlineBtnStyle, thStyle, tdStyle, btnStyle } from "../../../components/admin";
 import { BLOG_CATEGORIES, DOC_STATUS_META } from "../../editor/modules/constants";
 import { api } from "../../../utils/api";
 import { formatDate, truncate } from "../../../utils/formatters";
 import { showToast } from "../../../utils/showToast";
+import useSiteSettings from "../site-manager/useSiteSettings";
 
 const PAGE_SIZE = 20;
 const ANALYTICS_PERIOD = "90d";
@@ -71,11 +72,11 @@ function SelectAllCheckbox({ checked, indeterminate, onChange, disabled = false,
   );
 }
 
-function BlogFilters({ category, setCategory, status, setStatus, search, setSearch }) {
+function BlogFilters({ category, setCategory, status, setStatus, search, setSearch, hideCategory }) {
   return (
     <div style={{
       display: "grid",
-      gridTemplateColumns: "minmax(220px, 1fr) 180px 180px",
+      gridTemplateColumns: hideCategory ? "minmax(220px, 1fr) 180px" : "minmax(220px, 1fr) 180px 180px",
       gap: 12,
       marginBottom: 18,
       padding: 16,
@@ -89,11 +90,13 @@ function BlogFilters({ category, setCategory, status, setStatus, search, setSear
         placeholder="제목, 요약, 태그 검색"
         style={fieldStyle}
       />
-      <select value={category} onChange={(event) => setCategory(event.target.value)} style={fieldStyle}>
-        {CATEGORY_OPTIONS.map((option) => (
-          <option key={option.value} value={option.value}>{option.label}</option>
-        ))}
-      </select>
+      {!hideCategory && (
+        <select value={category} onChange={(event) => setCategory(event.target.value)} style={fieldStyle}>
+          {CATEGORY_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>{option.label}</option>
+          ))}
+        </select>
+      )}
       <select value={status} onChange={(event) => setStatus(event.target.value)} style={fieldStyle}>
         {STATUS_OPTIONS.map((option) => (
           <option key={option.value} value={option.value}>{option.label}</option>
@@ -450,7 +453,35 @@ function BlogOverallAnalyticsModal({ data, loading, onClose, onOpenPost }) {
   );
 }
 
-export default function AdminBlog() {
+export default function AdminBlog({ settings, update }) {
+  const [activeSubTab, setActiveSubTab] = useState("news");
+  const localSettings = useSiteSettings();
+  const s = settings || localSettings.settings;
+  const upd = update || localSettings.update;
+
+  const [savingHero, setSavingHero] = useState(false);
+  const saveHeroSettings = async () => {
+    setSavingHero(true);
+    try {
+      const heroContent = s["news/hero"];
+      await api.post("/site-settings/bulk", {
+        settings: [{ page: "news", section: "hero", content: heroContent }]
+      });
+      alert("히어로 설정이 저장되었습니다.");
+    } catch (err) {
+      alert("저장 실패: " + err.message);
+    } finally {
+      setSavingHero(false);
+    }
+  };
+
+  const SUB_TABS = [
+    { key: "hero", label: "히어로" },
+    { key: "news", label: "하이로 뉴스" },
+    { key: "analysis", label: "판례 분석" },
+    { key: "guide", label: "법률가이드" }
+  ];
+
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState("");
@@ -491,7 +522,7 @@ export default function AdminBlog() {
 
   useEffect(() => {
     setPage(1);
-  }, [category, status, search]);
+  }, [activeSubTab, status, search]);
 
   useEffect(() => {
     setSelectedIds((current) => {
@@ -508,10 +539,12 @@ export default function AdminBlog() {
 
   const filteredPosts = useMemo(() => {
     const keyword = search.trim().toLowerCase();
+    const currentCategory = activeSubTab === "news" ? "construction_realestate" :
+                            activeSubTab === "analysis" ? "case_analysis" :
+                            activeSubTab === "guide" ? "law_guide" : "";
     return posts.filter((post) => {
       const postStatus = getPostStatus(post);
-      const categoryMatches = !category
-        || (category === "__uncategorized" ? !BLOG_CATEGORIES.some((item) => item.value === post.category) : post.category === category);
+      const categoryMatches = !currentCategory || post.category === currentCategory;
       const statusMatches = !status || postStatus === status;
       if (!categoryMatches || !statusMatches) return false;
       if (!keyword) return true;
@@ -525,7 +558,7 @@ export default function AdminBlog() {
       ].filter(Boolean).join(" ").toLowerCase();
       return text.includes(keyword);
     });
-  }, [posts, category, status, search]);
+  }, [posts, activeSubTab, status, search]);
 
   const totalPages = Math.max(1, Math.ceil(filteredPosts.length / PAGE_SIZE));
   const pagePosts = filteredPosts.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -651,101 +684,171 @@ export default function AdminBlog() {
     handleOpenAnalytics(post);
   };
 
+  let newPostUrl = "/admin/editor?mode=blog";
+  if (activeSubTab === "news") newPostUrl += "&category=construction_realestate";
+  else if (activeSubTab === "analysis") newPostUrl += "&category=case_analysis";
+  else if (activeSubTab === "guide") newPostUrl += "&category=law_guide";
+
   return (
     <div>
-      <PageHeader
-        title="블로그 관리"
-        subtitle={`전체 ${posts.length}개 · 검색 결과 ${filteredPosts.length}개`}
-      >
-        <button onClick={handleOpenOverallAnalytics} style={outlineBtnStyle("#1a3a6b")}>
-          전체 조회 분석
-        </button>
-        <Link to="/admin/editor" style={{ ...outlineBtnStyle(), textDecoration: "none", display: "inline-flex", alignItems: "center" }}>
-          에디터 열기
-        </Link>
-        <Link to="/admin/editor?mode=blog" style={{ ...outlineBtnStyle("#1a3a6b"), textDecoration: "none", display: "inline-flex", alignItems: "center" }}>
-          + 새 블로그 작성
-        </Link>
-      </PageHeader>
-
-      <BlogStats posts={posts} />
-      <BlogFilters
-        category={category}
-        setCategory={setCategory}
-        status={status}
-        setStatus={setStatus}
-        search={search}
-        setSearch={setSearch}
-      />
-
-      {selectedCount > 0 && (
-        <div style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 12,
-          marginBottom: 12,
-          padding: "12px 14px",
-          border: `1px solid ${COLORS.border}`,
-          borderRadius: 8,
-          background: "#fff",
-        }}>
-          <div style={{ fontSize: 13, color: COLORS.text }}>
-            <strong>{selectedCount}개</strong> 게시글 선택됨
-          </div>
-          <div style={{ display: "flex", gap: 8 }}>
+      {/* 블로그 관리 탭 */}
+      <div style={{ display: "flex", gap: 0, borderBottom: `2px solid ${COLORS.borderLight}`, marginBottom: 20 }}>
+        {SUB_TABS.map((tab) => {
+          const isActive = activeSubTab === tab.key;
+          return (
             <button
-              type="button"
-              onClick={clearSelection}
-              disabled={bulkDeleting}
-              style={outlineBtnStyle()}
+              key={tab.key}
+              onClick={() => setActiveSubTab(tab.key)}
+              style={{
+                padding: "10px 22px", fontSize: 13, fontWeight: isActive ? 600 : 400,
+                color: isActive ? COLORS.accent : COLORS.textSecondary,
+                background: "none", border: "none", cursor: "pointer",
+                borderBottom: isActive ? `2px solid ${COLORS.accent}` : "2px solid transparent",
+                marginBottom: -2, whiteSpace: "nowrap", transition: "all 0.15s",
+              }}
             >
-              선택 해제
+              {tab.label}
             </button>
-            <button
-              type="button"
-              onClick={handleBulkDelete}
-              disabled={bulkDeleting}
-              style={outlineBtnStyle(COLORS.danger)}
-            >
-              {bulkDeleting ? "삭제 중..." : "선택 삭제"}
-            </button>
+          );
+        })}
+      </div>
+
+      {activeSubTab === "hero" ? (
+        <div style={{ background: "#fff", padding: 24, border: `1px solid ${COLORS.borderLight}`, borderRadius: 6, marginBottom: 24 }}>
+          <h3 style={{ fontSize: 15, fontWeight: 600, color: COLORS.text, marginBottom: 16 }}>히어로 섹션 편집</h3>
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <FormField
+              label="제목 (Heading)"
+              value={s["news/hero"]?.heading || ""}
+              onChange={(v) => upd("news/hero", "heading", v)}
+              placeholder="블로그"
+            />
+            <FormField
+              label="부제목 (Subheading)"
+              value={s["news/hero"]?.subheading || ""}
+              onChange={(v) => upd("news/hero", "subheading", v)}
+              placeholder="BLOG"
+            />
+            <FormField
+              label="설명 (Description)"
+              value={s["news/hero"]?.description || ""}
+              onChange={(v) => upd("news/hero", "description", v)}
+              type="textarea"
+              placeholder="설명을 입력해 주세요."
+            />
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
+              <button
+                onClick={saveHeroSettings}
+                disabled={savingHero}
+                style={{
+                  ...btnStyle(COLORS.accent),
+                  padding: "8px 16px",
+                  fontSize: 13,
+                }}
+              >
+                {savingHero ? "저장 중..." : "저장"}
+              </button>
+            </div>
           </div>
         </div>
-      )}
-
-      {loading ? (
-        <p style={{ textAlign: "center", padding: 60, color: COLORS.muted }}>블로그 게시글 조회 중...</p>
-      ) : pagePosts.length === 0 ? (
-        <EmptyState icon="📝" message="검색 결과가 없습니다" />
       ) : (
-        <BlogTable
-          posts={pagePosts}
-          selectedIds={selectedIds}
-          allPageSelected={allPageSelected}
-          somePageSelected={somePageSelected}
-          onTogglePost={handleTogglePost}
-          onTogglePage={handleTogglePage}
-          onDelete={handleDelete}
-          onOpenAnalytics={handleOpenAnalytics}
-        />
-      )}
+        <>
+          <PageHeader
+            title={`${SUB_TABS.find((t) => t.key === activeSubTab)?.label} 관리`}
+            subtitle={`전체 ${posts.length}개 · 검색 결과 ${filteredPosts.length}개`}
+          >
+            <button onClick={handleOpenOverallAnalytics} style={outlineBtnStyle("#1a3a6b")}>
+              전체 조회 분석
+            </button>
+            <Link to="/admin/editor" style={{ ...outlineBtnStyle(), textDecoration: "none", display: "inline-flex", alignItems: "center" }}>
+              에디터 열기
+            </Link>
+            <Link to={newPostUrl} style={{ ...outlineBtnStyle("#1a3a6b"), textDecoration: "none", display: "inline-flex", alignItems: "center" }}>
+              + 새 블로그 작성
+            </Link>
+          </PageHeader>
 
-      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+          <BlogStats posts={posts} />
+          <BlogFilters
+            category={category}
+            setCategory={setCategory}
+            status={status}
+            setStatus={setStatus}
+            search={search}
+            setSearch={setSearch}
+            hideCategory={true}
+          />
 
-      <BlogAnalyticsModal
-        post={analyticsPost}
-        data={analyticsData}
-        loading={analyticsLoading}
-        onClose={() => setAnalyticsPost(null)}
-      />
-      {overallOpen && (
-        <BlogOverallAnalyticsModal
-          data={overallData}
-          loading={overallLoading}
-          onClose={() => setOverallOpen(false)}
-          onOpenPost={handleOpenPostFromOverall}
-        />
+          {selectedCount > 0 && (
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 12,
+              marginBottom: 12,
+              padding: "12px 14px",
+              border: `1px solid ${COLORS.border}`,
+              borderRadius: 8,
+              background: "#fff",
+            }}>
+              <div style={{ fontSize: 13, color: COLORS.text }}>
+                <strong>{selectedCount}개</strong> 게시글 선택됨
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={clearSelection}
+                  disabled={bulkDeleting}
+                  style={outlineBtnStyle()}
+                >
+                  선택 해제
+                </button>
+                <button
+                  type="button"
+                  onClick={handleBulkDelete}
+                  disabled={bulkDeleting}
+                  style={outlineBtnStyle(COLORS.danger)}
+                >
+                  {bulkDeleting ? "삭제 중..." : "선택 삭제"}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {loading ? (
+            <p style={{ textAlign: "center", padding: 60, color: COLORS.muted }}>블로그 게시글 조회 중...</p>
+          ) : pagePosts.length === 0 ? (
+            <EmptyState icon="📝" message="검색 결과가 없습니다" />
+          ) : (
+            <BlogTable
+              posts={pagePosts}
+              selectedIds={selectedIds}
+              allPageSelected={allPageSelected}
+              somePageSelected={somePageSelected}
+              onTogglePost={handleTogglePost}
+              onTogglePage={handleTogglePage}
+              onDelete={handleDelete}
+              onOpenAnalytics={handleOpenAnalytics}
+            />
+          )}
+
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+
+          <BlogAnalyticsModal
+            post={analyticsPost}
+            data={analyticsData}
+            loading={analyticsLoading}
+            onClose={() => setAnalyticsPost(null)}
+          />
+          {overallOpen && (
+            <BlogOverallAnalyticsModal
+              data={overallData}
+              loading={overallLoading}
+              onClose={() => setOverallOpen(false)}
+              onOpenPost={handleOpenPostFromOverall}
+            />
+          )}
+        </>
       )}
     </div>
   );

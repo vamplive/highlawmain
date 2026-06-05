@@ -4,70 +4,72 @@
  */
 import { useSearchParams } from "react-router-dom";
 import { Link } from "react-router-dom";
-import {
-  ArrowRight, Phone,
-  AlertTriangle, CheckCircle2, Shield, Clock, Users, Target,
-  Briefcase, HardHat, Award, Scale, Building2, Music, Building, Heart, Key, Globe
-} from "lucide-react";
+import * as LucideIcons from "lucide-react";
 import useReveal from "../../hooks/useReveal";
 import Seo from "../../components/Seo";
 import { buildBreadcrumbJsonLd } from "../../lib/seo";
 import { PublicHero, SectionHeading, SurfaceCard } from "../../components/public/PublicDesign";
+import { useSiteSettingsPage } from "../../hooks/useSiteSettings";
 
-/* ── 의뢰인 고민 ── */
-const PAIN_POINTS = [
-  { icon: AlertTriangle, text: <>복잡한 <span style={{ color: "var(--text-primary)", fontWeight: 700 }}>민사소송</span>과 대여금·공사대금·손해배상 청구 문제로 앞날이 막막하다</> },
-  { icon: AlertTriangle, text: <>갑작스러운 <span style={{ color: "var(--text-primary)", fontWeight: 700 }}>형사 사건</span>에 연루되어 경찰·검찰 수사와 구속 및 처벌 위험에 처해 있다</> },
-  { icon: AlertTriangle, text: <>부당해고, 임금체불 및 취업규칙·근로계약 등 <span style={{ color: "var(--text-primary)", fontWeight: 700 }}>인사 노무</span> 관련 규정 정비가 시급하다</> },
-  { icon: AlertTriangle, text: <>경영권분쟁, <span style={{ color: "var(--text-primary)", fontWeight: 700 }}>기업 경영</span> 리스크, 주권 등 법적 리스크 관리 및 해결이 필요하다</> },
-  { icon: AlertTriangle, text: <><span style={{ color: "var(--text-primary)", fontWeight: 700 }}>중대재해</span>처벌법 및 산업안전보건법 준수를 위한 안전보건확보의무 구축이 어렵다</> },
-  { icon: AlertTriangle, text: <><span style={{ color: "var(--text-primary)", fontWeight: 700 }}>스타트업</span> 창업, 주주간 계약(SHA), 스톡옵션 등 성장 단계별 전문 자문이 필요하다</> },
-  { icon: AlertTriangle, text: <><span style={{ color: "var(--text-primary)", fontWeight: 700 }}>이혼</span>, 재산분할, 유산 상속 및 유류분 반환 소송 등으로 심각한 가족 간 갈등을 겪고 있다</> },
-  { icon: AlertTriangle, text: <>군 조직 내의 특수한 <span style={{ color: "var(--text-primary)", fontWeight: 700 }}>군형사</span>사건 수사나 군인·군무원 보통징계위원회 징계에 직면했다</> },
-  { icon: AlertTriangle, text: <>국가, 지자체 또는 행정기관의 부당한 <span style={{ color: "var(--text-primary)", fontWeight: 700 }}>행정처분</span>으로 불이익을 겪고 있다</> },
-  { icon: AlertTriangle, text: <><span style={{ color: "var(--text-primary)", fontWeight: 700 }}>외국</span> 기업·외국인과의 법적 분쟁이나 출입국 및 이민 장벽에 부딪혔다</> },
-  { icon: AlertTriangle, text: <>조달 계약상의 지체상금 분쟁 및 <span style={{ color: "var(--text-primary)", fontWeight: 700 }}>방위사업</span> 입찰참가제한 처분 위기에 처했다</> },
-  { icon: AlertTriangle, text: <>전속계약 분쟁, <span style={{ color: "var(--text-primary)", fontWeight: 700 }}>저작권</span> 침해, 글로벌 국제 분쟁에 대한 정밀한 조력이 필요하다</> },
-];
+const PRACTICE_DEFAULTS = {
+  hero: { heading: "업무 분야", subheading: "Expertise" },
+  intro: { description: "법무법인 하이로는 다양한 법률 분야에서 축적된 경험과 전문성을 바탕으로 의뢰인에게 최적의 법률 솔루션을 제공합니다." },
+  painPoints: {
+    items: [
+      { text: "복잡한 **민사소송**과 대여금·공사대금·손해배상 청구 문제로 앞날이 막막하다" },
+      { text: "갑작스러운 **형사 사건**에 연루되어 경찰·검찰 수사와 구속 및 처벌 위험에 처해 있다" },
+      { text: "부당해고, 임금체불 및 취업규칙·근로계약 등 **인사 노무** 관련 규정 정비가 시급하다" },
+      { text: "경영권분쟁, **기업 경영** 리스크, 주권 등 법적 리스크 관리 및 해결이 필요하다" },
+      { text: "**중대재해**처벌법 및 산업안전보건법 준수를 위한 안전보건확보의무 구축이 어렵다" },
+      { text: "**스타트업** 창업, 주주간 계약(SHA), 스톡옵션 등 성장 단계별 전문 자문이 필요하다" },
+      { text: "**이혼**, 재산분할, 유산 상속 및 유류분 반환 소송 등으로 심각한 가족 간 갈등을 겪고 있다" },
+      { text: "군 조직 내의 특수한 **군형사**사건 수사나 군인·군무원 보통징계위원회 징계에 직면했다" },
+      { text: "국가, 지자체 또는 행정기관의 부당한 **행정처분**으로 불이익을 겪고 있다" },
+      { text: "**외국** 기업·외국인과의 법적 분쟁이나 출입국 및 이민 장벽에 부딪혔다" },
+      { text: "조달 계약상의 지체상금 분쟁 및 **방위사업** 입찰참가제한 처분 위기에 처했다" },
+      { text: "전속계약 분쟁, **저작권** 침해, 글로벌 국제 분쟁에 대한 정밀한 조력이 필요하다" }
+    ]
+  },
+  caseResults: {
+    items: [
+      { amount: "1:1", unit: "직접상담", label: "담당 전문 변호사 1:1 밀착 케어", category: "DIRECT" },
+      { amount: "정밀", unit: "법리분석", label: "판례 빅데이터 기반 심층 분석", category: "LAW" },
+      { amount: "신속", unit: "초동대응", label: "골든타임 내 긴급 변호인 개입", category: "SPEED" },
+      { amount: "신의", unit: "성실의무", label: "의뢰인의 권익을 끝까지 책임지는 헌신", category: "LOYALTY" }
+    ]
+  },
+  advantages: {
+    items: [
+      {
+        iconName: "Target",
+        title: "분야별 고도의 전문성",
+        desc: "각 법률 영역에서 실무 담당자로 근무하였거나 대형로펌에서 오랜 경험과 노하우를 쌓은 전담 변호사가 사건을 맡아 정밀한 판례 분석과 법리 해석을 토대로 맞춤형 해법을 도출합니다."
+      },
+      {
+        iconName: "Shield",
+        title: "현장과 절차의 정교한 이해",
+        desc: "사실조사와 증거 수집부터 법원, 검찰, 노동위원회, 군사법원, 행정기관 등 각 기관별 특수한 절차적 메커니즘을 정확히 파악하여 빈틈없이 조력합니다."
+      },
+      {
+        iconName: "Clock",
+        title: "신속하고 명확한 초기 대응",
+        desc: "소송 및 분쟁 해결의 성패는 초기 대응에 달려 있습니다. 하이로는 상담 진행 후 신속하게 사건의 핵심 쟁점과 향후 대응 로드맵을 제공합니다."
+      },
+      {
+        iconName: "Users",
+        title: "일관성 있는 통합 해결",
+        desc: "자문과 협상부터 소송 수행까지, 민·형사 및 행정 절차가 유기적으로 연계된 복잡한 사건도 전담 변호사가 처음부터 끝까지 일관된 맥락으로 책임지고 해결합니다."
+      }
+    ]
+  }
+};
 
-/* ── 핵심 서비스 가치 및 약속 ── */
-const CASE_RESULTS = [
-  { amount: "1:1", unit: "직접상담", label: "담당 전문 변호사 1:1 밀착 케어", category: "DIRECT" },
-  { amount: "정밀", unit: "법리분석", label: "판례 빅데이터 기반 심층 분석", category: "LAW" },
-  { amount: "신속", unit: "초동대응", label: "골든타임 내 긴급 변호인 개입", category: "SPEED" },
-  { amount: "신의", unit: "성실의무", label: "의뢰인의 권익을 끝까지 책임지는 헌신", category: "LOYALTY" },
-];
-
-/* ── 전문 로펌 차별점 ── */
-const ADVANTAGES = [
-  {
-    icon: Target,
-    title: "분야별 고도의 전문성",
-    desc: "각 법률 영역에서 실무 담당자로 근무하였거나 대형로펌에서 오랜 경험과 노하우를 쌓은 전담 변호사가 사건을 맡아 정밀한 판례 분석과 법리 해석을 토대로 맞춤형 해법을 도출합니다.",
-  },
-  {
-    icon: Shield,
-    title: "현장과 절차의 정교한 이해",
-    desc: "사실조사와 증거 수집부터 법원, 검찰, 노동위원회, 군사법원, 행정기관 등 각 기관별 특수한 절차적 메커니즘을 정확히 파악하여 빈틈없이 조력합니다.",
-  },
-  {
-    icon: Clock,
-    title: "신속하고 명확한 초기 대응",
-    desc: "소송 및 분쟁 해결의 성패는 초기 대응에 달려 있습니다. 하이로는 상담 진행 후 신속하게 사건의 핵심 쟁점과 향후 대응 로드맵을 제공합니다.",
-  },
-  {
-    icon: Users,
-    title: "일관성 있는 통합 해결",
-    desc: "자문과 협상부터 소송 수행까지, 민·형사 및 행정 절차가 유기적으로 연계된 복잡한 사건도 전담 변호사가 처음부터 끝까지 일관된 맥락으로 책임지고 해결합니다.",
-  },
-];
-
-/* ── 12대 분야 카드 ── */
+/* ── 12대 분야 카드 (동적 경로 유지를 위해 기존 구조 보존) ── */
 const AREAS = [
   {
     to: "/practice/game-fraud",
     image: "/practice-game.png",
-    icon: Target,
+    icon: LucideIcons.Target,
     label: "GAME FRAUD",
     title: "게임사기",
     desc: "현금 아이템 거래 사기, 계정 도용·해킹, 게임머니 편취, 운영사 부당 제재까지—온라인 게임 환경 고유의 증거 구조와 운영사 약관을 이해하는 변호인이 형사·민사 양면으로 피해를 회복합니다.",
@@ -76,7 +78,7 @@ const AREAS = [
   {
     to: "/practice/illegal-dispatch",
     image: "/practice-labor.png",
-    icon: Users,
+    icon: LucideIcons.Users,
     label: "ILLEGAL DISPATCH",
     title: "불법파견",
     desc: "도급계약서 한 장이 모든 것을 정당화하지 않습니다. 실제 지휘·감독, 노무 통제, 업무 일체성을 따져 위장도급·불법파견 여부를 가려내고 직접고용·차별시정·형사대응까지 완결합니다.",
@@ -85,7 +87,7 @@ const AREAS = [
   {
     to: "/practice/civil",
     image: "/practice-justice.png",
-    icon: Scale,
+    icon: LucideIcons.Scale,
     label: "CIVIL LAW",
     title: "민사",
     desc: "대여금, 손해배상, 부동산 분쟁, 계약 위반 등 일상생활과 기업 활동에서 발생하는 다양한 사법적 분쟁에 대한 정밀한 해법을 제시합니다.",
@@ -94,7 +96,7 @@ const AREAS = [
   {
     to: "/practice/criminal",
     image: "/practice-justice.png",
-    icon: Shield,
+    icon: LucideIcons.Shield,
     label: "CRIMINAL LAW",
     title: "형사",
     desc: "수사 단계부터 공판에 이르기까지 피의자·피고인의 권리를 철저히 옹호하며, 구속영장 청구 및 형사 절차 전반에 신속하고 강력하게 대응합니다.",
@@ -103,7 +105,7 @@ const AREAS = [
   {
     to: "/practice/labor",
     image: "/practice-labor.png",
-    icon: Briefcase,
+    icon: LucideIcons.Briefcase,
     label: "LABOR & HR",
     title: "인사노무",
     desc: "임금체불, 부당해고, 직장 내 괴롭힘, 근로기준법 및 관련 법령 위반 등 개별 노동 관계 및 집단적 노사 관계에서 발생하는 갈등을 합리적으로 해결합니다.",
@@ -112,7 +114,7 @@ const AREAS = [
   {
     to: "/practice/serious-accident",
     image: "/practice-corporate.png",
-    icon: HardHat,
+    icon: LucideIcons.HardHat,
     label: "SERIOUS ACCIDENTS",
     title: "중대재해",
     desc: "중대재해처벌법 및 산업안전보건법에 따른 형사책임 예방 조치와 사고 발생 시 신속한 수사 대응으로 기업과 경영책임자의 법적 리스크를 전방위로 방어합니다.",
@@ -121,7 +123,7 @@ const AREAS = [
   {
     to: "/practice/corporate",
     image: "/practice-corporate.png",
-    icon: Building2,
+    icon: LucideIcons.Building2,
     label: "CORPORATE LAW",
     title: "기업",
     desc: "M&A, 투자 유치, 주주총회 및 이사회 운영, 공정거래, 기업 지배구조 등 기업 경영 과정에서 발생하는 모든 법적 현안에 대한 상시 자문 및 송무 서비스를 제공합니다.",
@@ -130,7 +132,7 @@ const AREAS = [
   {
     to: "/practice/defense",
     image: "/practice-corporate.png",
-    icon: Target,
+    icon: LucideIcons.Target,
     label: "DEFENSE INDUSTRY",
     title: "방산",
     desc: "방위사업법 및 군수품 관리법에 의거한 방산 수출입, 군 납품 관련 계약 분석, 국방 획득 사업 및 관련 행정 제재 처분에 대해 심도 있는 전략적 솔루션을 제공합니다.",
@@ -139,7 +141,7 @@ const AREAS = [
   {
     to: "/practice/military-criminal",
     image: "/practice-justice.png",
-    icon: Award,
+    icon: LucideIcons.Award,
     label: "MILITARY CRIMINAL",
     title: "군형사",
     desc: "군형법이 적용되는 군인, 군무원 등의 특수성을 고려하여 군검찰·군사법원의 수사 및 재판 절차에 부합하는 군 법무관 출신 및 전문 변호사 군단이 전방위적 조력을 다합니다.",
@@ -148,7 +150,7 @@ const AREAS = [
   {
     to: "/practice/entertainment",
     image: "/practice-entertainment.png",
-    icon: Music,
+    icon: LucideIcons.Music,
     label: "ENTERTAINMENT",
     title: "엔터테인먼트",
     desc: "전속계약 분쟁, 저작권 및 퍼블리시티권 침해, 초상권 분쟁 등 엔터테인먼트 산업 전반의 계약 체결 단계부터 권리 구제까지 아티스트와 제작사의 이익을 대변합니다.",
@@ -157,7 +159,7 @@ const AREAS = [
   {
     to: "/practice/administrative",
     image: "/practice-justice.png",
-    icon: Building,
+    icon: LucideIcons.Building,
     label: "ADMINISTRATIVE LAW",
     title: "행정",
     desc: "국가기관이나 지자체의 부당한 처분(영업정지, 면허취소, 조세부과 등)에 대해 행정심판 및 행정소송을 제기하여 국민과 기업의 권익을 구제받을 수 있도록 최선을 다합니다.",
@@ -166,7 +168,7 @@ const AREAS = [
   {
     to: "/practice/family",
     image: "/practice-family.png",
-    icon: Heart,
+    icon: LucideIcons.Heart,
     label: "FAMILY & INHERITANCE",
     title: "가사 및 상속",
     desc: "이혼, 재산분할, 위자료, 양육권 분쟁을 비롯하여 유산 상속, 기여분, 유류분 반환 청구 등 가족 간의 복잡하고 감정적인 갈등 속에서 의뢰인의 권리를 따뜻하고 철저하게 대변합니다.",
@@ -175,7 +177,7 @@ const AREAS = [
   {
     to: "/practice/intellectual-property",
     image: "/practice-ip.png",
-    icon: Key,
+    icon: LucideIcons.Key,
     label: "INTELLECTUAL PROPERTY",
     title: "지적재산권",
     desc: "특허, 실용신안, 상표, 디자인, 저작권, 영업비밀 등 무형의 자산을 보호하기 위한 특허심판, 침해금지 청구 소송 및 손해배상 소송을 효과적으로 수행합니다.",
@@ -184,7 +186,7 @@ const AREAS = [
   {
     to: "/practice/immigration",
     image: "/practice-immigration.png",
-    icon: Globe,
+    icon: LucideIcons.Globe,
     label: "IMMIGRATION",
     title: "이민",
     desc: "외국인 투자자 비자, 취업 비자, 국적 취득, 영주권 신청 및 강제퇴거·입국 금지 처분에 대한 이의제기 등 국경을 넘는 법률적 장벽을 해소하는 전문적인 동행자가 되어 드립니다.",
@@ -198,8 +200,20 @@ const TABS = [
   { id: "areas", label: "업무 분야" },
 ];
 
+function renderBoldText(text) {
+  if (!text) return "";
+  const parts = text.split(/\*\*([^*]+)\*\*/g);
+  return parts.map((part, index) => {
+    if (index % 2 === 1) {
+      return <strong key={index} style={{ color: "var(--text-primary)", fontWeight: 700 }}>{part}</strong>;
+    }
+    return part;
+  });
+}
+
 export default function PracticePage() {
   const ref = useReveal();
+  const { settings: pageSettings } = useSiteSettingsPage("practice", PRACTICE_DEFAULTS);
   // URL 쿼리파라미터를 단일 진실 소스로 사용 — 드롭다운 링크 클릭 시 즉시 반영
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get("tab") || "pain-points";
@@ -217,10 +231,10 @@ export default function PracticePage() {
       />
       <PublicHero
         image="/realestate-hero.jpg"
-        eyebrow="Expertise"
-        title="업무 분야"
-        description={"검증된 실무 역량과 정교한 법리 해석을 결합하여,\n클라이언트의 가치를 실현하는 최적의 법률 솔루션을 제시합니다."}
-        primaryAction={{ to: "/consultation", label: "상담 예약", icon: <Phone size={15} /> }}
+        eyebrow={pageSettings.hero?.subheading}
+        title={pageSettings.hero?.heading}
+        description={pageSettings.intro?.description}
+        primaryAction={{ to: "/consultation", label: "상담 예약", icon: <LucideIcons.Phone size={15} /> }}
         secondaryAction={{ href: "tel:02-6925-6757", label: "02-6925-6757" }}
       />
 
@@ -294,9 +308,9 @@ export default function PracticePage() {
             <div style={{ maxWidth: 1100, margin: "0 auto" }}>
               <SectionHeading eyebrow="DO YOU NEED US" title="이런 문제로 고민하고 계신가요?" />
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 stagger">
-                {PAIN_POINTS.map((p, i) => (
+                {(pageSettings.painPoints?.items || []).map((p, i) => (
                   <SurfaceCard key={i} className="reveal flex items-center gap-4" style={{ padding: "18px 24px", background: "var(--bg-primary)", borderLeft: "3px solid var(--accent-gold)" }}>
-                    <p style={{ fontSize: 14, color: "var(--gray-600)", fontWeight: 400, lineHeight: 1.6 }}>&quot;{p.text}&quot;</p>
+                    <p style={{ fontSize: 14, color: "var(--gray-600)", fontWeight: 400, lineHeight: 1.6 }}>&quot;{renderBoldText(p.text)}&quot;</p>
                   </SurfaceCard>
                 ))}
               </div>
@@ -321,7 +335,7 @@ export default function PracticePage() {
                 borderRadius: "8px",
                 overflow: "hidden"
               }}>
-                {CASE_RESULTS.map((r, i) => (
+                {(pageSettings.caseResults?.items || []).map((r, i) => (
                   <div key={i} className="text-center" style={{ 
                     padding: "36px 20px", 
                     borderRight: i < 3 ? "1px solid rgba(201, 168, 76, 0.15)" : "none",
@@ -343,8 +357,8 @@ export default function PracticePage() {
             <div style={{ maxWidth: 1000, margin: "0 auto" }}>
               <SectionHeading eyebrow="WHY SPECIALIST" title="왜 법무법인 하이로인가" />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 stagger">
-                {ADVANTAGES.map((a, i) => {
-                  const Icon = a.icon;
+                {(pageSettings.advantages?.items || []).map((a, i) => {
+                  const Icon = LucideIcons[a.iconName] || LucideIcons.Target;
                   return (
                     <SurfaceCard key={i} className="reveal flex gap-5" style={{ padding: "32px 28px" }}>
                       <div style={{ width: 52, height: 52, background: "var(--accent-gold-light)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -392,12 +406,12 @@ export default function PracticePage() {
                         <ul style={{ listStyle: "none", padding: 0, margin: "0 0 24px" }}>
                           {area.highlights.map((h, j) => (
                             <li key={j} className="flex items-center gap-2" style={{ fontSize: 13.5, color: "var(--gray-600)", padding: "5px 0" }}>
-                              <CheckCircle2 size={14} color="var(--accent-gold)" strokeWidth={2} />{h}
+                              <LucideIcons.CheckCircle2 size={14} color="var(--accent-gold)" strokeWidth={2} />{h}
                             </li>
                           ))}
                         </ul>
                         <span className="inline-flex items-center gap-2 font-en transition-all duration-300 group-hover:gap-3" style={{ fontSize: 12, letterSpacing: "0.12em", color: "var(--accent-gold)" }}>
-                          자세히 보기 <ArrowRight size={14} />
+                          자세히 보기 <LucideIcons.ArrowRight size={14} />
                         </span>
                       </div>
                     </SurfaceCard>
@@ -424,7 +438,7 @@ export default function PracticePage() {
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <Link to="/consultation" className="inline-flex items-center gap-2 transition-all duration-300 hover:opacity-90" style={{ background: "var(--accent-gold)", color: "#fff", padding: "16px 40px", fontSize: 15, fontWeight: 600 }}>
-              <Phone size={16} /> 지금 상담 예약하기
+              <LucideIcons.Phone size={16} /> 지금 상담 예약하기
             </Link>
             <a href="tel:02-6925-6757" className="inline-flex items-center gap-2 transition-all duration-300 hover:border-[var(--accent-gold)] hover:text-[var(--accent-gold)]" style={{ border: "1px solid var(--white-15)", color: "var(--white-40)", padding: "16px 40px", fontSize: 15 }}>
               02-6925-6757

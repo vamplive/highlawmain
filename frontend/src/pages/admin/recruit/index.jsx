@@ -1,9 +1,10 @@
 /** 관리자 채용 공고 관리 페이지 — 목록, 등록, 수정, 삭제 */
 import { useState, useEffect, useCallback, useRef } from "react";
-import { PageHeader, EmptyState, COLORS, fieldStyle, outlineBtnStyle, thStyle, tdStyle, badgeStyle } from "../../../components/admin";
+import { PageHeader, EmptyState, COLORS, fieldStyle, outlineBtnStyle, thStyle, tdStyle, badgeStyle, FormField, btnStyle } from "../../../components/admin";
 import { api } from "../../../utils/api";
 import { formatDate } from "../../../utils/formatters";
 import { showToast } from "../../../utils/showToast";
+import useSiteSettings from "../site-manager/useSiteSettings";
 
 const CATEGORY_META = {
   new_lawyer: { label: "신입변호사", color: "#1a3a6b" },
@@ -281,7 +282,40 @@ function PostModal({ post, onClose, onSaved }) {
   );
 }
 
-export default function AdminRecruit() {
+export default function AdminRecruit({ settings, update }) {
+  const [activeSubTab, setActiveSubTab] = useState("posts");
+  const localSettings = useSiteSettings();
+  const s = settings || localSettings.settings;
+  const upd = update || localSettings.update;
+
+  const [savingSettings, setSavingSettings] = useState(false);
+  const saveRecruitSettings = async (section, content) => {
+    setSavingSettings(true);
+    try {
+      await api.post("/site-settings/bulk", {
+        settings: [{ page: "recruit", section, content }]
+      });
+      alert("설정이 저장되었습니다.");
+    } catch (err) {
+      alert("저장 실패: " + err.message);
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
+  const handleStepChange = (idx, field, value) => {
+    const nextSteps = [...(s["recruit/apply"]?.steps || [])];
+    nextSteps[idx] = { ...nextSteps[idx], [field]: value };
+    upd("recruit/apply", "steps", nextSteps);
+  };
+
+  const SUB_TABS = [
+    { key: "hero", label: "히어로" },
+    { key: "posts", label: "채용 공고" },
+    { key: "apply", label: "지원 안내" },
+    { key: "contact", label: "채용 문의" }
+  ];
+
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterCat, setFilterCat] = useState("");
@@ -333,93 +367,209 @@ export default function AdminRecruit() {
 
   return (
     <div>
-      <PageHeader title="채용 공고 관리" subtitle={`전체 ${posts.length}개`}>
-        <button onClick={handleNew} style={{ ...outlineBtnStyle("#1a3a6b"), background: "#1a3a6b", color: "#fff" }}>
-          + 새 공고 등록
-        </button>
-      </PageHeader>
+      {/* 채용 탭 바 */}
+      <div style={{ display: "flex", gap: 0, borderBottom: `2px solid ${COLORS.borderLight}`, marginBottom: 20 }}>
+        {SUB_TABS.map((tab) => {
+          const isActive = activeSubTab === tab.key;
+          return (
+            <button
+              key={tab.key}
+              onClick={() => setActiveSubTab(tab.key)}
+              style={{
+                padding: "10px 22px", fontSize: 13, fontWeight: isActive ? 600 : 400,
+                color: isActive ? COLORS.accent : COLORS.textSecondary,
+                background: "none", border: "none", cursor: "pointer",
+                borderBottom: isActive ? `2px solid ${COLORS.accent}` : "2px solid transparent",
+                marginBottom: -2, whiteSpace: "nowrap", transition: "all 0.15s",
+              }}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
 
-      {/* 통계 */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(120px, 1fr))", gap: 12, marginBottom: 18 }}>
-        {CATEGORY_OPTIONS.map((o) => (
-          <div key={o.value} style={{ padding: "14px 16px", border: `1px solid ${COLORS.border}`, borderRadius: 8, background: "#fff" }}>
-            <div style={{ fontSize: 12, color: COLORS.textMuted, marginBottom: 6 }}>{o.label}</div>
-            <div style={{ fontSize: 24, fontWeight: 700, color: COLORS.text }}>{stats[o.value] || 0}</div>
+      {/* ── 1. 히어로 탭 ── */}
+      {activeSubTab === "hero" && (
+        <div style={{ background: "#fff", padding: 24, border: `1px solid ${COLORS.borderLight}`, borderRadius: 6, marginBottom: 24 }}>
+          <h3 style={{ fontSize: 15, fontWeight: 600, color: COLORS.text, marginBottom: 16 }}>히어로 섹션 편집</h3>
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <FormField
+              label="제목 (Heading)"
+              value={s["recruit/hero"]?.heading || ""}
+              onChange={(v) => upd("recruit/hero", "heading", v)}
+              placeholder="인재 채용"
+            />
+            <FormField
+              label="부제목 (Subheading)"
+              value={s["recruit/hero"]?.subheading || ""}
+              onChange={(v) => upd("recruit/hero", "subheading", v)}
+              placeholder="CAREERS AT HIGHLAW"
+            />
+            <FormField
+              label="설명 (Description)"
+              value={s["recruit/hero"]?.description || ""}
+              onChange={(v) => upd("recruit/hero", "description", v)}
+              type="textarea"
+              placeholder="설명을 입력해 주세요."
+            />
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
+              <button
+                onClick={() => saveRecruitSettings("hero", s["recruit/hero"])}
+                disabled={savingSettings}
+                style={{ ...btnStyle(COLORS.accent), padding: "8px 16px", fontSize: 13 }}
+              >
+                {savingSettings ? "저장 중..." : "저장"}
+              </button>
+            </div>
           </div>
-        ))}
-      </div>
-
-      {/* 필터 */}
-      <div style={{ display: "flex", gap: 12, marginBottom: 18, padding: 16, border: `1px solid ${COLORS.border}`, borderRadius: 8, background: "#fff" }}>
-        <select value={filterCat} onChange={(e) => setFilterCat(e.target.value)} style={{ ...fieldStyle, flex: 1 }}>
-          <option value="">전체 분류</option>
-          {CATEGORY_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
-        <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} style={{ ...fieldStyle, flex: 1 }}>
-          <option value="">전체 상태</option>
-          <option value="open">모집 중</option>
-          <option value="closed">마감</option>
-        </select>
-      </div>
-
-      {/* 테이블 */}
-      {loading ? (
-        <p style={{ textAlign: "center", padding: 60, color: COLORS.textMuted }}>채용 공고 조회 중...</p>
-      ) : filtered.length === 0 ? (
-        <EmptyState icon="📋" message="등록된 채용 공고가 없습니다." />
-      ) : (
-        <div style={{ border: `1px solid ${COLORS.border}`, borderRadius: 8, overflow: "hidden", background: "#fff" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-            <thead>
-              <tr style={{ background: COLORS.bgForm, borderBottom: `1px solid ${COLORS.border}` }}>
-                {["분류", "공고 제목", "마감일", "상태", "공개", "등록일", "관리"].map((h, i) => (
-                  <th key={h} style={{ ...thStyle, textAlign: i === 6 ? "right" : "left" }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((post, idx) => {
-                const catMeta = CATEGORY_META[post.category] || {};
-                const statusMeta = STATUS_META[post.status] || {};
-                return (
-                  <tr key={post.id} style={{ borderBottom: `1px solid ${COLORS.borderLight}`, background: idx % 2 === 0 ? "transparent" : COLORS.bgInactive }}>
-                    <td style={tdStyle}>
-                      <span style={badgeStyle(catMeta.color || "#1a3a6b")}>{catMeta.label || post.category}</span>
-                    </td>
-                    <td style={{ ...tdStyle, maxWidth: 320 }}>
-                      <div style={{ fontWeight: 600, color: COLORS.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{post.title}</div>
-                      {post.applicationFileName && (
-                        <div style={{ fontSize: 11, color: COLORS.textMuted, marginTop: 2 }}>📎 {post.applicationFileName}</div>
-                      )}
-                    </td>
-                    <td style={{ ...tdStyle, color: COLORS.textMuted, fontSize: 12 }}>
-                      {post.applicationDeadline || "-"}
-                    </td>
-                    <td style={tdStyle}>
-                      <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 999, fontSize: 11, fontWeight: 700, color: statusMeta.color, background: statusMeta.bg, border: `1px solid ${statusMeta.border}` }}>
-                        {statusMeta.label || post.status}
-                      </span>
-                    </td>
-                    <td style={{ ...tdStyle, textAlign: "center" }}>
-                      <span style={{ fontSize: 16 }}>{post.isPublished ? "✅" : "⬜"}</span>
-                    </td>
-                    <td style={{ ...tdStyle, color: COLORS.textMuted, fontSize: 11 }}>{formatDate(post.createdAt)}</td>
-                    <td style={{ ...tdStyle, textAlign: "right" }}>
-                      <div style={{ display: "flex", justifyContent: "flex-end", gap: 6 }}>
-                        <button onClick={() => handleEdit(post)} style={outlineBtnStyle()}>편집</button>
-                        <button onClick={() => handleDelete(post)} style={outlineBtnStyle(COLORS.danger)}>삭제</button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
         </div>
       )}
 
-      {modalOpen && (
-        <PostModal post={modalPost} onClose={handleClose} onSaved={handleSaved} />
+      {/* ── 2. 지원 안내 탭 ── */}
+      {activeSubTab === "apply" && (
+        <div style={{ background: "#fff", padding: 24, border: `1px solid ${COLORS.borderLight}`, borderRadius: 6, marginBottom: 24 }}>
+          <h3 style={{ fontSize: 15, fontWeight: 600, color: COLORS.text, marginBottom: 16 }}>지원 절차 안내 편집</h3>
+          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+            {(s["recruit/apply"]?.steps || []).map((stepItem, idx) => (
+              <div key={idx} style={{ padding: 16, border: `1px solid ${COLORS.border}`, borderRadius: 6, background: COLORS.bgForm }}>
+                <h4 style={{ fontSize: 13, fontWeight: 600, color: COLORS.accent, marginBottom: 12 }}>Step {stepItem.step || `0${idx+1}`}</h4>
+                <div style={{ display: "flex", gap: 16, marginBottom: 12 }}>
+                  <FormField label="단계 번호" value={stepItem.step} onChange={(v) => handleStepChange(idx, "step", v)} style={{ width: 100 }} />
+                  <FormField label="제목" value={stepItem.title} onChange={(v) => handleStepChange(idx, "title", v)} style={{ flex: 1 }} />
+                </div>
+                <FormField label="설명" type="textarea" value={stepItem.desc} onChange={(v) => handleStepChange(idx, "desc", v)} />
+              </div>
+            ))}
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
+              <button
+                onClick={() => saveRecruitSettings("apply", s["recruit/apply"])}
+                disabled={savingSettings}
+                style={{ ...btnStyle(COLORS.accent), padding: "8px 16px", fontSize: 13 }}
+              >
+                {savingSettings ? "저장 중..." : "저장"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── 3. 채용 문의 탭 ── */}
+      {activeSubTab === "contact" && (
+        <div style={{ background: "#fff", padding: 24, border: `1px solid ${COLORS.borderLight}`, borderRadius: 6, marginBottom: 24 }}>
+          <h3 style={{ fontSize: 15, fontWeight: 600, color: COLORS.text, marginBottom: 16 }}>채용 문의 이메일 편집</h3>
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <FormField
+              label="문의 접수 이메일"
+              value={s["recruit/contact"]?.email || ""}
+              onChange={(v) => upd("recruit/contact", "email", v)}
+              placeholder="recruit@highlaw.net"
+            />
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
+              <button
+                onClick={() => saveRecruitSettings("contact", s["recruit/contact"])}
+                disabled={savingSettings}
+                style={{ ...btnStyle(COLORS.accent), padding: "8px 16px", fontSize: 13 }}
+              >
+                {savingSettings ? "저장 중..." : "저장"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── 4. 채용 공고 탭 (기존 목록 및 테이블) ── */}
+      {activeSubTab === "posts" && (
+        <>
+          <PageHeader title="채용 공고 관리" subtitle={`전체 ${posts.length}개`}>
+            <button onClick={handleNew} style={{ ...outlineBtnStyle("#1a3a6b"), background: "#1a3a6b", color: "#fff" }}>
+              + 새 공고 등록
+            </button>
+          </PageHeader>
+
+          {/* 통계 */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(120px, 1fr))", gap: 12, marginBottom: 18 }}>
+            {CATEGORY_OPTIONS.map((o) => (
+              <div key={o.value} style={{ padding: "14px 16px", border: `1px solid ${COLORS.border}`, borderRadius: 8, background: "#fff" }}>
+                <div style={{ fontSize: 12, color: COLORS.textMuted, marginBottom: 6 }}>{o.label}</div>
+                <div style={{ fontSize: 24, fontWeight: 700, color: COLORS.text }}>{stats[o.value] || 0}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* 필터 */}
+          <div style={{ display: "flex", gap: 12, marginBottom: 18, padding: 16, border: `1px solid ${COLORS.border}`, borderRadius: 8, background: "#fff" }}>
+            <select value={filterCat} onChange={(e) => setFilterCat(e.target.value)} style={{ ...fieldStyle, flex: 1 }}>
+              <option value="">전체 분류</option>
+              {CATEGORY_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+            <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} style={{ ...fieldStyle, flex: 1 }}>
+              <option value="">전체 상태</option>
+              <option value="open">모집 중</option>
+              <option value="closed">마감</option>
+            </select>
+          </div>
+
+          {/* 테이블 */}
+          {loading ? (
+            <p style={{ textAlign: "center", padding: 60, color: COLORS.textMuted }}>채용 공고 조회 중...</p>
+          ) : filtered.length === 0 ? (
+            <EmptyState icon="📋" message="등록된 채용 공고가 없습니다." />
+          ) : (
+            <div style={{ border: `1px solid ${COLORS.border}`, borderRadius: 8, overflow: "hidden", background: "#fff" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: COLORS.bgForm, borderBottom: `1px solid ${COLORS.border}` }}>
+                    {["분류", "공고 제목", "마감일", "상태", "공개", "등록일", "관리"].map((h, i) => (
+                      <th key={h} style={{ ...thStyle, textAlign: i === 6 ? "right" : "left" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((post, idx) => {
+                    const catMeta = CATEGORY_META[post.category] || {};
+                    const statusMeta = STATUS_META[post.status] || {};
+                    return (
+                      <tr key={post.id} style={{ borderBottom: `1px solid ${COLORS.borderLight}`, background: idx % 2 === 0 ? "transparent" : COLORS.bgInactive }}>
+                        <td style={tdStyle}>
+                          <span style={badgeStyle(catMeta.color || "#1a3a6b")}>{catMeta.label || post.category}</span>
+                        </td>
+                        <td style={{ ...tdStyle, maxWidth: 320 }}>
+                          <div style={{ fontWeight: 600, color: COLORS.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{post.title}</div>
+                          {post.applicationFileName && (
+                            <div style={{ fontSize: 11, color: COLORS.textMuted, marginTop: 2 }}>📎 {post.applicationFileName}</div>
+                          )}
+                        </td>
+                        <td style={{ ...tdStyle, color: COLORS.textMuted, fontSize: 12 }}>
+                          {post.applicationDeadline || "-"}
+                        </td>
+                        <td style={tdStyle}>
+                          <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 999, fontSize: 11, fontWeight: 700, color: statusMeta.color, background: statusMeta.bg, border: `1px solid ${statusMeta.border}` }}>
+                            {statusMeta.label || post.status}
+                          </span>
+                        </td>
+                        <td style={{ ...tdStyle, textAlign: "center" }}>
+                          <span style={{ fontSize: 16 }}>{post.isPublished ? "✅" : "⬜"}</span>
+                        </td>
+                        <td style={{ ...tdStyle, color: COLORS.textMuted, fontSize: 11 }}>{formatDate(post.createdAt)}</td>
+                        <td style={{ ...tdStyle, textAlign: "right" }}>
+                          <div style={{ display: "flex", justifyContent: "flex-end", gap: 6 }}>
+                            <button onClick={() => handleEdit(post)} style={outlineBtnStyle()}>편집</button>
+                            <button onClick={() => handleDelete(post)} style={outlineBtnStyle(COLORS.danger)}>삭제</button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {modalOpen && (
+            <PostModal post={modalPost} onClose={handleClose} onSaved={handleSaved} />
+          )}
+        </>
       )}
     </div>
   );
