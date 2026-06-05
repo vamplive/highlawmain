@@ -123,6 +123,8 @@ export const RESPONSIVE_STYLES = `
     justify-content: center;
     box-sizing: border-box;
     padding: 100px 32px;
+    /* 고정 헤더(유틸리티바 30px + 메인헤더 78px = 108px)가 앵커 스크롤 시 섹션을 가리지 않도록 */
+    scroll-margin-top: 108px;
   }
   .hp-section-inner {
     width: 100%;
@@ -180,7 +182,9 @@ export const RESPONSIVE_STYLES = `
   @media (max-width: 768px) {
     .hp-section {
       min-height: auto;
-      padding: 80px 20px;
+      /* 모바일: 헤더 높이(108px)를 상단 패딩에 포함하여 헤더와 겹침 방지 */
+      padding: 124px 20px 80px;
+      scroll-margin-top: 108px;
     }
     .hp-section-centered {
       margin-bottom: 40px;
@@ -190,7 +194,9 @@ export const RESPONSIVE_STYLES = `
 
   @media (max-width: 480px) {
     .hp-section {
-      padding: 64px 16px;
+      /* 소형 폰: 헤더 높이(108px) + 여유(16px) = 124px 상단 패딩 */
+      padding: 124px 16px 64px;
+      scroll-margin-top: 108px;
     }
     .hp-section-centered {
       margin-bottom: 32px;

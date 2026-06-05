@@ -359,7 +359,50 @@ export default function AdminLawyers({ settings, update }) {
                 <FormField label="영문 이름" value={crud.form.nameEn} onChange={(v) => crud.setField("nameEn", v)} placeholder="Gil-Dong Hong" />
                 <FormField label="직위" value={crud.form.position} onChange={(v) => crud.setField("position", v)} type="select" options={POSITION_OPTIONS} required />
                 <FormField label="팀" value={crud.form.team} onChange={(v) => crud.setField("team", v)} placeholder="예: 건설·부동산팀" />
-                <FormField label="사진 URL" value={crud.form.photoUrl} onChange={(v) => crud.setField("photoUrl", v)} placeholder="/lawyers/.../photo.jpg" />
+                <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
+                  <div style={{ flex: 1 }}>
+                    <FormField label="사진 URL" value={crud.form.photoUrl} onChange={(v) => crud.setField("photoUrl", v)} placeholder="/lawyers/.../photo.jpg" />
+                  </div>
+                  <div style={{ marginBottom: 4 }}>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      id="partner-photo-upload"
+                      style={{ display: "none" }}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        try {
+                          const formData = new FormData();
+                          formData.append("file", file);
+                          formData.append("folder", "lawyers");
+                          const res = await api.upload("/media/upload", formData);
+                          if (res.data?.url) {
+                            crud.setField("photoUrl", res.data.url);
+                            alert("사진이 성공적으로 업로드되었습니다.");
+                          }
+                        } catch (err) {
+                          alert("업로드 실패: " + err.message);
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => document.getElementById("partner-photo-upload")?.click()}
+                      style={{
+                        ...outlineBtnStyle(),
+                        padding: "8px 12px",
+                        fontSize: 13,
+                        height: 38,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 4
+                      }}
+                    >
+                      내 컴퓨터에서 선택
+                    </button>
+                  </div>
+                </div>
                 <FormField label="이메일" value={crud.form.email} onChange={(v) => crud.setField("email", v)} placeholder="lawyer@HIGHLAW.com" />
                 <FormField label="전화번호" value={crud.form.phone} onChange={(v) => crud.setField("phone", v)} placeholder="준비 중" />
                 <FormField label="상담시간" value={crud.form.consultHours} onChange={(v) => crud.setField("consultHours", v)} placeholder="평일 09:30 – 18:00" />

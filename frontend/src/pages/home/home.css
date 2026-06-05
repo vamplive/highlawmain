@@ -358,7 +358,8 @@
 @media (max-width: 768px) {
   .hp-hero-copy { font-size: 15px; }
   .hp-scroll-indicator { display: none; }
-  .hp-cta-section { padding: 72px 20px; }
+  /* 모바일: CTA 섹션 패딩을 헤더 겹침 방지를 위해 124px 상단 패딩으로 수정 */
+  .hp-cta-section { padding: 124px 20px 72px; }
 
   /* 히어로 콘텐츠: 모바일에서 하강 폭 축소 */
   .hp-hero-content-shifted {

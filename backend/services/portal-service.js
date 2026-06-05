@@ -1269,6 +1269,13 @@ async function createLawyerProfile(email, data) {
   const { name, nameEn, nameHanja, position, team, photoUrl, tagline, education, career, specialties, qualifications, publications, books, media, columns, cases, memberships, consultHours, blogUrl, introduction, phone } = data;
   if (!name || !name.trim()) throw new ServiceError("이름은 필수입니다", 400);
 
+  if (email) {
+    const [existing] = await db.select().from(lawyers).where(eq(lawyers.email, email.toLowerCase().trim()));
+    if (existing) {
+      return updateLawyerProfile(existing.id, { ...data, email });
+    }
+  }
+
   const id = crypto.randomUUID();
   await db.insert(lawyers).values({
     id,

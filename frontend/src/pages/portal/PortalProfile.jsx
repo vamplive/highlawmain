@@ -33,6 +33,83 @@ const SUB_TABS = [
   { key: "activities", label: "활동 & 이력",  Icon: BookOpen },
 ];
 
+// JSON array or string parser helper
+function parseJsonArray(value) {
+  if (!value) return [];
+  if (Array.isArray(value)) return value;
+  try {
+    const parsed = JSON.parse(value);
+    if (Array.isArray(parsed)) return parsed;
+  } catch {}
+  return String(value).split("\n").map((s) => s.trim()).filter(Boolean);
+}
+
+// Convert JSON array of objects/strings to newline-separated text for textarea
+function jsonToText(value, keys = []) {
+  const arr = parseJsonArray(value);
+  return arr
+    .map((item) => {
+      if (!item) return "";
+      if (typeof item === "string") return item;
+      if (keys.length > 0) {
+        const parts = keys.map((k) => (item[k] !== undefined && item[k] !== null ? String(item[k]).trim() : ""));
+        while (parts.length > 0 && parts[parts.length - 1] === "") {
+          parts.pop();
+        }
+        return parts.join(" / ");
+      }
+      return Object.values(item).join(" / ");
+    })
+    .filter(Boolean)
+    .join("\n");
+}
+
+// Convert newline-separated text to JSON array of objects
+function textToJSON(text, keys = []) {
+  if (!text) return JSON.stringify([]);
+  const lines = text.split("\n").map((s) => s.trim()).filter(Boolean);
+  const arr = lines.map((line) => {
+    const parts = line.split("/").map((p) => p.trim());
+    if (keys.length > 0) {
+      const obj = {};
+      keys.forEach((key, idx) => {
+        if (idx === keys.length - 1 && parts.length > keys.length) {
+          obj[key] = parts.slice(idx).join(" / ");
+        } else {
+          obj[key] = parts[idx] || "";
+        }
+      });
+      return obj;
+    }
+    return line;
+  });
+  return JSON.stringify(arr);
+}
+
+// Specialties helper (comma-separated strings)
+function specialtiesToText(value) {
+  const arr = parseJsonArray(value);
+  return arr.join(", ");
+}
+
+function textToSpecialties(text) {
+  if (!text) return JSON.stringify([]);
+  const arr = text.split(",").map((s) => s.trim()).filter(Boolean);
+  return JSON.stringify(arr);
+}
+
+// Simple list (newline-separated strings)
+function listToText(value) {
+  const arr = parseJsonArray(value);
+  return arr.join("\n");
+}
+
+function textToList(text) {
+  if (!text) return JSON.stringify([]);
+  const arr = text.split("\n").map((s) => s.trim()).filter(Boolean);
+  return JSON.stringify(arr);
+}
+
 const EMPTY_FORM = {
   name: "", nameEn: "", nameHanja: "",
   position: "변호사", team: "",
@@ -94,18 +171,18 @@ export default function PortalProfile() {
     email: prof.email || "",
     phone: prof.phone || "",
     blogUrl: prof.blogUrl || "",
-    education: prof.education || "",
-    career: prof.career || "",
-    qualifications: prof.qualifications || "",
-    specialties: prof.specialties || "",
+    education: jsonToText(prof.education, ["period", "title", "detail"]),
+    career: jsonToText(prof.career, ["period", "title", "detail"]),
+    qualifications: listToText(prof.qualifications),
+    specialties: specialtiesToText(prof.specialties),
     introduction: prof.introduction || "",
     consultHours: prof.consultHours || "",
-    publications: prof.publications || "",
-    books: prof.books || "",
-    media: prof.media || "",
-    columns: prof.columns || "",
-    cases: prof.cases || "",
-    memberships: prof.memberships || "",
+    publications: jsonToText(prof.publications, ["year", "title", "journal", "url"]),
+    books: jsonToText(prof.books, ["year", "title", "publisher", "role"]),
+    media: jsonToText(prof.media, ["date", "outlet", "title", "url"]),
+    columns: jsonToText(prof.columns, ["date", "title", "excerpt", "url"]),
+    cases: jsonToText(prof.cases, ["year", "category", "caseNumber", "description", "outcome"]),
+    memberships: listToText(prof.memberships),
   });
 
   const field = (key) => (e) => setForm((prev) => ({ ...prev, [key]: e.target.value }));
@@ -150,11 +227,25 @@ export default function PortalProfile() {
 
     setSaving(true);
     try {
+      const payload = {
+        ...form,
+        education: textToJSON(form.education, ["period", "title", "detail"]),
+        career: textToJSON(form.career, ["period", "title", "detail"]),
+        qualifications: textToList(form.qualifications),
+        specialties: textToSpecialties(form.specialties),
+        publications: textToJSON(form.publications, ["year", "title", "journal", "url"]),
+        books: textToJSON(form.books, ["year", "title", "publisher", "role"]),
+        media: textToJSON(form.media, ["date", "outlet", "title", "url"]),
+        columns: textToJSON(form.columns, ["date", "title", "excerpt", "url"]),
+        cases: textToJSON(form.cases, ["year", "category", "caseNumber", "description", "outcome"]),
+        memberships: textToList(form.memberships),
+      };
+
       if (profileExists) {
-        await portalApi.put("/lawyers/my-profile", form);
+        await portalApi.put("/lawyers/my-profile", payload);
         showToast("프로필이 수정되었습니다", "success");
       } else {
-        await portalApi.post("/lawyers/my-profile", form);
+        await portalApi.post("/lawyers/my-profile", payload);
         showToast("프로필이 등록되었습니다", "success");
         setProfileExists(true);
       }
@@ -333,8 +424,8 @@ export default function PortalProfile() {
                     <input style={fieldStyle} value={form.team} onChange={field("team")} placeholder="기업법무팀" />
                   </div>
                   <div>
-                    <label style={labelStyle}>이메일</label>
-                    <input type="email" style={fieldStyle} value={form.email} onChange={field("email")} placeholder="name@highlaw.co.kr" />
+                    <label style={labelStyle}>이메일 *</label>
+                    <input type="email" style={{ ...fieldStyle, background: "#f5f5f5", cursor: "not-allowed" }} value={form.email} disabled />
                   </div>
                   <div>
                     <label style={labelStyle}>연락처</label>

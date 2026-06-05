@@ -630,6 +630,11 @@ router.get("/lawyers/my-profile", portalAuth, async (req, res) => {
 
 router.post("/lawyers/my-profile", portalAuth, async (req, res) => {
   try {
+    const existing = await portalService.getLawyerProfileByEmail(req.portalUser.email);
+    if (existing) {
+      const result = await portalService.updateLawyerProfile(existing.id, { ...req.body, email: req.portalUser.email });
+      return res.json({ data: result, error: null, meta: null });
+    }
     const result = await portalService.createLawyerProfile(req.portalUser.email, req.body);
     res.status(201).json({ data: result, error: null, meta: null });
   } catch (e) {
@@ -641,7 +646,7 @@ router.put("/lawyers/my-profile", portalAuth, async (req, res) => {
   try {
     const profile = await portalService.getLawyerProfileByEmail(req.portalUser.email);
     if (!profile) return res.status(404).json({ data: null, error: "프로필이 존재하지 않습니다", meta: null });
-    const result = await portalService.updateLawyerProfile(profile.id, req.body);
+    const result = await portalService.updateLawyerProfile(profile.id, { ...req.body, email: req.portalUser.email });
     res.json({ data: result, error: null, meta: null });
   } catch (e) {
     handleError(res, e);
