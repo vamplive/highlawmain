@@ -97,23 +97,39 @@ const ABOUT_DEFAULTS = {
     items: [
       {
         year: "2026 - 현재",
-        title: "전문성 공고화 및 디지털 사법지원 시스템 고도화",
-        desc: "첫 상담부터 변호사가 모든 서면을 직접 전담하는 책임 상담제 및 인공지능 기반 사법 보조 데이터 분석 시스템을 구축하여 의뢰인 밀착 대응 시스템을 확대 고도화하였습니다."
+        events: [
+          {
+            title: "전문성 공고화 및 디지털 사법지원 시스템 고도화",
+            desc: "첫 상담부터 변호사가 모든 서면을 직접 전담하는 책임 상담제 및 인공지능 기반 사법 보조 데이터 분석 시스템을 구축하여 의뢰인 밀착 대응 시스템을 확대 고도화하였습니다."
+          }
+        ]
       },
       {
         year: "2025",
-        title: "서울 강남 오피스 확장 이전",
-        desc: "서울특별시 강남구 테헤란로 141 (역삼KR빌딩) 15층으로 오피스를 확장 이전하여, 불법파견 및 게임사기 관련 주요 거점 의뢰인들과 소통할 수 있는 프리미엄 컨설팅 룸과 인프라를 확충하였습니다."
+        events: [
+          {
+            title: "서울 강남 오피스 확장 이전",
+            desc: "서울특별시 강남구 테헤란로 141 (역삼KR빌딩) 15층으로 오피스를 확장 이전하여, 불법파견 및 게임사기 관련 주요 거점 의뢰인들과 소통할 수 있는 프리미엄 컨설팅 룸과 인프라를 확충하였습니다."
+          }
+        ]
       },
       {
         year: "2024",
-        title: "동일 분야 최고 실력의 파트너십 완성",
-        desc: "노동법 및 불법파견 사건의 권위자인 조덕재 대표변호사, 게임 소송계의 선구자인 김범 대표변호사, 군사 전문 행정 분야의 강민구 대표변호사가 파트너십을 맺어 3대 대표변호사 체제를 정립하였습니다."
+        events: [
+          {
+            title: "동일 분야 최고 실력의 파트너십 완성",
+            desc: "노동법 및 불법파견 사건의 권위자인 조덕재 대표변호사, 게임 소송계의 선구자인 김범 대표변호사, 군사 전문 행정 분야의 강민구 대표변호사가 파트너십을 맺어 3대 대표변호사 체제를 정립하였습니다."
+          }
+        ]
       },
       {
         year: "2023",
-        title: "법무법인 하이로 공식 출범",
-        desc: "불법파견, 게임사기, 노동, 군사건 등 고유의 노하우가 집적된 4대 특수 사법 분야의 독보적인 법률 권익 수호를 기치로 법무법인 하이로가 설립되어 법조계에 첫발을 내디뎠습니다."
+        events: [
+          {
+            title: "법무법인 하이로 공식 출범",
+            desc: "불법파견, 게임사기, 노동, 군사건 등 고유의 노하우가 집적된 4대 특수 사법 분야의 독보적인 법률 권익 수호를 기치로 법무법인 하이로가 설립되어 법조계에 첫발을 내디뎠습니다."
+          }
+        ]
       }
     ]
   }
@@ -487,12 +503,35 @@ export default function AboutPage() {
                     <span className="font-serif" style={{ fontSize: 20, fontWeight: 700, color: "var(--accent-gold)", display: "block", marginBottom: 6 }}>
                       {item.year}
                     </span>
-                    <h4 style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)", marginBottom: 8 }}>
-                      {item.title}
-                    </h4>
-                    <p style={{ fontSize: 13.5, color: "var(--gray-500)", lineHeight: 1.7, fontWeight: 300 }}>
-                      {item.desc}
-                    </p>
+                    {item.events ? (
+                      (item.events || []).map((event, eIdx) => (
+                        <div key={eIdx} style={{ marginBottom: eIdx < (item.events.length - 1) ? 24 : 0 }}>
+                          {event.title && (
+                            <h4 style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)", marginBottom: 8 }}>
+                              {event.title}
+                            </h4>
+                          )}
+                          {event.desc && (
+                            <p style={{ fontSize: 13.5, color: "var(--gray-500)", lineHeight: 1.7, fontWeight: 300 }}>
+                              {event.desc}
+                            </p>
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      <div>
+                        {item.title && (
+                          <h4 style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)", marginBottom: 8 }}>
+                            {item.title}
+                          </h4>
+                        )}
+                        {item.desc && (
+                          <p style={{ fontSize: 13.5, color: "var(--gray-500)", lineHeight: 1.7, fontWeight: 300 }}>
+                            {item.desc}
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

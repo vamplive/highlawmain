@@ -24,6 +24,34 @@ export default function AboutSection({ settings, update, updateItem, addItem, re
   const probono = s["about/probono"] || { items: [] };
   const history = s["about/history"] || { items: [] };
 
+  const handleEventChange = (yearIdx, eventIdx, field, value) => {
+    const nextItems = [...(history.items || [])];
+    const nextEvents = [...(nextItems[yearIdx].events || [])];
+    nextEvents[eventIdx] = { ...nextEvents[eventIdx], [field]: value };
+    nextItems[yearIdx] = { ...nextItems[yearIdx], events: nextEvents };
+    update("about/history", "items", nextItems);
+  };
+
+  const addEvent = (yearIdx) => {
+    const nextItems = [...(history.items || [])];
+    const nextEvents = [...(nextItems[yearIdx].events || [])];
+    nextEvents.push({ title: "", desc: "" });
+    nextItems[yearIdx] = { ...nextItems[yearIdx], events: nextEvents };
+    update("about/history", "items", nextItems);
+  };
+
+  const removeEvent = (yearIdx, eventIdx) => {
+    const nextItems = [...(history.items || [])];
+    const nextEvents = [...(nextItems[yearIdx].events || [])];
+    nextEvents.splice(eventIdx, 1);
+    nextItems[yearIdx] = { ...nextItems[yearIdx], events: nextEvents };
+    update("about/history", "items", nextItems);
+  };
+
+  const addYearGroup = () => {
+    addItem("about/history", { year: "", events: [{ title: "", desc: "" }] });
+  };
+
   const tabStyle = (isActive) => ({
     padding: "6px 14px",
     fontSize: 12,
@@ -175,14 +203,74 @@ export default function AboutSection({ settings, update, updateItem, addItem, re
 
           {(history.items || []).map((item, i) => (
             <ItemCard key={i} onRemove={history.items.length > 1 ? () => removeItem("about/history", i) : undefined}>
-              <FieldRow cols={3}>
-                <FormField label="연도 / 기간" value={item.year || ""} onChange={(v) => updateItem("about/history", i, "year", v)} placeholder="예: 2025" />
-                <FormField label="연혁 제목" value={item.title || ""} onChange={(v) => updateItem("about/history", i, "title", v)} />
-                <FormField label="설명" value={item.desc || ""} onChange={(v) => updateItem("about/history", i, "desc", v)} />
-              </FieldRow>
+              <div style={{ marginBottom: 16 }}>
+                <FormField label="연도 / 기간" value={item.year || ""} onChange={(v) => updateItem("about/history", i, "year", v)} placeholder="예: 2026 - 현재" />
+              </div>
+
+              <div style={{ paddingLeft: 16, borderLeft: `2px dashed ${COLORS.border}`, display: "flex", flexDirection: "column", gap: 12 }}>
+                <h5 style={{ margin: 0, fontSize: 12, fontWeight: 600, color: COLORS.accent }}>연혁 상세 항목</h5>
+                
+                {/* 하위 호환성: 기존 데이터의 단일 연혁 항목 처리 */}
+                {!item.events && (
+                  <div style={{ display: "flex", gap: 12, flexDirection: "column" }}>
+                    <FieldRow>
+                      <FormField label="연혁 제목" value={item.title || ""} onChange={(v) => updateItem("about/history", i, "title", v)} />
+                      <FormField label="설명" type="textarea" value={item.desc || ""} onChange={(v) => updateItem("about/history", i, "desc", v)} />
+                    </FieldRow>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const nextItems = [...(history.items || [])];
+                        nextItems[i] = {
+                          year: item.year || "",
+                          events: [
+                            { title: item.title || "", desc: item.desc || "" },
+                            { title: "", desc: "" }
+                          ]
+                        };
+                        update("about/history", "items", nextItems);
+                      }}
+                      style={{ ...outlineBtnStyle(), alignSelf: "flex-start", fontSize: 11, padding: "2px 8px" }}
+                    >
+                      + 상세 항목 추가 (다중 등록 변환)
+                    </button>
+                  </div>
+                )}
+
+                {item.events && (item.events || []).map((event, eventIdx) => (
+                  <div key={eventIdx} style={{ padding: 12, border: `1px solid ${COLORS.borderLight}`, borderRadius: 6, background: "#fafafa" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: COLORS.textMuted }}>항목 #{eventIdx + 1}</span>
+                      {item.events.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeEvent(i, eventIdx)}
+                          style={{ ...outlineBtnStyle(COLORS.danger), fontSize: 11, padding: "2px 8px" }}
+                        >
+                          삭제
+                        </button>
+                      )}
+                    </div>
+                    <FieldRow>
+                      <FormField label="연혁 제목" value={event.title || ""} onChange={(v) => handleEventChange(i, eventIdx, "title", v)} />
+                      <FormField label="설명" type="textarea" value={event.desc || ""} onChange={(v) => handleEventChange(i, eventIdx, "desc", v)} />
+                    </FieldRow>
+                  </div>
+                ))}
+
+                {item.events && (
+                  <button
+                    type="button"
+                    onClick={() => addEvent(i)}
+                    style={{ ...outlineBtnStyle(), alignSelf: "flex-start", fontSize: 11, padding: "2px 8px" }}
+                  >
+                    + 상세 항목 추가
+                  </button>
+                )}
+              </div>
             </ItemCard>
           ))}
-          <AddButton onClick={() => addItem("about/history", { year: "", title: "", desc: "" })} label="연혁 추가" />
+          <AddButton onClick={addYearGroup} label="연도 추가" />
         </SectionCard>
       )}
     </div>
