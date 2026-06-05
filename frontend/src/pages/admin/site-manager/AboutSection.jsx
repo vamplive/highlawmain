@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { FormField } from "../../../components/admin";
 import { SectionCard, ItemCard, AddButton, FieldRow } from "./shared";
-import { COLORS } from "../../../components/admin/styles";
+import { COLORS, outlineBtnStyle } from "../../../components/admin/styles";
 
 const SUB_TABS = [
   { key: "hero", label: "히어로" },
