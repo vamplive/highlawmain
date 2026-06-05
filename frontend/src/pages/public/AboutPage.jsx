@@ -42,7 +42,10 @@ const ABOUT_DEFAULTS = {
     content: "법무법인 하이로는 Loyalty, Dignity, Integrity를 핵심 가치로 삼아, 클라이언트에게 최적의 법률 솔루션을 제공하기 위해 설립된 Premium Lawfirm Service 브랜드입니다.\n\n우리는 단순히 법률 지식을 전달하는 데 그치지 않습니다. 각 사안의 본질을 꿰뚫는 전문성을 바탕으로 문제의 이면을 파고들어 그 흐름과 구조를 분석함으로써, 보다 근본적이고 지속 가능한 해결책을 제시하고자 하고 있습니다. 이는 HIGHLAW의 이름이 곧 ‘고객에 충실한 하이엔드 서비스’의 기준이 되고자 하는 우리의 다짐이기도 합니다.\n\n하이로의 구성원들은 모두 대형로펌에서 우수한 성과를 인정받은 전문가로서, 각자의 분야에서 풍부한 실무 경험과 학문적 깊이를 겸비하고 있습니다. 민사·형사소송은 물론 인사·노무, 국제법무, 기업법무, 부동산·건설, 지식재산권, 군사법 등 폭넓은 분야에서 탁러한 역량을 검증받았습니다. 각 분야의 전문 변호사들이 협력해 정밀하고 전략적인 솔루션을 제시하며, 언제나 고객에게 가장 적합한 방식으로 최선의 결과를 제공하는 조력자가 되고자 합니다.\n\n법무법인 하이로는 저희를 신뢰하는 클라이언트들이 언제든지 저희를 다시 찾아올 수 있는 믿음을 제공하고자 합니다. 한결같은 헌신과 지적인 품격, 그리고 변함없는 성실함으로 클라이언트의 신뢰를 지키고, 신뢰와 결과로 보답하는 법률 파트너가 되도록 하겠습니다.\n\n언제나 맞춤형 HIGH-END SERVICE를 제공하기 위해 끊임없는 연구와 정직한 태도로 클라이언트와 여정을 함께하는 파트너가 되어드리도록 하겠습니다.",
     partners: "법무법인 하이로 대표변호사 조덕재 · 김범 · 강민구"
   },
-  values: { items: [
+  values: {
+    eyebrow: "OUR PHILOSOPHY",
+    title: "하이로의 철학",
+    items: [
     { title: "신의성실", subtitle: "LOYALTY", desc: "의뢰인의 신뢰를 가장 소중한 가치로 여기며, 어떠한 순간에도 의뢰인의 이익과 권리를 최우선으로 수호합니다." },
     { title: "품격", subtitle: "DIGNITY", desc: "깊이 있는 학문적 성찰과 품위 있는 변론을 통해, 하이엔드 서비스에 걸맞은 차별화된 사법적 결과를 창출합니다." },
     { title: "정직", subtitle: "INTEGRITY", desc: "사건의 실체를 투명하게 공유하고, 흔들림 없는 법조 윤리를 준수하며 타협하지 않는 정의를 지향합니다." },
@@ -282,8 +285,8 @@ export default function AboutPage() {
           {activeTab === "values" && (
             <div className="tab-content-active" key="values">
               <SectionHeading
-                eyebrow="OUR PHILOSOPHY"
-                title="하이로의 철학"
+                eyebrow={settings.values?.eyebrow || "OUR PHILOSOPHY"}
+                title={settings.values?.title || "하이로의 철학"}
               />
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 stagger" style={{ marginBottom: 40 }}>
                 {(settings.values?.items || []).map((v, i) => {

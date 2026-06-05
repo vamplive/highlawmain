@@ -102,6 +102,8 @@ export const DEFAULT_SETTINGS = {
     partners: "법무법인 하이로 대표변호사 조덕재 · 김범 · 강민구"
   },
   "about/values": {
+    eyebrow: "OUR PHILOSOPHY",
+    title: "하이로의 철학",
     items: [
       { title: "신의성실", subtitle: "LOYALTY", desc: "의뢰인의 신뢰를 가장 소중한 가치로 여기며, 어떠한 순간에도 의뢰인의 이익과 권리를 최우선으로 수호합니다." },
       { title: "품격", subtitle: "DIGNITY", desc: "깊이 있는 학문적 성찰과 품위 있는 변론을 통해, 하이엔드 서비스에 걸맞은 차별화된 사법적 결과를 창출합니다." },

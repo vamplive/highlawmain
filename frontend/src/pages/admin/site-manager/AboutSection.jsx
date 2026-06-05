@@ -78,20 +78,27 @@ export default function AboutSection({ settings, update, updateItem, addItem, re
           </div>
         </SectionCard>
       )}
-
       {activeSubTab === "values" && (
-        <SectionCard title="핵심가치">
-          {(values.items || []).map((item, i) => (
-            <ItemCard key={i} onRemove={values.items.length > 1 ? () => removeItem("about/values", i) : undefined}>
-              <FieldRow cols={3}>
-                <FormField label="제목" value={item.title || ""} onChange={(v) => updateItem("about/values", i, "title", v)} />
-                <FormField label="부제목 (영문)" value={item.subtitle || ""} onChange={(v) => updateItem("about/values", i, "subtitle", v)} />
-                <FormField label="설명" value={item.desc || ""} onChange={(v) => updateItem("about/values", i, "desc", v)} />
-              </FieldRow>
-            </ItemCard>
-          ))}
-          <AddButton onClick={() => addItem("about/values", { title: "", subtitle: "", desc: "" })} label="가치 추가" />
-        </SectionCard>
+        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+          <SectionCard title="기본 제목 설정">
+            <FieldRow>
+              <FormField label="소제목 (Eyebrow)" value={values.eyebrow || ""} onChange={(v) => update("about/values", "eyebrow", v)} placeholder="OUR PHILOSOPHY" />
+              <FormField label="대제목 (Title)" value={values.title || ""} onChange={(v) => update("about/values", "title", v)} placeholder="하이로의 철학" />
+            </FieldRow>
+          </SectionCard>
+          <SectionCard title="핵심가치 항목">
+            {(values.items || []).map((item, i) => (
+              <ItemCard key={i} onRemove={values.items.length > 1 ? () => removeItem("about/values", i) : undefined}>
+                <FieldRow cols={3}>
+                  <FormField label="제목" value={item.title || ""} onChange={(v) => updateItem("about/values", i, "title", v)} />
+                  <FormField label="부제목 (영문)" value={item.subtitle || ""} onChange={(v) => updateItem("about/values", i, "subtitle", v)} />
+                  <FormField label="설명" value={item.desc || ""} onChange={(v) => updateItem("about/values", i, "desc", v)} />
+                </FieldRow>
+              </ItemCard>
+            ))}
+            <AddButton onClick={() => addItem("about/values", { title: "", subtitle: "", desc: "" })} label="가치 추가" />
+          </SectionCard>
+        </div>
       )}
 
       {activeSubTab === "directions" && (
