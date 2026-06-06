@@ -19,6 +19,11 @@ export default function PortalCalendar() {
   const [loading, setLoading] = useState(true);
   const [userProfile, setUserProfile] = useState(null);
 
+  // 구글 캘린더 연동 모달 관련 상태
+  const [showSyncModal, setShowSyncModal] = useState(false);
+  const [syncUrl, setSyncUrl] = useState("");
+  const [copySuccess, setCopySuccess] = useState(false);
+
   // 뷰 모드: "personal_day" | "personal_week" | "personal_month" | "member_day" | "member_month"
   const [viewMode, setViewMode] = useState("personal_month");
 
@@ -76,6 +81,17 @@ export default function PortalCalendar() {
       setUserProfile(res.data);
     }).catch(err => console.error("프로필 로드 실패:", err));
   }, []);
+
+  // 1-2. 구글 캘린더 연동 링크 로드
+  useEffect(() => {
+    if (userProfile) {
+      portalApi.get("/calendar/sync-info")
+        .then((res) => {
+          setSyncUrl(res.data?.feedUrl || "");
+        })
+        .catch((err) => console.error("캘린더 연동 정보 로드 실패:", err));
+    }
+  }, [userProfile]);
 
   // 2. 직원 체크 및 필터 데이터 (부서/사원) 로드
   useEffect(() => {
@@ -1008,10 +1024,28 @@ export default function PortalCalendar() {
         {/* 상단 컨트롤 바 */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
           <div>
-            <h2 style={{ fontSize: 18, fontWeight: 700, color: "#0b1f3a", margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
-              <CalendarIcon size={20} style={{ color: "#c9a84c" }} />
-              사내 일정 캘린더
-            </h2>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+              <h2 style={{ fontSize: 18, fontWeight: 700, color: "#0b1f3a", margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
+                <CalendarIcon size={20} style={{ color: "#c9a84c" }} />
+                사내 일정 캘린더
+              </h2>
+              <button
+                type="button"
+                onClick={() => {
+                  setCopySuccess(false);
+                  setShowSyncModal(true);
+                }}
+                style={{
+                  background: "transparent", border: "1px solid #c9a84c", color: "#0b1f3a", borderRadius: 6,
+                  padding: "4px 10px", fontSize: 11.5, fontWeight: 600, cursor: "pointer",
+                  display: "flex", alignItems: "center", gap: 4, transition: "all 0.15s"
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(201, 168, 76, 0.08)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+              >
+                구글 캘린더 연동
+              </button>
+            </div>
             <p style={{ fontSize: 12.5, color: "#64748b", margin: "4px 0 0" }}>
               {isEmployee ? "부서원 및 전사 구성원들과 공유되는 일정과 법정 기일을 통합 관리합니다." : "개인 업무 및 법정 기일 일정을 확인합니다."}
             </p>
@@ -1380,6 +1414,117 @@ export default function PortalCalendar() {
               </div>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* ==================== 4. 구글 캘린더 연동 안내 모달 ==================== */}
+      {showSyncModal && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
+          background: "rgba(15,23,42,0.3)", zIndex: 1000, display: "flex",
+          alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)"
+        }}>
+          <div style={{
+            background: "#ffffff", borderRadius: 12, width: "92%", maxWidth: 520,
+            padding: 24, boxShadow: "0 20px 25px -5px rgba(0,0,0,0.15)",
+            maxHeight: "90vh", overflowY: "auto"
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <h3 style={{ fontSize: 16, fontWeight: 700, color: "#0b1f3a", margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
+                <CalendarIcon size={18} style={{ color: "#c9a84c" }} />
+                구글 캘린더 연동 안내 (iCal)
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowSyncModal(false)}
+                style={{ background: "transparent", border: "none", fontSize: 20, color: "#94a3b8", cursor: "pointer", display: "flex" }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ marginBottom: 20 }}>
+              <p style={{ fontSize: 13, color: "#475569", lineHeight: 1.6, margin: "0 0 12px 0" }}>
+                하이로 캘린더 일정을 외부 구글 캘린더에 실시간으로 동기화하여 구독할 수 있습니다. 아래 주소를 복사해 구글 캘린더에 등록해 주세요.
+              </p>
+              
+              <label style={labelStyle}>구독용 iCal 피드 주소</label>
+              <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                <input
+                  type="text"
+                  value={syncUrl || "연동 주소를 불러오는 중..."}
+                  readOnly
+                  onClick={(e) => e.target.select()}
+                  style={{ ...fieldStyle, flex: 1, padding: "8px 12px", fontSize: 12.5, background: "#f8fafc", color: "#334155" }}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (syncUrl) {
+                      navigator.clipboard.writeText(syncUrl);
+                      setCopySuccess(true);
+                      setTimeout(() => setCopySuccess(false), 2000);
+                    }
+                  }}
+                  style={{
+                    background: copySuccess ? "#10b981" : "#0b1f3a",
+                    color: copySuccess ? "#ffffff" : "#c9a84c",
+                    border: copySuccess ? "none" : "1px solid #c9a84c",
+                    borderRadius: 6,
+                    padding: "0 16px",
+                    fontSize: 12.5,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    whiteSpace: "nowrap",
+                    transition: "all 0.15s"
+                  }}
+                >
+                  {copySuccess ? "✓ 복사됨" : "주소 복사"}
+                </button>
+              </div>
+              <span style={{ fontSize: 11, color: "#ef4444", fontWeight: 500 }}>
+                ⚠️ 주의: 이 주소에는 회원님의 일정 정보가 들어있으므로 타인에게 노출되지 않도록 주의해 주세요.
+              </span>
+            </div>
+
+            <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 16, marginBottom: 24 }}>
+              <h4 style={{ fontSize: 13.5, fontWeight: 700, color: "#0b1f3a", margin: "0 0 10px 0" }}>
+                연동 방법 및 순서
+              </h4>
+              <ol style={{ fontSize: 12.5, color: "#475569", lineHeight: 1.7, margin: 0, paddingLeft: 20 }}>
+                <li style={{ marginBottom: 6 }}>
+                  구글 캘린더 홈페이지(<a href="https://calendar.google.com" target="_blank" rel="noopener noreferrer" style={{ color: "#c9a84c", fontWeight: 600, textDecoration: "underline" }}>calendar.google.com</a>)에 접속하여 로그인합니다.
+                </li>
+                <li style={{ marginBottom: 6 }}>
+                  왼쪽 사이드바 영역의 <strong>'다른 캘린더'</strong> 항목 우측에 있는 <strong>'+' (다른 캘린더 추가)</strong> 버튼을 누릅니다.
+                </li>
+                <li style={{ marginBottom: 6 }}>
+                  나타나는 메뉴 중 <strong>'URL로 추가'</strong>를 선택하여 클릭합니다.
+                </li>
+                <li style={{ marginBottom: 6 }}>
+                  입력 필드에 복사해 둔 <strong>하이로 iCal 피드 주소</strong>를 붙여넣습니다.
+                </li>
+                <li>
+                  마지막으로 <strong>'캘린더 추가'</strong> 버튼을 누르면 연동이 완료됩니다.<br />
+                  <span style={{ fontSize: 11, color: "#8a97a8" }}>※ 구글 시스템 특성상 실시간 동기화 반영에는 수 시간 정도 소요될 수 있습니다.</span>
+                </li>
+              </ol>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
+              <button
+                type="button"
+                onClick={() => setShowSyncModal(false)}
+                style={{
+                  background: "#0b1f3a", color: "#c9a84c", border: "1px solid #c9a84c", borderRadius: 6,
+                  padding: "8px 20px", fontSize: 13, fontWeight: 600, cursor: "pointer",
+                  boxShadow: "0 2px 4px rgba(11,31,58,0.1)"
+                }}
+              >
+                닫기
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

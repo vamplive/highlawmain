@@ -846,4 +846,149 @@ router.post("/lawyers/admin/reorder", portalAuth, async (req, res) => {
   }
 });
 
+// =============================================
+// 구글 캘린더 연동용 iCal 피드
+// =============================================
+
+/**
+ * 이벤트를 iCalendar(RFC 5545) 형식으로 변환하는 헬퍼
+ */
+function formatEventsToICal(events) {
+  let ical = [];
+  ical.push("BEGIN:VCALENDAR");
+  ical.push("VERSION:2.0");
+  ical.push("PRODID:-//Highlaw//Calendar Feed//KO");
+  ical.push("CALSCALE:GREGORIAN");
+  ical.push("METHOD:PUBLISH");
+  ical.push("X-WR-CALNAME:법무법인 하이로 일정");
+  ical.push("X-WR-TIMEZONE:Asia/Seoul");
+
+  const toICalDate = (dateStr, isAllDay) => {
+    if (!dateStr) return "";
+    const clean = dateStr.replace(/[-:]/g, "");
+    if (isAllDay) {
+      return clean.substring(0, 8);
+    }
+    let tIndex = clean.indexOf("T");
+    if (tIndex === -1) {
+      return clean.substring(0, 8);
+    }
+    let timePart = clean.substring(tIndex + 1);
+    if (timePart.length === 4) {
+      timePart += "00";
+    }
+    return clean.substring(0, 8) + "T" + timePart.substring(0, 6);
+  };
+
+  for (const event of events) {
+    const isAllDay = event.isAllDay === 1;
+    ical.push("BEGIN:VEVENT");
+    ical.push(`UID:${event.id || Math.random().toString(36).substring(2)}@highlaw.co.kr`);
+    
+    const nowStr = new Date().toISOString().replace(/[-:]/g, "").substring(0, 15) + "Z";
+    ical.push(`DTSTAMP:${nowStr}`);
+    
+    const startICal = toICalDate(event.startsAt, isAllDay);
+    const endICal = toICalDate(event.endsAt || event.startsAt, isAllDay);
+    
+    if (isAllDay) {
+      ical.push(`DTSTART;VALUE=DATE:${startICal}`);
+      try {
+        const endDateObj = new Date((event.endsAt || event.startsAt).substring(0, 10));
+        endDateObj.setDate(endDateObj.getDate() + 1);
+        const endStr = endDateObj.toISOString().substring(0, 10).replace(/[-:]/g, "");
+        ical.push(`DTEND;VALUE=DATE:${endStr}`);
+      } catch {
+        ical.push(`DTEND;VALUE=DATE:${endICal}`);
+      }
+    } else {
+      ical.push(`DTSTART:${startICal}`);
+      ical.push(`DTEND:${endICal}`);
+    }
+
+    const summary = (event.title || "")
+      .replace(/\\/g, "\\\\")
+      .replace(/,/g, "\\,")
+      .replace(/;/g, "\\;")
+      .replace(/\n/g, "\\n");
+    ical.push(`SUMMARY:${summary}`);
+
+    let descParts = [];
+    if (event.description) {
+      descParts.push(event.description);
+    }
+    if (event.ownerName) {
+      descParts.push(`담당: ${event.ownerName}`);
+    }
+    if (event.isCourtDate) {
+      descParts.push("[법정 기일]");
+    }
+    const description = descParts.join(" | ")
+      .replace(/\\/g, "\\\\")
+      .replace(/,/g, "\\,")
+      .replace(/;/g, "\\;")
+      .replace(/\n/g, "\\n");
+    if (description) {
+      ical.push(`DESCRIPTION:${description}`);
+    }
+
+    ical.push("END:VEVENT");
+  }
+
+  ical.push("END:VCALENDAR");
+  return ical.join("\r\n");
+}
+
+/** GET /api/portal/calendar/sync-info — 구글 캘린더 연동 정보 조회 */
+router.get("/calendar/sync-info", portalAuth, (req, res) => {
+  try {
+    const { userId } = req.portalUser;
+    
+    // IP_HASH_SECRET 기반 HMAC 토큰 생성
+    const IP_HASH_SECRET = process.env.IP_HASH_SECRET || process.env.CSRF_SECRET || "development-ip-hash-secret";
+    const token = crypto.createHmac("sha256", IP_HASH_SECRET).update(userId).digest("hex");
+    
+    const appUrl = process.env.APP_URL || `${req.protocol}://${req.get("host")}`;
+    const feedUrl = `${appUrl}/api/portal/calendar/feed?userId=${userId}&token=${token}`;
+    
+    res.json({
+      data: {
+        feedUrl,
+      },
+      error: null,
+      meta: null
+    });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+/** GET /api/portal/calendar/feed — 구글 캘린더 구독용 iCal 피드 제공 (쿠키 인증 제외) */
+router.get("/calendar/feed", async (req, res) => {
+  try {
+    const { token, userId } = req.query;
+    if (!token || !userId) {
+      return res.status(400).send("검증 파라미터가 누락되었습니다.");
+    }
+
+    const IP_HASH_SECRET = process.env.IP_HASH_SECRET || process.env.CSRF_SECRET || "development-ip-hash-secret";
+    const expectedToken = crypto.createHmac("sha256", IP_HASH_SECRET).update(userId).digest("hex");
+    
+    if (token !== expectedToken) {
+      return res.status(403).send("올바르지 않은 인증 토큰입니다.");
+    }
+
+    // 해당 사용자의 캘린더 일정 조회
+    const events = await portalService.listPortalEvents(userId, {});
+    const icalData = formatEventsToICal(events);
+
+    res.setHeader("Content-Type", "text/calendar; charset=utf-8");
+    res.setHeader("Content-Disposition", "attachment; filename=calendar.ics");
+    res.send(icalData);
+  } catch (e) {
+    console.error("[iCal Feed Error]", e);
+    res.status(500).send("iCal 생성 중 오류가 발생했습니다.");
+  }
+});
+
 module.exports = router;
