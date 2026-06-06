@@ -18,7 +18,8 @@ import {
   Lock,
   Bell,
   Tag,
-  Monitor
+  Monitor,
+  FileText
 } from "lucide-react";
 
 export default function PortalCalendar() {
@@ -553,7 +554,7 @@ export default function PortalCalendar() {
                     title={`${event.title}\n${event.description || ""}`}
                   >
                     <div style={{ fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {event.title}
+                      {viewMode.startsWith("member_") && event.ownerName ? `[${event.ownerName}] ${event.title}` : event.title}
                     </div>
                     <div style={{ fontSize: 10, marginTop: 4, opacity: 0.8, display: "flex", justifyContent: "space-between" }}>
                       <span>{event.isAllDay ? "하루종일" : event.startsAt.substring(11, 16)}</span>
@@ -1117,6 +1118,7 @@ export default function PortalCalendar() {
                   <span style={{ fontSize: 11, fontWeight: 700, color: "#64748b", padding: "0 6px 0 4px" }}>구성원:</span>
                   {[
                     { id: "member_day", label: "일간" },
+                    { id: "member_week", label: "주간" },
                     { id: "member_month", label: "월간" }
                   ].map(mode => (
                     <button

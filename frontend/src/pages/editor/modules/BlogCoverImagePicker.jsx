@@ -447,77 +447,45 @@ export default function BlogCoverImagePicker({ value, onChange, docContext, getE
             <label style={{ display: "grid", gap: 4, fontSize: 12, color: "#475569" }}>
               <span>이미지 생성 AI</span>
               <select
-                value={selectedImageAiConfigId || ("__server__" + imageModel)}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  if (v.startsWith("__server__")) {
-                    handleImageAiConfigChange("");
-                    handleImageModelChange(v.replace("__server__", ""));
-                  } else {
-                    handleImageAiConfigChange(v);
-                  }
-                }}
+                value={selectedImageAiConfigId}
+                onChange={(e) => handleImageAiConfigChange(e.target.value)}
                 disabled={isBusy}
                 style={{
                   height: 36, padding: "0 10px", fontSize: 13,
                   border: "1px solid #cbd5e1", borderRadius: 6, background: "#fff",
                 }}
               >
-                <optgroup label="내 등록 AI">
-                  {userAiConfigs.filter((c) => c.provider === "openai" && (c.modelId.includes("dall-e") || c.modelId.includes("image"))).map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.nickname} ({c.modelId}){c.isDefaultImage ? " · 기본" : ""}
-                    </option>
-                  ))}
-                  {userAiConfigs.filter((c) => c.provider === "openai" && (c.modelId.includes("dall-e") || c.modelId.includes("image"))).length === 0 && (
-                    <option disabled value="__no_user_img__">등록된 이미지 AI 없음</option>
-                  )}
-                </optgroup>
-                <optgroup label="서버 기본 AI (공용)">
-                  {(aiConfig?.image?.allowedModels || ["dall-e-3"]).map((m) => (
-                    <option key={m} value={`__server__${m}`}>
-                      {IMAGE_MODEL_LABELS[m] || m}{m === aiConfig?.image?.defaultModel ? " · 기본" : ""}
-                    </option>
-                  ))}
-                </optgroup>
+                <option value="" disabled>사용할 이미지 AI를 선택하세요</option>
+                {userAiConfigs.filter((c) => c.provider === "openai" && (c.modelId.includes("dall-e") || c.modelId.includes("image"))).map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.nickname} ({c.modelId}){c.isDefaultImage ? " · 기본" : ""}
+                  </option>
+                ))}
+                {userAiConfigs.filter((c) => c.provider === "openai" && (c.modelId.includes("dall-e") || c.modelId.includes("image"))).length === 0 && (
+                  <option disabled value="">등록된 이미지 AI 없음</option>
+                )}
               </select>
             </label>
             <label style={{ display: "grid", gap: 4, fontSize: 12, color: "#475569" }}>
               <span>프롬프트 추천 AI (Claude)</span>
               <select
-                value={selectedPromptAiConfigId || ("__server__" + promptModel)}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  if (v.startsWith("__server__")) {
-                    handlePromptAiConfigChange("");
-                    handlePromptModelChange(v.replace("__server__", ""));
-                  } else {
-                    handlePromptAiConfigChange(v);
-                  }
-                }}
+                value={selectedPromptAiConfigId}
+                onChange={(e) => handlePromptAiConfigChange(e.target.value)}
                 disabled={isBusy}
                 style={{
                   height: 36, padding: "0 10px", fontSize: 13,
                   border: "1px solid #cbd5e1", borderRadius: 6, background: "#fff",
                 }}
               >
-                <optgroup label="내 등록 AI">
-                  {userAiConfigs.filter((c) => ["anthropic", "openai", "google"].includes(c.provider) && !c.modelId.includes("dall-e") && !c.modelId.includes("imagen") && !c.modelId.includes("image")).map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.nickname} ({c.modelId}){c.isDefaultPrompt ? " · 기본" : ""}
-                    </option>
-                  ))}
-                  {userAiConfigs.filter((c) => !c.modelId.includes("dall-e") && !c.modelId.includes("imagen") && !c.modelId.includes("image")).length === 0 && (
-                    <option disabled value="__no_user_ai__">등록된 AI 없음</option>
-                  )}
-                </optgroup>
-                <optgroup label="서버 기본 AI (공용)">
-                  {(aiConfig?.prompt?.allowedModels || ["claude-haiku-4-5"]).map((m) => (
-                    <option key={m} value={`__server__${m}`}>
-                      {PROMPT_MODEL_LABELS[m] || m}{m === aiConfig?.prompt?.defaultModel ? " · 기본" : ""}
-                    </option>
-                  ))}
-                </optgroup>
+                <option value="" disabled>사용할 AI를 선택하세요</option>
+                {userAiConfigs.filter((c) => ["anthropic", "openai", "google"].includes(c.provider) && !c.modelId.includes("dall-e") && !c.modelId.includes("imagen") && !c.modelId.includes("image")).map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.nickname} ({c.modelId}){c.isDefaultPrompt ? " · 기본" : ""}
+                  </option>
+                ))}
+                {userAiConfigs.filter((c) => !c.modelId.includes("dall-e") && !c.modelId.includes("imagen") && !c.modelId.includes("image")).length === 0 && (
+                  <option disabled value="">등록된 AI 없음</option>
+                )}
               </select>
             </label>
           </div>
