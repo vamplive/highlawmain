@@ -9,6 +9,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { portalApi } from "../../utils/api";
 import { isSafeHttpUrl } from "../../utils/safeUrl";
+import { KAKAO_CHANNEL_CHAT } from "../../utils/kakaoChannel";
 import "./LoginPage.css";
 
 const KOREAN_PHONE_RE = /^(01[016789]{1}|02|0[3-9]{1}[0-9]{1})\d{3,4}\d{4}$/;
@@ -79,7 +80,16 @@ function LoginForm({ onSuccess, onForgotClick }) {
         </div>
       )}
 
-      <div className="portal-login__forgot-link-container" style={{ display: "flex", justifyContent: "flex-end", marginTop: "-12px", marginBottom: "20px" }}>
+      <div className="portal-login__forgot-link-container" style={{ display: "flex", justifyContent: "space-between", marginTop: "-12px", marginBottom: "20px" }}>
+        <a
+          href={KAKAO_CHANNEL_CHAT}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="portal-login__forgot-btn"
+          style={{ textDecoration: "underline" }}
+        >
+          아이디 찾기 (카카오톡 문의)
+        </a>
         <button
           type="button"
           onClick={onForgotClick}
@@ -340,6 +350,19 @@ function ForgotPasswordForm({ onBackClick }) {
         <button type="submit" className="portal-login__btn" disabled={loading}>
           {loading ? "인증 요청 중..." : "인증번호 받기"}
         </button>
+
+        <div style={{ marginTop: "16px", textAlign: "center", marginBottom: "16px" }}>
+          <span style={{ fontSize: "12px", color: "#94a3b8" }}>인증문자 수신이 어렵다면? </span>
+          <a
+            href={KAKAO_CHANNEL_CHAT}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="portal-login__forgot-btn"
+            style={{ fontSize: "12px" }}
+          >
+            카카오톡으로 인증 요청하기
+          </a>
+        </div>
 
         <div style={{ marginTop: "24px", textAlign: "center" }}>
           <button
