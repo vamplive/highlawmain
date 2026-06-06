@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import useCrudForm from "../../../hooks/useCrudForm";
 import { api } from "../../../utils/api";
 import {
@@ -190,6 +190,8 @@ export default function AdminLawyers({ settings, update }) {
       } else {
         await api.patch(`/lawyers/${crud.editing}`, payload);
       }
+      // 저장 성공 시 임시본 삭제
+      localStorage.removeItem(`admin_lawyer_profile_draft_${crud.editing}`);
       crud.cancelEdit();
       crud.load();
     } catch (err) {
@@ -197,6 +199,71 @@ export default function AdminLawyers({ settings, update }) {
       alert("저장 실패: " + err.message);
     }
   };
+
+  const openEditWithDraft = (item) => {
+    crud.openEdit(item);
+    const draftKey = `admin_lawyer_profile_draft_${item.id}`;
+    const savedDraft = localStorage.getItem(draftKey);
+    if (savedDraft) {
+      try {
+        const parsedDraft = JSON.parse(savedDraft);
+        const initialForm = mapRowToForm(item);
+        const isDifferent = Object.keys(initialForm).some(
+          (key) => String(initialForm[key]) !== String(parsedDraft[key])
+        );
+        if (isDifferent) {
+          if (window.confirm("이전에 수정 중이던 임시 저장본이 있습니다. 불러오시겠습니까?")) {
+            crud.setForm(parsedDraft);
+          } else {
+            localStorage.removeItem(draftKey);
+          }
+        }
+      } catch (e) {
+        localStorage.removeItem(draftKey);
+      }
+    }
+  };
+
+  const openNewWithDraft = (overrides = {}) => {
+    let defaultPosition = "변호사";
+    if (activeSubTab === "advisor") defaultPosition = "전문위원";
+    if (activeSubTab === "staff") defaultPosition = "직원";
+    const initialForm = { ...EMPTY_FORM, position: defaultPosition, sortOrder: crud.items.length + 1, ...overrides };
+    crud.openNew(initialForm);
+
+    const draftKey = `admin_lawyer_profile_draft_new`;
+    const savedDraft = localStorage.getItem(draftKey);
+    if (savedDraft) {
+      try {
+        const parsedDraft = JSON.parse(savedDraft);
+        const isDifferent = Object.keys(initialForm).some(
+          (key) => String(initialForm[key]) !== String(parsedDraft[key])
+        );
+        if (isDifferent) {
+          if (window.confirm("이전에 등록 중이던 임시 저장본이 있습니다. 불러오시겠습니까?")) {
+            crud.setForm(parsedDraft);
+          } else {
+            localStorage.removeItem(draftKey);
+          }
+        }
+      } catch (e) {
+        localStorage.removeItem(draftKey);
+      }
+    }
+  };
+
+  const cancelEditAndClearDraft = () => {
+    const draftKey = `admin_lawyer_profile_draft_${crud.editing}`;
+    localStorage.removeItem(draftKey);
+    crud.cancelEdit();
+  };
+
+  // 실시간 변경 시마다 자동 임시저장
+  useEffect(() => {
+    if (!crud.isEditing || !crud.editing) return;
+    const draftKey = `admin_lawyer_profile_draft_${crud.editing}`;
+    localStorage.setItem(draftKey, JSON.stringify(crud.form));
+  }, [crud.form, crud.isEditing, crud.editing]);
 
   // 단순 파생값 헬퍼
   const setArr = (key) => (next) => crud.setField(key, next);
@@ -268,10 +335,7 @@ export default function AdminLawyers({ settings, update }) {
   };
 
   const handleAdd = () => {
-    let defaultPosition = "변호사";
-    if (activeSubTab === "advisor") defaultPosition = "전문위원";
-    if (activeSubTab === "staff") defaultPosition = "직원";
-    crud.openNew({ position: defaultPosition, sortOrder: crud.items.length + 1 });
+    openNewWithDraft();
   };
 
   return (
@@ -351,7 +415,7 @@ export default function AdminLawyers({ settings, update }) {
         <>
           {/* ── 편집 폼 ── */}
           {crud.isEditing && (
-            <EditPanel isNew={crud.isNew} entityName="변호사" onSave={save} onCancel={crud.cancelEdit}>
+            <EditPanel isNew={crud.isNew} entityName="변호사" onSave={save} onCancel={cancelEditAndClearDraft}>
               <SectionTitle>기본 정보</SectionTitle>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4" style={{ marginBottom: 16 }}>
                 <FormField label="이름" value={crud.form.name} onChange={(v) => crud.setField("name", v)} required placeholder="홍길동" />
@@ -475,7 +539,7 @@ export default function AdminLawyers({ settings, update }) {
                   lawyer={lawyer}
                   index={index}
                   totalItems={filteredItems.length}
-                  onEdit={() => crud.openEdit(lawyer)}
+                  onEdit={() => openEditWithDraft(lawyer)}
                   onRemove={() => crud.remove(lawyer.id)}
                   onToggleActive={() => crud.patchItem(lawyer.id, { isActive: lawyer.isActive ? 0 : 1 })}
                   onMoveUp={() => moveUp(index)}

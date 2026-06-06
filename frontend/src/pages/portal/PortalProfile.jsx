@@ -144,21 +144,60 @@ export default function PortalProfile() {
       const email = meRes.data?.user?.email || "";
 
       const res = await portalApi.get("/lawyers/my-profile");
+      let initialForm = EMPTY_FORM;
+      let hasProfile = false;
+
       if (res.data?.data) {
         const prof = res.data.data;
-        setProfileExists(true);
-        setForm(mapToForm(prof));
-        setPhotoPreview(prof.photoUrl || null);
+        hasProfile = true;
+        initialForm = mapToForm(prof);
       } else {
-        setProfileExists(false);
-        setForm({ ...EMPTY_FORM, email });
+        hasProfile = false;
+        initialForm = { ...EMPTY_FORM, email };
       }
+
+      // 로컬 스토리지에 미저장 임시본이 있는지 확인
+      const draftKey = `portal_profile_draft_${email}`;
+      const savedDraft = localStorage.getItem(draftKey);
+      if (savedDraft) {
+        try {
+          const parsedDraft = JSON.parse(savedDraft);
+          // 임시본이 서버 데이터와 다른 경우에만 복구 의사 타진
+          const isDifferent = Object.keys(initialForm).some(
+            (key) => String(initialForm[key]) !== String(parsedDraft[key])
+          );
+          if (isDifferent) {
+            if (window.confirm("이전에 작성 중이던 임시 저장본이 있습니다. 불러오시겠습니까?")) {
+              setProfileExists(hasProfile);
+              setForm(parsedDraft);
+              setPhotoPreview(parsedDraft.photoUrl || null);
+              setLoading(false);
+              return;
+            } else {
+              localStorage.removeItem(draftKey);
+            }
+          }
+        } catch (e) {
+          localStorage.removeItem(draftKey);
+        }
+      }
+
+      setProfileExists(hasProfile);
+      setForm(initialForm);
+      setPhotoPreview(initialForm.photoUrl || null);
     } catch {
       setProfileExists(false);
     } finally {
       setLoading(false);
     }
   };
+
+  // 입력 변경 시마다 실시간 자동 임시저장
+  useEffect(() => {
+    if (loading || !form.email) return;
+    localStorage.setItem(`portal_profile_draft_${form.email}`, JSON.stringify(form));
+  }, [form, loading]);
+
 
   const mapToForm = (prof) => ({
     name: prof.name || "",
@@ -249,6 +288,8 @@ export default function PortalProfile() {
         showToast("프로필이 등록되었습니다", "success");
         setProfileExists(true);
       }
+      // 저장 성공 시 임시본 삭제
+      localStorage.removeItem(`portal_profile_draft_${form.email}`);
     } catch (err) {
       showToast(err.message || "저장에 실패했습니다", "error");
     } finally {
