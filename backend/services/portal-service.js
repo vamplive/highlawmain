@@ -197,6 +197,9 @@ async function getUserProfile(userId, clientId) {
       id: portalUsers.id,
       email: portalUsers.email,
       clientId: portalUsers.clientId,
+      role: portalUsers.role,
+      departmentId: portalUsers.departmentId,
+      position: portalUsers.position,
       googleConnected: sql`CASE WHEN ${portalUsers.googleRefreshToken} IS NOT NULL THEN 1 ELSE 0 END`,
     })
     .from(portalUsers)

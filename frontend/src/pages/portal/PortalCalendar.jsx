@@ -10,7 +10,15 @@ import {
   Trash2,
   X,
   Users,
-  Filter
+  Filter,
+  Star,
+  Video,
+  Paperclip,
+  MapPin,
+  Lock,
+  Bell,
+  Tag,
+  Monitor
 } from "lucide-react";
 
 export default function PortalCalendar() {
@@ -96,7 +104,7 @@ export default function PortalCalendar() {
   // 2. 직원 체크 및 필터 데이터 (부서/사원) 로드
   useEffect(() => {
     if (userProfile) {
-      const employeeCheck = !userProfile.user?.clientId;
+      const employeeCheck = !userProfile.user?.clientId || (userProfile.user?.role && userProfile.user.role !== "client");
       setIsEmployee(employeeCheck);
 
       if (employeeCheck) {
@@ -1213,218 +1221,451 @@ export default function PortalCalendar() {
       </div>
 
       {/* ==================== 3. 등록 및 편집 모달 ==================== */}
-      {showModal && (
-        <div style={{
-          position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
-          background: "rgba(15,23,42,0.3)", zIndex: 1000, display: "flex",
-          alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)"
-        }}>
-          <form onSubmit={handleSaveEvent} style={{
-            background: "#ffffff", borderRadius: 12, width: "92%", maxWidth: 480,
-            padding: 24, boxShadow: "0 20px 25px -5px rgba(0,0,0,0.15)",
-            maxHeight: "90vh", overflowY: "auto"
+      {showModal && (() => {
+        const startDateVal = formStartsAt.substring(0, 10);
+        const startTimeVal = formIsAllDay ? "" : (formStartsAt.substring(11, 16) || "09:00");
+        const endDateVal = formEndsAt.substring(0, 10);
+        const endTimeVal = formIsAllDay ? "" : (formEndsAt.substring(11, 16) || "18:00");
+
+        const handleStartDateChange = (val) => {
+          setFormStartsAt(formIsAllDay ? val : `${val}T${startTimeVal || "09:00"}`);
+        };
+        const handleStartTimeChange = (val) => {
+          setFormStartsAt(`${startDateVal || "2026-06-06"}T${val}`);
+        };
+        const handleEndDateChange = (val) => {
+          setFormEndsAt(formIsAllDay ? val : `${val}T${endTimeVal || "18:00"}`);
+        };
+        const handleEndTimeChange = (val) => {
+          setFormEndsAt(`${endDateVal || "2026-06-06"}T${val}`);
+        };
+
+        return (
+          <div style={{
+            position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
+            background: "rgba(15,23,42,0.3)", zIndex: 1000, display: "flex",
+            alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)"
           }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-              <h3 style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", margin: 0 }}>
-                {selectedEvent?.isCourtDate ? "법정 일정 상세" : (isEditing ? "일정 수정 / 상세" : "새 일정 등록")}
-              </h3>
-              <button
-                type="button"
-                onClick={() => setShowModal(false)}
-                style={{ background: "transparent", border: "none", fontSize: 20, color: "#94a3b8", cursor: "pointer", display: "flex" }}
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {/* 담당자 설정 (직원전용) */}
-            {isEmployee && !selectedEvent?.isCourtDate && (
-              <div style={{ marginBottom: 16 }}>
-                <label style={labelStyle}>담당 사원 (스케줄 소유자)</label>
-                <select
-                  value={formOwnerId}
-                  onChange={(e) => setFormOwnerId(e.target.value)}
-                  style={fieldStyle}
-                  required
-                >
-                  {members.map(m => (
-                    <option key={m.id} value={m.id}>{m.name} ({m.position || "사원"})</option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {/* 일정 제목 */}
-            <div style={{ marginBottom: 16 }}>
-              <label style={labelStyle}>일정 제목</label>
-              <input
-                type="text"
-                placeholder="제목을 입력해 주세요"
-                value={formTitle}
-                onChange={(e) => setFormTitle(e.target.value)}
-                style={fieldStyle}
-                disabled={selectedEvent?.isCourtDate}
-                required
-              />
-            </div>
-
-            {/* 시작 시간 / 종료 시간 */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
-              <div>
-                <label style={labelStyle}>시작 시간</label>
-                <input
-                  type={formIsAllDay ? "date" : "datetime-local"}
-                  value={formStartsAt}
-                  onChange={(e) => setFormStartsAt(e.target.value)}
-                  style={fieldStyle}
-                  disabled={selectedEvent?.isCourtDate}
-                  required
-                />
-              </div>
-              <div>
-                <label style={labelStyle}>종료 시간</label>
-                <input
-                  type={formIsAllDay ? "date" : "datetime-local"}
-                  value={formEndsAt}
-                  onChange={(e) => setFormEndsAt(e.target.value)}
-                  style={fieldStyle}
-                  disabled={selectedEvent?.isCourtDate}
-                  required
-                />
-              </div>
-            </div>
-
-            {/* 하루 종일 설정 */}
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#475569", cursor: selectedEvent?.isCourtDate ? "default" : "pointer" }}>
-                <input
-                  type="checkbox"
-                  checked={formIsAllDay}
-                  disabled={selectedEvent?.isCourtDate}
-                  onChange={(e) => {
-                    setFormIsAllDay(e.target.checked);
-                    if (e.target.checked) {
-                      setFormStartsAt(prev => prev.substring(0, 10));
-                      setFormEndsAt(prev => prev.substring(0, 10));
-                    } else {
-                      setFormStartsAt(prev => `${prev.substring(0, 10)}T09:00`);
-                      setFormEndsAt(prev => `${prev.substring(0, 10)}T18:00`);
-                    }
-                  }}
-                />
-                하루 종일 (시간 미지정)
-              </label>
-            </div>
-
-            {/* 참석 사원 지정 (직원전용) */}
-            {isEmployee && !selectedEvent?.isCourtDate && (
-              <div style={{ marginBottom: 16 }}>
-                <label style={labelStyle}>회의 참석자 (복수 선택)</label>
-                <div style={{
-                  maxHeight: 120, overflowY: "auto", border: "1px solid rgba(11, 31, 58, 0.16)",
-                  borderRadius: 6, padding: "8px 12px", display: "flex", flexDirection: "column", gap: 6
-                }}>
-                  {members.filter(m => m.id !== formOwnerId).map(m => {
-                    const isChecked = formAttendeeIds.includes(m.id);
-                    return (
-                      <label key={m.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, color: "var(--text-secondary)", cursor: "pointer" }}>
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={() => {
-                            if (isChecked) {
-                              setFormAttendeeIds(formAttendeeIds.filter(id => id !== m.id));
-                            } else {
-                              setFormAttendeeIds([...formAttendeeIds, m.id]);
-                            }
-                          }}
-                          style={{ accentColor: "#0b1f3a" }}
-                        />
-                        <span>{m.name} ({m.position || "사원"})</span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* 일정 색상 분류 */}
-            <div style={{ marginBottom: 16 }}>
-              <label style={labelStyle}>일정 색상</label>
-              <div style={{ display: "flex", gap: 8 }}>
-                {colorPalette.map((c) => (
+            <form onSubmit={handleSaveEvent} style={{
+              background: "#ffffff", borderRadius: 12, width: "92%", maxWidth: 520,
+              padding: 24, boxShadow: "0 20px 25px -5px rgba(0,0,0,0.15)",
+              maxHeight: "90vh", overflowY: "auto"
+            }}>
+              {/* 상단 저장/취소/삭제 헤더 바 */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #e2e8f0", paddingBottom: 12, marginBottom: 20 }}>
+                <div style={{ display: "flex", gap: 8 }}>
+                  {!selectedEvent?.isCourtDate && (
+                    <button
+                      type="submit"
+                      style={{
+                        background: "#0b1f3a", color: "#c9a84c", border: "1px solid #c9a84c", borderRadius: 4,
+                        padding: "6px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer",
+                        boxShadow: "0 1px 2px rgba(11,31,58,0.1)"
+                      }}
+                    >
+                      저장
+                    </button>
+                  )}
                   <button
-                    key={c.value}
                     type="button"
-                    onClick={() => !selectedEvent?.isCourtDate && setFormColor(c.value)}
+                    onClick={() => setShowModal(false)}
                     style={{
-                      width: 24, height: 24, borderRadius: "50%", background: c.value,
-                      border: formColor === c.value ? "2px solid #0f172a" : "none",
-                      boxShadow: "0 1px 3px rgba(0,0,0,0.1)", cursor: selectedEvent?.isCourtDate ? "default" : "pointer"
-                    }}
-                    title={c.label}
-                    disabled={selectedEvent?.isCourtDate}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* 상세 설명 */}
-            <div style={{ marginBottom: 24 }}>
-              <label style={labelStyle}>상세 설명</label>
-              <textarea
-                placeholder="일정 상세 내용을 적어주세요 (장소, 준비물 등)"
-                value={formDescription}
-                onChange={(e) => setFormDescription(e.target.value)}
-                style={{ ...fieldStyle, height: 80, resize: "vertical" }}
-                disabled={selectedEvent?.isCourtDate}
-              />
-            </div>
-
-            {/* 하단 액션 버튼 */}
-            <div style={{ display: "flex", justifyContent: (isEditing && !selectedEvent?.isCourtDate) ? "space-between" : "flex-end", gap: 8 }}>
-              {isEditing && !selectedEvent?.isCourtDate && (
-                <button
-                  type="button"
-                  onClick={handleDeleteEvent}
-                  style={{
-                    background: "#fff", color: "#ef4444", border: "1px solid #fee2e2", borderRadius: 6,
-                    padding: "8px 14px", fontSize: 13, fontWeight: 500, cursor: "pointer",
-                    display: "flex", alignItems: "center", gap: 6
-                  }}
-                >
-                  <Trash2 size={14} />
-                  삭제
-                </button>
-              )}
-              <div style={{ display: "flex", gap: 8 }}>
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  style={{
-                    background: "#fff", color: "#475569", border: "1px solid #cbd5e1", borderRadius: 6,
-                    padding: "8px 14px", fontSize: 13, fontWeight: 500, cursor: "pointer"
-                  }}
-                >
-                  {selectedEvent?.isCourtDate ? "닫기" : "취소"}
-                </button>
-                {!selectedEvent?.isCourtDate && (
-                  <button
-                    type="submit"
-                    style={{
-                      background: "#0b1f3a", color: "#c9a84c", border: "1px solid #c9a84c", borderRadius: 6,
-                      padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer",
-                      boxShadow: "0 2px 4px rgba(11,31,58,0.15)"
+                      background: "#ffffff", color: "#475569", border: "1px solid #cbd5e1", borderRadius: 4,
+                      padding: "6px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer"
                     }}
                   >
-                    {isEditing ? "수정 완료" : "등록"}
+                    {selectedEvent?.isCourtDate ? "닫기" : "취소"}
                   </button>
-                )}
+                </div>
+                
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  {isEditing && !selectedEvent?.isCourtDate && (
+                    <button
+                      type="button"
+                      onClick={handleDeleteEvent}
+                      style={{
+                        background: "#ffffff", color: "#ef4444", border: "1px solid #fee2e2", borderRadius: 4,
+                        padding: "6px 12px", fontSize: 12.5, fontWeight: 600, cursor: "pointer",
+                        display: "flex", alignItems: "center", gap: 4
+                      }}
+                    >
+                      <Trash2 size={13} />
+                      삭제
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setShowModal(false)}
+                    style={{ background: "transparent", border: "none", color: "#94a3b8", cursor: "pointer", padding: 4, display: "flex" }}
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
               </div>
-            </div>
-          </form>
-        </div>
-      )}
+
+              {/* 일정 제목 입력 (Star 아이콘과 텍스트박스) */}
+              <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 20 }}>
+                <div style={{ width: 24, display: "flex", justifyContent: "center", color: "#94a3b8" }}>
+                  <Star size={18} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <input
+                    type="text"
+                    placeholder="제목을 입력하세요."
+                    value={formTitle}
+                    onChange={(e) => setFormTitle(e.target.value)}
+                    disabled={selectedEvent?.isCourtDate}
+                    required
+                    style={{
+                      width: "100%", border: "1px solid #c9a84c", borderRadius: 6,
+                      padding: "10px 14px", fontSize: 14, fontWeight: 600, outline: "none",
+                      color: "#0b1f3a", boxSizing: "border-box"
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* 날짜/시간 선택 (Clock 아이콘과 인라인 컨트롤들) */}
+              <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 10 }}>
+                <div style={{ width: 24, display: "flex", justifyContent: "center", color: "#94a3b8" }}>
+                  <Clock size={18} />
+                </div>
+                <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                  <input
+                    type="date"
+                    value={startDateVal}
+                    onChange={(e) => handleStartDateChange(e.target.value)}
+                    disabled={selectedEvent?.isCourtDate}
+                    style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "6px 8px", fontSize: 12.5, outline: "none", color: "#334155" }}
+                  />
+                  {!formIsAllDay && (
+                    <input
+                      type="time"
+                      value={startTimeVal}
+                      onChange={(e) => handleStartTimeChange(e.target.value)}
+                      disabled={selectedEvent?.isCourtDate}
+                      style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "6px 8px", fontSize: 12.5, outline: "none", color: "#334155" }}
+                    />
+                  )}
+                  <span style={{ color: "#94a3b8" }}>-</span>
+                  <input
+                    type="date"
+                    value={endDateVal}
+                    onChange={(e) => handleEndDateChange(e.target.value)}
+                    disabled={selectedEvent?.isCourtDate}
+                    style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "6px 8px", fontSize: 12.5, outline: "none", color: "#334155" }}
+                  />
+                  {!formIsAllDay && (
+                    <input
+                      type="time"
+                      value={endTimeVal}
+                      onChange={(e) => handleEndTimeChange(e.target.value)}
+                      disabled={selectedEvent?.isCourtDate}
+                      style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "6px 8px", fontSize: 12.5, outline: "none", color: "#334155" }}
+                    />
+                  )}
+                  <span style={{ fontSize: 11.5, color: "#64748b", cursor: "pointer", marginLeft: 4 }}>시간대 변경</span>
+                </div>
+              </div>
+
+              {/* 종일 & 반복 여부 (Clock 아이콘 라인에 맞춘 내어쓰기) */}
+              <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 20 }}>
+                <div style={{ width: 24 }} />
+                <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 16 }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "#475569", cursor: selectedEvent?.isCourtDate ? "default" : "pointer", fontWeight: 500 }}>
+                    <input
+                      type="checkbox"
+                      checked={formIsAllDay}
+                      disabled={selectedEvent?.isCourtDate}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setFormIsAllDay(checked);
+                        if (checked) {
+                          setFormStartsAt(prev => prev.substring(0, 10));
+                          setFormEndsAt(prev => prev.substring(0, 10));
+                        } else {
+                          setFormStartsAt(prev => `${prev.substring(0, 10)}T09:00`);
+                          setFormEndsAt(prev => `${prev.substring(0, 10)}T18:00`);
+                        }
+                      }}
+                      style={{ accentColor: "#0b1f3a" }}
+                    />
+                    종일
+                  </label>
+                  <select
+                    style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "5px 8px", fontSize: 12, outline: "none", color: "#475569", background: "#f8fafc" }}
+                    disabled={true}
+                    value="none"
+                  >
+                    <option value="none">반복 안 함</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* 캘린더 분류/소유자 (Calendar 아이콘) */}
+              <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 20 }}>
+                <div style={{ width: 24, display: "flex", justifyContent: "center", color: "#94a3b8" }}>
+                  <CalendarIcon size={18} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  {isEmployee && !selectedEvent?.isCourtDate ? (
+                    <select
+                      value={formOwnerId}
+                      onChange={(e) => setFormOwnerId(e.target.value)}
+                      style={{ width: "100%", border: "1px solid #cbd5e1", borderRadius: 6, padding: "8px 12px", fontSize: 13, outline: "none", color: "#334155" }}
+                      required
+                    >
+                      {members.map(m => {
+                        const isMe = userProfile?.user?.id === m.id;
+                        return (
+                          <option key={m.id} value={m.id}>
+                            {isMe ? `[기본] ${m.name}` : m.name} ({m.position || "사원"})
+                          </option>
+                        );
+                      })}
+                    </select>
+                  ) : (
+                    <div style={{ border: "1px solid #e2e8f0", borderRadius: 6, padding: "8px 12px", fontSize: 13, background: "#f8fafc", color: "#64748b" }}>
+                      {selectedEvent?.isCourtDate ? "[법정 기일 일정]" : (selectedEvent?.ownerName || userProfile?.client?.name || "개인 일정")}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* 참석자 추가 (Users 아이콘) */}
+              <div style={{ display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 20 }}>
+                <div style={{ width: 24, display: "flex", justifyContent: "center", paddingTop: 8, color: "#94a3b8" }}>
+                  <Users size={18} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                    <input
+                      type="text"
+                      placeholder="참석자를 추가하세요."
+                      readOnly
+                      style={{ flex: 1, border: "1px solid #cbd5e1", borderRadius: 6, padding: "8px 12px", fontSize: 13, background: "#f8fafc", color: "#94a3b8", outline: "none" }}
+                    />
+                    <button
+                      type="button"
+                      style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "0 14px", fontSize: 12.5, fontWeight: 500, background: "#ffffff", color: "#475569", cursor: "default" }}
+                    >
+                      주소록
+                    </button>
+                  </div>
+                  {isEmployee && !selectedEvent?.isCourtDate && (
+                    <div style={{
+                      maxHeight: 110, overflowY: "auto", border: "1px solid #e2e8f0",
+                      borderRadius: 6, padding: "8px 12px", display: "flex", flexDirection: "column", gap: 6,
+                      background: "#f8fafc"
+                    }}>
+                      {members.filter(m => m.id !== formOwnerId).map(m => {
+                        const isChecked = formAttendeeIds.includes(m.id);
+                        return (
+                          <label key={m.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, color: "#475569", cursor: "pointer" }}>
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => {
+                                if (isChecked) {
+                                  setFormAttendeeIds(formAttendeeIds.filter(id => id !== m.id));
+                                } else {
+                                  setFormAttendeeIds([...formAttendeeIds, m.id]);
+                                }
+                              }}
+                              style={{ accentColor: "#0b1f3a" }}
+                            />
+                            <span>{m.name} ({m.position || "사원"})</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* 화상 회의 추가 (Video 아이콘) */}
+              <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 20 }}>
+                <div style={{ width: 24, display: "flex", justifyContent: "center", color: "#94a3b8" }}>
+                  <Video size={18} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <select
+                    style={{ width: "100%", border: "1px solid #cbd5e1", borderRadius: 6, padding: "8px 12px", fontSize: 13, outline: "none", color: "#334155", background: "#f8fafc" }}
+                    disabled={true}
+                    value="none"
+                  >
+                    <option value="none">화상 회의 추가</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* 설비 예약 (Monitor 아이콘) */}
+              <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 20 }}>
+                <div style={{ width: 24, display: "flex", justifyContent: "center", color: "#94a3b8" }}>
+                  <Monitor size={18} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <button
+                    type="button"
+                    style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "8px 14px", fontSize: 12.5, fontWeight: 500, background: "#ffffff", color: "#475569", cursor: "default" }}
+                  >
+                    설비 예약
+                  </button>
+                </div>
+              </div>
+
+              {/* 장소 입력 (MapPin 아이콘) */}
+              <div style={{ display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 20 }}>
+                <div style={{ width: 24, display: "flex", justifyContent: "center", paddingTop: 8, color: "#94a3b8" }}>
+                  <MapPin size={18} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <input
+                    type="text"
+                    placeholder="장소를 입력하세요."
+                    disabled={true}
+                    style={{ width: "100%", border: "1px solid #cbd5e1", borderRadius: 6, padding: "8px 12px", fontSize: 13, background: "#f8fafc", color: "#94a3b8", outline: "none", marginBottom: 6, boxSizing: "border-box" }}
+                  />
+                  <button
+                    type="button"
+                    style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "6px 12px", fontSize: 11.5, fontWeight: 500, background: "#ffffff", color: "#475569", cursor: "default" }}
+                  >
+                    지도 첨부 ▾
+                  </button>
+                </div>
+              </div>
+
+              {/* 메모/상세 내용 (FileText/문서 아이콘) */}
+              <div style={{ display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 20 }}>
+                <div style={{ width: 24, display: "flex", justifyContent: "center", paddingTop: 8, color: "#94a3b8" }}>
+                  <FileText size={18} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <textarea
+                    placeholder="메모를 작성하세요."
+                    value={formDescription}
+                    onChange={(e) => setFormDescription(e.target.value)}
+                    disabled={selectedEvent?.isCourtDate}
+                    style={{
+                      width: "100%", border: "1px solid #cbd5e1", borderRadius: 6,
+                      padding: "8px 12px", fontSize: 13, outline: "none",
+                      height: 80, resize: "vertical", boxSizing: "border-box", color: "#0b1f3a"
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* 파일 첨부 (Paperclip 아이콘) */}
+              <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 20 }}>
+                <div style={{ width: 24, display: "flex", justifyContent: "center", color: "#94a3b8" }}>
+                  <Paperclip size={18} />
+                </div>
+                <div style={{ flex: 1, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <button
+                    type="button"
+                    style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "6px 12px", fontSize: 12, fontWeight: 500, background: "#ffffff", color: "#475569", cursor: "default" }}
+                  >
+                    내 PC
+                  </button>
+                  <span style={{ fontSize: 11.5, color: "#8a97a8" }}>0KB/100.00MB</span>
+                </div>
+              </div>
+
+              {/* 공개/비공개 설정 (Lock 아이콘) */}
+              <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 8 }}>
+                <div style={{ width: 24, display: "flex", justifyContent: "center", color: "#94a3b8" }}>
+                  <Lock size={18} />
+                </div>
+                <div style={{ flex: 1, display: "flex", gap: 16 }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#475569", cursor: "pointer", fontWeight: 500 }}>
+                    <input type="radio" name="visible" checked={true} readOnly style={{ accentColor: "#0b1f3a" }} />
+                    공개
+                  </label>
+                  <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#475569", cursor: "pointer", fontWeight: 500 }}>
+                    <input type="radio" name="visible" checked={false} disabled={true} style={{ accentColor: "#0b1f3a" }} />
+                    비공개
+                  </label>
+                </div>
+              </div>
+
+              {/* 내 설정 팁 */}
+              <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 20 }}>
+                <div style={{ width: 24 }} />
+                <div style={{ flex: 1 }}>
+                  <span style={{ fontSize: 11.5, color: "#8a97a8", cursor: "pointer" }}>내 설정 ?</span>
+                </div>
+              </div>
+
+              {/* 범주/색상 선택 (Tag 아이콘) */}
+              <div style={{ display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 20 }}>
+                <div style={{ width: 24, display: "flex", justifyContent: "center", paddingTop: 8, color: "#94a3b8" }}>
+                  <Tag size={18} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                    <select
+                      style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "5px 8px", fontSize: 12, outline: "none", color: "#475569", background: "#f8fafc" }}
+                      disabled={true}
+                      value="none"
+                    >
+                      <option value="none">범주 없음</option>
+                    </select>
+                    <button
+                      type="button"
+                      style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "5px 10px", fontSize: 11.5, fontWeight: 500, background: "#ffffff", color: "#475569", cursor: "default" }}
+                    >
+                      범주 수정
+                    </button>
+                  </div>
+                  
+                  {/* 색상 선택 파레트 */}
+                  <div style={{ display: "flex", gap: 8 }}>
+                    {colorPalette.map((c) => (
+                      <button
+                        key={c.value}
+                        type="button"
+                        onClick={() => !selectedEvent?.isCourtDate && setFormColor(c.value)}
+                        style={{
+                          width: 22, height: 22, borderRadius: "50%", background: c.value,
+                          border: formColor === c.value ? "2px solid #0f172a" : "none",
+                          boxShadow: "0 1px 3px rgba(0,0,0,0.1)", cursor: selectedEvent?.isCourtDate ? "default" : "pointer"
+                        }}
+                        title={c.label}
+                        disabled={selectedEvent?.isCourtDate}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* 알림 설정 (Bell 아이콘) */}
+              <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 10 }}>
+                <div style={{ width: 24, display: "flex", justifyContent: "center", color: "#94a3b8" }}>
+                  <Bell size={18} />
+                </div>
+                <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <select
+                    style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "5px 8px", fontSize: 12, outline: "none", color: "#475569", background: "#f8fafc" }}
+                    disabled={true}
+                    value="10"
+                  >
+                    <option value="10">10분 전</option>
+                  </select>
+                  <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12.5, color: "#475569", cursor: "pointer", fontWeight: 500 }}>
+                    <input type="radio" name="alertType" checked={true} readOnly style={{ accentColor: "#0b1f3a" }} />
+                    서비스 알림
+                  </label>
+                  <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12.5, color: "#475569", cursor: "pointer", fontWeight: 500 }}>
+                    <input type="radio" name="alertType" checked={false} disabled={true} style={{ accentColor: "#0b1f3a" }} />
+                    메일 알림
+                  </label>
+                  <span style={{ fontSize: 16, color: "#94a3b8", cursor: "pointer", marginLeft: "auto", padding: "0 4px" }}>×</span>
+                </div>
+              </div>
+            </form>
+          </div>
+        );
+      })()}
 
       {/* ==================== 4. 구글 캘린더 연동 안내 모달 ==================== */}
       {showSyncModal && (
