@@ -113,8 +113,8 @@ export default function PortalCalendar() {
           portalApi.get("/departments"),
           portalApi.get("/members")
         ]).then(([deptRes, memRes]) => {
-          const depts = deptRes.data?.data || [];
-          const mems = memRes.data?.data || [];
+          const depts = deptRes.data || [];
+          const mems = memRes.data || [];
           setDepartments(depts);
           setMembers(mems);
 
@@ -182,7 +182,7 @@ export default function PortalCalendar() {
 
       const queryStr = new URLSearchParams(params).toString();
       const res = await portalApi.get(url + (queryStr ? `?${queryStr}` : ""));
-      setEvents(res.data?.data || []);
+      setEvents(res.data || []);
     } catch (e) {
       console.error("[PortalCalendar] 일정 로드 실패:", e);
     } finally {
@@ -1328,45 +1328,49 @@ export default function PortalCalendar() {
               </div>
 
               {/* 날짜/시간 선택 (Clock 아이콘과 인라인 컨트롤들) */}
-              <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 10 }}>
-                <div style={{ width: 24, display: "flex", justifyContent: "center", color: "#94a3b8" }}>
+              <div style={{ display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 16 }}>
+                <div style={{ width: 24, display: "flex", justifyContent: "center", color: "#94a3b8", paddingTop: 8 }}>
                   <Clock size={18} />
                 </div>
-                <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                  <input
-                    type="date"
-                    value={startDateVal}
-                    onChange={(e) => handleStartDateChange(e.target.value)}
-                    disabled={selectedEvent?.isCourtDate}
-                    style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "6px 8px", fontSize: 12.5, outline: "none", color: "#334155" }}
-                  />
-                  {!formIsAllDay && (
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 12.5, fontWeight: 600, color: "#64748b", width: 40 }}>시작</span>
                     <input
-                      type="time"
-                      value={startTimeVal}
-                      onChange={(e) => handleStartTimeChange(e.target.value)}
+                      type="date"
+                      value={startDateVal}
+                      onChange={(e) => handleStartDateChange(e.target.value)}
                       disabled={selectedEvent?.isCourtDate}
-                      style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "6px 8px", fontSize: 12.5, outline: "none", color: "#334155" }}
+                      style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "6px 10px", fontSize: 13, outline: "none", color: "#334155", flex: 1, boxSizing: "border-box" }}
                     />
-                  )}
-                  <span style={{ color: "#94a3b8" }}>-</span>
-                  <input
-                    type="date"
-                    value={endDateVal}
-                    onChange={(e) => handleEndDateChange(e.target.value)}
-                    disabled={selectedEvent?.isCourtDate}
-                    style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "6px 8px", fontSize: 12.5, outline: "none", color: "#334155" }}
-                  />
-                  {!formIsAllDay && (
+                    {!formIsAllDay && (
+                      <input
+                        type="time"
+                        value={startTimeVal}
+                        onChange={(e) => handleStartTimeChange(e.target.value)}
+                        disabled={selectedEvent?.isCourtDate}
+                        style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "6px 10px", fontSize: 13, outline: "none", color: "#334155", width: 120, boxSizing: "border-box" }}
+                      />
+                    )}
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 12.5, fontWeight: 600, color: "#64748b", width: 40 }}>종료</span>
                     <input
-                      type="time"
-                      value={endTimeVal}
-                      onChange={(e) => handleEndTimeChange(e.target.value)}
+                      type="date"
+                      value={endDateVal}
+                      onChange={(e) => handleEndDateChange(e.target.value)}
                       disabled={selectedEvent?.isCourtDate}
-                      style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "6px 8px", fontSize: 12.5, outline: "none", color: "#334155" }}
+                      style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "6px 10px", fontSize: 13, outline: "none", color: "#334155", flex: 1, boxSizing: "border-box" }}
                     />
-                  )}
-                  <span style={{ fontSize: 11.5, color: "#64748b", cursor: "pointer", marginLeft: 4 }}>시간대 변경</span>
+                    {!formIsAllDay && (
+                      <input
+                        type="time"
+                        value={endTimeVal}
+                        onChange={(e) => handleEndTimeChange(e.target.value)}
+                        disabled={selectedEvent?.isCourtDate}
+                        style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "6px 10px", fontSize: 13, outline: "none", color: "#334155", width: 120, boxSizing: "border-box" }}
+                      />
+                    )}
+                  </div>
                 </div>
               </div>
 
