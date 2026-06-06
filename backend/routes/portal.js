@@ -983,7 +983,9 @@ router.get("/calendar/sync-info", portalAuth, (req, res) => {
     const IP_HASH_SECRET = process.env.IP_HASH_SECRET || process.env.CSRF_SECRET || "development-ip-hash-secret";
     const token = crypto.createHmac("sha256", IP_HASH_SECRET).update(userId).digest("hex");
     
-    const appUrl = process.env.APP_URL || `${req.protocol}://${req.get("host")}`;
+    // 피드 URL — APP_URL 환경변수 기반. 리버스 프록시 뒤에서 Host/protocol 헤더가
+    // 신뢰할 수 없을 수 있으므로 Host 헤더 기반 생성을 의도적으로 회피(admin-users.js와 동일 원칙).
+    const appUrl = (process.env.APP_URL || "https://highlaw.co.kr").replace(/\/+$/, "");
     const feedUrl = `${appUrl}/api/portal/calendar/feed?userId=${userId}&token=${token}`;
     
     res.json({
