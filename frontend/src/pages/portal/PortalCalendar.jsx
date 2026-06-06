@@ -18,9 +18,15 @@ import {
   Lock,
   Bell,
   Tag,
-  Monitor,
   FileText
 } from "lucide-react";
+
+// 첨부파일 용량을 사람이 읽기 쉬운 단위(KB/MB)로 변환
+function formatFileSize(bytes) {
+  if (!bytes && bytes !== 0) return "";
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)}MB`;
+}
 
 export default function PortalCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -64,6 +70,15 @@ export default function PortalCalendar() {
   const [formColor, setFormColor] = useState("#0b1f3a");
   const [formOwnerId, setFormOwnerId] = useState("");
   const [formAttendeeIds, setFormAttendeeIds] = useState([]);
+  const [attendeeSearch, setAttendeeSearch] = useState("");
+  const [formRecurrence, setFormRecurrence] = useState("none");
+  const [formVideoEnabled, setFormVideoEnabled] = useState(false);
+  const [formVideoUrl, setFormVideoUrl] = useState("");
+  const [formLocation, setFormLocation] = useState("");
+  const [formCategory, setFormCategory] = useState("");
+  const [formReminderMinutes, setFormReminderMinutes] = useState("");
+  const [formAttachments, setFormAttachments] = useState([]); // [{ name, url, size }]
+  const [attachmentUploading, setAttachmentUploading] = useState(false);
 
   // 프리미엄 파스텔 톤 색상 리스트 (관리자 페이지 테마 적용)
   const colorPalette = [
@@ -73,6 +88,35 @@ export default function PortalCalendar() {
     { value: "#10b981", label: "에메랄드" },
     { value: "#f59e0b", label: "엠버" },
     { value: "#ef4444", label: "로즈" },
+  ];
+
+  // 반복 일정 옵션 (생성 시점 기준으로 회차를 미리 생성, 회차별 개별 수정/삭제 가능)
+  const recurrenceOptions = [
+    { value: "none", label: "반복 안 함" },
+    { value: "daily", label: "매일" },
+    { value: "weekly", label: "매주" },
+    { value: "monthly", label: "매월" },
+    { value: "yearly", label: "매년" },
+  ];
+
+  // 일정 범주 사전 정의 목록 (색상 팔레트와 별개로 분류 용도)
+  const categoryOptions = [
+    { value: "", label: "범주 없음" },
+    { value: "meeting", label: "회의" },
+    { value: "court", label: "재판·기일" },
+    { value: "external", label: "외부 일정" },
+    { value: "education", label: "교육·세미나" },
+    { value: "leave", label: "휴가" },
+    { value: "etc", label: "기타" },
+  ];
+
+  // 알림(이메일) 발송 시점 옵션
+  const reminderOptions = [
+    { value: "", label: "알림 사용 안 함" },
+    { value: "10", label: "10분 전" },
+    { value: "30", label: "30분 전" },
+    { value: "60", label: "1시간 전" },
+    { value: "1440", label: "1일 전" },
   ];
 
   // 윈도우 리사이즈 감지
@@ -282,6 +326,14 @@ export default function PortalCalendar() {
       setFormOwnerId(userProfile.user?.id || "");
     }
     setFormAttendeeIds([]);
+    setAttendeeSearch("");
+    setFormRecurrence("none");
+    setFormVideoEnabled(false);
+    setFormVideoUrl("");
+    setFormLocation("");
+    setFormCategory("");
+    setFormReminderMinutes("");
+    setFormAttachments([]);
     setShowModal(true);
   };
 
@@ -292,7 +344,7 @@ export default function PortalCalendar() {
     setSelectedEvent(event);
     setFormTitle(event.title);
     setFormDescription(event.description || "");
-    
+
     const formatInputDateTime = (str) => {
       if (!str) return "";
       return str.length > 16 ? str.substring(0, 16) : str;
@@ -309,7 +361,39 @@ export default function PortalCalendar() {
         .map(id => id.trim())
         .filter(Boolean)
     );
+    setAttendeeSearch("");
+    setFormRecurrence(event.recurrenceRule || "none");
+    setFormVideoEnabled(!!event.videoConferenceUrl);
+    setFormVideoUrl(event.videoConferenceUrl || "");
+    setFormLocation(event.location || "");
+    setFormCategory(event.category || "");
+    setFormReminderMinutes(event.reminderMinutes ? String(event.reminderMinutes) : "");
+    let parsedAttachments = [];
+    if (event.attachmentUrls) {
+      try {
+        const parsed = JSON.parse(event.attachmentUrls);
+        if (Array.isArray(parsed)) parsedAttachments = parsed;
+      } catch {
+        parsedAttachments = [];
+      }
+    }
+    setFormAttachments(parsedAttachments);
     setShowModal(true);
+  };
+
+  // 첨부파일 업로드 처리
+  const handleAttachmentUpload = async (file) => {
+    if (!file) return;
+    setAttachmentUploading(true);
+    try {
+      const res = await portalApi.upload("/calendar/upload-attachment", file);
+      const { url, name, size } = res.data;
+      setFormAttachments(prev => [...prev, { name, url, size }]);
+    } catch (err) {
+      alert(err.message || "파일 업로드에 실패했습니다.");
+    } finally {
+      setAttachmentUploading(false);
+    }
   };
 
   // 저장 처리
@@ -317,7 +401,7 @@ export default function PortalCalendar() {
     e.preventDefault();
     if (!formTitle.trim()) return alert("일정 제목을 입력해주세요.");
     if (!formStartsAt) return alert("시작 시간을 선택해주세요.");
-    
+
     const payload = {
       title: formTitle,
       description: formDescription,
@@ -327,7 +411,15 @@ export default function PortalCalendar() {
       color: formColor,
       portalUserId: isEmployee ? formOwnerId : undefined,
       attendeeIds: isEmployee ? formAttendeeIds.join(",") : undefined,
+      location: formLocation || null,
+      videoConferenceUrl: (formVideoEnabled && formVideoUrl.trim()) ? formVideoUrl.trim() : null,
+      attachmentUrls: formAttachments.length > 0 ? JSON.stringify(formAttachments) : null,
+      category: formCategory || null,
+      reminderMinutes: formReminderMinutes ? Number(formReminderMinutes) : null,
     };
+    if (!isEditing) {
+      payload.recurrenceRule = formRecurrence !== "none" ? formRecurrence : null;
+    }
 
     try {
       if (isEditing && selectedEvent) {
@@ -335,12 +427,12 @@ export default function PortalCalendar() {
         alert("일정이 수정되었습니다.");
       } else {
         await portalApi.post("/events", payload);
-        alert("새 일정이 등록되었습니다.");
+        alert(formRecurrence !== "none" ? "반복 일정이 등록되었습니다." : "새 일정이 등록되었습니다.");
       }
       setShowModal(false);
       fetchEvents();
     } catch (err) {
-      alert(err.response?.data?.error || "일정 저장에 실패했습니다.");
+      alert(err.message || "일정 저장에 실패했습니다.");
     }
   };
 
@@ -354,7 +446,7 @@ export default function PortalCalendar() {
       alert("일정이 삭제되었습니다.");
       setShowModal(false);
       fetchEvents();
-    } catch (err) {
+    } catch {
       alert("일정 삭제에 실패했습니다.");
     }
   };
@@ -566,6 +658,123 @@ export default function PortalCalendar() {
             </div>
           );
         })}
+      </div>
+    );
+  };
+
+  // ==================== 구성원 주간 뷰 렌더링 (구성원을 Y축 행에 배치) ====================
+  const renderMemberWeeklyView = () => {
+    const activeMembers = members.filter(m => selectedMemberIds.includes(m.id));
+
+    if (activeMembers.length === 0) {
+      return (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 400, color: "#64748b", fontSize: 13.5, background: "#f8fafc" }}>
+          선택된 구성원이 없습니다. 왼쪽 필터 또는 구성원 목록에서 사원을 선택해 주세요.
+        </div>
+      );
+    }
+
+    const startOfWeek = new Date(currentDate);
+    const day = startOfWeek.getDay();
+    startOfWeek.setDate(startOfWeek.getDate() - day);
+
+    const weekDays = [];
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(startOfWeek);
+      date.setDate(startOfWeek.getDate() + i);
+      weekDays.push(date);
+    }
+
+    const weekdaysKorean = ["일", "월", "화", "수", "목", "금", "토"];
+    const todayStr = formatDateString(new Date());
+    const ROW_LABEL_WIDTH = 120;
+    const DAY_COL_MIN_WIDTH = 130;
+    const gridMinWidth = ROW_LABEL_WIDTH + 7 * DAY_COL_MIN_WIDTH;
+
+    return (
+      <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "auto", background: "#ffffff", borderRadius: 8 }}>
+        {/* 날짜 헤더 (X축) */}
+        <div style={{ display: "flex", borderBottom: "1px solid #e2e8f0", minWidth: gridMinWidth, position: "sticky", top: 0, zIndex: 2, background: "#f8fafc" }}>
+          <div style={{ width: ROW_LABEL_WIDTH, flexShrink: 0, borderRight: "1px solid #e2e8f0" }} />
+          {weekDays.map((date, idx) => {
+            const isToday = formatDateString(date) === todayStr;
+            const dayOfWeek = date.getDay();
+            return (
+              <div key={idx} style={{
+                flex: 1, minWidth: DAY_COL_MIN_WIDTH, borderRight: idx === 6 ? "none" : "1px solid #e2e8f0",
+                padding: "8px 6px", textAlign: "center", borderBottom: "2px solid #c9a84c"
+              }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: dayOfWeek === 0 ? "#ef4444" : dayOfWeek === 6 ? "#3b82f6" : "#64748b" }}>
+                  {weekdaysKorean[dayOfWeek]}
+                </div>
+                <div style={{
+                  display: "inline-flex", alignItems: "center", justifyContent: "center",
+                  width: 24, height: 24, borderRadius: "50%", marginTop: 2,
+                  fontSize: 13, fontWeight: 700,
+                  background: isToday ? "#0b1f3a" : "transparent",
+                  color: isToday ? "#ffffff" : "#1e293b"
+                }}>
+                  {date.getDate()}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* 구성원 행 (Y축) */}
+        {activeMembers.map(m => (
+          <div key={m.id} style={{ display: "flex", borderBottom: "1px solid #f1f5f9", minWidth: gridMinWidth }}>
+            <div style={{
+              width: ROW_LABEL_WIDTH, flexShrink: 0, borderRight: "1px solid #e2e8f0",
+              padding: "10px 12px", display: "flex", flexDirection: "column", justifyContent: "center",
+              background: "#f8fafc", position: "sticky", left: 0, zIndex: 1, boxSizing: "border-box"
+            }}>
+              <span style={{ fontSize: 12.5, fontWeight: 700, color: "#0b1f3a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {m.name}
+              </span>
+              <span style={{ fontSize: 10, fontWeight: 500, color: "#64748b" }}>{m.position || "사원"}</span>
+            </div>
+            {weekDays.map((date, idx) => {
+              const dateStr = formatDateString(date);
+              const dayEvents = events.filter(e => {
+                const isOwner = e.portalUserId === m.id;
+                const isAttendee = (e.attendeeIds || "").split(",").includes(m.id);
+                const start = e.startsAt.substring(0, 10);
+                const end = (e.endsAt || e.startsAt).substring(0, 10);
+                return (isOwner || isAttendee) && dateStr >= start && dateStr <= end;
+              });
+
+              return (
+                <div
+                  key={idx}
+                  onClick={() => handleOpenCreateModal(date)}
+                  style={{
+                    flex: 1, minWidth: DAY_COL_MIN_WIDTH, borderRight: idx === 6 ? "none" : "1px solid #f1f5f9",
+                    padding: 6, display: "flex", flexDirection: "column", gap: 4,
+                    minHeight: 64, cursor: "pointer", background: "#ffffff", boxSizing: "border-box"
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(201, 168, 76, 0.06)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "#ffffff"; }}
+                >
+                  {dayEvents.map(event => (
+                    <div
+                      key={event.id}
+                      onClick={(e) => handleOpenEditModal(event, e)}
+                      style={{
+                        fontSize: 10.5, fontWeight: 500, padding: "3px 6px", borderRadius: 4,
+                        background: `${event.color}15`, color: event.color, borderLeft: `3px solid ${event.color}`,
+                        cursor: "pointer", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis"
+                      }}
+                      title={`${event.title}\n${event.isAllDay ? "하루종일" : `${event.startsAt.substring(11, 16)} - ${(event.endsAt || event.startsAt).substring(11, 16)}`}`}
+                    >
+                      {event.isAllDay ? "" : `${event.startsAt.substring(11, 16)} `}{event.title}
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+        ))}
       </div>
     );
   };
@@ -1118,8 +1327,7 @@ export default function PortalCalendar() {
                   <span style={{ fontSize: 11, fontWeight: 700, color: "#64748b", padding: "0 6px 0 4px" }}>구성원:</span>
                   {[
                     { id: "member_day", label: "일간" },
-                    { id: "member_week", label: "주간" },
-                    { id: "member_month", label: "월간" }
+                    { id: "member_week", label: "주간" }
                   ].map(mode => (
                     <button
                       key={mode.id}
@@ -1190,8 +1398,8 @@ export default function PortalCalendar() {
 
         {/* 캘린더 그리드 영역 */}
         <div style={{ display: "flex", flexDirection: "column", flex: 1, border: "1px solid #e2e8f0", borderRadius: 8, overflow: "hidden", minWidth: 0 }}>
-          {/* 요일 헤더 (주간, 월간 모드 공용) */}
-          {!viewMode.endsWith("day") && (
+          {/* 요일 헤더 (주간, 월간 모드 공용 — 구성원 주간 뷰는 자체 헤더를 그리므로 제외) */}
+          {!viewMode.endsWith("day") && viewMode !== "member_week" && (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
               {weekdaysHeader.map((w, idx) => (
                 <div
@@ -1213,8 +1421,9 @@ export default function PortalCalendar() {
             </div>
           ) : (
             <>
-              {viewMode.endsWith("month") && renderMonthlyView()}
-              {viewMode.endsWith("week") && renderWeeklyView()}
+              {viewMode === "personal_month" && renderMonthlyView()}
+              {viewMode === "personal_week" && renderWeeklyView()}
+              {viewMode === "member_week" && renderMemberWeeklyView()}
               {viewMode === "personal_day" && renderDailyView()}
               {viewMode === "member_day" && renderMemberDailyView()}
             </>
@@ -1399,11 +1608,15 @@ export default function PortalCalendar() {
                     종일
                   </label>
                   <select
-                    style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "5px 8px", fontSize: 12, outline: "none", color: "#475569", background: "#f8fafc" }}
-                    disabled={true}
-                    value="none"
+                    value={formRecurrence}
+                    onChange={(e) => setFormRecurrence(e.target.value)}
+                    disabled={isEditing}
+                    title={isEditing ? "반복 설정은 새 일정 등록 시에만 가능합니다." : ""}
+                    style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "5px 8px", fontSize: 12, outline: "none", color: "#475569", background: isEditing ? "#f8fafc" : "#ffffff" }}
                   >
-                    <option value="none">반복 안 함</option>
+                    {recurrenceOptions.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -1447,13 +1660,16 @@ export default function PortalCalendar() {
                   <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
                     <input
                       type="text"
-                      placeholder="참석자를 추가하세요."
-                      readOnly
-                      style={{ flex: 1, border: "1px solid #cbd5e1", borderRadius: 6, padding: "8px 12px", fontSize: 13, background: "#f8fafc", color: "#94a3b8", outline: "none" }}
+                      placeholder="이름 또는 직책으로 검색하세요."
+                      value={attendeeSearch}
+                      onChange={(e) => setAttendeeSearch(e.target.value)}
+                      style={{ flex: 1, border: "1px solid #cbd5e1", borderRadius: 6, padding: "8px 12px", fontSize: 13, background: "#ffffff", color: "#0b1f3a", outline: "none" }}
                     />
                     <button
                       type="button"
-                      style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "0 14px", fontSize: 12.5, fontWeight: 500, background: "#ffffff", color: "#475569", cursor: "default" }}
+                      onClick={() => setAttendeeSearch("")}
+                      title="검색어를 지우고 전체 구성원을 표시합니다."
+                      style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "0 14px", fontSize: 12.5, fontWeight: 500, background: "#ffffff", color: "#475569", cursor: "pointer" }}
                     >
                       주소록
                     </button>
@@ -1464,7 +1680,12 @@ export default function PortalCalendar() {
                       borderRadius: 6, padding: "8px 12px", display: "flex", flexDirection: "column", gap: 6,
                       background: "#f8fafc"
                     }}>
-                      {members.filter(m => m.id !== formOwnerId).map(m => {
+                      {members.filter(m => {
+                        if (m.id === formOwnerId) return false;
+                        const keyword = attendeeSearch.trim();
+                        if (!keyword) return true;
+                        return m.name.includes(keyword) || (m.position || "").includes(keyword);
+                      }).map(m => {
                         const isChecked = formAttendeeIds.includes(m.id);
                         return (
                           <label key={m.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, color: "#475569", cursor: "pointer" }}>
@@ -1490,33 +1711,29 @@ export default function PortalCalendar() {
               </div>
 
               {/* 화상 회의 추가 (Video 아이콘) */}
-              <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 20 }}>
-                <div style={{ width: 24, display: "flex", justifyContent: "center", color: "#94a3b8" }}>
+              <div style={{ display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 20 }}>
+                <div style={{ width: 24, display: "flex", justifyContent: "center", paddingTop: 8, color: "#94a3b8" }}>
                   <Video size={18} />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <select
-                    style={{ width: "100%", border: "1px solid #cbd5e1", borderRadius: 6, padding: "8px 12px", fontSize: 13, outline: "none", color: "#334155", background: "#f8fafc" }}
-                    disabled={true}
-                    value="none"
-                  >
-                    <option value="none">화상 회의 추가</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* 설비 예약 (Monitor 아이콘) */}
-              <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 20 }}>
-                <div style={{ width: 24, display: "flex", justifyContent: "center", color: "#94a3b8" }}>
-                  <Monitor size={18} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <button
-                    type="button"
-                    style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "8px 14px", fontSize: 12.5, fontWeight: 500, background: "#ffffff", color: "#475569", cursor: "default" }}
-                  >
-                    설비 예약
-                  </button>
+                  <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "#475569", cursor: "pointer", fontWeight: 500, marginBottom: formVideoEnabled ? 8 : 0 }}>
+                    <input
+                      type="checkbox"
+                      checked={formVideoEnabled}
+                      onChange={(e) => setFormVideoEnabled(e.target.checked)}
+                      style={{ accentColor: "#0b1f3a" }}
+                    />
+                    화상 회의 추가
+                  </label>
+                  {formVideoEnabled && (
+                    <input
+                      type="url"
+                      placeholder="화상 회의 링크 URL을 입력하세요. (예: https://meet.google.com/xxx-xxxx-xxx)"
+                      value={formVideoUrl}
+                      onChange={(e) => setFormVideoUrl(e.target.value)}
+                      style={{ width: "100%", border: "1px solid #cbd5e1", borderRadius: 6, padding: "8px 12px", fontSize: 13, outline: "none", color: "#0b1f3a", boxSizing: "border-box" }}
+                    />
+                  )}
                 </div>
               </div>
 
@@ -1529,15 +1746,24 @@ export default function PortalCalendar() {
                   <input
                     type="text"
                     placeholder="장소를 입력하세요."
-                    disabled={true}
-                    style={{ width: "100%", border: "1px solid #cbd5e1", borderRadius: 6, padding: "8px 12px", fontSize: 13, background: "#f8fafc", color: "#94a3b8", outline: "none", marginBottom: 6, boxSizing: "border-box" }}
+                    value={formLocation}
+                    onChange={(e) => setFormLocation(e.target.value)}
+                    style={{ width: "100%", border: "1px solid #cbd5e1", borderRadius: 6, padding: "8px 12px", fontSize: 13, background: "#ffffff", color: "#0b1f3a", outline: "none", marginBottom: 6, boxSizing: "border-box" }}
                   />
-                  <button
-                    type="button"
-                    style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "6px 12px", fontSize: 11.5, fontWeight: 500, background: "#ffffff", color: "#475569", cursor: "default" }}
+                  <a
+                    href={formLocation.trim() ? `https://map.kakao.com/?q=${encodeURIComponent(formLocation.trim())}` : undefined}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => { if (!formLocation.trim()) e.preventDefault(); }}
+                    style={{
+                      display: "inline-block", textDecoration: "none",
+                      border: "1px solid #cbd5e1", borderRadius: 6, padding: "6px 12px", fontSize: 11.5, fontWeight: 500,
+                      background: "#ffffff", color: formLocation.trim() ? "#475569" : "#cbd5e1",
+                      cursor: formLocation.trim() ? "pointer" : "default"
+                    }}
                   >
-                    지도 첨부 ▾
-                  </button>
+                    지도에서 보기 ↗
+                  </a>
                 </div>
               </div>
 
@@ -1562,18 +1788,51 @@ export default function PortalCalendar() {
               </div>
 
               {/* 파일 첨부 (Paperclip 아이콘) */}
-              <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 20 }}>
-                <div style={{ width: 24, display: "flex", justifyContent: "center", color: "#94a3b8" }}>
+              <div style={{ display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 20 }}>
+                <div style={{ width: 24, display: "flex", justifyContent: "center", paddingTop: 6, color: "#94a3b8" }}>
                   <Paperclip size={18} />
                 </div>
-                <div style={{ flex: 1, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <button
-                    type="button"
-                    style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "6px 12px", fontSize: 12, fontWeight: 500, background: "#ffffff", color: "#475569", cursor: "default" }}
-                  >
-                    내 PC
-                  </button>
-                  <span style={{ fontSize: 11.5, color: "#8a97a8" }}>0KB/100.00MB</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <label style={{
+                      display: "inline-block", border: "1px solid #cbd5e1", borderRadius: 6, padding: "6px 12px",
+                      fontSize: 12, fontWeight: 500, background: attachmentUploading ? "#f1f5f9" : "#ffffff",
+                      color: "#475569", cursor: attachmentUploading ? "default" : "pointer"
+                    }}>
+                      {attachmentUploading ? "업로드 중..." : "내 PC"}
+                      <input
+                        type="file"
+                        disabled={attachmentUploading}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleAttachmentUpload(file);
+                          e.target.value = "";
+                        }}
+                        style={{ display: "none" }}
+                      />
+                    </label>
+                    <span style={{ fontSize: 11.5, color: "#8a97a8" }}>최대 20MB / 파일</span>
+                  </div>
+                  {formAttachments.length > 0 && (
+                    <ul style={{ listStyle: "none", margin: "8px 0 0", padding: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+                      {formAttachments.map((file, idx) => (
+                        <li key={`${file.url}-${idx}`} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#475569" }}>
+                          <a href={file.url} target="_blank" rel="noopener noreferrer" style={{ color: "#0b1f3a", textDecoration: "underline", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 220 }}>
+                            {file.name}
+                          </a>
+                          <span style={{ color: "#8a97a8", flexShrink: 0 }}>{formatFileSize(file.size)}</span>
+                          <button
+                            type="button"
+                            onClick={() => setFormAttachments(formAttachments.filter((_, i) => i !== idx))}
+                            style={{ border: "none", background: "transparent", color: "#94a3b8", cursor: "pointer", fontSize: 14, lineHeight: 1, padding: 0 }}
+                            title="첨부 제거"
+                          >
+                            ×
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
               </div>
 
@@ -1610,20 +1869,16 @@ export default function PortalCalendar() {
                 <div style={{ flex: 1 }}>
                   <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
                     <select
-                      style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "5px 8px", fontSize: 12, outline: "none", color: "#475569", background: "#f8fafc" }}
-                      disabled={true}
-                      value="none"
+                      value={formCategory}
+                      onChange={(e) => setFormCategory(e.target.value)}
+                      style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "5px 8px", fontSize: 12, outline: "none", color: "#475569", background: "#ffffff" }}
                     >
-                      <option value="none">범주 없음</option>
+                      {categoryOptions.map(opt => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
                     </select>
-                    <button
-                      type="button"
-                      style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "5px 10px", fontSize: 11.5, fontWeight: 500, background: "#ffffff", color: "#475569", cursor: "default" }}
-                    >
-                      범주 수정
-                    </button>
                   </div>
-                  
+
                   {/* 색상 선택 파레트 */}
                   <div style={{ display: "flex", gap: 8 }}>
                     {colorPalette.map((c) => (
@@ -1651,21 +1906,19 @@ export default function PortalCalendar() {
                 </div>
                 <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                   <select
-                    style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "5px 8px", fontSize: 12, outline: "none", color: "#475569", background: "#f8fafc" }}
-                    disabled={true}
-                    value="10"
+                    value={formReminderMinutes}
+                    onChange={(e) => setFormReminderMinutes(e.target.value)}
+                    style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "5px 8px", fontSize: 12, outline: "none", color: "#475569", background: "#ffffff" }}
                   >
-                    <option value="10">10분 전</option>
+                    {reminderOptions.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
                   </select>
-                  <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12.5, color: "#475569", cursor: "pointer", fontWeight: 500 }}>
-                    <input type="radio" name="alertType" checked={true} readOnly style={{ accentColor: "#0b1f3a" }} />
-                    서비스 알림
-                  </label>
-                  <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12.5, color: "#475569", cursor: "pointer", fontWeight: 500 }}>
-                    <input type="radio" name="alertType" checked={false} disabled={true} style={{ accentColor: "#0b1f3a" }} />
-                    메일 알림
-                  </label>
-                  <span style={{ fontSize: 16, color: "#94a3b8", cursor: "pointer", marginLeft: "auto", padding: "0 4px" }}>×</span>
+                  {formReminderMinutes && (
+                    <span style={{ fontSize: 12, color: "#475569", fontWeight: 500 }}>
+                      📧 일정 시작 {reminderOptions.find(o => o.value === formReminderMinutes)?.label} 이메일로 알림을 보내드립니다.
+                    </span>
+                  )}
                 </div>
               </div>
             </form>

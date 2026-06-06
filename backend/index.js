@@ -349,6 +349,14 @@ try {
 } catch (err) {
   logger.warn({ err }, "court date reminder cron not started");
 }
+
+/* 포털 캘린더 일정 알림 cron — 매분 도래한 reminder_minutes 을 이메일로 발송 */
+try {
+  const { startCron: startPortalEventReminderCron } = require("./lib/portal-event-reminder");
+  startPortalEventReminderCron();
+} catch (err) {
+  logger.warn({ err }, "portal event reminder cron not started");
+}
 app.use("/api/sitemap", require("./routes/sitemap"));
 app.use("/sitemap.xml", require("./routes/sitemap"));
 // API 문서 (Swagger UI + OpenAPI 스펙)

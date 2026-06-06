@@ -1068,6 +1068,13 @@ const portalEvents = sqliteTable("portal_events", {
   isAllDay: integer("is_all_day").notNull().default(0),
   color: text("color").default("#6366f1"),
   attendeeIds: text("attendee_ids"),
+  location: text("location"),
+  videoConferenceUrl: text("video_conference_url"),
+  attachmentUrls: text("attachment_urls"),
+  category: text("category"),
+  recurrenceRule: text("recurrence_rule"),
+  reminderMinutes: integer("reminder_minutes"),
+  reminded: integer("reminded").notNull().default(0),
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
   updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
 });

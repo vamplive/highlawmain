@@ -86,6 +86,27 @@ const receiptUpload = multer({
   },
 });
 
+// =============================================
+// 캘린더 일정 첨부파일 업로드 multer 설정
+// =============================================
+const CALENDAR_FILES_DIR = path.join(STORAGE_PATH, "uploads", "calendar");
+
+const calendarFileStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    fs.mkdirSync(CALENDAR_FILES_DIR, { recursive: true });
+    cb(null, CALENDAR_FILES_DIR);
+  },
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, `event-${Date.now()}-${crypto.randomBytes(4).toString("hex")}${ext}`);
+  },
+});
+
+const calendarFileUpload = multer({
+  storage: calendarFileStorage,
+  limits: { fileSize: 20 * 1024 * 1024 }, // 20MB
+});
+
 
 // =============================================
 // 공개 엔드포인트
@@ -742,6 +763,20 @@ router.delete("/events/:id", portalAuth, async (req, res) => {
   } catch (e) {
     handleError(res, e);
   }
+});
+
+/** POST /api/portal/calendar/upload-attachment — 일정 첨부파일 업로드 */
+router.post("/calendar/upload-attachment", portalAuth, (req, res) => {
+  calendarFileUpload.single("file")(req, res, (err) => {
+    if (err) {
+      return res.status(400).json({ data: null, error: err.message, meta: null });
+    }
+    if (!req.file) {
+      return res.status(400).json({ data: null, error: "파일이 없습니다", meta: null });
+    }
+    const url = `/uploads/calendar/${req.file.filename}`;
+    res.json({ data: { url, name: req.file.originalname, size: req.file.size }, error: null, meta: null });
+  });
 });
 
 // =============================================

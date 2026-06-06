@@ -1598,6 +1598,16 @@ module.exports = {
   // portal_events — attendee_ids 컬럼 추가
   try { sqlite.exec("ALTER TABLE portal_events ADD COLUMN attendee_ids TEXT"); } catch (e) { warnMigrationSkip(e); }
 
+  // portal_events — 일정 등록 모달 확장 항목(장소/화상회의/첨부파일/범주/반복/알림) 컬럼 추가
+  try { sqlite.exec("ALTER TABLE portal_events ADD COLUMN location TEXT"); } catch (e) { warnMigrationSkip(e); }
+  try { sqlite.exec("ALTER TABLE portal_events ADD COLUMN video_conference_url TEXT"); } catch (e) { warnMigrationSkip(e); }
+  try { sqlite.exec("ALTER TABLE portal_events ADD COLUMN attachment_urls TEXT"); } catch (e) { warnMigrationSkip(e); }
+  try { sqlite.exec("ALTER TABLE portal_events ADD COLUMN category TEXT"); } catch (e) { warnMigrationSkip(e); }
+  try { sqlite.exec("ALTER TABLE portal_events ADD COLUMN recurrence_rule TEXT"); } catch (e) { warnMigrationSkip(e); }
+  try { sqlite.exec("ALTER TABLE portal_events ADD COLUMN reminder_minutes INTEGER"); } catch (e) { warnMigrationSkip(e); }
+  try { sqlite.exec("ALTER TABLE portal_events ADD COLUMN reminded INTEGER NOT NULL DEFAULT 0"); } catch (e) { warnMigrationSkip(e); }
+  try { sqlite.exec("CREATE INDEX IF NOT EXISTS idx_portal_events_reminder ON portal_events(reminder_minutes, reminded)"); } catch (e) { warnMigrationSkip(e); }
+
   // user_ai_configs — 구성원별 AI 연동 설정
   try {
     sqlite.exec(`

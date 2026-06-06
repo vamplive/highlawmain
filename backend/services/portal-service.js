@@ -1349,8 +1349,37 @@ async function listPortalEvents(portalUserId, query = {}) {
   });
 }
 
+// 반복 일정: 규칙별 단위/간격/생성 한도 (DB 무한 증식 방지를 위해 상한을 둠)
+const RECURRENCE_RULES = {
+  daily: { unit: "day", step: 1, maxOccurrences: 60 },     // 약 2개월
+  weekly: { unit: "week", step: 1, maxOccurrences: 26 },   // 약 6개월
+  monthly: { unit: "month", step: 1, maxOccurrences: 12 }, // 약 1년
+  yearly: { unit: "year", step: 1, maxOccurrences: 5 },    // 5년
+};
+
+// "YYYY-MM-DD" 또는 "YYYY-MM-DDTHH:mm" 문자열의 날짜 부분에 단위만큼 더해 새 문자열 생성
+// (시간대 변환으로 인한 날짜 어긋남을 피하기 위해 new Date(isoString) 대신 로컬 컴포넌트로 직접 계산)
+function shiftDateTimeString(value, unit, amount) {
+  if (!value) return value;
+  const datePart = value.substring(0, 10);
+  const timePart = value.length > 10 ? value.substring(10) : "";
+  const [y, m, d] = datePart.split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+  if (unit === "day") date.setDate(date.getDate() + amount);
+  else if (unit === "week") date.setDate(date.getDate() + amount * 7);
+  else if (unit === "month") date.setMonth(date.getMonth() + amount);
+  else if (unit === "year") date.setFullYear(date.getFullYear() + amount);
+  const ny = date.getFullYear();
+  const nm = String(date.getMonth() + 1).padStart(2, "0");
+  const nd = String(date.getDate()).padStart(2, "0");
+  return `${ny}-${nm}-${nd}${timePart}`;
+}
+
 async function createPortalEvent(portalUserId, data) {
-  const { title, description, startsAt, endsAt, isAllDay, color, attendeeIds } = data;
+  const {
+    title, description, startsAt, endsAt, isAllDay, color, attendeeIds,
+    location, videoConferenceUrl, attachmentUrls, category, recurrenceRule, reminderMinutes,
+  } = data;
   if (!title || !title.trim()) throw new ServiceError("일정 제목을 입력해주세요", 400);
   if (!startsAt) throw new ServiceError("시작 일시를 입력해주세요", 400);
 
@@ -1358,22 +1387,51 @@ async function createPortalEvent(portalUserId, data) {
     .select({ clientId: portalUsers.clientId, role: portalUsers.role })
     .from(portalUsers)
     .where(eq(portalUsers.id, portalUserId));
-  
+
   const isEmployee = creatorUser && (!creatorUser.clientId || (creatorUser.role && creatorUser.role !== "client"));
   const targetOwnerId = (isEmployee && data.portalUserId) ? data.portalUserId : portalUserId;
 
-  const [inserted] = await db.insert(portalEvents).values({
+  const rule = RECURRENCE_RULES[recurrenceRule] ? recurrenceRule : null;
+  const reminder = Number.isFinite(Number(reminderMinutes)) && Number(reminderMinutes) > 0
+    ? Number(reminderMinutes)
+    : null;
+
+  const baseValues = {
     portalUserId: targetOwnerId,
     title: title.trim(),
     description: description || null,
-    startsAt,
-    endsAt: endsAt || null,
     isAllDay: isAllDay ? 1 : 0,
     color: color || "#6366f1",
     attendeeIds: attendeeIds || null,
-  }).returning();
+    location: location || null,
+    videoConferenceUrl: videoConferenceUrl || null,
+    attachmentUrls: attachmentUrls || null,
+    category: category || null,
+    recurrenceRule: rule,
+    reminderMinutes: reminder,
+  };
 
-  return inserted;
+  if (!rule) {
+    const [inserted] = await db.insert(portalEvents).values({
+      ...baseValues,
+      startsAt,
+      endsAt: endsAt || null,
+    }).returning();
+    return inserted;
+  }
+
+  // 반복 일정 — 각 회차를 개별 레코드로 생성(생성 시점에 한해 적용, 회차별 개별 수정/삭제 가능)
+  const { unit, step, maxOccurrences } = RECURRENCE_RULES[rule];
+  let firstInserted = null;
+  for (let i = 0; i < maxOccurrences; i++) {
+    const [inserted] = await db.insert(portalEvents).values({
+      ...baseValues,
+      startsAt: shiftDateTimeString(startsAt, unit, step * i),
+      endsAt: endsAt ? shiftDateTimeString(endsAt, unit, step * i) : null,
+    }).returning();
+    if (i === 0) firstInserted = inserted;
+  }
+  return firstInserted;
 }
 
 async function updatePortalEvent(id, portalUserId, data) {
@@ -1393,7 +1451,10 @@ async function updatePortalEvent(id, portalUserId, data) {
     .where(eq(portalUsers.id, portalUserId));
   const isEmployee = updaterUser && (!updaterUser.clientId || (updaterUser.role && updaterUser.role !== "client"));
 
-  const { title, description, startsAt, endsAt, isAllDay, color, attendeeIds } = data;
+  const {
+    title, description, startsAt, endsAt, isAllDay, color, attendeeIds,
+    location, videoConferenceUrl, attachmentUrls, category, reminderMinutes,
+  } = data;
   const updates = { updatedAt: sql`(datetime('now'))` };
   if (title !== undefined) updates.title = (title || "").trim();
   if (description !== undefined) updates.description = description;
@@ -1402,6 +1463,19 @@ async function updatePortalEvent(id, portalUserId, data) {
   if (isAllDay !== undefined) updates.isAllDay = isAllDay ? 1 : 0;
   if (color !== undefined) updates.color = color;
   if (attendeeIds !== undefined) updates.attendeeIds = attendeeIds || null;
+  if (location !== undefined) updates.location = location || null;
+  if (videoConferenceUrl !== undefined) updates.videoConferenceUrl = videoConferenceUrl || null;
+  if (attachmentUrls !== undefined) updates.attachmentUrls = attachmentUrls || null;
+  if (category !== undefined) updates.category = category || null;
+  if (reminderMinutes !== undefined) {
+    const reminder = Number.isFinite(Number(reminderMinutes)) && Number(reminderMinutes) > 0
+      ? Number(reminderMinutes)
+      : null;
+    updates.reminderMinutes = reminder;
+    // 알림 시각 또는 알림 설정이 변경되면 재발송 가능하도록 발송 여부를 초기화
+    updates.reminded = 0;
+  }
+  if (startsAt !== undefined) updates.reminded = 0;
   if (isEmployee && data.portalUserId !== undefined) {
     updates.portalUserId = data.portalUserId;
   }
