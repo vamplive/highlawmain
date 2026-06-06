@@ -88,27 +88,6 @@ router.post("/login", async (req, res) => {
   }
 });
 
-/** POST /api/portal/forgot-password */
-router.post("/forgot-password", async (req, res) => {
-  try {
-    const { email, phone } = req.body;
-    const result = await portalService.forgotPassword(email, phone, req);
-    res.json({ data: result, error: null, meta: null });
-  } catch (e) {
-    handleError(res, e);
-  }
-});
-
-/** POST /api/portal/reset-password */
-router.post("/reset-password", async (req, res) => {
-  try {
-    const { verificationId, code, newPassword } = req.body;
-    const result = await portalService.resetPassword(verificationId, code, newPassword);
-    res.json({ data: result, error: null, meta: null });
-  } catch (e) {
-    handleError(res, e);
-  }
-});
 
 /** POST /api/portal/logout */
 router.post("/logout", portalAuth, (req, res) => {

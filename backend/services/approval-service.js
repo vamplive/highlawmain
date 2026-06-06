@@ -4,7 +4,100 @@ const { eq, and, desc } = require("drizzle-orm");
 const { ServiceError, validateUUID, nowTimestamp } = require("./helpers");
 
 /**
- * 근로기준법에 따른 연차 휴가 일수(시간) 계산
+ * 날짜 문자열(YYYY-MM-DD 또는 YYYY-MM-DD HH:MM)을 로컬 시간대 기준으로 파싱
+ */
+function parseDate(str) {
+  if (!str) return new Date();
+  if (str instanceof Date) return str;
+  const [datePart, timePart] = str.split(" ");
+  const [year, month, day] = datePart.split("-").map(Number);
+  let hour = 0;
+  let minute = 0;
+  if (timePart) {
+    const [h, m] = timePart.split(":").map(Number);
+    hour = h;
+    minute = m;
+  }
+  return new Date(year, month - 1, day, hour, minute);
+}
+
+/**
+ * 로컬 시간대 기준 월 가산
+ */
+function addMonths(date, months) {
+  const d = new Date(date);
+  const targetMonth = d.getMonth() + months;
+  d.setMonth(targetMonth);
+  if (d.getMonth() !== (targetMonth % 12 + 12) % 12) {
+    d.setDate(0);
+  }
+  return d;
+}
+
+/**
+ * 로컬 시간대 기준 년 가산
+ */
+function addYears(date, years) {
+  const d = new Date(date);
+  const originalMonth = d.getMonth();
+  d.setFullYear(d.getFullYear() + years);
+  if (d.getMonth() !== originalMonth) {
+    d.setDate(0);
+  }
+  return d;
+}
+
+/**
+ * 입사일 기준으로 특정 대상일자까지 발생한 모든 월차/연차 항목(그랜트) 생성
+ */
+function generateLeaveGrants(hireDateStr, targetDate) {
+  const hire = parseDate(hireDateStr);
+  if (isNaN(hire.getTime())) return [];
+
+  const grants = [];
+
+  // 1. 근속 1년 미만 월차 (1개월 개근 시 1일, 최대 11일)
+  for (let m = 1; m <= 11; m++) {
+    const validFrom = addMonths(hire, m);
+    if (validFrom > targetDate) break;
+
+    const validTo = addYears(validFrom, 1);
+    grants.push({
+      type: "monthly",
+      amountHours: 8,
+      remainingHours: 8,
+      validFrom,
+      validTo,
+      description: `입사 ${m}개월 완료 월차`,
+    });
+  }
+
+  // 2. 근속 1년 완료 이후 연차 (매년 주기, 가산 적용)
+  let y = 1;
+  while (true) {
+    const validFrom = addYears(hire, y);
+    if (validFrom > targetDate) break;
+
+    const validTo = addYears(validFrom, 1);
+    const days = Math.min(25, 15 + Math.floor(y / 2));
+    grants.push({
+      type: "annual",
+      amountHours: days * 8,
+      remainingHours: days * 8,
+      validFrom,
+      validTo,
+      description: `입사 ${y}년 완료 연차`,
+    });
+    y++;
+  }
+
+  // 선입선출(FIFO)을 위해 발생일 오름차순 정렬
+  grants.sort((a, b) => a.validFrom - b.validFrom);
+  return grants;
+}
+
+/**
+ * 근로기준법에 따른 연차 휴가 일수(시간) 계산 (호환성 유지용)
  * @param {string} hireDateStr - 입사일 (YYYY-MM-DD)
  * @param {string} [targetDateStr] - 기준일 (기본값: 오늘)
  * @returns {{ accruedDays: number, accruedHours: number, details: string }}
@@ -13,71 +106,41 @@ function calculateLeaveAllowance(hireDateStr, targetDateStr = null) {
   if (!hireDateStr) {
     return { accruedDays: 0, accruedHours: 0, details: "입사일 미지정" };
   }
-
-  const hire = new Date(hireDateStr);
-  const target = targetDateStr ? new Date(targetDateStr) : new Date();
-
-  // 날짜 파싱 오류 처리
+  const hire = parseDate(hireDateStr);
   if (isNaN(hire.getTime())) {
     return { accruedDays: 0, accruedHours: 0, details: "올바르지 않은 입사일 형식" };
   }
+  const target = targetDateStr ? parseDate(targetDateStr) : new Date();
+  const grants = generateLeaveGrants(hireDateStr, target);
+  const accruedHours = grants.reduce((sum, g) => sum + g.amountHours, 0);
+  const accruedDays = Number((accruedHours / 8).toFixed(2));
 
-  const hireYear = hire.getFullYear();
-  const hireMonth = hire.getMonth();
-  const hireDay = hire.getDate();
-  const targetYear = target.getFullYear();
-  const targetMonth = target.getMonth();
-  const targetDay = target.getDate();
+  const monthlyCount = grants.filter((g) => g.type === "monthly").length;
+  const annualCount = grants.filter((g) => g.type === "annual").length;
+  const annualDaysSum = grants.filter((g) => g.type === "annual").reduce((sum, g) => sum + g.amountHours, 0) / 8;
 
-  // 입사일로부터 몇 개월이 경과했는지 계산
-  let monthsDiff = (targetYear - hireYear) * 12 + targetMonth - hireMonth;
-  if (targetDay < hireDay) {
-    monthsDiff--;
+  let details = `[근속 연가 총발생] `;
+  if (monthlyCount > 0) {
+    details += `1년 미만 월차 ${monthlyCount}일. `;
   }
-
-  if (monthsDiff < 0) {
-    return { accruedDays: 0, accruedHours: 0, details: "입사일 이전 대상자" };
+  if (annualCount > 0) {
+    details += `연차 가산 총 ${annualDaysSum}일 (${annualCount}회 부여). `;
   }
-
-  let accruedDays = 0;
-  let details = "";
-
-  if (monthsDiff < 12) {
-    // 1년 미만: 1달 만근 시 1일씩 부여 (최대 11일)
-    accruedDays = monthsDiff;
-    details = `입사 1년 미만: 매월 1일씩 총 ${monthsDiff}일 발생`;
-  } else {
-    // 1년 이상: 기본 15일 부여 + 최초 11일
-    // 근로기준법에 따르면 1년 미만 기간 동안 매월 발생한 휴가(최대 11일)와
-    // 1년 만근 시 발생하는 15일은 별개로 각각 보장받습니다.
-    const years = Math.floor(monthsDiff / 12);
-    let totalAnnualGrants = 0;
-
-    for (let y = 1; y <= years; y++) {
-      if (y === 1 || y === 2) {
-        totalAnnualGrants += 15;
-      } else {
-        // 3년차부터는 2년마다 1일씩 가산 (최대 25일)
-        const addedDays = Math.min(25, 15 + Math.floor((y - 1) / 2));
-        totalAnnualGrants += addedDays;
-      }
-    }
-
-    accruedDays = 11 + totalAnnualGrants;
-    details = `입사 ${years}년 완료: 최초 1년 미만 ${11}일 + 연차 ${totalAnnualGrants}일 = 총 ${accruedDays}일 발생`;
+  if (grants.length === 0) {
+    details += `발생 연차 없음.`;
   }
-
-  const accruedHours = accruedDays * 8; // 1일 = 8시간 기준
 
   return { accruedDays, accruedHours, details };
 }
 
+
 /**
  * 포털 사용자의 휴가 현황 조회 (발생일수, 사용일수, 잔여일수)
  * @param {string} userId - 사용자 ID
+ * @param {string} [targetDateStr] - 기준일 (기본값: 오늘)
  * @returns {Promise<{ hireDate: string, totalAccruedDays: number, totalUsedDays: number, availableDays: number, totalAccruedHours: number, totalUsedHours: number, availableHours: number, details: string }>}
  */
-async function getUserLeaveStatus(userId) {
+async function getUserLeaveStatus(userId, targetDateStr = null) {
   validateUUID(userId);
 
   const [user] = await db
@@ -91,12 +154,32 @@ async function getUserLeaveStatus(userId) {
     throw new ServiceError("사용자를 찾을 수 없습니다", 404);
   }
 
-  const allowance = calculateLeaveAllowance(user.hireDate);
+  const hireDateStr = user.hireDate;
+  if (!hireDateStr) {
+    return {
+      hireDate: null,
+      totalAccruedDays: 0,
+      totalUsedDays: 0,
+      availableDays: 0,
+      totalAccruedHours: 0,
+      totalUsedHours: 0,
+      availableHours: 0,
+      details: "입사일 미지정",
+      defaultApprovalLine: await buildApprovalLine(userId),
+    };
+  }
 
-  // 승인된(approved) 휴가 정보의 사용 시간 합계 조회
+  const targetDate = targetDateStr ? parseDate(targetDateStr) : new Date();
+
+  // 1. 발생된 모든 휴가 항목 생성
+  const grants = generateLeaveGrants(hireDateStr, targetDate);
+
+  // 2. 승인된(approved) 휴가 정보 조회
   const approvedLeaves = await db
     .select({
+      id: portalApprovals.id,
       leaveDuration: portalApprovals.leaveDuration,
+      leaveStart: portalApprovals.leaveStart,
     })
     .from(portalApprovals)
     .where(
@@ -107,23 +190,89 @@ async function getUserLeaveStatus(userId) {
       )
     );
 
-  const totalUsedHours = approvedLeaves.reduce((sum, item) => sum + (item.leaveDuration || 0), 0);
-  const availableHours = allowance.accruedHours - totalUsedHours;
+  // 승인된 휴가를 시간 순서(오름차순)로 정렬
+  approvedLeaves.sort((a, b) => {
+    const da = parseDate(a.leaveStart);
+    const db = parseDate(b.leaveStart);
+    return da - db;
+  });
 
+  // 3. FIFO 방식으로 승인된 사용 시간 차감
+  for (const leave of approvedLeaves) {
+    let durationToDeduct = leave.leaveDuration || 0;
+    const leaveStart = parseDate(leave.leaveStart);
+
+    // 1차 시도: 해당 휴가가 개시된 날짜 기준으로 활성 및 만료 전 상태인 항목에서 차감
+    for (const grant of grants) {
+      if (grant.validFrom <= leaveStart && leaveStart < grant.validTo) {
+        if (grant.remainingHours > 0) {
+          const deduct = Math.min(durationToDeduct, grant.remainingHours);
+          grant.remainingHours -= deduct;
+          durationToDeduct -= deduct;
+          if (durationToDeduct <= 0) break;
+        }
+      }
+    }
+
+    // 2차 시도 (대비책): 혹시 발생일 경계 등 시차/오차로 인해 남아있다면, 남아있는 가장 오래된 항목에서 무조건 차감
+    if (durationToDeduct > 0) {
+      for (const grant of grants) {
+        if (grant.remainingHours > 0) {
+          const deduct = Math.min(durationToDeduct, grant.remainingHours);
+          grant.remainingHours -= deduct;
+          durationToDeduct -= deduct;
+          if (durationToDeduct <= 0) break;
+        }
+      }
+    }
+  }
+
+  // 4. 최종 결과 집계
+  const totalAccruedHours = grants.reduce((sum, g) => sum + g.amountHours, 0);
+  const totalAccruedDays = Number((totalAccruedHours / 8).toFixed(2));
+
+  const totalUsedHours = approvedLeaves.reduce((sum, item) => sum + (item.leaveDuration || 0), 0);
   const totalUsedDays = Number((totalUsedHours / 8).toFixed(2));
+
+  // 현재 날짜(targetDate) 기준으로 유효한(validFrom <= targetDate < validTo) 잔여 휴가 계산
+  const availableHours = grants
+    .filter((g) => g.validFrom <= targetDate && targetDate < g.validTo)
+    .reduce((sum, g) => sum + g.remainingHours, 0);
   const availableDays = Number((availableHours / 8).toFixed(2));
+
+  // 만료되어 소멸된 휴가 계산
+  const expiredHours = grants
+    .filter((g) => targetDate >= g.validTo)
+    .reduce((sum, g) => sum + g.remainingHours, 0);
+  const expiredDays = Number((expiredHours / 8).toFixed(2));
+
+  const monthlyCount = grants.filter((g) => g.type === "monthly").length;
+  const annualCount = grants.filter((g) => g.type === "annual").length;
+  const annualDaysSum = grants.filter((g) => g.type === "annual").reduce((sum, g) => sum + g.amountHours, 0) / 8;
+
+  let details = `총 발생: ${totalAccruedDays}일`;
+  if (monthlyCount > 0 || annualCount > 0) {
+    details += ` (1년 미만 월차 ${monthlyCount}일`;
+    if (annualCount > 0) {
+      details += `, 1년 이상 연차 ${annualDaysSum}일`;
+    }
+    details += `)`;
+  }
+  if (expiredHours > 0) {
+    details += ` | 기간만료 소멸: ${expiredDays}일`;
+  }
 
   const defaultApprovalLine = await buildApprovalLine(userId);
 
   return {
-    hireDate: user.hireDate || null,
-    totalAccruedDays: allowance.accruedDays,
+    hireDate: hireDateStr,
+    totalAccruedDays,
     totalUsedDays,
     availableDays,
-    totalAccruedHours: allowance.accruedHours,
+    totalAccruedHours,
     totalUsedHours,
     availableHours,
-    details: allowance.details,
+    details,
     defaultApprovalLine,
   };
 }
