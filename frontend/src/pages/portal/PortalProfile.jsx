@@ -314,11 +314,6 @@ export default function PortalProfile() {
         </h1>
         <p style={{ fontSize: 13, color: T.textSec }}>
           홈페이지에 소개되는 본인 변호사 프로필을 편집합니다.
-          다른 변호사 프로필 편집·순서 변경은{" "}
-          <a href="/admin/lawyers" style={{ color: T.accent }} target="_blank" rel="noreferrer">
-            관리자 페이지
-          </a>
-          에서 가능합니다.
         </p>
       </div>
 

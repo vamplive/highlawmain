@@ -1,6 +1,6 @@
 const { Router } = require("express");
 const { db } = require("../db");
-const { departments, portalUsers, clients, siteSettings } = require("../db/schema");
+const { departments, portalUsers, clients, siteSettings, lawyers } = require("../db/schema");
 const { eq, and, sql } = require("drizzle-orm");
 const { adminAuth } = require("../lib/auth");
 const { handleError } = require("../lib/route-handler");
@@ -272,6 +272,33 @@ router.post("/approval-settings", adminAuth, async (req, res) => {
     }
 
     res.json({ data: { success: true }, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+// =========================================================================
+// 4. 변호사 ↔ 포털 계정 연동 조회
+// =========================================================================
+
+// ─── 변호사 목록 조회 (이메일 기준 포털 연동 상태 포함) ───
+router.get("/lawyers-link", adminAuth, async (req, res) => {
+  try {
+    const allLawyers = db.select().from(lawyers).all();
+    const allPortalUsers = await db.select({ id: portalUsers.id, email: portalUsers.email }).from(portalUsers);
+
+    const portalEmailMap = {};
+    for (const pu of allPortalUsers) {
+      if (pu.email) portalEmailMap[pu.email.toLowerCase()] = pu.id;
+    }
+
+    const result = allLawyers.map((lw) => ({
+      ...lw,
+      linkedPortalUserId: lw.email ? (portalEmailMap[lw.email.toLowerCase()] || null) : null,
+      isLinked: lw.email ? !!portalEmailMap[lw.email.toLowerCase()] : false,
+    }));
+
+    res.json({ data: result, error: null, meta: { total: result.length } });
   } catch (e) {
     handleError(res, e);
   }

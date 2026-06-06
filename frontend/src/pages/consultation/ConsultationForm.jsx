@@ -42,10 +42,6 @@ export default function ConsultationForm({ invitationToken: _invitationToken, in
       setSubmitResult({ type: "error", msg: "개인정보 동의 서명이 확인되지 않았습니다. 동의서를 다시 확인해주세요." });
       return;
     }
-    if (form.scheduleMode === "slot" && !form.bookingSlotId) {
-      setSubmitResult({ type: "error", msg: "예약 가능 시간을 선택하시거나 '일정 협의 요청'으로 전환해 주세요." });
-      return;
-    }
     if (form.scheduleMode === "request" && !form.preferredSlots?.[0]?.date) {
       setSubmitResult({ type: "error", msg: "희망 일정을 최소 1개 이상 입력해주세요." });
       return;
@@ -64,11 +60,7 @@ export default function ConsultationForm({ invitationToken: _invitationToken, in
         meetingType: form.meetingType,
         scheduleMode: form.scheduleMode,
       };
-      if (form.scheduleMode === "slot") {
-        payload.bookingSlotId = form.bookingSlotId;
-      } else {
         payload.preferredSlots = form.preferredSlots.filter((s) => s.date);
-      }
       const consent = await api.post("/privacy-consents", {
         policyVersion: PRIVACY_POLICY_VERSION,
         policyText: PRIVACY_POLICY_TEXT,
