@@ -161,6 +161,7 @@ module.exports = {
       message TEXT NOT NULL,
       status TEXT NOT NULL DEFAULT 'pending',
       admin_note TEXT,
+      attachment_urls TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
@@ -520,6 +521,7 @@ module.exports = {
   try { sqlite.exec("ALTER TABLE consultations ADD COLUMN preferred_time_2 TEXT"); } catch (e) { warnMigrationSkip(e); }
   try { sqlite.exec("ALTER TABLE consultations ADD COLUMN preferred_date_3 TEXT"); } catch (e) { warnMigrationSkip(e); }
   try { sqlite.exec("ALTER TABLE consultations ADD COLUMN preferred_time_3 TEXT"); } catch (e) { warnMigrationSkip(e); }
+  try { sqlite.exec("ALTER TABLE consultations ADD COLUMN attachment_urls TEXT"); } catch (e) { warnMigrationSkip(e); }
 
   // lectures 테이블에 thumbnail_url 컬럼 추가 (이미 있으면 무시)
   try { sqlite.exec("ALTER TABLE lectures ADD COLUMN thumbnail_url TEXT"); } catch (e) { warnMigrationSkip(e); }

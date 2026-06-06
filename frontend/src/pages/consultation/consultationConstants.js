@@ -95,6 +95,7 @@ export const INITIAL_FORM = {
     { date: "", time: "" },
     { date: "", time: "" },
   ],
+  attachmentUrls: "",
   agreed: false,
 };
 

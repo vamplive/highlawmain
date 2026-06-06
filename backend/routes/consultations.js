@@ -7,8 +7,69 @@ const { adminAuth } = require("../lib/auth");
 const consultationService = require("../services/consultation-service");
 const triggerService = require("../services/trigger-service");
 const { handleError } = require("../lib/route-handler");
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
+const crypto = require("crypto");
+
+const STORAGE_PATH = process.env.STORAGE_PATH || path.join(__dirname, "..", "data");
+const ATTACHMENT_DIR = path.join(STORAGE_PATH, "uploads", "consultations");
+
+const attachmentStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    fs.mkdirSync(ATTACHMENT_DIR, { recursive: true });
+    cb(null, ATTACHMENT_DIR);
+  },
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase() || ".jpg";
+    cb(null, `consult-${Date.now()}-${crypto.randomBytes(4).toString("hex")}${ext}`);
+  },
+});
+
+const attachmentUpload = multer({
+  storage: attachmentStorage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  fileFilter: (_req, file, cb) => {
+    const allowedMimeTypes = [
+      "image/jpeg", "image/png", "image/webp", "image/gif",
+      "application/pdf",
+      "text/plain",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/x-hwp",
+      "application/haansofthwp",
+      "application/zip",
+      "application/x-zip-compressed",
+      "application/octet-stream"
+    ];
+    const ext = path.extname(file.originalname).toLowerCase();
+    const allowedExts = [".jpg", ".jpeg", ".png", ".webp", ".gif", ".pdf", ".txt", ".doc", ".docx", ".hwp", ".zip"];
+    
+    if (allowedMimeTypes.includes(file.mimetype) || allowedExts.includes(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error("허용되지 않는 파일 형식입니다. (이미지, PDF, 문서, TXT, HWP, ZIP 파일만 업로드 가능합니다)"), false);
+    }
+  },
+});
 
 const router = Router();
+
+/**
+ * POST /api/consultations/upload-attachment — 상담 신청 시 첨부파일 업로드 (공개)
+ */
+router.post("/upload-attachment", (req, res) => {
+  attachmentUpload.single("file")(req, res, (err) => {
+    if (err) {
+      return res.status(400).json({ data: null, error: err.message, meta: null });
+    }
+    if (!req.file) {
+      return res.status(400).json({ data: null, error: "파일이 없습니다", meta: null });
+    }
+    const url = `/uploads/consultations/${req.file.filename}`;
+    res.json({ data: { url, originalName: req.file.originalname }, error: null, meta: null });
+  });
+});
 
 /**
  * POST /api/consultations — 상담 신청 생성 (공개)

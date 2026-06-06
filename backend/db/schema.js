@@ -249,6 +249,7 @@ const consultations = sqliteTable("consultations", {
   preferredTime2: text("preferred_time_2"),
   preferredDate3: text("preferred_date_3"),
   preferredTime3: text("preferred_time_3"),
+  attachmentUrls: text("attachment_urls"),
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
   updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
 });
