@@ -1,6 +1,6 @@
 const { Router } = require("express");
 const { db } = require("../db");
-const { departments, portalUsers, clients } = require("../db/schema");
+const { departments, portalUsers, clients, siteSettings } = require("../db/schema");
 const { eq, and, sql } = require("drizzle-orm");
 const { adminAuth } = require("../lib/auth");
 const { handleError } = require("../lib/route-handler");
@@ -187,6 +187,91 @@ router.put("/users/:id", adminAuth, async (req, res) => {
       .returning();
 
     res.json({ data: updated, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+// =========================================================================
+// 3. 결재 설정 (Approval Settings)
+// =========================================================================
+
+// ─── 결재 설정 조회 ───
+router.get("/approval-settings", adminAuth, async (req, res) => {
+  try {
+    const [setting] = await db
+      .select()
+      .from(siteSettings)
+      .where(
+        and(
+          eq(siteSettings.page, "portal"),
+          eq(siteSettings.section, "approvals")
+        )
+      );
+
+    const defaultSettings = {
+      approvalLineType: "dept",
+      fixedLine: [],
+      leaveEnabled: true,
+      leaveMinUnit: "hourly",
+      expenseEnabled: true,
+      expenseLimit: 5000000,
+      reimbursementEnabled: true,
+    };
+
+    let data = defaultSettings;
+    if (setting && setting.content) {
+      try {
+        data = { ...defaultSettings, ...JSON.parse(setting.content) };
+      } catch (e) {
+        // parsing error fallback
+      }
+    }
+
+    res.json({ data, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+// ─── 결재 설정 저장 ───
+router.post("/approval-settings", adminAuth, async (req, res) => {
+  try {
+    const content = JSON.stringify(req.body);
+
+    const [existing] = await db
+      .select()
+      .from(siteSettings)
+      .where(
+        and(
+          eq(siteSettings.page, "portal"),
+          eq(siteSettings.section, "approvals")
+        )
+      );
+
+    if (existing) {
+      await db
+        .update(siteSettings)
+        .set({
+          content,
+        })
+        .where(
+          and(
+            eq(siteSettings.page, "portal"),
+            eq(siteSettings.section, "approvals")
+          )
+        );
+    } else {
+      await db
+        .insert(siteSettings)
+        .values({
+          page: "portal",
+          section: "approvals",
+          content,
+        });
+    }
+
+    res.json({ data: { success: true }, error: null, meta: null });
   } catch (e) {
     handleError(res, e);
   }

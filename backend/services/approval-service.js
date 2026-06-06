@@ -1,5 +1,5 @@
 const { db } = require("../db");
-const { portalUsers, clients, departments, portalApprovals } = require("../db/schema");
+const { portalUsers, clients, departments, portalApprovals, siteSettings } = require("../db/schema");
 const { eq, and, desc } = require("drizzle-orm");
 const { ServiceError, validateUUID, nowTimestamp } = require("./helpers");
 
@@ -285,6 +285,52 @@ async function getUserLeaveStatus(userId, targetDateStr = null) {
 async function buildApprovalLine(requesterId) {
   validateUUID(requesterId);
 
+  // Load approval settings
+  const [setting] = await db
+    .select()
+    .from(siteSettings)
+    .where(and(eq(siteSettings.page, "portal"), eq(siteSettings.section, "approvals")));
+
+  let settings = {
+    approvalLineType: "dept",
+    fixedLine: [],
+  };
+  if (setting && setting.content) {
+    try {
+      settings = { ...settings, ...JSON.parse(setting.content) };
+    } catch (e) {}
+  }
+
+  if (settings.approvalLineType === "fixed" && Array.isArray(settings.fixedLine) && settings.fixedLine.length > 0) {
+    const approvalLine = [];
+    for (const approverId of settings.fixedLine) {
+      if (approverId === requesterId) continue; // skip requester themselves
+
+      const [manager] = await db
+        .select({
+          id: portalUsers.id,
+          email: portalUsers.email,
+          position: portalUsers.position,
+          name: clients.name,
+        })
+        .from(portalUsers)
+        .leftJoin(clients, eq(portalUsers.clientId, clients.id))
+        .where(eq(portalUsers.id, approverId));
+
+      if (manager) {
+        approvalLine.push({
+          userId: manager.id,
+          name: manager.name || manager.email,
+          position: manager.position || "결재자",
+          status: "pending",
+          comment: "",
+          updatedAt: null,
+        });
+      }
+    }
+    return approvalLine;
+  }
+
   // 기안자 부서 정보 가져오기
   const [requester] = await db
     .select({
@@ -381,20 +427,68 @@ async function submitApproval(requesterId, data) {
     throw new ServiceError("기안 구분과 제목은 필수 항목입니다", 400);
   }
 
+  // Load approval settings
+  const [setting] = await db
+    .select()
+    .from(siteSettings)
+    .where(and(eq(siteSettings.page, "portal"), eq(siteSettings.section, "approvals")));
+
+  let settings = {
+    leaveEnabled: true,
+    leaveMinUnit: "hourly",
+    expenseEnabled: true,
+    expenseLimit: 5000000,
+    reimbursementEnabled: true,
+  };
+  if (setting && setting.content) {
+    try {
+      settings = { ...settings, ...JSON.parse(setting.content) };
+    } catch (e) {}
+  }
+
   // 휴가 기안 시 잔여 연차 차감 검증
   if (type === "leave") {
+    if (!settings.leaveEnabled) {
+      throw new ServiceError("휴가 기안 기능이 비활성화되어 있습니다", 400);
+    }
     if (!leaveType || !leaveStart || !leaveEnd || !leaveDuration) {
       throw new ServiceError("휴가 관련 정보가 누락되었습니다", 400);
     }
+
+    // 최소 기안 단위 검증
+    if (settings.leaveMinUnit === "half" && leaveDuration % 4 !== 0) {
+      throw new ServiceError("휴가는 반차(4시간) 단위로만 신청할 수 있습니다.", 400);
+    } else if (settings.leaveMinUnit === "daily" && leaveDuration % 8 !== 0) {
+      throw new ServiceError("휴가는 일차(8시간) 단위로만 신청할 수 있습니다.", 400);
+    }
+
     const leaveStatus = await getUserLeaveStatus(requesterId);
     if (leaveStatus.availableHours < leaveDuration) {
       throw new ServiceError(`잔여 휴가 시간(${leaveStatus.availableHours}시간)이 신청 시간(${leaveDuration}시간)보다 부족합니다.`, 400);
     }
   }
 
-  // 지출/경비 검증
-  if ((type === "expense" || type === "reimbursement") && !expenseAmount) {
-    throw new ServiceError("금액을 입력해주세요", 400);
+  // 지출 검증
+  if (type === "expense") {
+    if (!settings.expenseEnabled) {
+      throw new ServiceError("지출 기안 기능이 비활성화되어 있습니다", 400);
+    }
+    if (!expenseAmount) {
+      throw new ServiceError("금액을 입력해주세요", 400);
+    }
+    if (settings.expenseLimit && expenseAmount > settings.expenseLimit) {
+      throw new ServiceError(`지출 신청 금액(${expenseAmount.toLocaleString()}원)이 1회 한도액(${settings.expenseLimit.toLocaleString()}원)을 초과했습니다.`, 400);
+    }
+  }
+
+  // 경비 검증
+  if (type === "reimbursement") {
+    if (!settings.reimbursementEnabled) {
+      throw new ServiceError("경비 청구 기능이 비활성화되어 있습니다", 400);
+    }
+    if (!expenseAmount) {
+      throw new ServiceError("금액을 입력해주세요", 400);
+    }
   }
 
   // 결재선 자동 생성
