@@ -23,6 +23,7 @@ import {
   FolderOpen,
   Mail,
   Bot,
+  ArrowLeft,
 } from "lucide-react";
 
 const THEME = {
@@ -108,6 +109,9 @@ export default function PortalLayout() {
   const queryParams = new URLSearchParams(location.search);
   const activeCategory = queryParams.get("category") || "";
   const activeFilter = queryParams.get("filter") || "";
+
+  // 게시판 메뉴 진입 여부 — 게시판 경로에서는 사이드바를 게시판 전용 메뉴로 전환
+  const isBoardMode = location.pathname.startsWith("/portal/board");
 
   // 현재 사용자 이름 첫 글자 추출
   const userInitial = userProfile?.client?.name 
@@ -271,243 +275,272 @@ export default function PortalLayout() {
 
         {/* 메인 메뉴 스크롤 영역 */}
         <div style={{ flex: 1, overflowY: "auto", padding: "16px 8px 12px" }}>
-          <div className="portal-sidebar-header">
-            메뉴
-          </div>
-          
-          <Link
-            to="/portal/calendar"
-            className={`portal-sidebar-link ${location.pathname === "/portal/calendar" ? "portal-sidebar-link-active" : ""}`}
-            onClick={() => isMobile && setIsSidebarOpen(false)}
-          >
-            <Home size={16} />
-            일정 캘린더 (홈)
-          </Link>
+          {isBoardMode ? (
+            <>
+              {/* 뒤로가기 — 전체 메뉴로 복귀 */}
+              <button
+                type="button"
+                onClick={() => {
+                  navigate("/portal/calendar");
+                  if (isMobile) setIsSidebarOpen(false);
+                }}
+                style={{
+                  display: "flex", alignItems: "center", gap: 8,
+                  width: "100%", padding: "8px 12px", marginBottom: 8,
+                  background: "transparent", border: "none", borderRadius: 6,
+                  color: THEME.sidebarText, fontSize: 13, fontWeight: 500,
+                  cursor: "pointer", transition: "background-color 150ms ease, color 150ms ease",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = THEME.sidebarHoverBg; e.currentTarget.style.color = "#ffffff"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = THEME.sidebarText; }}
+              >
+                <ArrowLeft size={16} />
+                전체 메뉴
+              </button>
 
-          <Link
-            to="/portal/dashboard"
-            className={`portal-sidebar-link ${location.pathname === "/portal/dashboard" ? "portal-sidebar-link-active" : ""}`}
-            onClick={() => isMobile && setIsSidebarOpen(false)}
-          >
-            <Calendar size={16} />
-            사건 목록
-          </Link>
-
-          <Link
-            to="/portal/board"
-            className={`portal-sidebar-link ${location.pathname.startsWith("/portal/board") ? "portal-sidebar-link-active" : ""}`}
-            onClick={() => isMobile && setIsSidebarOpen(false)}
-          >
-            <FileText size={16} />
-            내부 게시판
-          </Link>
-
-          <Link
-            to="/portal/time-tracking"
-            className={`portal-sidebar-link ${location.pathname === "/portal/time-tracking" ? "portal-sidebar-link-active" : ""}`}
-            onClick={() => isMobile && setIsSidebarOpen(false)}
-          >
-            <Clock size={16} />
-            타임트래킹
-          </Link>
-
-          <Link
-            to="/portal/profile"
-            className={`portal-sidebar-link ${location.pathname === "/portal/profile" ? "portal-sidebar-link-active" : ""}`}
-            onClick={() => isMobile && setIsSidebarOpen(false)}
-          >
-            <User size={16} />
-            프로필 설정
-          </Link>
-
-          <Link
-            to="/portal/blog"
-            className={`portal-sidebar-link ${location.pathname === "/portal/blog" ? "portal-sidebar-link-active" : ""}`}
-            onClick={() => isMobile && setIsSidebarOpen(false)}
-          >
-            <BookOpen size={16} />
-            블로그 관리
-          </Link>
-
-          <Link
-            to="/portal/qna"
-            className={`portal-sidebar-link ${location.pathname === "/portal/qna" ? "portal-sidebar-link-active" : ""}`}
-            onClick={() => isMobile && setIsSidebarOpen(false)}
-          >
-            <MessageSquare size={16} />
-            법률 Q&A 관리
-          </Link>
-
-          <Link
-            to="/portal/approvals"
-            className={`portal-sidebar-link ${location.pathname === "/portal/approvals" ? "portal-sidebar-link-active" : ""}`}
-            onClick={() => isMobile && setIsSidebarOpen(false)}
-          >
-            <FileText size={16} />
-            전자결재 시스템
-          </Link>
-
-          <Link
-            to="/portal/ai-settings"
-            className={`portal-sidebar-link ${location.pathname === "/portal/ai-settings" ? "portal-sidebar-link-active" : ""}`}
-            onClick={() => isMobile && setIsSidebarOpen(false)}
-          >
-            <Bot size={16} />
-            AI 연동 설정
-          </Link>
-
-          <Link
-            to="/portal/messages"
-            className={`portal-sidebar-link ${location.pathname === "/portal/messages" ? "portal-sidebar-link-active" : ""}`}
-            onClick={() => isMobile && setIsSidebarOpen(false)}
-          >
-            <Mail size={16} />
-            메시지 발송
-          </Link>
-
-          <a
-            href="/"
-            className="portal-sidebar-link"
-          >
-            <BookOpen size={16} style={{ color: THEME.sidebarTextMuted }} />
-            홈페이지 바로가기
-          </a>
-
-          <div style={{ height: 1, background: THEME.sidebarBorder, margin: "16px 8px 12px" }} />
-
-          {/* 글쓰기 버튼 */}
-          <div style={{ padding: "4px 8px 12px" }}>
-            <button
-              onClick={() => {
-                navigate("/portal/board?write=true");
-                if (isMobile) setIsSidebarOpen(false);
-              }}
-              style={{
-                width: "100%", height: 42,
-                background: `linear-gradient(135deg, ${THEME.accent} 0%, ${THEME.accentLight} 100%)`,
-                color: "#ffffff", border: "none", borderRadius: 8,
-                fontSize: 14, fontWeight: 600, cursor: "pointer",
-                display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-                boxShadow: `0 4px 12px ${THEME.accent}40`,
-                transition: "transform 0.15s, opacity 0.2s"
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.opacity = "0.95"; e.currentTarget.style.transform = "translateY(-1px)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.transform = "translateY(0)"; }}
-            >
-              <Plus size={16} />
-              게시글 쓰기
-            </button>
-          </div>
-
-          <div style={{ height: 1, background: THEME.sidebarBorder, margin: "12px 8px" }} />
-
-          {/* 사이드바 게시판 필터 메뉴 */}
-          <div style={{ padding: "0 8px 12px" }}>
-            <div className="portal-sidebar-header">
-              게시판 필터
-            </div>
-            <Link
-              to="/portal/board?filter=recent"
-              className={`portal-sidebar-link ${activeFilter === "recent" ? "portal-sidebar-link-active" : ""}`}
-              onClick={() => isMobile && setIsSidebarOpen(false)}
-            >
-              <Clock size={16} />
-              최신글
-            </Link>
-            <Link
-              to="/portal/board?filter=pinned"
-              className={`portal-sidebar-link ${activeFilter === "pinned" ? "portal-sidebar-link-active" : ""}`}
-              onClick={() => isMobile && setIsSidebarOpen(false)}
-            >
-              <Star size={16} style={{ fill: activeFilter === "pinned" ? THEME.accent : "transparent" }} />
-              필독 게시글
-            </Link>
-            <Link
-              to="/portal/board?filter=important"
-              className={`portal-sidebar-link ${activeFilter === "important" ? "portal-sidebar-link-active" : ""}`}
-              onClick={() => isMobile && setIsSidebarOpen(false)}
-            >
-              <Star size={16} style={{ color: "#f59e0b", fill: activeFilter === "important" ? "#f59e0b" : "transparent" }} />
-              중요 게시글
-            </Link>
-            <Link
-              to="/portal/board?filter=mine"
-              className={`portal-sidebar-link ${activeFilter === "mine" ? "portal-sidebar-link-active" : ""}`}
-              onClick={() => isMobile && setIsSidebarOpen(false)}
-            >
-              <User size={16} />
-              내 게시글
-            </Link>
-          </div>
-
-          <div style={{ height: 1, background: THEME.sidebarBorder, margin: "12px 8px" }} />
-
-          {/* 게시판 필터링 검색창 */}
-          <div style={{ padding: "0 8px 12px", position: "relative" }}>
-            <input
-              type="text"
-              placeholder="게시판 이름으로 검색"
-              value={boardSearch}
-              onChange={(e) => setBoardSearch(e.target.value)}
-              className="portal-board-filter-input"
-            />
-            <div style={{ position: "absolute", left: 18, top: "50%", transform: "translateY(-50%)", color: THEME.sidebarTextMuted, display: "flex", alignItems: "center" }}>
-              <Search size={13} />
-            </div>
-          </div>
-
-          {/* 전체 게시판 카테고리 트리 */}
-          <div style={{ padding: "0 8px" }}>
-            <div className="portal-sidebar-header">
-              전체 게시판
-            </div>
-
-            {/* 메인 그룹: 법무법인 하이로 */}
-            <div style={{ padding: "4px 0" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", fontSize: 13, fontWeight: 600, color: "#ffffff" }}>
-                <ChevronRight size={14} style={{ transform: "rotate(90deg)", color: THEME.sidebarTextMuted }} />
-                <FolderOpen size={16} style={{ color: THEME.accent }} />
-                법무법인 하이로
+              <div className="portal-sidebar-header">
+                게시판
               </div>
 
-              {/* 하위 노드 */}
-              <div style={{ paddingLeft: 20 }}>
-                {filteredCategories.map((cat) => {
-                  const isActive = activeCategory === cat.key;
-                  return (
-                    <Link
-                      key={cat.key}
-                      to={`/portal/board?category=${cat.key}`}
-                      className={`portal-sidebar-link ${isActive ? "portal-sidebar-link-active" : ""}`}
-                      onClick={() => isMobile && setIsSidebarOpen(false)}
-                    >
-                      <FolderClosed size={14} />
-                      {cat.label}
-                    </Link>
-                  );
-                })}
-                {filteredCategories.length === 0 && (
-                  <div style={{ fontSize: 11, color: THEME.sidebarTextMuted, padding: "8px 12px" }}>
-                    검색 결과 없음
+              {/* 글쓰기 버튼 */}
+              <div style={{ padding: "4px 8px 12px" }}>
+                <button
+                  onClick={() => {
+                    navigate("/portal/board?write=true");
+                    if (isMobile) setIsSidebarOpen(false);
+                  }}
+                  style={{
+                    width: "100%", height: 42,
+                    background: `linear-gradient(135deg, ${THEME.accent} 0%, ${THEME.accentLight} 100%)`,
+                    color: "#ffffff", border: "none", borderRadius: 8,
+                    fontSize: 14, fontWeight: 600, cursor: "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                    boxShadow: `0 4px 12px ${THEME.accent}40`,
+                    transition: "transform 0.15s, opacity 0.2s"
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.opacity = "0.95"; e.currentTarget.style.transform = "translateY(-1px)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.transform = "translateY(0)"; }}
+                >
+                  <Plus size={16} />
+                  게시글 쓰기
+                </button>
+              </div>
+
+              <div style={{ height: 1, background: THEME.sidebarBorder, margin: "12px 8px" }} />
+
+              {/* 사이드바 게시판 필터 메뉴 */}
+              <div style={{ padding: "0 8px 12px" }}>
+                <div className="portal-sidebar-header">
+                  게시판 필터
+                </div>
+                <Link
+                  to="/portal/board?filter=recent"
+                  className={`portal-sidebar-link ${activeFilter === "recent" ? "portal-sidebar-link-active" : ""}`}
+                  onClick={() => isMobile && setIsSidebarOpen(false)}
+                >
+                  <Clock size={16} />
+                  최신글
+                </Link>
+                <Link
+                  to="/portal/board?filter=pinned"
+                  className={`portal-sidebar-link ${activeFilter === "pinned" ? "portal-sidebar-link-active" : ""}`}
+                  onClick={() => isMobile && setIsSidebarOpen(false)}
+                >
+                  <Star size={16} style={{ fill: activeFilter === "pinned" ? THEME.accent : "transparent" }} />
+                  필독 게시글
+                </Link>
+                <Link
+                  to="/portal/board?filter=important"
+                  className={`portal-sidebar-link ${activeFilter === "important" ? "portal-sidebar-link-active" : ""}`}
+                  onClick={() => isMobile && setIsSidebarOpen(false)}
+                >
+                  <Star size={16} style={{ color: "#f59e0b", fill: activeFilter === "important" ? "#f59e0b" : "transparent" }} />
+                  중요 게시글
+                </Link>
+                <Link
+                  to="/portal/board?filter=mine"
+                  className={`portal-sidebar-link ${activeFilter === "mine" ? "portal-sidebar-link-active" : ""}`}
+                  onClick={() => isMobile && setIsSidebarOpen(false)}
+                >
+                  <User size={16} />
+                  내 게시글
+                </Link>
+              </div>
+
+              <div style={{ height: 1, background: THEME.sidebarBorder, margin: "12px 8px" }} />
+
+              {/* 게시판 필터링 검색창 */}
+              <div style={{ padding: "0 8px 12px", position: "relative" }}>
+                <input
+                  type="text"
+                  placeholder="게시판 이름으로 검색"
+                  value={boardSearch}
+                  onChange={(e) => setBoardSearch(e.target.value)}
+                  className="portal-board-filter-input"
+                />
+                <div style={{ position: "absolute", left: 18, top: "50%", transform: "translateY(-50%)", color: THEME.sidebarTextMuted, display: "flex", alignItems: "center" }}>
+                  <Search size={13} />
+                </div>
+              </div>
+
+              {/* 전체 게시판 카테고리 트리 */}
+              <div style={{ padding: "0 8px" }}>
+                <div className="portal-sidebar-header">
+                  전체 게시판
+                </div>
+
+                {/* 메인 그룹: 법무법인 하이로 */}
+                <div style={{ padding: "4px 0" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", fontSize: 13, fontWeight: 600, color: "#ffffff" }}>
+                    <ChevronRight size={14} style={{ transform: "rotate(90deg)", color: THEME.sidebarTextMuted }} />
+                    <FolderOpen size={16} style={{ color: THEME.accent }} />
+                    법무법인 하이로
                   </div>
-                )}
+
+                  {/* 하위 노드 */}
+                  <div style={{ paddingLeft: 20 }}>
+                    {filteredCategories.map((cat) => {
+                      const isActive = activeCategory === cat.key;
+                      return (
+                        <Link
+                          key={cat.key}
+                          to={`/portal/board?category=${cat.key}`}
+                          className={`portal-sidebar-link ${isActive ? "portal-sidebar-link-active" : ""}`}
+                          onClick={() => isMobile && setIsSidebarOpen(false)}
+                        >
+                          <FolderClosed size={14} />
+                          {cat.label}
+                        </Link>
+                      );
+                    })}
+                    {filteredCategories.length === 0 && (
+                      <div style={{ fontSize: 11, color: THEME.sidebarTextMuted, padding: "8px 12px" }}>
+                        검색 결과 없음
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div style={{ height: 1, background: THEME.sidebarBorder, margin: "16px 8px" }} />
+
+                {/* 휴지통 */}
+                <div style={{ padding: "0 0 16px" }}>
+                  <Link
+                    to="/portal/board?filter=trash"
+                    className={`portal-sidebar-link ${activeFilter === "trash" ? "portal-sidebar-link-active" : ""}`}
+                    onClick={() => isMobile && setIsSidebarOpen(false)}
+                  >
+                    <Trash2 size={14} />
+                    휴지통
+                  </Link>
+                </div>
               </div>
-            </div>
+            </>
+          ) : (
+            <>
+              <div className="portal-sidebar-header">
+                메뉴
+              </div>
 
-            <div style={{ height: 1, background: THEME.sidebarBorder, margin: "16px 8px" }} />
-
-            {/* 휴지통 */}
-            <div style={{ padding: "0 0 16px" }}>
               <Link
-                to="/portal/board?filter=trash"
-                className={`portal-sidebar-link ${activeFilter === "trash" ? "portal-sidebar-link-active" : ""}`}
+                to="/portal/calendar"
+                className={`portal-sidebar-link ${location.pathname === "/portal/calendar" ? "portal-sidebar-link-active" : ""}`}
                 onClick={() => isMobile && setIsSidebarOpen(false)}
               >
-                <Trash2 size={14} />
-                휴지통
+                <Home size={16} />
+                일정 캘린더 (홈)
               </Link>
-            </div>
-          </div>
+
+              <Link
+                to="/portal/dashboard"
+                className={`portal-sidebar-link ${location.pathname === "/portal/dashboard" ? "portal-sidebar-link-active" : ""}`}
+                onClick={() => isMobile && setIsSidebarOpen(false)}
+              >
+                <Calendar size={16} />
+                사건 목록
+              </Link>
+
+              <Link
+                to="/portal/board"
+                className={`portal-sidebar-link ${location.pathname.startsWith("/portal/board") ? "portal-sidebar-link-active" : ""}`}
+                onClick={() => isMobile && setIsSidebarOpen(false)}
+              >
+                <FileText size={16} />
+                게시판
+              </Link>
+
+              <Link
+                to="/portal/time-tracking"
+                className={`portal-sidebar-link ${location.pathname === "/portal/time-tracking" ? "portal-sidebar-link-active" : ""}`}
+                onClick={() => isMobile && setIsSidebarOpen(false)}
+              >
+                <Clock size={16} />
+                타임트래킹
+              </Link>
+
+              <Link
+                to="/portal/profile"
+                className={`portal-sidebar-link ${location.pathname === "/portal/profile" ? "portal-sidebar-link-active" : ""}`}
+                onClick={() => isMobile && setIsSidebarOpen(false)}
+              >
+                <User size={16} />
+                프로필 설정
+              </Link>
+
+              <Link
+                to="/portal/blog"
+                className={`portal-sidebar-link ${location.pathname === "/portal/blog" ? "portal-sidebar-link-active" : ""}`}
+                onClick={() => isMobile && setIsSidebarOpen(false)}
+              >
+                <BookOpen size={16} />
+                블로그 관리
+              </Link>
+
+              <Link
+                to="/portal/qna"
+                className={`portal-sidebar-link ${location.pathname === "/portal/qna" ? "portal-sidebar-link-active" : ""}`}
+                onClick={() => isMobile && setIsSidebarOpen(false)}
+              >
+                <MessageSquare size={16} />
+                법률 Q&A 관리
+              </Link>
+
+              <Link
+                to="/portal/approvals"
+                className={`portal-sidebar-link ${location.pathname === "/portal/approvals" ? "portal-sidebar-link-active" : ""}`}
+                onClick={() => isMobile && setIsSidebarOpen(false)}
+              >
+                <FileText size={16} />
+                전자결재 시스템
+              </Link>
+
+              <Link
+                to="/portal/ai-settings"
+                className={`portal-sidebar-link ${location.pathname === "/portal/ai-settings" ? "portal-sidebar-link-active" : ""}`}
+                onClick={() => isMobile && setIsSidebarOpen(false)}
+              >
+                <Bot size={16} />
+                AI 연동 설정
+              </Link>
+
+              <Link
+                to="/portal/messages"
+                className={`portal-sidebar-link ${location.pathname === "/portal/messages" ? "portal-sidebar-link-active" : ""}`}
+                onClick={() => isMobile && setIsSidebarOpen(false)}
+              >
+                <Mail size={16} />
+                메시지 발송
+              </Link>
+
+              <a
+                href="/"
+                className="portal-sidebar-link"
+              >
+                <BookOpen size={16} style={{ color: THEME.sidebarTextMuted }} />
+                홈페이지 바로가기
+              </a>
+            </>
+          )}
         </div>
 
         {/* 사이드바 푸터 */}

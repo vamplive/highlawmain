@@ -199,6 +199,23 @@ export default function PortalBoard() {
     return map[key] || "#64748b";
   };
 
+  // 게시판 전환 탭 — 전체 게시글 / 카테고리별 게시판을 이 페이지 안에서 바로 전환
+  const boardTabs = [
+    { key: "", label: "전체 게시글" },
+    { key: "notice", label: "공지사항" },
+    { key: "manual", label: "업무 매뉴얼" },
+    { key: "free", label: "자유게시판" },
+    { key: "template", label: "양식" },
+  ];
+
+  const handleSelectBoardTab = (categoryKey) => {
+    const next = new URLSearchParams();
+    if (categoryKey) next.set("category", categoryKey);
+    setSearchParams(next);
+    setPage(1);
+    setSearchQuery("");
+  };
+
   return (
     <div style={{ background: "#ffffff", borderRadius: 12, border: "1px solid #e2e8f0", padding: "24px 32px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
       {/* ==================== 1. 게시판 제목 및 상단 액션바 ==================== */}
@@ -230,6 +247,31 @@ export default function PortalBoard() {
           <Plus size={16} />
           글쓰기
         </button>
+      </div>
+
+      {/* ==================== 게시판 전환 탭 — 전체 게시글 / 카테고리별 게시판 ==================== */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
+        {boardTabs.map((tab) => {
+          const isActive = !activeFilter && activeCategory === tab.key;
+          return (
+            <button
+              key={tab.key || "all"}
+              type="button"
+              onClick={() => handleSelectBoardTab(tab.key)}
+              style={{
+                padding: "8px 18px", fontSize: 13, fontWeight: 600, borderRadius: 999,
+                border: isActive ? "1px solid #8b5cf6" : "1px solid #e2e8f0",
+                background: isActive ? "#8b5cf6" : "#ffffff",
+                color: isActive ? "#ffffff" : "#475569",
+                cursor: "pointer", transition: "background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease"
+              }}
+              onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.borderColor = "#8b5cf6"; e.currentTarget.style.color = "#8b5cf6"; } }}
+              onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.borderColor = "#e2e8f0"; e.currentTarget.style.color = "#475569"; } }}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* ==================== 2. 상세 필터 및 검색바 ==================== */}
