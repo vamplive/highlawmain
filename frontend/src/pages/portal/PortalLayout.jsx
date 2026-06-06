@@ -361,6 +361,21 @@ export default function PortalLayout() {
             </Link>
 
             <Link
+              to="/portal/approvals"
+              style={{
+                display: "flex", alignItems: "center", gap: 10, padding: "8px 12px",
+                borderRadius: 6, textDecoration: "none", fontSize: 13,
+                color: location.pathname === "/portal/approvals" ? "#7c3aed" : "#334155",
+                background: location.pathname === "/portal/approvals" ? "#f5f3ff" : "transparent",
+                fontWeight: location.pathname === "/portal/approvals" ? 600 : 500,
+                transition: "background 0.15s", marginBottom: 2
+              }}
+            >
+              <FileText size={16} />
+              전자결재 시스템
+            </Link>
+
+            <Link
               to="/portal/messages"
               style={{
                 display: "flex", alignItems: "center", gap: 10, padding: "8px 12px",

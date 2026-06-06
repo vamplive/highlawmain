@@ -115,6 +115,8 @@ const PortalReviews = lazy(() => import("./pages/portal/PortalReviews"));
 const PortalBoard = lazy(() => import("./pages/portal/PortalBoard"));
 const PortalCalendar = lazy(() => import("./pages/portal/PortalCalendar"));
 const PortalProfile = lazy(() => import("./pages/portal/PortalProfile"));
+const PortalApprovals = lazy(() => import("./pages/portal/PortalApprovals"));
+const AdminOrganization = lazy(() => import("./pages/admin/organization/AdminOrganization"));
 
 /** 지연 로딩 컴포넌트를 Suspense로 감싸는 헬퍼 */
 function LazyRoute({ children }) {
@@ -237,6 +239,7 @@ function AdminArea() {
           <Route path="portal-members" element={<LazyRoute><AdminPortalMembers /></LazyRoute>} />
           <Route path="portal-board-admin" element={<LazyRoute><AdminPortalBoardAdmin /></LazyRoute>} />
           <Route path="portal-time-overview" element={<LazyRoute><AdminPortalTimeOverview /></LazyRoute>} />
+          <Route path="organization" element={<LazyRoute><AdminOrganization /></LazyRoute>} />
         </Routes>
       </AdminLayout>
     </LazyRoute>
@@ -320,6 +323,7 @@ export default function App() {
           <Route path="board" element={<LazyRoute><PortalBoard /></LazyRoute>} />
           <Route path="calendar" element={<LazyRoute><PortalCalendar /></LazyRoute>} />
           <Route path="profile" element={<LazyRoute><PortalProfile /></LazyRoute>} />
+          <Route path="approvals" element={<LazyRoute><PortalApprovals /></LazyRoute>} />
           <Route path="contracts" element={<LazyRoute><PortalContracts /></LazyRoute>} />
           <Route path="contracts/:id" element={<LazyRoute><PortalContractSign /></LazyRoute>} />
           <Route path="blog" element={<LazyRoute><PortalBlog /></LazyRoute>} />

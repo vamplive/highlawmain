@@ -188,7 +188,11 @@ export default function AdminLogin({ onLogin }) {
           </div>
 
           {/* 인증 폼 */}
-          <form onSubmit={submit}>
+          <form onSubmit={submit} autoComplete="off">
+            {/* 브라우저(크롬 등) 자동완성 방지용 더미 필드 */}
+            <input type="text" name="username" style={{ display: "none" }} tabIndex={-1} />
+            <input type="password" name="password" style={{ display: "none" }} tabIndex={-1} />
+
             <label htmlFor="admin-username" className="admin-login__pw-label">USERNAME</label>
             <input
               id="admin-username"
@@ -198,8 +202,8 @@ export default function AdminLogin({ onLogin }) {
               onChange={(e) => { setUsername(e.target.value); setErr(""); }}
               disabled={locked}
               autoFocus
-              placeholder="admin"
-              autoComplete="username"
+              placeholder="아이디를 입력하세요"
+              autoComplete="off"
             />
             <label htmlFor="admin-password" className="admin-login__pw-label" style={{ marginTop: 16 }}>PASSWORD</label>
             <input
@@ -209,7 +213,7 @@ export default function AdminLogin({ onLogin }) {
               value={pw}
               onChange={(e) => { setPw(e.target.value); setErr(""); }}
               disabled={locked}
-              autoComplete="current-password"
+              autoComplete="new-password"
             />
 
             {err && (

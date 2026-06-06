@@ -18,7 +18,7 @@ function cleanPhone(p) { return p.replace(/[\s-]/g, ""); }
 // ──────────────────────────────────────────────────
 // 로그인 폼
 // ──────────────────────────────────────────────────
-function LoginForm({ onSuccess }) {
+function LoginForm({ onSuccess, onForgotClick }) {
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -27,7 +27,7 @@ function LoginForm({ onSuccess }) {
 
   const submit = async (e) => {
     e.preventDefault();
-    if (!form.email.trim() || !form.password) return setError("이메일과 비밀번호를 입력해주세요");
+    if (!form.email.trim() || !form.password) return setError("이메일/휴대폰 번호와 비밀번호를 입력해주세요");
     setLoading(true);
     setError("");
     try {
@@ -43,16 +43,20 @@ function LoginForm({ onSuccess }) {
   const isPending = error.includes("승인 대기");
 
   return (
-    <form onSubmit={submit} className="portal-login__form-inner">
+    <form onSubmit={submit} className="portal-login__form-inner" autoComplete="off">
+      {/* 브라우저(크롬 등) 자동완성 방지용 더미 필드 */}
+      <input type="text" name="email" style={{ display: "none" }} tabIndex={-1} />
+      <input type="password" name="password" style={{ display: "none" }} tabIndex={-1} />
+
       <div className="portal-login__field">
-        <label className="portal-login__field-label">이메일</label>
+        <label className="portal-login__field-label">이메일 또는 휴대폰 번호</label>
         <input
-          type="email"
+          type="text"
           className={`portal-login__input${error && !isPending ? " portal-login__input--error" : ""}`}
           value={form.email}
           onChange={f("email")}
-          placeholder="example@email.com"
-          autoComplete="email"
+          placeholder="이메일 또는 휴대폰 번호 입력"
+          autoComplete="off"
           autoFocus
         />
       </div>
@@ -65,7 +69,7 @@ function LoginForm({ onSuccess }) {
           value={form.password}
           onChange={f("password")}
           placeholder="비밀번호를 입력하세요"
-          autoComplete="current-password"
+          autoComplete="new-password"
         />
       </div>
 
@@ -74,6 +78,16 @@ function LoginForm({ onSuccess }) {
           {error}
         </div>
       )}
+
+      <div className="portal-login__forgot-link-container" style={{ display: "flex", justifyContent: "flex-end", marginTop: "-12px", marginBottom: "20px" }}>
+        <button
+          type="button"
+          onClick={onForgotClick}
+          className="portal-login__forgot-btn"
+        >
+          비밀번호를 잊으셨나요?
+        </button>
+      </div>
 
       <button type="submit" className="portal-login__btn" disabled={loading}>
         {loading ? "로그인 중..." : "로그인"}
@@ -86,7 +100,7 @@ function LoginForm({ onSuccess }) {
 // 회원가입 폼
 // ──────────────────────────────────────────────────
 function RegisterForm({ onSuccess }) {
-  const [form, setForm] = useState({ email: "", name: "", phone: "", password: "", passwordConfirm: "" });
+  const [form, setForm] = useState({ email: "", name: "", phone: "", password: "", passwordConfirm: "", hireDate: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -115,6 +129,7 @@ function RegisterForm({ onSuccess }) {
         name: form.name.trim(),
         phone: form.phone.trim(),
         password: form.password,
+        hireDate: form.hireDate || null,
       });
       onSuccess(form.name.trim());
     } catch (err) {
@@ -161,6 +176,16 @@ function RegisterForm({ onSuccess }) {
             autoComplete="tel"
           />
         </div>
+      </div>
+
+      <div className="portal-login__field">
+        <label className="portal-login__field-label">입사일 (직원의 경우만 기재)</label>
+        <input
+          type="date"
+          className="portal-login__input"
+          value={form.hireDate}
+          onChange={f("hireDate")}
+        />
       </div>
 
       <div className="portal-login__field">
@@ -216,6 +241,202 @@ function RegisterSuccess({ name, onLoginClick }) {
       </div>
       <button className="portal-login__success-btn" onClick={onLoginClick}>
         로그인 화면으로
+      </button>
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────────
+// 비밀번호 재설정 폼 (Forgot / Reset Password)
+// ──────────────────────────────────────────────────
+function ForgotPasswordForm({ onBackClick }) {
+  const [step, setStep] = useState(1); // 1: 입력 및 OTP 요청, 2: OTP 검증 및 새 비밀번호 입력, 3: 완료
+  const [form, setForm] = useState({ email: "", phone: "", code: "", newPassword: "", newPasswordConfirm: "" });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [verificationId, setVerificationId] = useState("");
+  const [sentTo, setSentTo] = useState("");
+  const [devCode, setDevCode] = useState("");
+
+  const f = (k) => (e) => { setForm({ ...form, [k]: e.target.value }); setError(""); };
+
+  const requestOtp = async (e) => {
+    e.preventDefault();
+    if (!form.email.trim()) return setError("이메일을 입력해주세요");
+    if (!form.phone.trim()) return setError("휴대폰 번호를 입력해주세요");
+    setLoading(true);
+    setError("");
+    try {
+      const res = await portalApi.post("/forgot-password", {
+        email: form.email.trim(),
+        phone: form.phone.trim(),
+      });
+      setVerificationId(res.data.verificationId);
+      setSentTo(res.data.sentTo);
+      if (res.data.devCode) {
+        setDevCode(res.data.devCode);
+      }
+      setStep(2);
+    } catch (err) {
+      setError(err.message || "인증번호 발송에 실패했습니다");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetPassword = async (e) => {
+    e.preventDefault();
+    if (!form.code.trim()) return setError("인증번호를 입력해주세요");
+    if (form.newPassword.length < 8) return setError("비밀번호는 8자 이상이어야 합니다");
+    if (form.newPassword !== form.newPasswordConfirm) return setError("비밀번호가 일치하지 않습니다");
+    setLoading(true);
+    setError("");
+    try {
+      await portalApi.post("/reset-password", {
+        verificationId,
+        code: form.code.trim(),
+        newPassword: form.newPassword,
+      });
+      setStep(3);
+    } catch (err) {
+      setError(err.message || "비밀번호 재설정에 실패했습니다");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (step === 1) {
+    return (
+      <form onSubmit={requestOtp} className="portal-login__form-inner">
+        <div className="portal-login__field">
+          <label className="portal-login__field-label">이메일</label>
+          <input
+            type="email"
+            className="portal-login__input"
+            value={form.email}
+            onChange={f("email")}
+            placeholder="example@email.com"
+            autoComplete="email"
+            autoFocus
+          />
+        </div>
+
+        <div className="portal-login__field">
+          <label className="portal-login__field-label">등록된 휴대폰 번호</label>
+          <input
+            type="tel"
+            className="portal-login__input"
+            value={form.phone}
+            onChange={f("phone")}
+            placeholder="010-0000-0000"
+            autoComplete="tel"
+          />
+        </div>
+
+        {error && (
+          <div className="portal-login__error portal-login__error--danger">{error}</div>
+        )}
+
+        <button type="submit" className="portal-login__btn" disabled={loading}>
+          {loading ? "인증 요청 중..." : "인증번호 받기"}
+        </button>
+
+        <div style={{ marginTop: "24px", textAlign: "center" }}>
+          <button
+            type="button"
+            className="portal-login__success-btn"
+            onClick={onBackClick}
+            style={{ fontSize: "11px", padding: "8px 16px" }}
+          >
+            로그인 화면으로
+          </button>
+        </div>
+      </form>
+    );
+  }
+
+  if (step === 2) {
+    return (
+      <form onSubmit={resetPassword} className="portal-login__form-inner">
+        <p style={{ fontSize: "13px", color: "#4a5568", marginBottom: "20px", lineHeight: 1.5 }}>
+          등록하신 휴대폰 번호(<strong>{sentTo}</strong>)로 인증번호 6자리가 발송되었습니다.
+        </p>
+
+        {devCode && (
+          <div className="portal-login__error portal-login__error--warn" style={{ marginBottom: "16px" }}>
+            [개발 모드] 인증번호: <strong>{devCode}</strong>
+          </div>
+        )}
+
+        <div className="portal-login__field">
+          <label className="portal-login__field-label">인증번호 (6자리)</label>
+          <input
+            type="text"
+            className="portal-login__input"
+            value={form.code}
+            onChange={f("code")}
+            placeholder="000000"
+            maxLength={6}
+            autoFocus
+          />
+        </div>
+
+        <div className="portal-login__field">
+          <label className="portal-login__field-label">새 비밀번호 (8자 이상)</label>
+          <input
+            type="password"
+            className="portal-login__input"
+            value={form.newPassword}
+            onChange={f("newPassword")}
+            placeholder="새 비밀번호 입력"
+            autoComplete="new-password"
+          />
+        </div>
+
+        <div className="portal-login__field">
+          <label className="portal-login__field-label">새 비밀번호 확인</label>
+          <input
+            type="password"
+            className="portal-login__input"
+            value={form.newPasswordConfirm}
+            onChange={f("newPasswordConfirm")}
+            placeholder="새 비밀번호 다시 입력"
+            autoComplete="new-password"
+          />
+        </div>
+
+        {error && (
+          <div className="portal-login__error portal-login__error--danger">{error}</div>
+        )}
+
+        <button type="submit" className="portal-login__btn" disabled={loading}>
+          {loading ? "비밀번호 변경 중..." : "비밀번호 변경 완료"}
+        </button>
+
+        <div style={{ marginTop: "24px", textAlign: "center", display: "flex", justifyContent: "center", gap: "12px" }}>
+          <button
+            type="button"
+            className="portal-login__success-btn"
+            onClick={() => setStep(1)}
+            style={{ fontSize: "11px", padding: "8px 16px", color: "#8a97a8", borderColor: "#e8eaef" }}
+          >
+            이전 단계로
+          </button>
+        </div>
+      </form>
+    );
+  }
+
+  // step === 3 (완료)
+  return (
+    <div className="portal-login__success">
+      <div className="portal-login__success-icon">✓</div>
+      <div className="portal-login__success-title">비밀번호가 변경되었습니다</div>
+      <div className="portal-login__success-desc">
+        새로운 비밀번호로 다시 로그인해 주세요.
+      </div>
+      <button className="portal-login__success-btn" onClick={onBackClick}>
+        로그인 하러가기
       </button>
     </div>
   );
@@ -322,18 +543,20 @@ export default function LoginPage() {
           {/* 상단 레이블 */}
           <div className="portal-login__label">HIGHLAW PORTAL</div>
           <h1 className="portal-login__heading">
-            {registered ? "신청 완료" : tab === "login" ? "로그인" : "회원가입"}
+            {registered ? "신청 완료" : tab === "login" ? "로그인" : tab === "register" ? "회원가입" : "비밀번호 재설정"}
           </h1>
           {!registered && (
             <p className="portal-login__subheading">
               {tab === "login"
                 ? "포털 계정으로 사건 현황을 확인하세요"
-                : "가입 신청 후 관리자 승인이 필요합니다"}
+                : tab === "register"
+                ? "가입 신청 후 관리자 승인이 필요합니다"
+                : "등록하신 이메일과 휴대폰 번호로 인증을 진행합니다"}
             </p>
           )}
 
-          {/* 탭 — 완료 화면에서는 숨김 */}
-          {!registered && (
+          {/* 탭 — 완료 화면 및 비밀번호 재설정 화면에서는 숨김 */}
+          {!registered && tab !== "forgot" && (
             <div className="portal-login__tabs">
               <button
                 type="button"
@@ -359,9 +582,14 @@ export default function LoginPage() {
               onLoginClick={() => handleTabChange("login")}
             />
           ) : tab === "login" ? (
-            <LoginForm onSuccess={handleLoginSuccess} />
-          ) : (
+            <LoginForm
+              onSuccess={handleLoginSuccess}
+              onForgotClick={() => handleTabChange("forgot")}
+            />
+          ) : tab === "register" ? (
             <RegisterForm onSuccess={handleRegisterSuccess} />
+          ) : (
+            <ForgotPasswordForm onBackClick={() => handleTabChange("login")} />
           )}
 
           {/* 하단 푸터 */}

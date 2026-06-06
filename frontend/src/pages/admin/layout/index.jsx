@@ -98,6 +98,7 @@ const MENU_TREE = [
     children: [
       { to: "/admin/portal-users", label: "회원 승인" },
       { to: "/admin/portal-members", label: "구성원 관리" },
+      { to: "/admin/organization", label: "조직도 & 결재 관리" },
       { to: "/admin/portal-board-admin", label: "게시판 관리" },
       { to: "/admin/portal-time-overview", label: "업무시간 현황" },
     ],

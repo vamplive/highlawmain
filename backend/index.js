@@ -330,6 +330,8 @@ app.use("/api/payment-cards", require("./routes/payment-cards"));
 app.use("/api/chatbot", require("./routes/chatbot"));
 app.use("/api/inquiry", require("./routes/qna"));
 app.use("/api/portal", require("./routes/portal"));
+app.use("/api/portal/approvals", require("./routes/approvals"));
+app.use("/api/admin/organization", require("./routes/organization"));
 app.use("/api/case-records", require("./routes/case-records"));
 
 // ERP — 시간 기록 / 업무 / 법정 일정 / 의뢰인 예치금 / 이해상충

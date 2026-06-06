@@ -326,6 +326,9 @@ main > .section:first-child {
   height: 68vh;
   min-height: 500px;
   background: var(--bg-dark);
+  padding-top: 108px;
+  padding-bottom: 48px;
+  box-sizing: border-box;
 }
 
 .public-hero-overlay {
@@ -439,7 +442,9 @@ main > .section:first-child {
 @media (max-width: 768px) {
   .public-hero {
     height: 62vh;
-    min-height: 460px;
+    min-height: 480px;
+    padding-top: 108px;
+    padding-bottom: 40px;
   }
 
   .public-section-heading {

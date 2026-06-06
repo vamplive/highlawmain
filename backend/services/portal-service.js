@@ -34,6 +34,9 @@ const {
 /** 이메일 형식 검증 */
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+const { requestOtp, verifyOtp } = require("../lib/sms-otp");
+const SMS_OTP_CONFIGURED = Boolean(process.env.ALIGO_API_KEY && process.env.ALIGO_USER_ID && process.env.ALIGO_SENDER);
+
 // =============================================
 // 회원가입 / 로그인 / 로그아웃
 // =============================================
@@ -43,7 +46,7 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
  * isActive=0: 승인 대기, 1: 승인, -1: 거절
  */
 async function registerUser(data) {
-  const { email, password, name, phone } = data;
+  const { email, password, name, phone, hireDate } = data;
 
   if (!email || !EMAIL_REGEX.test((email || "").trim())) {
     throw new ServiceError("올바른 이메일 주소를 입력해주세요", 400);
@@ -83,6 +86,7 @@ async function registerUser(data) {
     passwordHash,
     clientId: matchedClient ? matchedClient.id : null,
     isActive: 0,
+    hireDate: hireDate || null,
   }).returning();
 
   if (!matchedClient) {
@@ -109,18 +113,50 @@ async function registerUser(data) {
  */
 async function loginUser(email, password) {
   if (!email || !password) {
-    throw new ServiceError("이메일과 비밀번호를 입력해주세요", 400);
+    throw new ServiceError("이메일/휴대폰 번호와 비밀번호를 입력해주세요", 400);
   }
 
-  const normalizedEmail = email.trim().toLowerCase();
-  const [user] = await db
-    .select()
-    .from(portalUsers)
-    .where(eq(portalUsers.email, normalizedEmail));
+  const input = email.trim();
+  let user = null;
+
+  // 1. 이메일 형식인 경우 이메일로 먼저 조회
+  if (input.includes("@")) {
+    const normalizedEmail = input.toLowerCase();
+    const [found] = await db
+      .select()
+      .from(portalUsers)
+      .where(eq(portalUsers.email, normalizedEmail));
+    user = found;
+  } else {
+    // 2. 이메일 형식이 아니면 휴대폰 번호로 클라이언트 조회 후 포털 계정 연결
+    const normalizedPhone = input.replace(/[\s-]/g, ""); // 공백 및 대시 제거
+    const [matchedClient] = await db
+      .select()
+      .from(clients)
+      .where(eq(clients.phone, normalizedPhone));
+
+    if (matchedClient) {
+      const [found] = await db
+        .select()
+        .from(portalUsers)
+        .where(eq(portalUsers.clientId, matchedClient.id));
+      user = found;
+    }
+  }
+
+  // 3. 휴대폰 번호로 매칭되지 않았고, @가 없었더라도 이메일 계정일 가능성이 있으므로 최종 이메일로 한 번 더 조회
+  if (!user) {
+    const normalizedEmail = input.toLowerCase();
+    const [found] = await db
+      .select()
+      .from(portalUsers)
+      .where(eq(portalUsers.email, normalizedEmail));
+    user = found;
+  }
 
   if (!user) {
     dummyVerifyPassword();
-    throw new ServiceError("이메일 또는 비밀번호가 올바르지 않습니다", 401);
+    throw new ServiceError("이메일/휴대폰 번호 또는 비밀번호가 올바르지 않습니다", 401);
   }
 
   // 승인 상태별 오류 분기
@@ -135,7 +171,7 @@ async function loginUser(email, password) {
   }
 
   if (!verifyPassword(password, user.passwordHash)) {
-    throw new ServiceError("이메일 또는 비밀번호가 올바르지 않습니다", 401);
+    throw new ServiceError("이메일/휴대폰 번호 또는 비밀번호가 올바르지 않습니다", 401);
   }
 
   const token = createPortalSession(user.id, user.email, user.clientId);
@@ -1408,12 +1444,98 @@ async function reorderLawyerProfiles(id1, id2) {
   return { success: true };
 }
 
+/**
+ * 비밀번호 찾기 — 이메일과 전화번호 매칭 후 SMS OTP 요청
+ */
+async function forgotPassword(email, phone, req) {
+  if (!email || !phone) {
+    throw new ServiceError("이메일과 휴대폰 번호를 모두 입력해주세요", 400);
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+  const normalizedPhone = phone.replace(/[\s-]/g, "");
+
+  // 1. portal_users와 clients를 조인하여 이메일과 전화번호가 매칭되는 사용자 검색
+  const [user] = await db
+    .select({
+      id: portalUsers.id,
+      email: portalUsers.email,
+      phone: clients.phone,
+    })
+    .from(portalUsers)
+    .innerJoin(clients, eq(portalUsers.clientId, clients.id))
+    .where(
+      and(
+        eq(portalUsers.email, normalizedEmail),
+        eq(clients.phone, normalizedPhone)
+      )
+    );
+
+  if (!user) {
+    throw new ServiceError("입력하신 정보와 일치하는 계정을 찾을 수 없습니다", 404);
+  }
+
+  // 2. OTP 발송 요청
+  const result = await requestOtp({
+    contextType: "portal_reset_password",
+    contextId: user.id,
+    phoneNumber: user.phone,
+    req,
+    dryRun: !SMS_OTP_CONFIGURED,
+  });
+
+  return {
+    verificationId: result.verificationId,
+    sentTo: result.sentTo,
+    devCode: result.devCode,
+  };
+}
+
+/**
+ * 비밀번호 재설정 — OTP 검증 후 새 비밀번호 저장
+ */
+async function resetPassword(verificationId, code, newPassword) {
+  if (!verificationId || !code) {
+    throw new ServiceError("인증 정보와 인증번호를 입력해주세요", 400);
+  }
+  if (!newPassword || newPassword.length < 8) {
+    throw new ServiceError("새 비밀번호는 8자 이상이어야 합니다", 400);
+  }
+
+  // 1. OTP 검증
+  const result = verifyOtp(verificationId, code);
+  if (!result.ok) {
+    throw new ServiceError(result.reason, 400);
+  }
+
+  const userId = result.row.context_id;
+  const contextType = result.row.context_type;
+
+  if (contextType !== "portal_reset_password") {
+    throw new ServiceError("올바르지 않은 인증 요청입니다", 400);
+  }
+
+  // 2. 비밀번호 업데이트
+  const passwordHash = hashPassword(newPassword);
+  await db
+    .update(portalUsers)
+    .set({
+      passwordHash,
+      updatedAt: sql`(datetime('now'))`,
+    })
+    .where(eq(portalUsers.id, userId));
+
+  return { success: true, message: "비밀번호가 성공적으로 재설정되었습니다" };
+}
+
 module.exports = {
   // 인증
   registerUser,
   loginUser,
   logoutUser,
   getUserProfile,
+  forgotPassword,
+  resetPassword,
   // 관리자: 포털 사용자
   listPortalUsers,
   getPortalUser,

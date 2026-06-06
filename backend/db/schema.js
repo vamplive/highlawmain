@@ -2,7 +2,7 @@
  * Drizzle ORM 스키마 정의
  * - documents, tags, categories, collections 등 12개 테이블
  */
-const { sqliteTable, text, integer, primaryKey } = require("drizzle-orm/sqlite-core");
+const { sqliteTable, text, integer, real, primaryKey } = require("drizzle-orm/sqlite-core");
 const { sql } = require("drizzle-orm");
 const crypto = require("crypto");
 
@@ -596,6 +596,9 @@ const portalUsers = sqliteTable("portal_users", {
   googleAccessToken: text("google_access_token"),
   googleRefreshToken: text("google_refresh_token"),
   googleTokenExpiresAt: integer("google_token_expires_at"),
+  hireDate: text("hire_date"),
+  departmentId: text("department_id"),
+  position: text("position"),
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
   updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
 });
@@ -1067,6 +1070,46 @@ const portalEvents = sqliteTable("portal_events", {
   updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
 });
 
+// =============================================
+// departments — 조직도 부서 정보
+// =============================================
+const departments = sqliteTable("departments", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  name: text("name").notNull(),
+  parentId: text("parent_id"),
+  managerUserId: text("manager_user_id"),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+});
+
+// =============================================
+// portal_approvals — 전자결재 문서
+// =============================================
+const portalApprovals = sqliteTable("portal_approvals", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  requesterId: text("requester_id").notNull().references(() => portalUsers.id, { onDelete: "cascade" }),
+  type: text("type").notNull(), // 'leave' | 'expense' | 'reimbursement'
+  title: text("title").notNull(),
+  status: text("status").notNull().default("pending"), // 'pending' | 'approved' | 'rejected' | 'draft'
+  currentApproverId: text("current_approver_id"),
+  approvalLine: text("approval_line").notNull(), // JSON: [{"userId", "status", "comment", "name", "position", "updatedAt"}]
+  
+  // 휴가 필드
+  leaveType: text("leave_type"), // 'annual' | 'half_am' | 'half_pm' | 'hourly'
+  leaveStart: text("leave_start"), // 'YYYY-MM-DD HH:MM'
+  leaveEnd: text("leave_end"),
+  leaveDuration: real("leave_duration"), // 사용 시간 (단위: 시간)
+
+  // 지출/경비 필드
+  expenseAmount: integer("expense_amount"),
+  expenseCategory: text("expense_category"), // 'meals' | 'travel' | 'supplies' | 'other'
+  expenseReceiptUrl: text("expense_receipt_url"),
+  expenseDate: text("expense_date"),
+
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+});
+
 module.exports = {
   DOCUMENT_TYPES,
   DOCUMENT_STATUSES,
@@ -1166,4 +1209,8 @@ module.exports = {
   recruitPosts,
   portalPosts,
   portalEvents,
+
+  // 조직도 및 결재
+  departments,
+  portalApprovals,
 };

@@ -1545,5 +1545,52 @@ module.exports = {
     `);
   } catch (e) { warnMigrationSkip(e); }
 
+  // departments — 부서 정보
+  try {
+    sqlite.exec(`
+      CREATE TABLE IF NOT EXISTS departments (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        parent_id TEXT,
+        manager_user_id TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+      CREATE INDEX IF NOT EXISTS idx_departments_parent ON departments(parent_id);
+    `);
+  } catch (e) { warnMigrationSkip(e); }
+
+  // portal_approvals — 전자결재
+  try {
+    sqlite.exec(`
+      CREATE TABLE IF NOT EXISTS portal_approvals (
+        id TEXT PRIMARY KEY,
+        requester_id TEXT NOT NULL REFERENCES portal_users(id) ON DELETE CASCADE,
+        type TEXT NOT NULL,
+        title TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending',
+        current_approver_id TEXT,
+        approval_line TEXT NOT NULL,
+        leave_type TEXT,
+        leave_start TEXT,
+        leave_end TEXT,
+        leave_duration REAL,
+        expense_amount INTEGER,
+        expense_category TEXT,
+        expense_receipt_url TEXT,
+        expense_date TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+      CREATE INDEX IF NOT EXISTS idx_portal_approvals_requester ON portal_approvals(requester_id);
+      CREATE INDEX IF NOT EXISTS idx_portal_approvals_status ON portal_approvals(status);
+    `);
+  } catch (e) { warnMigrationSkip(e); }
+
+  // portal_users — 입사일, 부서, 직급 컬럼 추가
+  try { sqlite.exec("ALTER TABLE portal_users ADD COLUMN hire_date TEXT"); } catch (e) { warnMigrationSkip(e); }
+  try { sqlite.exec("ALTER TABLE portal_users ADD COLUMN department_id TEXT"); } catch (e) { warnMigrationSkip(e); }
+  try { sqlite.exec("ALTER TABLE portal_users ADD COLUMN position TEXT"); } catch (e) { warnMigrationSkip(e); }
+
   },
 };
