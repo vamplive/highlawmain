@@ -35,6 +35,7 @@ export default function PortalApprovals() {
   // 결재 처리 상태
   const [actionComment, setActionComment] = useState("");
   const [processing, setProcessing] = useState(false);
+  const [receiptUploading, setReceiptUploading] = useState(false);
 
   // 데이터 로드
   const loadData = async () => {
@@ -77,6 +78,41 @@ export default function PortalApprovals() {
       }
       return updated;
     });
+  };
+
+  // 영수증 파일 로컬 업로드 핸들러
+  const handleReceiptUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // 최대 10MB
+    const maxBytes = 10 * 1024 * 1024;
+    if (file.size > maxBytes) {
+      showToast("파일 크기가 10MB를 초과할 수 없습니다", "error");
+      return;
+    }
+
+    // 허용 포맷
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"];
+    if (!allowedTypes.includes(file.type)) {
+      showToast("이미지 파일(JPG, PNG, WebP, GIF) 또는 PDF 파일만 업로드 가능합니다", "error");
+      return;
+    }
+
+    setReceiptUploading(true);
+    try {
+      const res = await portalApi.upload("/upload-receipt", file);
+      if (res.data && res.data.url) {
+        handleFormChange("expenseReceiptUrl", res.data.url);
+        showToast("영수증 파일이 정상적으로 첨부되었습니다", "success");
+      } else {
+        throw new Error(res.error || "업로드 실패");
+      }
+    } catch (err) {
+      showToast(err.message || "영수증 파일 업로드 중 오류가 발생했습니다", "error");
+    } finally {
+      setReceiptUploading(false);
+    }
   };
 
   // 기안 제출
@@ -706,14 +742,108 @@ export default function PortalApprovals() {
                   </div>
 
                   <div style={{ marginBottom: 12 }}>
-                    <label style={labelStyle}>영수증 URL 또는 세부 정보</label>
-                    <input
-                      style={fieldStyle}
-                      type="text"
-                      value={form.expenseReceiptUrl}
-                      onChange={(e) => handleFormChange("expenseReceiptUrl", e.target.value)}
-                      placeholder="구글 드라이브 파일 링크 또는 첨부 주소"
-                    />
+                    <label style={labelStyle}>영수증 파일 첨부</label>
+                    {form.expenseReceiptUrl ? (
+                      <div style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "10px 12px",
+                        border: "1px solid var(--border-color)",
+                        borderRadius: 6,
+                        background: "#f9fafb"
+                      }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, overflow: "hidden" }}>
+                          {form.expenseReceiptUrl.toLowerCase().endsWith(".pdf") ? (
+                            <span style={{ fontSize: 16 }}>📄</span>
+                          ) : (
+                            <span style={{ fontSize: 16 }}>🖼️</span>
+                          )}
+                          <span style={{
+                            fontSize: 13,
+                            color: "var(--text-primary)",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            maxWidth: 300
+                          }}>
+                            {form.expenseReceiptUrl.split("/").pop()}
+                          </span>
+                          <a
+                            href={form.expenseReceiptUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{ fontSize: 12, color: "#2563eb", textDecoration: "underline", flexShrink: 0 }}
+                          >
+                            보기
+                          </a>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleFormChange("expenseReceiptUrl", "")}
+                          style={{
+                            border: "none",
+                            background: "none",
+                            color: "#ef4444",
+                            cursor: "pointer",
+                            fontSize: 12,
+                            fontWeight: 600,
+                            padding: "4px 8px"
+                          }}
+                        >
+                          제거
+                        </button>
+                      </div>
+                    ) : (
+                      <div>
+                        <label
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            padding: "20px 14px",
+                            border: "2px dashed var(--border-color)",
+                            borderRadius: 6,
+                            cursor: receiptUploading ? "not-allowed" : "pointer",
+                            background: "#fff",
+                            transition: "all 0.2s ease",
+                            textAlign: "center"
+                          }}
+                        >
+                          {receiptUploading ? (
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                              <div className="spinner" style={{
+                                width: 20,
+                                height: 20,
+                                border: "2px solid #ccc",
+                                borderTop: "2px solid var(--accent-gold)",
+                                borderRadius: "50%",
+                                animation: "spin 1s linear infinite"
+                              }} />
+                              <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>업로드 중...</span>
+                            </div>
+                          ) : (
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                              <span style={{ fontSize: 24, marginBottom: 4 }}>📤</span>
+                              <span style={{ fontSize: 13, color: "var(--text-primary)", fontWeight: 600 }}>
+                                클릭하여 파일 선택
+                              </span>
+                              <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                                JPG, PNG, WebP, GIF, PDF (최대 10MB)
+                              </span>
+                            </div>
+                          )}
+                          <input
+                            type="file"
+                            accept="image/*,application/pdf"
+                            onChange={handleReceiptUpload}
+                            disabled={receiptUploading}
+                            style={{ display: "none" }}
+                          />
+                        </label>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -836,11 +966,84 @@ export default function PortalApprovals() {
                   <div>• 금액: {selectedApproval.expenseAmount ? selectedApproval.expenseAmount.toLocaleString() : 0} 원</div>
                   {selectedApproval.expenseDate && <div>• 지출일자: {selectedApproval.expenseDate}</div>}
                   {selectedApproval.expenseReceiptUrl && (
-                    <div>
-                      • 증빙 영수증:{" "}
-                      <a href={selectedApproval.expenseReceiptUrl} target="_blank" rel="noreferrer" style={{ color: "#2563eb", textDecoration: "underline" }}>
-                        영수증 보기
-                      </a>
+                    <div style={{ marginTop: 8 }}>
+                      <div>• 증빙 영수증:</div>
+                      <div style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 10,
+                        padding: 12,
+                        border: "1px solid var(--border-color)",
+                        borderRadius: 8,
+                        background: "#fff",
+                        marginTop: 6
+                      }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, overflow: "hidden" }}>
+                            {selectedApproval.expenseReceiptUrl.toLowerCase().endsWith(".pdf") ? (
+                              <span style={{ fontSize: 20 }}>📄</span>
+                            ) : (
+                              <span style={{ fontSize: 20 }}>🖼️</span>
+                            )}
+                            <div style={{ display: "flex", flexDirection: "column", overflow: "hidden" }}>
+                              <span style={{
+                                fontSize: 13,
+                                fontWeight: 600,
+                                color: "var(--text-primary)",
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                maxWidth: 280
+                              }}>
+                                {selectedApproval.expenseReceiptUrl.split("/").pop()}
+                              </span>
+                              <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                                {selectedApproval.expenseReceiptUrl.toLowerCase().endsWith(".pdf") ? "PDF 문서" : "이미지 파일"}
+                              </span>
+                            </div>
+                          </div>
+                          <a
+                            href={selectedApproval.expenseReceiptUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{
+                              fontSize: 12,
+                              fontWeight: 600,
+                              color: "#fff",
+                              background: "var(--accent-gold)",
+                              padding: "6px 12px",
+                              borderRadius: 4,
+                              textDecoration: "none",
+                              display: "inline-block"
+                            }}
+                          >
+                            파일 열기
+                          </a>
+                        </div>
+                        
+                        {!selectedApproval.expenseReceiptUrl.toLowerCase().endsWith(".pdf") && (
+                          <div style={{
+                            border: "1px solid var(--border-color)",
+                            borderRadius: 6,
+                            overflow: "hidden",
+                            maxHeight: 200,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            background: "#fff"
+                          }}>
+                            <img
+                              src={selectedApproval.expenseReceiptUrl}
+                              alt="Receipt preview"
+                              style={{
+                                maxWidth: "100%",
+                                maxHeight: 200,
+                                objectFit: "contain"
+                              }}
+                            />
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>

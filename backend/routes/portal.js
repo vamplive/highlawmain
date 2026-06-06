@@ -59,6 +59,35 @@ const photoUpload = multer({
 });
 
 // =============================================
+// 영수증 업로드 multer 설정 (지출 결의 / 경비 청구)
+// =============================================
+const RECEIPTS_DIR = path.join(STORAGE_PATH, "uploads", "receipts");
+
+const receiptStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    fs.mkdirSync(RECEIPTS_DIR, { recursive: true });
+    cb(null, RECEIPTS_DIR);
+  },
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase() || ".jpg";
+    cb(null, `receipt-${Date.now()}-${crypto.randomBytes(4).toString("hex")}${ext}`);
+  },
+});
+
+const receiptUpload = multer({
+  storage: receiptStorage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  fileFilter: (_req, file, cb) => {
+    if (/^image\/(jpeg|png|webp|gif)$/.test(file.mimetype) || file.mimetype === "application/pdf") {
+      cb(null, true);
+    } else {
+      cb(new Error("이미지 파일(JPG·PNG·WebP) 또는 PDF 파일만 업로드할 수 있습니다"), false);
+    }
+  },
+});
+
+
+// =============================================
 // 공개 엔드포인트
 // =============================================
 
@@ -124,6 +153,21 @@ router.post("/upload-photo", portalAuth, (req, res) => {
     res.json({ data: { url }, error: null, meta: null });
   });
 });
+
+/** POST /api/portal/upload-receipt — 포털 지출결의/경비청구 영수증 업로드 */
+router.post("/upload-receipt", portalAuth, (req, res) => {
+  receiptUpload.single("receipt")(req, res, (err) => {
+    if (err) {
+      return res.status(400).json({ data: null, error: err.message, meta: null });
+    }
+    if (!req.file) {
+      return res.status(400).json({ data: null, error: "파일이 없습니다", meta: null });
+    }
+    const url = `/uploads/receipts/${req.file.filename}`;
+    res.json({ data: { url, originalName: req.file.originalname }, error: null, meta: null });
+  });
+});
+
 
 /** GET /api/portal/cases — 내 사건 목록 */
 router.get("/cases", portalAuth, async (req, res) => {
