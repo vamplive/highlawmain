@@ -30,9 +30,9 @@ try {
   console.error('[Migration] consultations delete error:', e.message);
 }
 
-// 2. Delete dummy documents (title = 't' or title = '')
+// 2. Delete dummy documents (title = 't' or title = '' or title = '제목 없음')
 try {
-  const dummyDocs = db.prepare("SELECT id, title FROM documents WHERE title = 't' OR title = ''").all();
+  const dummyDocs = db.prepare("SELECT id, title FROM documents WHERE title = 't' OR title = '' OR title = '제목 없음'").all();
   console.log('[Migration] Dummy documents found:', dummyDocs.length);
   if (dummyDocs.length > 0) {
     const docIds = dummyDocs.map(d => d.id);
