@@ -135,6 +135,15 @@ export default function PortalCalendar() {
     }
   }, [selectedFilterMode, selectedDeptId, members, userProfile]);
 
+  // 3-2. 구성원용 뷰 모드로 전환 시, 기본 필터 모드를 'company'로 변경하여 전체 구성원이 보이도록 설정
+  useEffect(() => {
+    if (viewMode.startsWith("member_")) {
+      if (selectedFilterMode === "my") {
+        setSelectedFilterMode("company");
+      }
+    }
+  }, [viewMode]);
+
   // 4. 일정 목록 로드 (필터 또는 뷰 모드 변경 반응)
   useEffect(() => {
     if (userProfile) {
@@ -441,7 +450,7 @@ export default function PortalCalendar() {
                     onMouseLeave={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
                     title={`${event.title} (${event.ownerName || "미지정"})`}
                   >
-                    {event.title}
+                    {viewMode.startsWith("member_") && event.ownerName ? `[${event.ownerName}] ${event.title}` : event.title}
                   </div>
                 ))}
                 {dayEvents.length > 3 && (
