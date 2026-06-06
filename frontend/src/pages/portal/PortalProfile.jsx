@@ -147,8 +147,8 @@ export default function PortalProfile() {
       let initialForm = EMPTY_FORM;
       let hasProfile = false;
 
-      if (res.data?.data) {
-        const prof = res.data.data;
+      if (res.data) {
+        const prof = res.data;
         hasProfile = true;
         initialForm = mapToForm(prof);
       } else {

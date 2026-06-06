@@ -879,6 +879,35 @@ function ApprovalFlowChart({ approvalSettings, approvers, departments, getDeptPa
   const isDept = approvalSettings.approvalLineType === "dept";
 
   if (isDept) {
+    // Build a realistic tree-based approval flow starting from a leaf department (e.g. 기획팀)
+    const buildDeptFlow = () => {
+      if (departments.length === 0) return [];
+
+      // Find leaf departments (departments that are not a parent of any other department)
+      const parentIds = new Set(departments.map(d => d.parentId).filter(Boolean));
+      const leaves = departments.filter(d => !parentIds.has(d.id));
+
+      // Let's choose the leaf department that has a parent (like 기획팀) to show a multi-level approval flow.
+      // If there are no leaves with parents, fallback to leaves[0] or departments[0]
+      const startDept = leaves.find(d => d.parentId) || leaves[0] || departments[0];
+
+      const path = [];
+      let current = startDept;
+      const visited = new Set();
+
+      while (current) {
+        if (visited.has(current.id)) break;
+        visited.add(current.id);
+        path.push(current);
+
+        const parent = departments.find(d => d.id === current.parentId);
+        current = parent;
+      }
+      return path;
+    };
+
+    const flowDepts = buildDeptFlow();
+
     return (
       <div>
         <div style={{
@@ -894,23 +923,18 @@ function ApprovalFlowChart({ approvalSettings, approvers, departments, getDeptPa
           <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8, padding: 16 }}>
             <FlowNode label="기안자" icon="✍️" color="#6366f1" />
             <FlowArrow />
-            {departments
-              .filter(d => !d.parentId) // 최상위 부서부터 표시
-              .concat(departments.filter(d => d.parentId)) // 하위 부서
-              .slice(0, 4)
-              .map((dept, idx) => (
-                <React.Fragment key={dept.id}>
-                  <FlowNode
-                    label={dept.name}
-                    sublabel={dept.managerName ? `부서장: ${dept.managerName}` : "부서장 미지정"}
-                    icon="🏢"
-                    color={GOLD}
-                    step={idx + 1}
-                  />
-                  {idx < Math.min(departments.length, 4) - 1 && <FlowArrow />}
-                </React.Fragment>
-              ))
-            }
+            {flowDepts.map((dept, idx) => (
+              <React.Fragment key={dept.id}>
+                <FlowNode
+                  label={dept.name}
+                  sublabel={dept.managerName ? `부서장: ${dept.managerName}` : "부서장 미지정"}
+                  icon="🏢"
+                  color={GOLD}
+                  step={idx + 1}
+                />
+                {idx < flowDepts.length - 1 && <FlowArrow />}
+              </React.Fragment>
+            ))}
             <FlowArrow />
             <FlowNode label="결재 완료" icon="✅" color="#10b981" />
           </div>

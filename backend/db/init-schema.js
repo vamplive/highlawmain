@@ -479,6 +479,7 @@ module.exports = {
       ends_at TEXT,
       is_all_day INTEGER NOT NULL DEFAULT 0,
       color TEXT DEFAULT '#6366f1',
+      attendee_ids TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
@@ -1593,6 +1594,29 @@ module.exports = {
   try { sqlite.exec("ALTER TABLE portal_users ADD COLUMN hire_date TEXT"); } catch (e) { warnMigrationSkip(e); }
   try { sqlite.exec("ALTER TABLE portal_users ADD COLUMN department_id TEXT"); } catch (e) { warnMigrationSkip(e); }
   try { sqlite.exec("ALTER TABLE portal_users ADD COLUMN position TEXT"); } catch (e) { warnMigrationSkip(e); }
+
+  // portal_events — attendee_ids 컬럼 추가
+  try { sqlite.exec("ALTER TABLE portal_events ADD COLUMN attendee_ids TEXT"); } catch (e) { warnMigrationSkip(e); }
+
+  // user_ai_configs — 구성원별 AI 연동 설정
+  try {
+    sqlite.exec(`
+      CREATE TABLE IF NOT EXISTS user_ai_configs (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        provider TEXT NOT NULL,
+        model_id TEXT NOT NULL,
+        nickname TEXT NOT NULL,
+        encrypted_api_key TEXT NOT NULL,
+        is_default_prompt INTEGER NOT NULL DEFAULT 0,
+        is_default_image INTEGER NOT NULL DEFAULT 0,
+        is_active INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+      CREATE INDEX IF NOT EXISTS idx_user_ai_configs_user ON user_ai_configs(user_id);
+    `);
+  } catch (e) { warnMigrationSkip(e); }
 
   },
 };

@@ -624,9 +624,93 @@ router.delete("/posts/:id", portalAuth, async (req, res) => {
 // 포털 일정 (캘린더)
 // =============================================
 
+router.get("/departments", portalAuth, async (req, res) => {
+  try {
+    const isEmployee = !req.portalUser.clientId || (req.portalUser.role && req.portalUser.role !== "client");
+    if (!isEmployee) {
+      return res.status(403).json({ data: [], error: "권한이 없습니다", meta: null });
+    }
+    const { db } = require("../db");
+    const { departments, portalUsers, clients } = require("../db/schema");
+    const { eq } = require("drizzle-orm");
+
+    const rows = await db
+      .select({
+        id: departments.id,
+        name: departments.name,
+        parentId: departments.parentId,
+        managerUserId: departments.managerUserId,
+        managerName: clients.name,
+        managerPosition: portalUsers.position,
+      })
+      .from(departments)
+      .leftJoin(portalUsers, eq(departments.managerUserId, portalUsers.id))
+      .leftJoin(clients, eq(portalUsers.clientId, clients.id));
+
+    res.json({ data: rows, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+router.get("/members", portalAuth, async (req, res) => {
+  try {
+    const isEmployee = !req.portalUser.clientId || (req.portalUser.role && req.portalUser.role !== "client");
+    if (!isEmployee) {
+      return res.status(403).json({ data: [], error: "권한이 없습니다", meta: null });
+    }
+    const { db } = require("../db");
+    const { portalUsers, clients, departments, lawyers } = require("../db/schema");
+    const { eq, and, sql } = require("drizzle-orm");
+
+    const rows = await db
+      .select({
+        id: portalUsers.id,
+        email: portalUsers.email,
+        name: clients.name,
+        phone: clients.phone,
+        role: portalUsers.role,
+        position: portalUsers.position,
+        departmentId: portalUsers.departmentId,
+        departmentName: departments.name,
+      })
+      .from(portalUsers)
+      .leftJoin(clients, eq(portalUsers.clientId, clients.id))
+      .leftJoin(departments, eq(portalUsers.departmentId, departments.id))
+      .where(
+        and(
+          eq(portalUsers.isActive, 1),
+          sql`(${portalUsers.clientId} IS NULL OR ${portalUsers.role} != 'client')`
+        )
+      );
+
+    // Resolve lawyers names for matching emails as display names fallback
+    const allLawyersList = await db
+      .select({
+        name: lawyers.name,
+        email: lawyers.email,
+      })
+      .from(lawyers);
+
+    const lawyerNameMap = {};
+    for (const l of allLawyersList) {
+      if (l.email) lawyerNameMap[l.email.toLowerCase().trim()] = l.name;
+    }
+
+    const resolvedRows = rows.map(r => ({
+      ...r,
+      name: lawyerNameMap[r.email?.toLowerCase().trim()] || r.name || "미지정"
+    }));
+
+    res.json({ data: resolvedRows, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
 router.get("/events", portalAuth, async (req, res) => {
   try {
-    const rows = await portalService.listPortalEvents(req.portalUser.userId);
+    const rows = await portalService.listPortalEvents(req.portalUser.userId, req.query);
     res.json({ data: rows, error: null, meta: null });
   } catch (e) {
     handleError(res, e);

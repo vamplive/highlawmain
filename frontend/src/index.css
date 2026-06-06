@@ -441,10 +441,11 @@ main > .section:first-child {
 
 @media (max-width: 768px) {
   .public-hero {
-    height: 62vh;
-    min-height: 480px;
-    padding-top: 108px;
-    padding-bottom: 40px;
+    height: auto;
+    min-height: 520px;
+    padding-top: 160px;
+    padding-bottom: 50px;
+    align-items: flex-start;
   }
 
   .public-section-heading {

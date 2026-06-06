@@ -15,6 +15,8 @@ import {
   loadAiConfig,
   getStoredPromptModel, setStoredPromptModel,
   getStoredImageModel, setStoredImageModel,
+  getStoredPromptAiConfigId, setStoredPromptAiConfigId,
+  getStoredImageAiConfigId, setStoredImageAiConfigId,
   PROMPT_MODEL_LABELS, IMAGE_MODEL_LABELS,
 } from "./aiModelStore";
 
@@ -72,7 +74,7 @@ async function uploadCoverFile(file) {
   return json.data?.url;
 }
 
-async function generateCoverImage(prompt, model) {
+async function generateCoverImage(prompt, model, userAiConfigId) {
   const headers = { "Content-Type": "application/json" };
   const csrf = getCookie("csrf-token");
   if (csrf) headers["x-csrf-token"] = csrf;
@@ -80,14 +82,20 @@ async function generateCoverImage(prompt, model) {
     method: "POST",
     credentials: "include",
     headers,
-    body: JSON.stringify({ prompt, size: "1792x1024", folder: "blog", model }),
+    body: JSON.stringify({
+      prompt,
+      size: "1792x1024",
+      folder: "blog",
+      model,
+      ...(userAiConfigId ? { userAiConfigId } : {}),
+    }),
   });
   const json = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(json?.error || "AI 이미지 생성에 실패했습니다");
   return json.data?.url;
 }
 
-async function suggestCoverPrompt({ title, body, model }) {
+async function suggestCoverPrompt({ title, body, model, userAiConfigId }) {
   const headers = { "Content-Type": "application/json" };
   const csrf = getCookie("csrf-token");
   if (csrf) headers["x-csrf-token"] = csrf;
@@ -95,7 +103,14 @@ async function suggestCoverPrompt({ title, body, model }) {
     method: "POST",
     credentials: "include",
     headers,
-    body: JSON.stringify({ title, body, count: 1, scope: "cover", model }),
+    body: JSON.stringify({
+      title,
+      body,
+      count: 1,
+      scope: "cover",
+      model,
+      ...(userAiConfigId ? { userAiConfigId } : {}),
+    }),
   });
   const json = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(json?.error || "프롬프트 추천 실패");
@@ -127,6 +142,11 @@ export default function BlogCoverImagePicker({ value, onChange, docContext, getE
   const [aiConfig, setAiConfig] = useState(null);
   const [imageModel, setImageModel] = useState("");
   const [promptModel, setPromptModel] = useState("");
+  // 사용자 등록 AI 설정
+  const [userAiConfigs, setUserAiConfigs] = useState([]);
+  const [selectedPromptAiConfigId, setSelectedPromptAiConfigId] = useState("");
+  const [selectedImageAiConfigId, setSelectedImageAiConfigId] = useState("");
+
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -135,11 +155,24 @@ export default function BlogCoverImagePicker({ value, onChange, docContext, getE
       setAiConfig(cfg);
       setImageModel(getStoredImageModel() || cfg?.image?.defaultModel || "dall-e-3");
       setPromptModel(getStoredPromptModel() || cfg?.prompt?.defaultModel || "claude-haiku-4-5");
+      // 사용자 등록 AI 목록
+      const userCfgs = cfg?.userAiConfigs || [];
+      setUserAiConfigs(userCfgs);
+      // 이전 선택값 복원 (또는 기본 AI)
+      const storedPromptCfg = getStoredPromptAiConfigId();
+      const defaultPromptCfg = userCfgs.find((c) => c.isDefaultPrompt)?.id || "";
+      setSelectedPromptAiConfigId(storedPromptCfg && userCfgs.some((c) => c.id === storedPromptCfg) ? storedPromptCfg : defaultPromptCfg);
+      const storedImageCfg = getStoredImageAiConfigId();
+      const defaultImageCfg = userCfgs.find((c) => c.isDefaultImage)?.id || "";
+      setSelectedImageAiConfigId(storedImageCfg && userCfgs.some((c) => c.id === storedImageCfg) ? storedImageCfg : defaultImageCfg);
     })();
     return () => { alive = false; };
   }, []);
+
   const handleImageModelChange = (m) => { setImageModel(m); setStoredImageModel(m); };
   const handlePromptModelChange = (m) => { setPromptModel(m); setStoredPromptModel(m); };
+  const handlePromptAiConfigChange = (id) => { setSelectedPromptAiConfigId(id); setStoredPromptAiConfigId(id); };
+  const handleImageAiConfigChange = (id) => { setSelectedImageAiConfigId(id); setStoredImageAiConfigId(id); };
 
   const handleFiles = useCallback(async (files) => {
     setErrorMsg("");
@@ -189,7 +222,7 @@ export default function BlogCoverImagePicker({ value, onChange, docContext, getE
     setErrorMsg("");
     setMode("generating");
     try {
-      const url = await generateCoverImage(prompt, imageModel);
+      const url = await generateCoverImage(prompt, imageModel, selectedImageAiConfigId);
       if (url) {
         onChange(url);
         // 프롬프트는 비우지 않고 유지 — 사용자가 마음에 안 들면 같은 프롬프트 수정해 재생성 가능
@@ -211,6 +244,7 @@ export default function BlogCoverImagePicker({ value, onChange, docContext, getE
         title: docContext?.title || "",
         body: plain,
         model: promptModel,
+        userAiConfigId: selectedPromptAiConfigId,
       });
       if (suggested) {
         setAiPrompt(suggested);
@@ -411,41 +445,79 @@ export default function BlogCoverImagePicker({ value, onChange, docContext, getE
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 8 }}>
             <label style={{ display: "grid", gap: 4, fontSize: 12, color: "#475569" }}>
-              <span>이미지 모델</span>
+              <span>이미지 생성 AI</span>
               <select
-                value={imageModel}
-                onChange={(e) => handleImageModelChange(e.target.value)}
+                value={selectedImageAiConfigId || ("__server__" + imageModel)}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v.startsWith("__server__")) {
+                    handleImageAiConfigChange("");
+                    handleImageModelChange(v.replace("__server__", ""));
+                  } else {
+                    handleImageAiConfigChange(v);
+                  }
+                }}
                 disabled={isBusy}
                 style={{
                   height: 36, padding: "0 10px", fontSize: 13,
                   border: "1px solid #cbd5e1", borderRadius: 6, background: "#fff",
                 }}
               >
-                {(aiConfig?.image?.allowedModels || ["dall-e-3"]).map((m) => (
-                  <option key={m} value={m}>
-                    {IMAGE_MODEL_LABELS[m] || m}
-                    {m === aiConfig?.image?.defaultModel ? " · 기본" : ""}
-                  </option>
-                ))}
+                <optgroup label="내 등록 AI">
+                  {userAiConfigs.filter((c) => c.provider === "openai" && (c.modelId.includes("dall-e") || c.modelId.includes("image"))).map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.nickname} ({c.modelId}){c.isDefaultImage ? " · 기본" : ""}
+                    </option>
+                  ))}
+                  {userAiConfigs.filter((c) => c.provider === "openai" && (c.modelId.includes("dall-e") || c.modelId.includes("image"))).length === 0 && (
+                    <option disabled value="__no_user_img__">등록된 이미지 AI 없음</option>
+                  )}
+                </optgroup>
+                <optgroup label="서버 기본 AI (공용)">
+                  {(aiConfig?.image?.allowedModels || ["dall-e-3"]).map((m) => (
+                    <option key={m} value={`__server__${m}`}>
+                      {IMAGE_MODEL_LABELS[m] || m}{m === aiConfig?.image?.defaultModel ? " · 기본" : ""}
+                    </option>
+                  ))}
+                </optgroup>
               </select>
             </label>
             <label style={{ display: "grid", gap: 4, fontSize: 12, color: "#475569" }}>
-              <span>프롬프트 추천 모델 (Claude)</span>
+              <span>프롬프트 추천 AI (Claude)</span>
               <select
-                value={promptModel}
-                onChange={(e) => handlePromptModelChange(e.target.value)}
+                value={selectedPromptAiConfigId || ("__server__" + promptModel)}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v.startsWith("__server__")) {
+                    handlePromptAiConfigChange("");
+                    handlePromptModelChange(v.replace("__server__", ""));
+                  } else {
+                    handlePromptAiConfigChange(v);
+                  }
+                }}
                 disabled={isBusy}
                 style={{
                   height: 36, padding: "0 10px", fontSize: 13,
                   border: "1px solid #cbd5e1", borderRadius: 6, background: "#fff",
                 }}
               >
-                {(aiConfig?.prompt?.allowedModels || ["claude-haiku-4-5"]).map((m) => (
-                  <option key={m} value={m}>
-                    {PROMPT_MODEL_LABELS[m] || m}
-                    {m === aiConfig?.prompt?.defaultModel ? " · 기본" : ""}
-                  </option>
-                ))}
+                <optgroup label="내 등록 AI">
+                  {userAiConfigs.filter((c) => ["anthropic", "openai", "google"].includes(c.provider) && !c.modelId.includes("dall-e") && !c.modelId.includes("imagen") && !c.modelId.includes("image")).map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.nickname} ({c.modelId}){c.isDefaultPrompt ? " · 기본" : ""}
+                    </option>
+                  ))}
+                  {userAiConfigs.filter((c) => !c.modelId.includes("dall-e") && !c.modelId.includes("imagen") && !c.modelId.includes("image")).length === 0 && (
+                    <option disabled value="__no_user_ai__">등록된 AI 없음</option>
+                  )}
+                </optgroup>
+                <optgroup label="서버 기본 AI (공용)">
+                  {(aiConfig?.prompt?.allowedModels || ["claude-haiku-4-5"]).map((m) => (
+                    <option key={m} value={`__server__${m}`}>
+                      {PROMPT_MODEL_LABELS[m] || m}{m === aiConfig?.prompt?.defaultModel ? " · 기본" : ""}
+                    </option>
+                  ))}
+                </optgroup>
               </select>
             </label>
           </div>

@@ -19,7 +19,7 @@ const {
   adminUsers,
   courtDates,
 } = require("../db/schema");
-const { eq, desc, and, sql, gte, lte, between, asc, like } = require("drizzle-orm");
+const { eq, desc, and, sql, gte, lte, between, asc, like, or, inArray } = require("drizzle-orm");
 const { hashPassword, verifyPassword, dummyVerifyPassword } = require("../lib/auth");
 const { createPortalSession, deletePortalSession } = require("../lib/auth");
 const {
@@ -1147,25 +1147,68 @@ async function deletePortalPost(id, portalUserId, isAdmin) {
 // 포털 일정 (캘린더)
 // =============================================
 
-async function listPortalEvents(portalUserId) {
+async function listPortalEvents(portalUserId, query = {}) {
   // 1. 사용자 정보 조회 (clientId, email 확인)
   const [user] = await db
     .select({
       id: portalUsers.id,
       email: portalUsers.email,
       clientId: portalUsers.clientId,
+      role: portalUsers.role,
     })
     .from(portalUsers)
     .where(eq(portalUsers.id, portalUserId));
 
   if (!user) return [];
+  const isEmployee = !user.clientId || (user.role && user.role !== "client");
 
-  // 2. 포털 사용자 개인 일정 조회
-  const userEvents = await db
-    .select()
-    .from(portalEvents)
-    .where(eq(portalEvents.portalUserId, portalUserId))
-    .orderBy(asc(portalEvents.startsAt));
+  // Filter target user IDs
+  let targetUserIds = [portalUserId];
+
+  if (isEmployee) {
+    if (query.company === "true") {
+      const allEmps = await db
+        .select({ id: portalUsers.id })
+        .from(portalUsers)
+        .where(
+          and(
+            eq(portalUsers.isActive, 1),
+            sql`(${portalUsers.clientId} IS NULL OR ${portalUsers.role} != 'client')`
+          )
+        );
+      targetUserIds = allEmps.map((e) => e.id);
+    } else if (query.departmentId) {
+      const deptEmps = await db
+        .select({ id: portalUsers.id })
+        .from(portalUsers)
+        .where(
+          and(
+            eq(portalUsers.isActive, 1),
+            eq(portalUsers.departmentId, query.departmentId)
+          )
+        );
+      targetUserIds = deptEmps.map((e) => e.id);
+    } else if (query.userIds) {
+      targetUserIds = query.userIds
+        .split(",")
+        .map((id) => id.trim())
+        .filter(Boolean);
+    }
+  }
+
+  // 2. 포털 사용자 개인 및 attendee로 참여한 일정 조회
+  let dbEvents = [];
+  if (targetUserIds.length > 0) {
+    const conditions = [inArray(portalEvents.portalUserId, targetUserIds)];
+    for (const userId of targetUserIds) {
+      conditions.push(like(portalEvents.attendeeIds, `%${userId}%`));
+    }
+    dbEvents = await db
+      .select()
+      .from(portalEvents)
+      .where(or(...conditions))
+      .orderBy(asc(portalEvents.startsAt));
+  }
 
   // 3. 의뢰인/변호사 관련 법정 일정(court_dates) 조회
   let clientCourtDates = [];
@@ -1177,63 +1220,154 @@ async function listPortalEvents(portalUserId) {
       .orderBy(asc(courtDates.startsAt));
   }
 
-  let lawyerCourtDates = [];
-  if (user.email) {
-    const [lawyer] = await db
-      .select()
-      .from(lawyers)
-      .where(eq(lawyers.email, user.email.toLowerCase().trim()));
-    if (lawyer) {
-      lawyerCourtDates = await db
+  let targetCourtDates = [];
+  if (isEmployee && targetUserIds.length > 0) {
+    const targetUsers = await db
+      .select({ id: portalUsers.id, email: portalUsers.email })
+      .from(portalUsers)
+      .where(inArray(portalUsers.id, targetUserIds));
+    const targetEmails = targetUsers
+      .map((tu) => tu.email?.toLowerCase().trim())
+      .filter(Boolean);
+
+    if (targetEmails.length > 0) {
+      const targetLawyers = await db
+        .select({ id: lawyers.id })
+        .from(lawyers)
+        .where(inArray(lawyers.email, targetEmails));
+      const lawyerIds = targetLawyers.map((l) => l.id);
+
+      if (lawyerIds.length > 0) {
+        targetCourtDates = await db
+          .select()
+          .from(courtDates)
+          .where(and(inArray(courtDates.lawyerId, lawyerIds), eq(courtDates.status, "scheduled")))
+          .orderBy(asc(courtDates.startsAt));
+      }
+    }
+  } else if (!isEmployee) {
+    if (user.email) {
+      const [lawyer] = await db
         .select()
-        .from(courtDates)
-        .where(and(eq(courtDates.lawyerId, lawyer.id), eq(courtDates.status, "scheduled")))
-        .orderBy(asc(courtDates.startsAt));
+        .from(lawyers)
+        .where(eq(lawyers.email, user.email.toLowerCase().trim()));
+      if (lawyer) {
+        targetCourtDates = await db
+          .select()
+          .from(courtDates)
+          .where(and(eq(courtDates.lawyerId, lawyer.id), eq(courtDates.status, "scheduled")))
+          .orderBy(asc(courtDates.startsAt));
+      }
     }
   }
 
-  // 4. 중복 제거를 위해 Map 사용 (id 기준)
   const courtDatesMap = new Map();
-  for (const cd of [...clientCourtDates, ...lawyerCourtDates]) {
+  for (const cd of [...clientCourtDates, ...targetCourtDates]) {
     courtDatesMap.set(cd.id, cd);
   }
 
-  // 5. 법정 일정을 캘린더 이벤트 형태로 변환
-  const courtEventsMapped = Array.from(courtDatesMap.values()).map((cd) => ({
-    id: `court-${cd.id}`,
-    portalUserId: portalUserId,
-    title: `[기일] ${cd.title}${cd.caseNumber ? ` (${cd.caseNumber})` : ""}`,
-    description: [
-      cd.courtName && `법원: ${cd.courtName} ${cd.courtRoom || ""}`,
-      cd.kind && `구분: ${cd.kind}`,
-      cd.memo && `메모: ${cd.memo}`,
-    ].filter(Boolean).join("\n"),
-    startsAt: cd.startsAt,
-    endsAt: cd.endsAt || cd.startsAt,
-    isAllDay: 0,
-    color: "#ef4444", // 법정 일정은 빨간색/로즈 계열로 강조
-    isCourtDate: true,
-  }));
+  // 4. 사원 이름/직급 맵핑 및 lawyers 이메일 매칭
+  const allUsersList = await db
+    .select({
+      id: portalUsers.id,
+      email: portalUsers.email,
+      name: clients.name,
+      position: portalUsers.position,
+    })
+    .from(portalUsers)
+    .leftJoin(clients, eq(portalUsers.clientId, clients.id));
 
-  // 6. 전체 일정 결합 후 정렬
-  return [...userEvents, ...courtEventsMapped].sort((a, b) => {
+  const allLawyersList = await db
+    .select({
+      name: lawyers.name,
+      email: lawyers.email,
+    })
+    .from(lawyers);
+
+  const lawyerNameMap = {};
+  for (const l of allLawyersList) {
+    if (l.email) lawyerNameMap[l.email.toLowerCase().trim()] = l.name;
+  }
+
+  const userNameMap = {};
+  const userObjMap = {};
+  for (const u of allUsersList) {
+    const displayName = lawyerNameMap[u.email?.toLowerCase().trim()] || u.name || "미지정";
+    userNameMap[u.id] = displayName;
+    userObjMap[u.id] = {
+      id: u.id,
+      name: displayName,
+      email: u.email,
+      position: u.position,
+    };
+  }
+
+  // 5. 일정 정보 가공
+  const enrichedEvents = dbEvents.map((evt) => {
+    const attendees = (evt.attendeeIds || "")
+      .split(",")
+      .map((id) => id.trim())
+      .filter(Boolean)
+      .map((id) => userObjMap[id])
+      .filter(Boolean);
+
+    return {
+      ...evt,
+      ownerName: userNameMap[evt.portalUserId] || "미지정",
+      attendees,
+    };
+  });
+
+  const courtEventsMapped = Array.from(courtDatesMap.values()).map((cd) => {
+    const lawyer = allLawyersList.find((l) => l.id === cd.lawyerId);
+    return {
+      id: `court-${cd.id}`,
+      portalUserId: cd.portalUserId || cd.lawyerId || null,
+      title: `[기일] ${cd.title}${cd.caseNumber ? ` (${cd.caseNumber})` : ""}`,
+      description: [
+        cd.courtName && `법원: ${cd.courtName} ${cd.courtRoom || ""}`,
+        cd.kind && `구분: ${cd.kind}`,
+        cd.memo && `메모: ${cd.memo}`,
+      ]
+        .filter(Boolean)
+        .join("\n"),
+      startsAt: cd.startsAt,
+      endsAt: cd.endsAt || cd.startsAt,
+      isAllDay: 0,
+      color: "#ef4444",
+      isCourtDate: true,
+      ownerName: lawyer ? lawyer.name : "변호사",
+      attendees: [],
+    };
+  });
+
+  return [...enrichedEvents, ...courtEventsMapped].sort((a, b) => {
     return (a.startsAt || "").localeCompare(b.startsAt || "");
   });
 }
 
 async function createPortalEvent(portalUserId, data) {
-  const { title, description, startsAt, endsAt, isAllDay, color } = data;
+  const { title, description, startsAt, endsAt, isAllDay, color, attendeeIds } = data;
   if (!title || !title.trim()) throw new ServiceError("일정 제목을 입력해주세요", 400);
   if (!startsAt) throw new ServiceError("시작 일시를 입력해주세요", 400);
 
+  const [creatorUser] = await db
+    .select({ clientId: portalUsers.clientId, role: portalUsers.role })
+    .from(portalUsers)
+    .where(eq(portalUsers.id, portalUserId));
+  
+  const isEmployee = creatorUser && (!creatorUser.clientId || (creatorUser.role && creatorUser.role !== "client"));
+  const targetOwnerId = (isEmployee && data.portalUserId) ? data.portalUserId : portalUserId;
+
   const [inserted] = await db.insert(portalEvents).values({
-    portalUserId,
+    portalUserId: targetOwnerId,
     title: title.trim(),
     description: description || null,
     startsAt,
     endsAt: endsAt || null,
     isAllDay: isAllDay ? 1 : 0,
     color: color || "#6366f1",
+    attendeeIds: attendeeIds || null,
   }).returning();
 
   return inserted;
@@ -1244,11 +1378,19 @@ async function updatePortalEvent(id, portalUserId, data) {
   const [existing] = await db.select().from(portalEvents).where(eq(portalEvents.id, id));
   if (!existing) throw new ServiceError("일정을 찾을 수 없습니다", 404);
 
-  if (existing.portalUserId !== portalUserId) {
+  const attendeesList = (existing.attendeeIds || "").split(",").map(id => id.trim()).filter(Boolean);
+  const isAuthorized = existing.portalUserId === portalUserId || attendeesList.includes(portalUserId);
+  if (!isAuthorized) {
     throw new ServiceError("수정 권한이 없습니다", 403);
   }
 
-  const { title, description, startsAt, endsAt, isAllDay, color } = data;
+  const [updaterUser] = await db
+    .select({ clientId: portalUsers.clientId, role: portalUsers.role })
+    .from(portalUsers)
+    .where(eq(portalUsers.id, portalUserId));
+  const isEmployee = updaterUser && (!updaterUser.clientId || (updaterUser.role && updaterUser.role !== "client"));
+
+  const { title, description, startsAt, endsAt, isAllDay, color, attendeeIds } = data;
   const updates = { updatedAt: sql`(datetime('now'))` };
   if (title !== undefined) updates.title = (title || "").trim();
   if (description !== undefined) updates.description = description;
@@ -1256,6 +1398,10 @@ async function updatePortalEvent(id, portalUserId, data) {
   if (endsAt !== undefined) updates.endsAt = endsAt;
   if (isAllDay !== undefined) updates.isAllDay = isAllDay ? 1 : 0;
   if (color !== undefined) updates.color = color;
+  if (attendeeIds !== undefined) updates.attendeeIds = attendeeIds || null;
+  if (isEmployee && data.portalUserId !== undefined) {
+    updates.portalUserId = data.portalUserId;
+  }
 
   const [updated] = await db
     .update(portalEvents)
@@ -1271,7 +1417,9 @@ async function deletePortalEvent(id, portalUserId) {
   const [existing] = await db.select().from(portalEvents).where(eq(portalEvents.id, id));
   if (!existing) throw new ServiceError("일정을 찾을 수 없습니다", 404);
 
-  if (existing.portalUserId !== portalUserId) {
+  const attendeesList = (existing.attendeeIds || "").split(",").map(id => id.trim()).filter(Boolean);
+  const isAuthorized = existing.portalUserId === portalUserId || attendeesList.includes(portalUserId);
+  if (!isAuthorized) {
     throw new ServiceError("삭제 권한이 없습니다", 403);
   }
 

@@ -15,7 +15,8 @@ const sharp = require("sharp");
 const { db } = require("../db");
 const { mediaFiles } = require("../db/schema");
 const { eq, desc, and, like, count } = require("drizzle-orm");
-const { adminAuth } = require("../lib/auth");
+const { adminAuth, adminOrPortalAuth } = require("../lib/auth");
+const { getDecryptedAiKey } = require("./ai-configs");
 
 // TODO: original_name 컬럼 PII 검토 — 의뢰인 이름·주소 등이 파일명에 포함되어 디스크/DB에 남을 수 있다.
 //       정책 결정 후 익명화 또는 마스킹된 표시명으로 교체 필요.
@@ -204,7 +205,7 @@ router.get("/:id", async (req, res) => {
 });
 
 // POST /api/media/upload — 단일 파일 업로드
-router.post("/upload", adminAuth, upload.single("file"), async (req, res) => {
+router.post("/upload", adminOrPortalAuth, upload.single("file"), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ data: null, error: "파일이 필요합니다", meta: null });
@@ -244,7 +245,7 @@ router.post("/upload", adminAuth, upload.single("file"), async (req, res) => {
 });
 
 // POST /api/media/upload-multiple — 다중 파일 업로드 (최대 10개)
-router.post("/upload-multiple", adminAuth, upload.array("files", 10), async (req, res) => {
+router.post("/upload-multiple", adminOrPortalAuth, upload.array("files", 10), async (req, res) => {
   try {
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ data: null, error: "파일이 필요합니다", meta: null });
@@ -288,7 +289,7 @@ router.post("/upload-multiple", adminAuth, upload.array("files", 10), async (req
 });
 
 // PATCH /api/media/:id — 메타데이터 수정 (alt, folder)
-router.patch("/:id", adminAuth, async (req, res) => {
+router.patch("/:id", adminOrPortalAuth, async (req, res) => {
   try {
     if (!validateId(req.params.id, res)) return;
 
@@ -345,7 +346,7 @@ router.patch("/:id", adminAuth, async (req, res) => {
 //   DB가 단일 트랜잭션 단위이고 재시도가 안전하므로 먼저 처리한다.
 //   파일 삭제가 실패해도 DB 레코드가 사라진 후이므로 사용자 가시성에는 영향이 없고,
 //   고아 파일은 별도 청소 작업으로 회수 가능하다 (재시도 시 ENOENT로 무시됨).
-router.delete("/:id", adminAuth, async (req, res) => {
+router.delete("/:id", adminOrPortalAuth, async (req, res) => {
   try {
     if (!validateId(req.params.id, res)) return;
 
@@ -411,26 +412,53 @@ function pickImageModel(requested) {
   return DEFAULT_IMAGE_MODEL;
 }
 
-// GET /api/media/ai-config — UI 모델 드롭다운에서 표시할 메타데이터
+// GET /api/media/ai-config — UI 모델 드롭다운에서 표시할 메타데이터 + 사용자 등록 AI 목록
 //
-// 키 미설정도 알리고, 어떤 모델이 기본인지/어떤 모델을 고를 수 있는지를 한 번에 내려준다.
-router.get("/ai-config", adminAuth, (req, res) => {
-  res.json({
-    data: {
-      prompt: {
-        defaultModel: DEFAULT_PROMPT_MODEL,
-        allowedModels: ALLOWED_PROMPT_MODELS,
-        keyConfigured: Boolean(process.env.ANTHROPIC_API_KEY),
+// 서버 기본 AI 설정과 함께, 현재 로그인 사용자의 등록된 AI 설정 목록도 반환한다.
+router.get("/ai-config", adminOrPortalAuth, async (req, res) => {
+  try {
+    // 사용자 등록 AI 목록 조회
+    const userId = req.portalUser?.userId || req.adminUser?.id;
+    let userAiList = [];
+    if (userId) {
+      try {
+        const { db: _db } = require("../db");
+        const { userAiConfigs } = require("../db/schema");
+        const { eq: _eq, and: _and } = require("drizzle-orm");
+        const rows = await _db.select().from(userAiConfigs).where(
+          _and(_eq(userAiConfigs.userId, userId), _eq(userAiConfigs.isActive, 1))
+        );
+        userAiList = rows.map((r) => ({
+          id: r.id,
+          provider: r.provider,
+          modelId: r.modelId,
+          nickname: r.nickname,
+          isDefaultPrompt: Boolean(r.isDefaultPrompt),
+          isDefaultImage: Boolean(r.isDefaultImage),
+        }));
+      } catch { /* 목록 조회 실패 무시 */ }
+    }
+
+    res.json({
+      data: {
+        prompt: {
+          defaultModel: DEFAULT_PROMPT_MODEL,
+          allowedModels: ALLOWED_PROMPT_MODELS,
+          keyConfigured: Boolean(process.env.ANTHROPIC_API_KEY),
+        },
+        image: {
+          defaultModel: DEFAULT_IMAGE_MODEL,
+          allowedModels: ALLOWED_IMAGE_MODELS,
+          keyConfigured: Boolean(process.env.OPENAI_API_KEY),
+        },
+        userAiConfigs: userAiList,
       },
-      image: {
-        defaultModel: DEFAULT_IMAGE_MODEL,
-        allowedModels: ALLOWED_IMAGE_MODELS,
-        keyConfigured: Boolean(process.env.OPENAI_API_KEY),
-      },
-    },
-    error: null,
-    meta: null,
-  });
+      error: null,
+      meta: null,
+    });
+  } catch (err) {
+    handleError(res, err);
+  }
 });
 
 // POST /api/media/suggest-prompts — Claude로 블로그 본문에 어울리는 DALL-E 프롬프트 제안
@@ -444,16 +472,35 @@ router.get("/ai-config", adminAuth, (req, res) => {
 //
 // 요청 body: { title?, body, count?, scope?: "cover"|"inline" }
 // 응답: { data: [{ prompt, summary }], error, meta }
-router.post("/suggest-prompts", adminAuth, async (req, res) => {
+router.post("/suggest-prompts", adminOrPortalAuth, async (req, res) => {
   try {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
+    // 사용자 등록 AI 키 우선 사용 (userAiConfigId 제공 시)
+    const requestingUserId = req.portalUser?.userId || req.adminUser?.id;
+    const userAiConfigId = req.body?.userAiConfigId;
+    let apiKey = null;
+    let providerOverride = null;
+    let modelOverride = null;
+
+    if (userAiConfigId && requestingUserId) {
+      const userAi = await getDecryptedAiKey(requestingUserId, userAiConfigId);
+      if (userAi && userAi.provider === "anthropic") {
+        apiKey = userAi.apiKey;
+        providerOverride = "anthropic";
+        modelOverride = userAi.modelId;
+      }
+    }
+
+    // 사용자 키 없으면 서버 기본 키 사용
+    if (!apiKey) apiKey = process.env.ANTHROPIC_API_KEY;
+
     if (!apiKey) {
       return res.status(503).json({
         data: null,
-        error: "프롬프트 추천 기능이 비활성화되어 있습니다. 관리자에게 ANTHROPIC_API_KEY 설정을 요청하세요.",
+        error: "프롬프트 추천 기능이 비활성화되어 있습니다. AI 설정에서 Anthropic API 키를 등록하거나 관리자에게 요청하세요.",
         meta: null,
       });
     }
+    void providerOverride; // used via modelOverride below
 
     const title = String(req.body?.title || "").slice(0, 200);
     const body = String(req.body?.body || "").slice(0, 8000);
@@ -515,7 +562,7 @@ ${scopeHint}
       },
     };
 
-    const promptModel = pickPromptModel(req.body?.model);
+    const promptModel = modelOverride ? (ALLOWED_PROMPT_MODELS.includes(modelOverride) ? modelOverride : pickPromptModel(req.body?.model)) : pickPromptModel(req.body?.model);
     const completion = await client.messages.create({
       model: promptModel,
       max_tokens: 1500,
@@ -551,13 +598,32 @@ ${scopeHint}
 //
 // 요청 body: { prompt: string, size?: "1024x1024"|"1792x1024"|"1024x1792", folder?: string }
 // 응답: { data: mediaFiles row, error, meta }
-router.post("/generate", adminAuth, async (req, res) => {
+router.post("/generate", adminOrPortalAuth, async (req, res) => {
   try {
-    const apiKey = process.env.OPENAI_API_KEY;
+    // 사용자 등록 AI 키 우선 사용 (userAiConfigId 제공 시)
+    const requestingUserIdG = req.portalUser?.userId || req.adminUser?.id;
+    const userAiConfigIdG = req.body?.userAiConfigId;
+    let apiKey = null;
+    let imageModelOverride = null;
+
+    if (userAiConfigIdG && requestingUserIdG) {
+      const userAi = await getDecryptedAiKey(requestingUserIdG, userAiConfigIdG);
+      if (userAi && userAi.provider === "openai") {
+        apiKey = userAi.apiKey;
+        imageModelOverride = userAi.modelId;
+      } else if (userAi && userAi.provider === "google" && userAi.modelId === "imagen-3") {
+        // Google Imagen 3 은 별도 API — 현재는 안내만
+        return res.status(400).json({ data: null, error: "Google Imagen 3 이미지 생성은 현재 지원 준비 중입니다.", meta: null });
+      }
+    }
+
+    // 사용자 키 없으면 서버 기본 키 사용
+    if (!apiKey) apiKey = process.env.OPENAI_API_KEY;
+
     if (!apiKey) {
       return res.status(503).json({
         data: null,
-        error: "AI 이미지 생성이 비활성화되어 있습니다. 관리자에게 OPENAI_API_KEY 설정을 요청하세요.",
+        error: "AI 이미지 생성이 비활성화되어 있습니다. AI 설정에서 OpenAI API 키를 등록하거나 관리자에게 요청하세요.",
         meta: null,
       });
     }
@@ -577,7 +643,7 @@ router.post("/generate", adminAuth, async (req, res) => {
     const folder = sanitizeFolder(req.body?.folder || "blog");
 
     // OpenAI Images API 호출 — b64_json 으로 받아 외부 URL 만료 이슈 회피
-    const imageModel = pickImageModel(req.body?.model);
+    const imageModel = imageModelOverride ? (ALLOWED_IMAGE_MODELS.includes(imageModelOverride) ? imageModelOverride : pickImageModel(req.body?.model)) : pickImageModel(req.body?.model);
     // gpt-image-1 / dall-e-2 는 dall-e-3 와 파라미터가 일부 다르다.
     // dall-e-2: response_format 사용, quality 미지원, size 256/512/1024 만 허용
     // gpt-image-1: response_format 대신 항상 b64 반환, quality 'low'|'medium'|'high'|'auto'

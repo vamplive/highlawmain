@@ -116,6 +116,7 @@ const PortalBoard = lazy(() => import("./pages/portal/PortalBoard"));
 const PortalCalendar = lazy(() => import("./pages/portal/PortalCalendar"));
 const PortalProfile = lazy(() => import("./pages/portal/PortalProfile"));
 const PortalApprovals = lazy(() => import("./pages/portal/PortalApprovals"));
+const PortalAiSettings = lazy(() => import("./pages/portal/PortalAiSettings"));
 const AdminOrganization = lazy(() => import("./pages/admin/organization/AdminOrganization"));
 
 /** 지연 로딩 컴포넌트를 Suspense로 감싸는 헬퍼 */
@@ -332,6 +333,7 @@ export default function App() {
           <Route path="reviews" element={<LazyRoute><PortalReviews /></LazyRoute>} />
           <Route path="editor" element={<LazyRoute><EditorPage /></LazyRoute>} />
           <Route path="editor/:id" element={<LazyRoute><EditorPage /></LazyRoute>} />
+          <Route path="ai-settings" element={<LazyRoute><PortalAiSettings /></LazyRoute>} />
         </Route>
 
         {/* 초대/서명 — 공개 (Layout 없음, 집중 모드) */}

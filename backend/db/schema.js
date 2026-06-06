@@ -1067,6 +1067,7 @@ const portalEvents = sqliteTable("portal_events", {
   endsAt: text("ends_at"),
   isAllDay: integer("is_all_day").notNull().default(0),
   color: text("color").default("#6366f1"),
+  attendeeIds: text("attendee_ids"),
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
   updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
 });
@@ -1107,6 +1108,26 @@ const portalApprovals = sqliteTable("portal_approvals", {
   expenseReceiptUrl: text("expense_receipt_url"),
   expenseDate: text("expense_date"),
 
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+});
+
+// =============================================
+// user_ai_configs — 구성원별 AI 연동 설정
+// =============================================
+// 각 구성원이 OpenAI, Anthropic, Google 등 여러 AI 서비스를 등록해두고
+// 블로그 에디터에서 글쓰기 보조 및 이미지 생성 시 원하는 AI를 선택할 수 있도록 한다.
+// API 키는 encryptSecret() 으로 암호화되어 저장된다.
+const userAiConfigs = sqliteTable("user_ai_configs", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id").notNull(),          // portalUsers.id (portal user)
+  provider: text("provider").notNull(),        // 'openai' | 'anthropic' | 'google'
+  modelId: text("model_id").notNull(),         // 'gpt-4o', 'claude-3-5-sonnet-20241022', 'gemini-2.0-flash' 등
+  nickname: text("nickname").notNull(),        // 사용자가 붙이는 이름 (예: '내 GPT-4o', '하이로 Claude')
+  encryptedApiKey: text("encrypted_api_key").notNull(), // AES-256-GCM 암호화된 API 키
+  isDefaultPrompt: integer("is_default_prompt").notNull().default(0), // 기본 글쓰기 보조 AI
+  isDefaultImage: integer("is_default_image").notNull().default(0),   // 기본 이미지 생성 AI
+  isActive: integer("is_active").notNull().default(1),
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
   updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
 });
@@ -1214,4 +1235,8 @@ module.exports = {
   // 조직도 및 결재
   departments,
   portalApprovals,
+
+  // AI 연동 설정
+  userAiConfigs,
 };
+

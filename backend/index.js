@@ -315,6 +315,7 @@ app.use("/api/triggers", require("./routes/triggers"));
 app.use("/api/site-settings", require("./routes/site-settings"));
 app.use("/api/announcements", require("./routes/announcements"));
 app.use("/api/media", require("./routes/media"));
+app.use("/api/ai-configs", require("./routes/ai-configs"));
 app.use("/api/admin-users", require("./routes/admin-users"));
 app.use("/api/analytics", require("./routes/analytics"));
 app.use("/api/dev-logs", require("./routes/dev-logs"));

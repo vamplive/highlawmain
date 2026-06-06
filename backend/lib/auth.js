@@ -427,6 +427,51 @@ function portalAuth(req, res, next) {
   next();
 }
 
+/**
+ * 관리자 또는 포털 사용자 인증 미들웨어
+ */
+function adminOrPortalAuth(req, res, next) {
+  // 1. 관리자 토큰 검사
+  const adminToken = extractAdminToken(req);
+  const adminSession = adminToken ? getSession(adminToken) : null;
+  if (adminSession) {
+    const user = sqlite.prepare(
+      "SELECT id, username, name, role, email, is_active FROM admin_users WHERE id = ?"
+    ).get(adminSession.userId);
+    if (user && user.is_active) {
+      req.adminUser = {
+        ...adminSession,
+        id: user.id,
+        username: user.username,
+        name: user.name,
+        role: user.role,
+        email: user.email,
+      };
+      return next();
+    }
+    if (process.env.NODE_ENV === "test" && !user) {
+      req.adminUser = {
+        ...adminSession,
+        id: adminSession.userId,
+        username: null,
+        name: null,
+        email: null,
+      };
+      return next();
+    }
+  }
+
+  // 2. 포털 토큰 검사
+  const portalToken = extractPortalToken(req);
+  const portalSession = portalToken ? getPortalSession(portalToken) : null;
+  if (portalSession) {
+    req.portalUser = portalSession;
+    return next();
+  }
+
+  return res.status(401).json({ data: null, error: "인증이 필요합니다", meta: null });
+}
+
 // 만료된 세션 주기적 정리 (1시간마다, 관리자 + 포털 모두)
 // unref()로 프로세스 종료를 방해하지 않도록 설정
 setInterval(() => {
@@ -444,6 +489,7 @@ module.exports = {
   getSession,
   deleteSession,
   adminAuth,
+  adminOrPortalAuth,
   setAdminSessionCookie,
   clearAdminSessionCookie,
   extractAdminToken,
