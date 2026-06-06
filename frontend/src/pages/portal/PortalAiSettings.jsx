@@ -12,14 +12,26 @@ import {
 
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
+const STATE_CHANGING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
+// 서버가 발급한 csrf-token 쿠키 값을 읽어 상태 변경 요청에 x-csrf-token 헤더로 동봉한다.
+// (httpOnly: false 로 발급되므로 document.cookie 로 읽을 수 있음 — backend/lib/csrf.js 참고)
+function getCsrfToken() {
+  const match = document.cookie.match(/(?:^|;\s*)csrf-token=([^;]*)/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
 
 async function apiFetch(path, opts = {}) {
   const token = localStorage.getItem("portal_token");
+  const method = (opts.method || "GET").toUpperCase();
+  const csrfToken = STATE_CHANGING_METHODS.has(method) ? getCsrfToken() : null;
   const r = await fetch(API_BASE + path, {
     ...opts,
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(csrfToken ? { "x-csrf-token": csrfToken } : {}),
       ...(opts.headers || {}),
     },
   });
@@ -79,7 +91,6 @@ export default function PortalAiSettings() {
   const [formData, setFormData] = useState({ provider: "openai", modelId: "", nickname: "", apiKey: "" });
   const [showKey, setShowKey] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [providerExpanded, setProviderExpanded] = useState("openai");
   const [successMsg, setSuccessMsg] = useState(null);
 
   useEffect(() => {
