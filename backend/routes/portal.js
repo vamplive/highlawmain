@@ -626,7 +626,7 @@ router.delete("/posts/:id", portalAuth, async (req, res) => {
 
 router.get("/departments", portalAuth, async (req, res) => {
   try {
-    const isEmployee = !req.portalUser.clientId || (req.portalUser.role && req.portalUser.role !== "client");
+    const isEmployee = await portalService.checkIsEmployee(req.portalUser.userId);
     if (!isEmployee) {
       return res.status(403).json({ data: [], error: "권한이 없습니다", meta: null });
     }
@@ -655,7 +655,7 @@ router.get("/departments", portalAuth, async (req, res) => {
 
 router.get("/members", portalAuth, async (req, res) => {
   try {
-    const isEmployee = !req.portalUser.clientId || (req.portalUser.role && req.portalUser.role !== "client");
+    const isEmployee = await portalService.checkIsEmployee(req.portalUser.userId);
     if (!isEmployee) {
       return res.status(403).json({ data: [], error: "권한이 없습니다", meta: null });
     }

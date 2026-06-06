@@ -1430,6 +1430,21 @@ async function deletePortalEvent(id, portalUserId) {
   return { deleted: true };
 }
 
+/**
+ * 포털 사용자가 직원(임직원)인지 판별한다.
+ * 포털 세션에는 role이 저장되지 않으므로(클라이언트 연동 후 관리자가 나중에 부여 가능),
+ * 항상 DB에서 최신 clientId/role을 조회해 판단해야 한다.
+ */
+async function checkIsEmployee(portalUserId) {
+  const [user] = await db
+    .select({ clientId: portalUsers.clientId, role: portalUsers.role })
+    .from(portalUsers)
+    .where(eq(portalUsers.id, portalUserId));
+
+  if (!user) return false;
+  return !user.clientId || (user.role && user.role !== "client");
+}
+
 // =============================================
 // 포털 변호사 프로필 설정 / 편집 / 관리자 CRUD
 // =============================================
@@ -1732,6 +1747,7 @@ module.exports = {
   deletePortalPost,
 
   // 캘린더
+  checkIsEmployee,
   listPortalEvents,
   createPortalEvent,
   updatePortalEvent,

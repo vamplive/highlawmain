@@ -1233,13 +1233,13 @@ export default function PortalCalendar() {
           setFormStartsAt(formIsAllDay ? val : `${val}T${startTimeVal || "09:00"}`);
         };
         const handleStartTimeChange = (val) => {
-          setFormStartsAt(`${startDateVal || "2026-06-06"}T${val}`);
+          setFormStartsAt(`${startDateVal || formatDateString(new Date())}T${val}`);
         };
         const handleEndDateChange = (val) => {
           setFormEndsAt(formIsAllDay ? val : `${val}T${endTimeVal || "18:00"}`);
         };
         const handleEndTimeChange = (val) => {
-          setFormEndsAt(`${endDateVal || "2026-06-06"}T${val}`);
+          setFormEndsAt(`${endDateVal || formatDateString(new Date())}T${val}`);
         };
 
         return (
@@ -1333,14 +1333,14 @@ export default function PortalCalendar() {
                   <Clock size={18} />
                 </div>
                 <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontSize: 12.5, fontWeight: 600, color: "#64748b", width: 40 }}>시작</span>
+                  <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8, rowGap: 6 }}>
+                    <span style={{ fontSize: 12.5, fontWeight: 600, color: "#64748b", width: 40, flexShrink: 0 }}>시작</span>
                     <input
                       type="date"
                       value={startDateVal}
                       onChange={(e) => handleStartDateChange(e.target.value)}
                       disabled={selectedEvent?.isCourtDate}
-                      style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "6px 10px", fontSize: 13, outline: "none", color: "#334155", flex: 1, boxSizing: "border-box" }}
+                      style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "6px 10px", fontSize: 13, outline: "none", color: "#334155", flex: "1 1 140px", minWidth: 0, boxSizing: "border-box" }}
                     />
                     {!formIsAllDay && (
                       <input
@@ -1348,18 +1348,18 @@ export default function PortalCalendar() {
                         value={startTimeVal}
                         onChange={(e) => handleStartTimeChange(e.target.value)}
                         disabled={selectedEvent?.isCourtDate}
-                        style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "6px 10px", fontSize: 13, outline: "none", color: "#334155", width: 120, boxSizing: "border-box" }}
+                        style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "6px 10px", fontSize: 13, outline: "none", color: "#334155", flex: "1 1 100px", minWidth: 0, boxSizing: "border-box" }}
                       />
                     )}
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontSize: 12.5, fontWeight: 600, color: "#64748b", width: 40 }}>종료</span>
+                  <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8, rowGap: 6 }}>
+                    <span style={{ fontSize: 12.5, fontWeight: 600, color: "#64748b", width: 40, flexShrink: 0 }}>종료</span>
                     <input
                       type="date"
                       value={endDateVal}
                       onChange={(e) => handleEndDateChange(e.target.value)}
                       disabled={selectedEvent?.isCourtDate}
-                      style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "6px 10px", fontSize: 13, outline: "none", color: "#334155", flex: 1, boxSizing: "border-box" }}
+                      style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "6px 10px", fontSize: 13, outline: "none", color: "#334155", flex: "1 1 140px", minWidth: 0, boxSizing: "border-box" }}
                     />
                     {!formIsAllDay && (
                       <input
@@ -1367,7 +1367,7 @@ export default function PortalCalendar() {
                         value={endTimeVal}
                         onChange={(e) => handleEndTimeChange(e.target.value)}
                         disabled={selectedEvent?.isCourtDate}
-                        style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "6px 10px", fontSize: 13, outline: "none", color: "#334155", width: 120, boxSizing: "border-box" }}
+                        style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "6px 10px", fontSize: 13, outline: "none", color: "#334155", flex: "1 1 100px", minWidth: 0, boxSizing: "border-box" }}
                       />
                     )}
                   </div>
