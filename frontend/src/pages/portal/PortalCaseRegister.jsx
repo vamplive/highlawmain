@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { portalApi } from "../../utils/api";
 import { T, fieldStyle, labelStyle } from "./portalStyles";
 import { showToast } from "../../utils/showToast";
+import useMediaQuery from "../../hooks/useMediaQuery";
 
 const COURT_TYPES = [
   "민사", "형사", "가사", "행정", "특허", "선거", "헌법", "기타",
@@ -47,6 +48,7 @@ function parseCaseNumberHint(caseNumber) {
 }
 
 export default function PortalCaseRegister() {
+  const isMobile = useMediaQuery("(max-width: 640px)");
   const navigate = useNavigate();
   const [form, setForm] = useState(INITIAL_FORM);
   const [loading, setLoading] = useState(false);
@@ -188,7 +190,7 @@ export default function PortalCaseRegister() {
           />
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12, marginBottom: 14 }}>
           <div>
             <label style={labelStyle}>사건 유형</label>
             <select style={{ ...fieldStyle, appearance: "none" }} value={form.caseType} onChange={field("caseType")}>
@@ -216,7 +218,7 @@ export default function PortalCaseRegister() {
 
         {/* 당사자 */}
         {sectionTitle("당사자")}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12, marginBottom: 14 }}>
           <div>
             <label style={labelStyle}>원고</label>
             <input style={fieldStyle} value={form.plaintiff} onChange={field("plaintiff")} placeholder="원고 성명/법인명" />

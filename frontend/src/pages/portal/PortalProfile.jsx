@@ -7,6 +7,7 @@
 import { useState, useEffect, useRef } from "react";
 import { portalApi } from "../../utils/api";
 import { T, fieldStyle, labelStyle } from "./portalStyles";
+import useMediaQuery from "../../hooks/useMediaQuery";
 import {
   User,
   GraduationCap,
@@ -122,6 +123,7 @@ const EMPTY_FORM = {
 };
 
 export default function PortalProfile() {
+  const isMobile = useMediaQuery("(max-width: 640px)");
   const [subTab, setSubTab] = useState("basic");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -319,9 +321,9 @@ export default function PortalProfile() {
 
       <form onSubmit={handleSubmit}>
         <div style={{
-          display: "grid", gridTemplateColumns: "180px 1fr", gap: 24,
+          display: "grid", gridTemplateColumns: isMobile ? "1fr" : "180px 1fr", gap: 24,
           background: "#fff", borderRadius: 12, border: `1px solid ${T.border}`,
-          padding: 28, boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+          padding: isMobile ? 18 : 28, boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
         }}>
 
           {/* 왼쪽 사이드 탭 메뉴 */}
@@ -436,7 +438,7 @@ export default function PortalProfile() {
                   </div>
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14 }}>
                   <div>
                     <label style={labelStyle}>이름 *</label>
                     <input style={fieldStyle} value={form.name} onChange={field("name")} required placeholder="홍길동" />
@@ -517,7 +519,7 @@ export default function PortalProfile() {
 
             {/* 활동 & 이력 탭 */}
             {subTab === "activities" && (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16 }}>
                 <div>
                   <label style={labelStyle}>학술 발표 / 논문</label>
                   <textarea style={{ ...fieldStyle, height: 100, resize: "vertical" }} value={form.publications} onChange={field("publications")} placeholder="건설 하도급법 연구 (2023)" />

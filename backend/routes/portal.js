@@ -107,6 +107,30 @@ const calendarFileUpload = multer({
   limits: { fileSize: 20 * 1024 * 1024 }, // 20MB
 });
 
+const BOARD_IMAGES_DIR = path.join(STORAGE_PATH, "uploads", "board");
+
+const boardImageStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    fs.mkdirSync(BOARD_IMAGES_DIR, { recursive: true });
+    cb(null, BOARD_IMAGES_DIR);
+  },
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, `post-${Date.now()}-${crypto.randomBytes(4).toString("hex")}${ext}`);
+  },
+});
+
+const boardImageUpload = multer({
+  storage: boardImageStorage,
+  limits: { fileSize: 20 * 1024 * 1024 }, // 20MB
+  fileFilter: (_req, file, cb) => {
+    if (!file.mimetype.startsWith("image/")) {
+      return cb(new Error("이미지 파일만 업로드할 수 있습니다"));
+    }
+    cb(null, true);
+  },
+});
+
 
 // =============================================
 // 공개 엔드포인트
@@ -641,6 +665,67 @@ router.delete("/posts/:id", portalAuth, async (req, res) => {
   }
 });
 
+/** POST /api/portal/posts/upload-image — 게시글 본문에 삽입할 이미지 업로드 (블로그 관리 에디터와 동일한 방식) */
+router.post("/posts/upload-image", portalAuth, async (req, res) => {
+  const isEmployee = await portalService.checkIsEmployee(req.portalUser.userId);
+  if (!isEmployee) {
+    return res.status(403).json({ data: null, error: "권한이 없습니다", meta: null });
+  }
+  boardImageUpload.single("file")(req, res, (err) => {
+    if (err) {
+      return res.status(400).json({ data: null, error: err.message, meta: null });
+    }
+    if (!req.file) {
+      return res.status(400).json({ data: null, error: "파일이 없습니다", meta: null });
+    }
+    const url = `/uploads/board/${req.file.filename}`;
+    res.json({ data: { url, name: req.file.originalname, size: req.file.size }, error: null, meta: null });
+  });
+});
+
+// =============================================
+// 포털 게시판 카테고리 — 대표변호사가 게시판(카테고리)을 추가/삭제할 수 있다
+// =============================================
+
+router.get("/board-categories", portalAuth, async (req, res) => {
+  try {
+    const isEmployee = await portalService.checkIsEmployee(req.portalUser.userId);
+    if (!isEmployee) {
+      return res.status(403).json({ data: [], error: "권한이 없습니다", meta: null });
+    }
+    const result = await portalService.listBoardCategories();
+    res.json({ data: result, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+router.post("/board-categories", portalAuth, async (req, res) => {
+  try {
+    const isManagingLawyer = await portalService.checkIsManagingLawyer(req.portalUser.userId);
+    if (!isManagingLawyer) {
+      return res.status(403).json({ data: null, error: "대표변호사만 게시판을 추가할 수 있습니다", meta: null });
+    }
+    const result = await portalService.createBoardCategory(req.portalUser.userId, req.body);
+    res.status(201).json({ data: result, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+router.delete("/board-categories/:id", portalAuth, async (req, res) => {
+  try {
+    const isManagingLawyer = await portalService.checkIsManagingLawyer(req.portalUser.userId);
+    if (!isManagingLawyer) {
+      return res.status(403).json({ data: null, error: "대표변호사만 게시판을 삭제할 수 있습니다", meta: null });
+    }
+    const result = await portalService.deleteBoardCategory(req.params.id);
+    res.json({ data: result, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
 // =============================================
 // 포털 일정 (캘린더)
 // =============================================
@@ -681,7 +766,7 @@ router.get("/members", portalAuth, async (req, res) => {
       return res.status(403).json({ data: [], error: "권한이 없습니다", meta: null });
     }
     const { db } = require("../db");
-    const { portalUsers, clients, departments, lawyers } = require("../db/schema");
+    const { portalUsers, clients, departments, lawyers, LAWYER_POSITIONS } = require("../db/schema");
     const { eq, and, sql } = require("drizzle-orm");
 
     const rows = await db
@@ -723,6 +808,22 @@ router.get("/members", portalAuth, async (req, res) => {
       name: lawyerNameMap[r.email?.toLowerCase().trim()] || r.name || "미지정"
     }));
 
+    // 구성원 표시 순서: 대표변호사 > 변호사 > 전문위원 > 직원(부서별) — LAWYER_POSITIONS 순서를 기준으로 정렬하고,
+    // 같은 직위 내에서는 부서명, 그 다음 이름 순으로 정렬해 직원 목록이 부서별로 묶여 보이도록 한다.
+    const getPositionRank = (position) => {
+      const index = LAWYER_POSITIONS.indexOf(position);
+      return index === -1 ? LAWYER_POSITIONS.length : index;
+    };
+    resolvedRows.sort((a, b) => {
+      const rankDiff = getPositionRank(a.position) - getPositionRank(b.position);
+      if (rankDiff !== 0) return rankDiff;
+
+      const departmentDiff = (a.departmentName || "").localeCompare(b.departmentName || "", "ko");
+      if (departmentDiff !== 0) return departmentDiff;
+
+      return (a.name || "").localeCompare(b.name || "", "ko");
+    });
+
     res.json({ data: resolvedRows, error: null, meta: null });
   } catch (e) {
     handleError(res, e);
@@ -759,6 +860,36 @@ router.put("/events/:id", portalAuth, async (req, res) => {
 router.delete("/events/:id", portalAuth, async (req, res) => {
   try {
     const result = await portalService.deletePortalEvent(req.params.id, req.portalUser.userId);
+    res.json({ data: result, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+/** GET /api/portal/member-groups — 캘린더에서 함께 보고 싶은 구성원 그룹 목록 (내가 저장한 것만) */
+router.get("/member-groups", portalAuth, async (req, res) => {
+  try {
+    const rows = await portalService.listMemberGroups(req.portalUser.userId);
+    res.json({ data: rows, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+/** POST /api/portal/member-groups — 현재 선택한 구성원들을 이름 지어 그룹으로 저장 */
+router.post("/member-groups", portalAuth, async (req, res) => {
+  try {
+    const result = await portalService.createMemberGroup(req.portalUser.userId, req.body);
+    res.status(201).json({ data: result, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+/** DELETE /api/portal/member-groups/:id — 내가 저장한 구성원 그룹 삭제 */
+router.delete("/member-groups/:id", portalAuth, async (req, res) => {
+  try {
+    const result = await portalService.deleteMemberGroup(req.params.id, req.portalUser.userId);
     res.json({ data: result, error: null, meta: null });
   } catch (e) {
     handleError(res, e);
@@ -821,6 +952,16 @@ router.get("/lawyers/admin/check", portalAuth, async (req, res) => {
   try {
     const isAdmin = await portalService.checkIsAdmin(req.portalUser.email);
     res.json({ data: { isAdmin }, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+/** GET /api/portal/lawyers/managing/check — 로그인한 사용자가 대표변호사인지 확인 (게시판 추가 등 권한 UI 노출용) */
+router.get("/lawyers/managing/check", portalAuth, async (req, res) => {
+  try {
+    const isManagingLawyer = await portalService.checkIsManagingLawyer(req.portalUser.userId);
+    res.json({ data: { isManagingLawyer }, error: null, meta: null });
   } catch (e) {
     handleError(res, e);
   }

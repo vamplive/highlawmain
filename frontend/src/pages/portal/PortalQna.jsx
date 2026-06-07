@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from "react";
 import { api } from "../../utils/api";
 import { PageHeader, ErrorBanner, EmptyState, COLORS, badgeStyle, btnStyle, smallBtnStyle, fieldStyle, labelStyle, formContainerStyle, thStyle, tdStyle } from "../../components/admin";
 import { formatDate } from "../../utils/formatters";
+import useMediaQuery from "../../hooks/useMediaQuery";
 
 const STATUS_TABS = [
   { value: "pending", label: "승인 대기", color: COLORS.warning },
@@ -153,7 +154,8 @@ export default function PortalQna() {
       ) : items.length === 0 ? (
         <EmptyState message={`${STATUS_LABEL[status]} 상태의 질문이 없습니다`} />
       ) : (
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, background: "#fff", border: `1px solid ${COLORS.borderLight}` }}>
+        <div style={{ overflowX: "auto" }}>
+        <table style={{ width: "100%", minWidth: 760, borderCollapse: "collapse", fontSize: 13, background: "#fff", border: `1px solid ${COLORS.borderLight}` }}>
           <thead style={{ background: "#f7f8fa", borderBottom: `1px solid ${COLORS.border}` }}>
             <tr>
               <th style={{ ...thStyle, width: 90 }}>상태</th>
@@ -202,6 +204,7 @@ export default function PortalQna() {
             ))}
           </tbody>
         </table>
+        </div>
       )}
     </div>
   );
@@ -209,6 +212,7 @@ export default function PortalQna() {
 
 /** 질문 편집/답변 패널 */
 function QuestionEditor({ question, categories, onSave, onDelete, onCancel }) {
+  const isMobile = useMediaQuery("(max-width: 640px)");
   const [title, setTitle] = useState(question.title || "");
   const [body, setBody] = useState(question.body || "");
   const [categoryId, setCategoryId] = useState(() => {
@@ -301,7 +305,7 @@ function QuestionEditor({ question, categories, onSave, onDelete, onCancel }) {
         <textarea value={answer} onChange={(e) => setAnswer(e.target.value)} rows={10} style={{ ...fieldStyle, resize: "vertical" }} placeholder="관련 법령/판례 + 구체적 조언 + 상담 유도..." />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12, marginBottom: 14 }}>
         <div>
           <label style={labelStyle}>답변자</label>
           <input type="text" value={answeredBy} onChange={(e) => setAnsweredBy(e.target.value)} style={fieldStyle} maxLength={80} />

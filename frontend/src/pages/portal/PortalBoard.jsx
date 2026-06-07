@@ -2,12 +2,15 @@ import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { portalApi } from "../../utils/api";
 import { T, fieldStyle, labelStyle } from "./portalStyles";
-import { 
-  Plus, Search, Star, MessageSquare, Eye, Calendar, 
-  Trash2, Edit, AlertCircle, FileText, ChevronLeft, ChevronRight, CheckSquare, Square
+import PortalRichTextEditor from "./PortalRichTextEditor";
+import useMediaQuery from "../../hooks/useMediaQuery";
+import {
+  Plus, Search, Star, MessageSquare, Eye, Calendar,
+  Trash2, Edit, AlertCircle, FileText, ChevronLeft, ChevronRight, CheckSquare, Square, FolderPlus
 } from "lucide-react";
 
 export default function PortalBoard() {
+  const isMobile = useMediaQuery("(max-width: 640px)");
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   
@@ -24,6 +27,14 @@ export default function PortalBoard() {
   const [page, setPage] = useState(1);
   const [isAdmin, setIsAdmin] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+
+  // 게시판 카테고리 — 대표변호사가 추가할 수 있는 동적 목록 (DB에서 불러옴)
+  const [categories, setCategories] = useState([]);
+  const [isManagingLawyer, setIsManagingLawyer] = useState(false);
+  const [showAddCategoryModal, setShowAddCategoryModal] = useState(false);
+  const [newCategoryLabel, setNewCategoryLabel] = useState("");
+  const [newCategoryKey, setNewCategoryKey] = useState("");
+  const [newCategoryColor, setNewCategoryColor] = useState("#64748b");
 
   // 모달 상태
   const [selectedPost, setSelectedPost] = useState(null);
@@ -42,7 +53,7 @@ export default function PortalBoard() {
   // 로컬 검색어
   const [searchQuery, setSearchQuery] = useState(urlSearch);
 
-  // 1. 초기 정보 및 어드민 여부 확인
+  // 1. 초기 정보 및 어드민/대표변호사 여부 확인
   useEffect(() => {
     portalApi.get("/me").then((res) => {
       setCurrentUser(res.data?.user || null);
@@ -50,7 +61,20 @@ export default function PortalBoard() {
     portalApi.get("/lawyers/admin/check").then((res) => {
       setIsAdmin(res.data?.isAdmin || false);
     });
+    portalApi.get("/lawyers/managing/check").then((res) => {
+      setIsManagingLawyer(res.data?.isManagingLawyer || false);
+    });
+    fetchCategories();
   }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const res = await portalApi.get("/board-categories");
+      setCategories(res.data || []);
+    } catch {
+      // 카테고리 목록은 보조 정보이므로 실패해도 게시판 자체는 동작해야 한다.
+    }
+  };
 
   // 2. 게시글 목록 불러오기 (URL 파라미터 변경 시 트리거)
   useEffect(() => {
@@ -188,24 +212,19 @@ export default function PortalBoard() {
     }
   };
 
-  // 카테고리 표시용 한글 변환
+  // 카테고리 표시용 한글 변환 — DB에서 불러온 동적 목록 기준 (대표변호사가 추가한 게시판 포함)
   const getCategoryLabel = (key) => {
-    const map = { notice: "공지사항", manual: "업무 매뉴얼", free: "자유게시판", template: "양식" };
-    return map[key] || "자유게시판";
+    return categories.find((c) => c.key === key)?.label || key || "자유게시판";
   };
 
   const getCategoryColor = (key) => {
-    const map = { notice: "#ef4444", manual: "#3b82f6", free: "#10b981", template: "#8b5cf6" };
-    return map[key] || "#64748b";
+    return categories.find((c) => c.key === key)?.color || "#64748b";
   };
 
   // 게시판 전환 탭 — 전체 게시글 / 카테고리별 게시판을 이 페이지 안에서 바로 전환
   const boardTabs = [
     { key: "", label: "전체 게시글" },
-    { key: "notice", label: "공지사항" },
-    { key: "manual", label: "업무 매뉴얼" },
-    { key: "free", label: "자유게시판" },
-    { key: "template", label: "양식" },
+    ...categories.map((c) => ({ key: c.key, label: c.label })),
   ];
 
   const handleSelectBoardTab = (categoryKey) => {
@@ -216,10 +235,28 @@ export default function PortalBoard() {
     setSearchQuery("");
   };
 
+  const handleCreateCategory = async () => {
+    try {
+      await portalApi.post("/board-categories", {
+        key: newCategoryKey,
+        label: newCategoryLabel,
+        color: newCategoryColor,
+      });
+      setShowAddCategoryModal(false);
+      setNewCategoryKey("");
+      setNewCategoryLabel("");
+      setNewCategoryColor("#64748b");
+      fetchCategories();
+      alert("게시판이 추가되었습니다.");
+    } catch (e) {
+      alert(e.message || "게시판 추가에 실패했습니다.");
+    }
+  };
+
   return (
-    <div style={{ background: "#ffffff", borderRadius: 12, border: "1px solid #e2e8f0", padding: "24px 32px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
+    <div style={{ background: "#ffffff", borderRadius: 12, border: "1px solid #e2e8f0", padding: isMobile ? "20px 18px" : "24px 32px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
       {/* ==================== 1. 게시판 제목 및 상단 액션바 ==================== */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 12, justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
         <div>
           <h2 style={{ fontSize: 20, fontWeight: 700, color: "#0f172a", margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
             <FileText size={22} style={{ color: "#8b5cf6" }} />
@@ -272,15 +309,31 @@ export default function PortalBoard() {
             </button>
           );
         })}
+
+        {isManagingLawyer && (
+          <button
+            type="button"
+            onClick={() => setShowAddCategoryModal(true)}
+            style={{
+              display: "flex", alignItems: "center", gap: 6,
+              padding: "8px 18px", fontSize: 13, fontWeight: 600, borderRadius: 999,
+              border: "1px dashed #94a3b8", background: "#ffffff", color: "#64748b",
+              cursor: "pointer"
+            }}
+          >
+            <FolderPlus size={15} />
+            게시판 추가
+          </button>
+        )}
       </div>
 
       {/* ==================== 2. 상세 필터 및 검색바 ==================== */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f8fafc", padding: "12px 16px", borderRadius: 8, marginBottom: 16 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 12, background: "#f8fafc", padding: "12px 16px", borderRadius: 8, marginBottom: 16 }}>
         <div style={{ display: "flex", gap: 16, fontSize: 13, color: "#64748b" }}>
           <span>전체 <strong>{posts.length}</strong>건</span>
         </div>
 
-        <form onSubmit={handleSearchSubmit} style={{ display: "flex", gap: 8 }}>
+        <form onSubmit={handleSearchSubmit} style={{ display: "flex", gap: 8, width: isMobile ? "100%" : "auto" }}>
           <input
             type="text"
             placeholder="이 게시판에서 검색"
@@ -288,7 +341,7 @@ export default function PortalBoard() {
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{
               padding: "6px 12px", fontSize: 12.5, border: "1px solid #cbd5e1", borderRadius: 6,
-              outline: "none", width: 220
+              outline: "none", width: isMobile ? "100%" : 220
             }}
           />
           <button
@@ -305,7 +358,7 @@ export default function PortalBoard() {
 
       {/* ==================== 3. 게시글 리스트 테이블 ==================== */}
       <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: 13.5 }}>
+        <table style={{ width: "100%", minWidth: 600, borderCollapse: "collapse", textAlign: "left", fontSize: 13.5 }}>
           <thead>
             <tr style={{ borderBottom: "2px solid #e2e8f0", color: "#475569", fontWeight: 600 }}>
               <th style={{ padding: "12px 8px", width: 80 }}>카테고리</th>
@@ -453,7 +506,7 @@ export default function PortalBoard() {
             </h3>
 
             {/* 작성자 메타 정보 */}
-            <div style={{ display: "flex", gap: 16, fontSize: 12, color: "#64748b", borderBottom: "1px solid #f1f5f9", paddingBottom: 16, marginBottom: 16 }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 16, fontSize: 12, color: "#64748b", borderBottom: "1px solid #f1f5f9", paddingBottom: 16, marginBottom: 16 }}>
               <span>작성자: <strong>{selectedPost.authorName || "익명"}</strong> ({selectedPost.authorEmail})</span>
               <div style={{ width: 1, background: "#cbd5e1" }} />
               <span style={{ display: "flex", alignItems: "center", gap: 4 }}><Calendar size={13} /> {selectedPost.createdAt}</span>
@@ -461,13 +514,26 @@ export default function PortalBoard() {
               <span style={{ display: "flex", alignItems: "center", gap: 4 }}><Eye size={13} /> {selectedPost.viewCount}</span>
             </div>
 
-            {/* 내용 본문 */}
-            <div style={{ 
-              fontSize: 14.5, color: "#334155", lineHeight: 1.6, minHeight: 180,
-              whiteSpace: "pre-wrap", background: "#f8fafc", padding: 16, borderRadius: 8, marginBottom: 24 
-            }}>
-              {selectedPost.content}
-            </div>
+            {/* 내용 본문 — 블로그 상세 페이지와 동일하게 에디터가 만든 HTML을 그대로 렌더링한다 */}
+            <div
+              className="portal-board-post-content"
+              style={{
+                fontSize: 14.5, color: "#334155", lineHeight: 1.7, minHeight: 180,
+                background: "#f8fafc", padding: 16, borderRadius: 8, marginBottom: 24,
+              }}
+              dangerouslySetInnerHTML={{ __html: selectedPost.content || "" }}
+            />
+            <style>{`
+              .portal-board-post-content img { max-width: 100%; border-radius: 6px; }
+              .portal-board-post-content blockquote {
+                border-left: 3px solid #cbd5e1; margin: 0; padding-left: 14px; color: #64748b;
+              }
+              .portal-board-post-content a { color: #6d28d9; text-decoration: underline; }
+              .portal-board-post-content p { margin: 0 0 12px; }
+              .portal-board-post-content h2, .portal-board-post-content h3, .portal-board-post-content h4 {
+                margin: 20px 0 10px;
+              }
+            `}</style>
 
             {/* 컨트롤 버튼 */}
             <div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -537,10 +603,11 @@ export default function PortalBoard() {
                 onChange={(e) => setFormCategory(e.target.value)}
                 style={fieldStyle}
               >
-                <option value="notice">공지사항</option>
-                <option value="manual">업무 매뉴얼</option>
-                <option value="free">자유게시판</option>
-                <option value="template">양식</option>
+                {categories.map((category) => (
+                  <option key={category.key} value={category.key}>
+                    {category.label}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -581,15 +648,13 @@ export default function PortalBoard() {
               )}
             </div>
 
-            {/* 내용 본문 */}
+            {/* 내용 본문 — 블로그 관리와 동일한 리치 텍스트 에디터 */}
             <div style={{ marginBottom: 24 }}>
               <label style={labelStyle}>본문 내용</label>
-              <textarea
-                placeholder="내용을 작성해 주세요..."
+              <PortalRichTextEditor
                 value={formContent}
-                onChange={(e) => setFormContent(e.target.value)}
-                style={{ ...fieldStyle, height: 240, resize: "vertical" }}
-                required
+                onChange={setFormContent}
+                placeholder="내용을 작성해 주세요..."
               />
             </div>
 
@@ -614,6 +679,79 @@ export default function PortalBoard() {
                 }}
               >
                 {isEditing ? "수정 완료" : "등록"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* ==================== 7. 게시판 추가 모달 (대표변호사 전용) ==================== */}
+      {showAddCategoryModal && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
+          background: "rgba(15,23,42,0.3)", zIndex: 1000, display: "flex",
+          alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)"
+        }}>
+          <form
+            onSubmit={(e) => { e.preventDefault(); handleCreateCategory(); }}
+            style={{ background: "#ffffff", borderRadius: 12, width: "100%", maxWidth: 420, padding: 24 }}
+          >
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: "#1e293b", marginBottom: 20 }}>새 게시판 추가</h3>
+
+            <div style={{ marginBottom: 16 }}>
+              <label style={labelStyle}>게시판 이름</label>
+              <input
+                type="text"
+                value={newCategoryLabel}
+                onChange={(e) => setNewCategoryLabel(e.target.value)}
+                placeholder="예: 송무 자료실"
+                required
+                style={fieldStyle}
+              />
+            </div>
+
+            <div style={{ marginBottom: 16 }}>
+              <label style={labelStyle}>식별 키 (영문 소문자, 숫자, 하이픈만 사용)</label>
+              <input
+                type="text"
+                value={newCategoryKey}
+                onChange={(e) => setNewCategoryKey(e.target.value)}
+                placeholder="예: litigation-archive"
+                required
+                style={fieldStyle}
+              />
+            </div>
+
+            <div style={{ marginBottom: 24 }}>
+              <label style={labelStyle}>색상</label>
+              <input
+                type="color"
+                value={newCategoryColor}
+                onChange={(e) => setNewCategoryColor(e.target.value)}
+                style={{ width: 60, height: 36, border: "1px solid #e2e8f0", borderRadius: 6, cursor: "pointer" }}
+              />
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+              <button
+                type="button"
+                onClick={() => setShowAddCategoryModal(false)}
+                style={{
+                  background: "#fff", color: "#475569", border: "1px solid #cbd5e1", borderRadius: 6,
+                  padding: "8px 16px", fontSize: 13, fontWeight: 500, cursor: "pointer"
+                }}
+              >
+                취소
+              </button>
+              <button
+                type="submit"
+                style={{
+                  background: "#8b5cf6", color: "#fff", border: "none", borderRadius: 6,
+                  padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer",
+                  boxShadow: "0 2px 4px rgba(139,92,246,0.15)"
+                }}
+              >
+                추가
               </button>
             </div>
           </form>

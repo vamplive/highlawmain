@@ -53,6 +53,11 @@ export default function PortalCalendar() {
   const [selectedMemberIds, setSelectedMemberIds] = useState([]); // 필터링 대상 멤버 IDs
   const [showSidebar, setShowSidebar] = useState(false); // 모바일 사이드바 토글
 
+  // 함께 보고 싶은 구성원 그룹 — 이름 지어 저장/재사용 (캘린더 사이드바, 직원 전용)
+  const [memberGroups, setMemberGroups] = useState([]);
+  const [showSaveGroupModal, setShowSaveGroupModal] = useState(false);
+  const [newGroupName, setNewGroupName] = useState("");
+
   // 모바일 뷰 감지
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
@@ -172,9 +177,51 @@ export default function PortalCalendar() {
         }).catch(err => {
           console.error("조직 데이터 로드 실패:", err);
         });
+
+        fetchMemberGroups();
       }
     }
   }, [userProfile]);
+
+  const fetchMemberGroups = async () => {
+    try {
+      const res = await portalApi.get("/member-groups");
+      setMemberGroups(res.data || []);
+    } catch (err) {
+      console.error("구성원 그룹 로드 실패:", err);
+    }
+  };
+
+  // 현재 선택된 구성원들을 이름 지어 그룹으로 저장
+  const handleSaveMemberGroup = async () => {
+    const name = newGroupName.trim();
+    if (!name) return;
+    try {
+      await portalApi.post("/member-groups", { name, memberIds: selectedMemberIds });
+      setShowSaveGroupModal(false);
+      setNewGroupName("");
+      fetchMemberGroups();
+      alert("구성원 그룹이 저장되었습니다.");
+    } catch (err) {
+      alert(err.message || "그룹 저장에 실패했습니다.");
+    }
+  };
+
+  // 저장된 그룹을 선택해 그 구성원들로 캘린더를 필터링
+  const handleSelectMemberGroup = (group) => {
+    setSelectedFilterMode("group");
+    setSelectedMemberIds(group.memberIds);
+  };
+
+  const handleDeleteMemberGroup = async (groupId) => {
+    if (!window.confirm("이 그룹을 삭제하시겠습니까?")) return;
+    try {
+      await portalApi.delete(`/member-groups/${groupId}`);
+      fetchMemberGroups();
+    } catch (err) {
+      alert(err.message || "그룹 삭제에 실패했습니다.");
+    }
+  };
 
   // 3. 필터 모드 및 선택 대상 변경 시 멤버 선택 ID 초기화
   useEffect(() => {
@@ -489,7 +536,7 @@ export default function PortalCalendar() {
     }
 
     return (
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gridAutoRows: "minmax(90px, 1fr)", flex: 1 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gridAutoRows: isMobile ? "minmax(60px, 1fr)" : "minmax(90px, 1fr)", flex: 1 }}>
         {cells.map((cell, idx) => {
           const isToday = formatDateString(cell.date) === formatDateString(new Date());
           const dayEvents = getEventsForDay(cell.date);
@@ -509,7 +556,7 @@ export default function PortalCalendar() {
                 cursor: "pointer",
                 transition: "background 0.1s",
                 position: "relative",
-                minHeight: 90
+                minHeight: isMobile ? 60 : 90
               }}
               onMouseEnter={(e) => { e.currentTarget.style.background = cell.isCurrentMonth ? "rgba(201, 168, 76, 0.08)" : "#f1f5f9"; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = cell.isCurrentMonth ? "#ffffff" : "#f8fafc"; }}
@@ -581,7 +628,7 @@ export default function PortalCalendar() {
     }
 
     return (
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 1, flex: 1, minHeight: 480 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 1, flex: 1, minHeight: isMobile ? 360 : 480 }}>
         {weekDays.map((date, idx) => {
           const dateStr = formatDateString(date);
           const dayEvents = getEventsForDay(date);
@@ -600,7 +647,7 @@ export default function PortalCalendar() {
                 display: "flex",
                 flexDirection: "column",
                 gap: 8,
-                minHeight: 450,
+                minHeight: isMobile ? 280 : 450,
                 cursor: "pointer",
                 transition: "background 0.1s",
               }}
@@ -1146,7 +1193,8 @@ export default function PortalCalendar() {
                 {[
                   { id: "my", label: "👤 내 일정 보기" },
                   { id: "dept", label: "🏢 부서별 일정" },
-                  { id: "company", label: "🌐 회사 전체 일정" }
+                  { id: "company", label: "🌐 회사 전체 일정" },
+                  { id: "group", label: "⭐ 저장한 그룹" }
                 ].map(mode => (
                   <label
                     key={mode.id}
@@ -1226,6 +1274,79 @@ export default function PortalCalendar() {
                       );
                     })}
                   </div>
+
+                  {/* 현재 선택한 구성원들을 이름 지어 그룹으로 저장 */}
+                  <button
+                    type="button"
+                    onClick={() => { setNewGroupName(""); setShowSaveGroupModal(true); }}
+                    disabled={selectedMemberIds.length === 0}
+                    style={{
+                      marginTop: 10, width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                      background: "transparent", border: "1px dashed #94a3b8", color: "#475569", borderRadius: 6,
+                      padding: "8px 10px", fontSize: 12.5, fontWeight: 600,
+                      cursor: selectedMemberIds.length === 0 ? "not-allowed" : "pointer",
+                      opacity: selectedMemberIds.length === 0 ? 0.5 : 1
+                    }}
+                  >
+                    <Star size={13} />
+                    현재 선택을 그룹으로 저장
+                  </button>
+                </div>
+              )}
+
+              {/* 저장한 구성원 그룹 목록 — 이름 지어 저장해 둔 그룹을 바로 불러와 캘린더에 적용 */}
+              {selectedFilterMode === "group" && (
+                <div>
+                  <label style={labelStyle}>저장한 그룹 ({memberGroups.length}개)</label>
+                  {memberGroups.length === 0 ? (
+                    <div style={{ fontSize: 12.5, color: "#94a3b8", padding: "10px 0" }}>
+                      저장된 그룹이 없습니다. '부서별 일정' 또는 '회사 전체 일정'에서 구성원을 선택한 뒤 그룹으로 저장해 보세요.
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      {memberGroups.map(group => {
+                        const isActive = selectedFilterMode === "group" &&
+                          selectedMemberIds.length === group.memberIds.length &&
+                          group.memberIds.every(id => selectedMemberIds.includes(id));
+                        return (
+                          <div
+                            key={group.id}
+                            style={{
+                              display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6,
+                              padding: "8px 10px", borderRadius: 6,
+                              background: isActive ? "rgba(11, 31, 58, 0.06)" : "transparent",
+                              border: isActive ? "1px solid #c9a84c" : "1px solid #e2e8f0"
+                            }}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => handleSelectMemberGroup(group)}
+                              style={{
+                                flex: 1, textAlign: "left", background: "transparent", border: "none", cursor: "pointer",
+                                fontSize: 12.5, fontWeight: isActive ? 700 : 500,
+                                color: isActive ? "#0b1f3a" : "var(--text-secondary)"
+                              }}
+                            >
+                              {group.name}
+                              <span style={{ marginLeft: 6, fontSize: 11, color: "#94a3b8", fontWeight: 400 }}>
+                                구성원 {group.memberIds.length}명
+                              </span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteMemberGroup(group.id)}
+                              title="그룹 삭제"
+                              style={{ background: "transparent", border: "none", cursor: "pointer", color: "#cbd5e1", padding: 4, display: "flex" }}
+                              onMouseEnter={(e) => { e.currentTarget.style.color = "#ef4444"; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.color = "#cbd5e1"; }}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
             </>
@@ -2034,6 +2155,58 @@ export default function PortalCalendar() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* 구성원 그룹 저장 모달 — 현재 체크된 구성원들을 이름 지어 저장 */}
+      {showSaveGroupModal && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
+          background: "rgba(15,23,42,0.3)", zIndex: 1000, display: "flex",
+          alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)"
+        }}>
+          <form
+            onSubmit={(e) => { e.preventDefault(); handleSaveMemberGroup(); }}
+            style={{ background: "#ffffff", borderRadius: 12, width: "100%", maxWidth: 380, padding: 24 }}
+          >
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: "#0b1f3a", margin: "0 0 16px 0" }}>구성원 그룹으로 저장</h3>
+            <p style={{ fontSize: 12.5, color: "#475569", margin: "0 0 16px 0", lineHeight: 1.6 }}>
+              현재 선택된 구성원 <strong>{selectedMemberIds.length}명</strong>을 그룹으로 저장합니다. 저장한 그룹은 '저장한 그룹' 탭에서 언제든 다시 불러올 수 있습니다.
+            </p>
+            <div style={{ marginBottom: 20 }}>
+              <label style={labelStyle}>그룹 이름</label>
+              <input
+                type="text"
+                value={newGroupName}
+                onChange={(e) => setNewGroupName(e.target.value)}
+                placeholder="예: 송무팀 핵심 멤버"
+                autoFocus
+                required
+                style={fieldStyle}
+              />
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+              <button
+                type="button"
+                onClick={() => setShowSaveGroupModal(false)}
+                style={{
+                  background: "#fff", color: "#475569", border: "1px solid #cbd5e1", borderRadius: 6,
+                  padding: "8px 16px", fontSize: 13, fontWeight: 500, cursor: "pointer"
+                }}
+              >
+                취소
+              </button>
+              <button
+                type="submit"
+                style={{
+                  background: "#0b1f3a", color: "#c9a84c", border: "1px solid #c9a84c", borderRadius: 6,
+                  padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer"
+                }}
+              >
+                저장
+              </button>
+            </div>
+          </form>
         </div>
       )}
     </div>

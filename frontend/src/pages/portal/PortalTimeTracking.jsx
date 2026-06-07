@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { portalApi } from "../../utils/api";
 import { T, fieldStyle, labelStyle } from "./portalStyles";
 import { showToast } from "../../utils/showToast";
+import useMediaQuery from "../../hooks/useMediaQuery";
 
 function formatDuration(minutes) {
   if (!minutes && minutes !== 0) return "-";
@@ -136,6 +137,7 @@ function StartTimerForm({ cases, onStart }) {
 
 /** 수동 입력 폼 */
 function ManualEntryForm({ cases, onSubmit }) {
+  const isMobile = useMediaQuery("(max-width: 640px)");
   const today = new Date().toISOString().substring(0, 10);
   const [show, setShow] = useState(false);
   const [form, setForm] = useState({
@@ -177,7 +179,7 @@ function ManualEntryForm({ cases, onSubmit }) {
       padding: 20, marginBottom: 20,
     }}>
       <div style={{ fontSize: 14, fontWeight: 600, color: T.text, marginBottom: 14 }}>시간 수동 입력</div>
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 10, marginBottom: 10 }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "2fr 1fr", gap: 10, marginBottom: 10 }}>
         <div>
           <label style={labelStyle}>작업 내용 *</label>
           <input style={fieldStyle} value={form.description} onChange={field("description")} required placeholder="작업 내용" />
@@ -190,7 +192,7 @@ function ManualEntryForm({ cases, onSubmit }) {
           </select>
         </div>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 10, marginBottom: 10 }}>
         <div>
           <label style={labelStyle}>시작 시간 *</label>
           <input type="datetime-local" style={fieldStyle} value={form.startedAt} onChange={field("startedAt")} required />
@@ -220,6 +222,7 @@ function ManualEntryForm({ cases, onSubmit }) {
 }
 
 export default function PortalTimeTracking() {
+  const isMobile = useMediaQuery("(max-width: 640px)");
   const [tab, setTab] = useState("list"); // "list" | "summary"
   const [entries, setEntries] = useState([]);
   const [summary, setSummary] = useState([]);
@@ -363,12 +366,14 @@ export default function PortalTimeTracking() {
                 <div
                   key={e.id}
                   style={{
-                    display: "flex", alignItems: "center", padding: "14px 20px",
+                    display: "flex", alignItems: isMobile ? "flex-start" : "center",
+                    flexDirection: isMobile ? "column" : "row",
+                    padding: "14px 20px",
                     borderBottom: i < entries.length - 1 ? `1px solid ${T.border}` : "none",
-                    gap: 12,
+                    gap: isMobile ? 8 : 12,
                   }}
                 >
-                  <div style={{ flex: 1 }}>
+                  <div style={{ flex: 1, width: isMobile ? "100%" : "auto" }}>
                     <div style={{ fontSize: 14, fontWeight: 500, color: T.text }}>{e.description}</div>
                     <div style={{ fontSize: 12, color: T.textSec, marginTop: 2 }}>
                       {e.caseTitle && <span style={{ marginRight: 8 }}>📁 {e.caseTitle}</span>}
@@ -376,17 +381,22 @@ export default function PortalTimeTracking() {
                       {e.endedAt && ` ${formatDatetime(e.startedAt).split(" ")[1]} ~ ${formatDatetime(e.endedAt).split(" ")[1]}`}
                     </div>
                   </div>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: T.accent, minWidth: 60, textAlign: "right" }}>
-                    {formatDuration(e.durationMinutes)}
+                  <div style={{
+                    display: "flex", alignItems: "center", justifyContent: isMobile ? "space-between" : "flex-end",
+                    gap: 12, width: isMobile ? "100%" : "auto",
+                  }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: T.accent, minWidth: 60, textAlign: "right" }}>
+                      {formatDuration(e.durationMinutes)}
+                    </div>
+                    <button
+                      onClick={() => handleDelete(e.id)}
+                      style={{
+                        padding: "4px 8px", fontSize: 11, color: "#c62828",
+                        background: "transparent", border: "1px solid #ffcdd2",
+                        borderRadius: 4, cursor: "pointer",
+                      }}
+                    >삭제</button>
                   </div>
-                  <button
-                    onClick={() => handleDelete(e.id)}
-                    style={{
-                      padding: "4px 8px", fontSize: 11, color: "#c62828",
-                      background: "transparent", border: "1px solid #ffcdd2",
-                      borderRadius: 4, cursor: "pointer",
-                    }}
-                  >삭제</button>
                 </div>
               ))}
             </div>
@@ -407,7 +417,7 @@ export default function PortalTimeTracking() {
             <div style={{ background: "#fff", border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden" }}>
               {/* 헤더 */}
               <div style={{
-                display: "grid", gridTemplateColumns: "1fr 120px 80px",
+                display: "grid", gridTemplateColumns: isMobile ? "1fr 90px 56px" : "1fr 120px 80px",
                 padding: "10px 20px", background: "#f8f8f8",
                 fontSize: 12, fontWeight: 700, color: T.textSec,
                 borderBottom: `1px solid ${T.border}`,
@@ -420,7 +430,7 @@ export default function PortalTimeTracking() {
                 <div
                   key={s.caseId || i}
                   style={{
-                    display: "grid", gridTemplateColumns: "1fr 120px 80px",
+                    display: "grid", gridTemplateColumns: isMobile ? "1fr 90px 56px" : "1fr 120px 80px",
                     padding: "14px 20px",
                     borderBottom: i < summary.length - 1 ? `1px solid ${T.border}` : "none",
                   }}

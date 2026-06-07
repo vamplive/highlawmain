@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { portalApi } from "../../utils/api";
 import { T, fieldStyle, labelStyle } from "./portalStyles";
 import { showToast } from "../../utils/showToast";
+import useMediaQuery from "../../hooks/useMediaQuery";
 
 // 영수증 URL 필드를 파싱하여 배열로 반환하는 헬퍼 함수
 const parseReceiptUrls = (urlField) => {
@@ -18,6 +19,7 @@ const parseReceiptUrls = (urlField) => {
 };
 
 export default function PortalApprovals() {
+  const isMobile = useMediaQuery("(max-width: 768px)");
   const [activeTab, setActiveTab] = useState("dashboard"); // "dashboard" | "my-requests" | "pending-approvals" | "history"
   const [leaveStatus, setLeaveStatus] = useState(null);
   const [myRequests, setMyRequests] = useState([]);
@@ -403,7 +405,7 @@ export default function PortalApprovals() {
         <div>
           {/* 1. 대시보드 탭 */}
           {activeTab === "dashboard" && (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 20 }}>
               {/* 결재 대기 중인 문서 요약 */}
               <div style={{ background: "#fff", border: `1px solid ${T.border}`, borderRadius: 10, padding: 20 }}>
                 <h3 style={{ fontSize: 15, fontWeight: 700, margin: "0 0 16px 0", display: "flex", justifyContent: "space-between" }}>
@@ -679,7 +681,7 @@ export default function PortalApprovals() {
                     </select>
                   </div>
 
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12, marginBottom: 12 }}>
                     <div>
                       <label style={labelStyle}>시작 일시</label>
                       <input
@@ -728,7 +730,7 @@ export default function PortalApprovals() {
                 <div style={{ padding: 16, backgroundColor: "#f9fafb", borderRadius: 8, border: "1px solid #e5e7eb", marginBottom: 16 }}>
                   <h4 style={{ fontSize: 13, fontWeight: 700, margin: "0 0 12px 0" }}>지출 상세 정보</h4>
 
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12, marginBottom: 12 }}>
                     <div>
                       <label style={labelStyle}>지출 일자</label>
                       <input
@@ -970,7 +972,7 @@ export default function PortalApprovals() {
                 {renderStatusBadge(selectedApproval.status)}
               </div>
               <h3 style={{ fontSize: 16, fontWeight: 700, margin: "0 0 10px 0" }}>{selectedApproval.title}</h3>
-              <div style={{ fontSize: 12, color: T.textSec, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+              <div style={{ fontSize: 12, color: T.textSec, display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 6 }}>
                 <div>기안자: {selectedApproval.requesterName} ({selectedApproval.requesterPosition || "사원"})</div>
                 <div>기안일: {selectedApproval.createdAt}</div>
               </div>

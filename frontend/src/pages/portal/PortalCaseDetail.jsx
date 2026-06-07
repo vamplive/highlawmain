@@ -179,12 +179,13 @@ export default function PortalCaseDetail() {
                   key={doc.id}
                   style={{
                     display: "flex", alignItems: "center", justifyContent: "space-between",
+                    flexWrap: "wrap", gap: 10,
                     padding: "14px 20px", background: T.card,
                     border: `1px solid ${T.border}`, borderRadius: 8,
                   }}
                 >
-                  <div>
-                    <p style={{ fontSize: 14, fontWeight: 500, color: T.text, marginBottom: 4 }}>
+                  <div style={{ minWidth: 0 }}>
+                    <p style={{ fontSize: 14, fontWeight: 500, color: T.text, marginBottom: 4, wordBreak: "break-word" }}>
                       {doc.title || doc.filename}
                     </p>
                     <p style={{ fontSize: 12, color: T.textMuted }}>

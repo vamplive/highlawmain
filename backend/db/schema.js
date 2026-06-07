@@ -1056,6 +1056,20 @@ const portalPosts = sqliteTable("portal_posts", {
 });
 
 // =============================================
+// portal_board_categories — 포털 게시판 카테고리 (대표변호사가 추가 가능)
+// =============================================
+const portalBoardCategories = sqliteTable("portal_board_categories", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  key: text("key").notNull().unique(),
+  label: text("label").notNull(),
+  color: text("color").notNull().default("#64748b"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdBy: text("created_by").references(() => portalUsers.id, { onDelete: "set null" }),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+});
+
+// =============================================
 // portal_events — 포털 사용자 캘린더 일정
 // =============================================
 const portalEvents = sqliteTable("portal_events", {
@@ -1075,6 +1089,18 @@ const portalEvents = sqliteTable("portal_events", {
   recurrenceRule: text("recurrence_rule"),
   reminderMinutes: integer("reminder_minutes"),
   reminded: integer("reminded").notNull().default(0),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+});
+
+// =============================================
+// portal_member_groups — 캘린더에서 함께 보고 싶은 구성원을 이름 지어 저장하는 그룹 (사용자별)
+// =============================================
+const portalMemberGroups = sqliteTable("portal_member_groups", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  portalUserId: text("portal_user_id").notNull().references(() => portalUsers.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  memberIds: text("member_ids").notNull(), // 변호사 ID를 콤마로 이어붙인 문자열 (attendee_ids와 동일한 저장 방식)
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
   updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
 });
@@ -1237,7 +1263,9 @@ module.exports = {
   RECRUIT_STATUSES,
   recruitPosts,
   portalPosts,
+  portalBoardCategories,
   portalEvents,
+  portalMemberGroups,
 
   // 조직도 및 결재
   departments,

@@ -9,6 +9,7 @@ import {
   Bot, Plus, Trash2, Star, Pencil, Check, X, Eye, EyeOff,
   ChevronDown, Sparkles, Image as ImageIcon, Shield, Info
 } from "lucide-react";
+import useMediaQuery from "../../hooks/useMediaQuery";
 
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
@@ -82,6 +83,7 @@ const inputStyle = {
 };
 
 export default function PortalAiSettings() {
+  const isMobile = useMediaQuery("(max-width: 640px)");
   const [configs, setConfigs] = useState([]);
   const [providers, setProviders] = useState({});
   const [loading, setLoading] = useState(true);
@@ -538,7 +540,7 @@ export default function PortalAiSettings() {
             <Info size={15} style={{ verticalAlign: "middle", marginRight: 6 }} />
             AI 사용 방법
           </h3>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
             {[
               { icon: <Sparkles size={20} color="#7c3aed" />, title: "글쓰기 보조", desc: "블로그 에디터에서 ✨ AI 도우미 아이콘을 클릭하면 등록한 AI 중 선택할 수 있습니다." },
               { icon: <ImageIcon size={20} color="#0891b2" />, title: "이미지 생성", desc: "커버 이미지 선택 또는 본문 이미지 삽입 시 AI 생성 탭에서 이미지 AI를 선택하세요." },

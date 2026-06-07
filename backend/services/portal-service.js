@@ -15,7 +15,9 @@ const {
   lawyers,
   portalTimeEntries,
   portalPosts,
+  portalBoardCategories,
   portalEvents,
+  portalMemberGroups,
   adminUsers,
   courtDates,
 } = require("../db/schema");
@@ -1147,6 +1149,128 @@ async function deletePortalPost(id, portalUserId, isAdmin) {
 }
 
 // =============================================
+// 포털 게시판 카테고리 (대표변호사가 추가/삭제 가능)
+// =============================================
+
+async function listBoardCategories() {
+  return db
+    .select({
+      id: portalBoardCategories.id,
+      key: portalBoardCategories.key,
+      label: portalBoardCategories.label,
+      color: portalBoardCategories.color,
+      sortOrder: portalBoardCategories.sortOrder,
+      createdBy: portalBoardCategories.createdBy,
+      createdAt: portalBoardCategories.createdAt,
+    })
+    .from(portalBoardCategories)
+    .orderBy(asc(portalBoardCategories.sortOrder), asc(portalBoardCategories.createdAt));
+}
+
+/** 카테고리 key는 portal_posts.category 컬럼에 그대로 저장되므로 영문 소문자/숫자/하이픈만 허용한다 */
+const BOARD_CATEGORY_KEY_REGEX = /^[a-z0-9-]{1,30}$/;
+
+async function createBoardCategory(portalUserId, data) {
+  const key = (data.key || "").trim().toLowerCase();
+  const label = (data.label || "").trim();
+  const color = (data.color || "#64748b").trim();
+
+  if (!BOARD_CATEGORY_KEY_REGEX.test(key)) {
+    throw new ServiceError("카테고리 key는 영문 소문자/숫자/하이픈으로만 입력해주세요", 400);
+  }
+  if (!label) throw new ServiceError("게시판 이름을 입력해주세요", 400);
+
+  const [existing] = await db
+    .select({ id: portalBoardCategories.id })
+    .from(portalBoardCategories)
+    .where(eq(portalBoardCategories.key, key));
+  if (existing) throw new ServiceError("이미 사용 중인 key입니다", 409);
+
+  const [{ maxSortOrder }] = await db
+    .select({ maxSortOrder: sql`COALESCE(MAX(${portalBoardCategories.sortOrder}), -1)` })
+    .from(portalBoardCategories);
+
+  const [inserted] = await db.insert(portalBoardCategories).values({
+    key,
+    label,
+    color,
+    sortOrder: Number(maxSortOrder) + 1,
+    createdBy: portalUserId,
+  }).returning();
+
+  return inserted;
+}
+
+async function deleteBoardCategory(id) {
+  validateUUID(id);
+  const [existing] = await db.select().from(portalBoardCategories).where(eq(portalBoardCategories.id, id));
+  if (!existing) throw new ServiceError("게시판을 찾을 수 없습니다", 404);
+
+  const [{ postCount }] = await db
+    .select({ postCount: sql`count(*)` })
+    .from(portalPosts)
+    .where(eq(portalPosts.category, existing.key));
+  if (Number(postCount) > 0) {
+    throw new ServiceError("게시글이 있는 게시판은 삭제할 수 없습니다", 409);
+  }
+
+  await db.delete(portalBoardCategories).where(eq(portalBoardCategories.id, id));
+  return { deleted: true };
+}
+
+// =============================================
+// 캘린더 — 함께 보고 싶은 구성원 그룹 (사용자별 저장)
+// =============================================
+
+async function listMemberGroups(portalUserId) {
+  const rows = await db
+    .select({
+      id: portalMemberGroups.id,
+      name: portalMemberGroups.name,
+      memberIds: portalMemberGroups.memberIds,
+      createdAt: portalMemberGroups.createdAt,
+    })
+    .from(portalMemberGroups)
+    .where(eq(portalMemberGroups.portalUserId, portalUserId))
+    .orderBy(asc(portalMemberGroups.createdAt));
+
+  // 콤마로 저장된 member_ids를 배열로 변환해 프론트엔드가 바로 쓸 수 있게 한다 (attendee_ids와 동일한 방식)
+  return rows.map((row) => ({
+    ...row,
+    memberIds: (row.memberIds || "").split(",").map((id) => id.trim()).filter(Boolean),
+  }));
+}
+
+async function createMemberGroup(portalUserId, data) {
+  const name = (data.name || "").trim();
+  const memberIds = Array.isArray(data.memberIds) ? data.memberIds.filter(Boolean) : [];
+
+  if (!name) throw new ServiceError("그룹 이름을 입력해주세요", 400);
+  if (memberIds.length === 0) throw new ServiceError("구성원을 1명 이상 선택해주세요", 400);
+
+  const [inserted] = await db.insert(portalMemberGroups).values({
+    portalUserId,
+    name,
+    memberIds: memberIds.join(","),
+  }).returning();
+
+  return { ...inserted, memberIds };
+}
+
+async function deleteMemberGroup(id, portalUserId) {
+  validateUUID(id);
+  const [existing] = await db.select().from(portalMemberGroups).where(eq(portalMemberGroups.id, id));
+  if (!existing) throw new ServiceError("그룹을 찾을 수 없습니다", 404);
+
+  if (existing.portalUserId !== portalUserId) {
+    throw new ServiceError("삭제 권한이 없습니다", 403);
+  }
+
+  await db.delete(portalMemberGroups).where(eq(portalMemberGroups.id, id));
+  return { deleted: true };
+}
+
+// =============================================
 // 포털 일정 (캘린더)
 // =============================================
 
@@ -1541,6 +1665,22 @@ async function getLawyerProfileByEmail(email) {
   return lawyer || null;
 }
 
+/**
+ * 포털 사용자가 대표변호사인지 판별한다.
+ * 포털 계정과 변호사 프로필은 별도 테이블이라, /members와 동일하게
+ * 이메일을 기준으로 lawyers.position을 조회해 "대표변호사" 여부를 확인한다.
+ */
+async function checkIsManagingLawyer(portalUserId) {
+  const [user] = await db
+    .select({ email: portalUsers.email })
+    .from(portalUsers)
+    .where(eq(portalUsers.id, portalUserId));
+
+  if (!user) return false;
+  const lawyer = await getLawyerProfileByEmail(user.email);
+  return lawyer?.position === "대표변호사";
+}
+
 async function createLawyerProfile(email, data) {
   const { name, nameEn, nameHanja, position, team, photoUrl, tagline, education, career, specialties, qualifications, publications, books, media, columns, cases, memberships, consultHours, blogUrl, introduction, phone } = data;
   if (!name || !name.trim()) throw new ServiceError("이름은 필수입니다", 400);
@@ -1819,6 +1959,9 @@ module.exports = {
   getPortalPost,
   updatePortalPost,
   deletePortalPost,
+  listBoardCategories,
+  createBoardCategory,
+  deleteBoardCategory,
 
   // 캘린더
   checkIsEmployee,
@@ -1826,9 +1969,13 @@ module.exports = {
   createPortalEvent,
   updatePortalEvent,
   deletePortalEvent,
+  listMemberGroups,
+  createMemberGroup,
+  deleteMemberGroup,
 
   // 변호사 프로필
   checkIsAdmin,
+  checkIsManagingLawyer,
   getLawyerProfileByEmail,
   createLawyerProfile,
   updateLawyerProfile,

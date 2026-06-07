@@ -65,6 +65,7 @@ export default function PortalLayout() {
     return true;
   });
   const [isMobile, setIsMobile] = useState(false);
+  const [boardCategories, setBoardCategories] = useState([]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -87,6 +88,17 @@ export default function PortalLayout() {
       .catch(() => {
         if (!cancelled) setAuthState("unauthed");
       });
+    return () => { cancelled = true; };
+  }, []);
+
+  // 게시판 카테고리 목록 — 대표변호사가 추가한 게시판을 포함해 DB에서 불러온다
+  useEffect(() => {
+    let cancelled = false;
+    portalApi.get("/board-categories")
+      .then((res) => {
+        if (!cancelled) setBoardCategories(res.data || []);
+      })
+      .catch(() => { /* 카테고리 목록은 보조 정보이므로 실패해도 사이드바 자체는 동작해야 한다 */ });
     return () => { cancelled = true; };
   }, []);
 
@@ -117,14 +129,6 @@ export default function PortalLayout() {
   const userInitial = userProfile?.client?.name 
     ? userProfile.client.name.charAt(0) 
     : (userProfile?.user?.email ? userProfile.user.email.charAt(0).toUpperCase() : "U");
-
-  // 게시판 카테고리 목록
-  const boardCategories = [
-    { key: "notice", label: "공지사항" },
-    { key: "manual", label: "업무 매뉴얼" },
-    { key: "free", label: "자유게시판" },
-    { key: "template", label: "양식" },
-  ];
 
   // 사이드바 카테고리 필터링 (검색어 입력 시)
   const filteredCategories = boardCategories.filter(cat => 

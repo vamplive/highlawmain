@@ -1628,5 +1628,56 @@ module.exports = {
     `);
   } catch (e) { warnMigrationSkip(e); }
 
+  // portal_board_categories — 포털 게시판 카테고리 (대표변호사가 자유롭게 추가 가능)
+  try {
+    sqlite.exec(`
+      CREATE TABLE IF NOT EXISTS portal_board_categories (
+        id TEXT PRIMARY KEY,
+        key TEXT NOT NULL UNIQUE,
+        label TEXT NOT NULL,
+        color TEXT NOT NULL DEFAULT '#64748b',
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        created_by TEXT REFERENCES portal_users(id) ON DELETE SET NULL,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+    `);
+  } catch (e) { warnMigrationSkip(e); }
+
+  // portal_board_categories — 기존에 하드코딩돼 있던 4개 카테고리를 기본값으로 시드
+  // (이미 portal_posts.category 에 사용 중인 키이므로 동일한 key로 미리 채워 둬야
+  //  기존 게시글이 새 카테고리 목록에서도 그대로 보인다. UNIQUE(key) + INSERT OR IGNORE로
+  //  재실행 시에도 중복 삽입되지 않는다.)
+  try {
+    const crypto = require("crypto");
+    const defaultCategories = [
+      { key: "notice", label: "공지사항", color: "#ef4444", sortOrder: 0 },
+      { key: "manual", label: "업무 매뉴얼", color: "#3b82f6", sortOrder: 1 },
+      { key: "free", label: "자유게시판", color: "#10b981", sortOrder: 2 },
+      { key: "template", label: "양식", color: "#8b5cf6", sortOrder: 3 },
+    ];
+    const insertCategory = sqlite.prepare(
+      "INSERT OR IGNORE INTO portal_board_categories (id, key, label, color, sort_order) VALUES (?, ?, ?, ?, ?)"
+    );
+    for (const category of defaultCategories) {
+      insertCategory.run(crypto.randomUUID(), category.key, category.label, category.color, category.sortOrder);
+    }
+  } catch (e) { console.warn("[db] portal_board_categories 기본값 시드 실패:", e.message); }
+
+  // portal_member_groups — 캘린더에서 함께 보고 싶은 구성원을 이름 지어 저장하는 그룹 (사용자별)
+  try {
+    sqlite.exec(`
+      CREATE TABLE IF NOT EXISTS portal_member_groups (
+        id TEXT PRIMARY KEY,
+        portal_user_id TEXT NOT NULL REFERENCES portal_users(id) ON DELETE CASCADE,
+        name TEXT NOT NULL,
+        member_ids TEXT NOT NULL,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+    `);
+    sqlite.exec("CREATE INDEX IF NOT EXISTS idx_portal_member_groups_user ON portal_member_groups(portal_user_id);");
+  } catch (e) { warnMigrationSkip(e); }
+
   },
 };
