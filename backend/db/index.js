@@ -65,13 +65,6 @@ try {
       logDbInfo(`[db] 블로그 장문 콘텐츠 ${result.count}건 반영 완료 (${result.version})`);
     }
   } catch (e) { logDbWarning("[db] 블로그 장문 콘텐츠 반영 실패:", e.message); }
-  try {
-    const { enrichPossessionInjunctionBlogImages } = require("../seeds/enrich-blog-possession-injunction-images");
-    const result = enrichPossessionInjunctionBlogImages(sqlite);
-    if (result.updated) {
-      logDbInfo(`[db] 점유이전금지가처분 블로그 본문 이미지 ${result.figures}건 삽입 완료`);
-    }
-  } catch (e) { logDbWarning("[db] 점유이전금지가처분 블로그 이미지 삽입 실패:", e.message); }
 } catch (e) {
   console.error("[DB Init Error]", e.message);
   process.exit(1);
