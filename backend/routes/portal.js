@@ -32,11 +32,16 @@ const { bookingSlots, consultations } = require("../db/schema");
 const { eq, desc, sql, and } = require("drizzle-orm");
 
 /** 내부 구성원(변호사·직원) 전용 미들웨어 — 외부 의뢰인(clientId !== null)은 403 */
-function internalMemberOnly(req, res, next) {
-  if (req.portalUser?.clientId !== null && req.portalUser?.clientId !== undefined) {
-    return res.status(403).json({ data: null, error: "내부 구성원만 이용할 수 있습니다", meta: null });
+async function internalMemberOnly(req, res, next) {
+  try {
+    const isEmployee = await portalService.checkIsEmployee(req.portalUser.userId);
+    if (!isEmployee) {
+      return res.status(403).json({ data: null, error: "내부 구성원만 이용할 수 있습니다", meta: null });
+    }
+    next();
+  } catch (e) {
+    handleError(res, e);
   }
-  next();
 }
 
 const router = Router();

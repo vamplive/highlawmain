@@ -31,7 +31,7 @@ export default function PortalQna() {
     setLoading(true);
     setError(null);
     try {
-      const res = await api.get(`/qna/admin/questions?status=${status}&limit=50`);
+      const res = await api.get(`/inquiry/admin/questions?status=${status}&limit=50`);
       setItems(res.data || []);
     } catch (e) {
       setError(e.message || "목록을 불러오지 못했습니다");
@@ -43,7 +43,7 @@ export default function PortalQna() {
   useEffect(() => { load(); }, [load]);
 
   useEffect(() => {
-    api.get("/qna/categories")
+    api.get("/inquiry/categories")
       .then((res) => {
         // 트리를 평면화하고 소분류만 추출 (depth=2)
         const flat = [];
@@ -62,9 +62,9 @@ export default function PortalQna() {
   async function handleSave(id, updates) {
     try {
       if (id === "new") {
-        await api.post("/qna/admin/questions", updates);
+        await api.post("/inquiry/admin/questions", updates);
       } else {
-        await api.patch(`/qna/admin/questions/${id}`, updates);
+        await api.patch(`/inquiry/admin/questions/${id}`, updates);
       }
       setSelected(null);
       await load();
@@ -76,7 +76,7 @@ export default function PortalQna() {
   async function handleDelete(id) {
     if (!confirm("정말 삭제하시겠습니까? 복구할 수 없습니다.")) return;
     try {
-      await api.delete(`/qna/admin/questions/${id}`);
+      await api.delete(`/inquiry/admin/questions/${id}`);
       setSelected(null);
       await load();
     } catch (e) {
@@ -86,7 +86,7 @@ export default function PortalQna() {
 
   async function toggleFeatured(item) {
     try {
-      await api.patch(`/qna/admin/questions/${item.id}`, { isFeatured: item.isFeatured ? 0 : 1 });
+      await api.patch(`/inquiry/admin/questions/${item.id}`, { isFeatured: item.isFeatured ? 0 : 1 });
       await load();
     } catch (e) {
       setError(e.message || "변경 실패");
