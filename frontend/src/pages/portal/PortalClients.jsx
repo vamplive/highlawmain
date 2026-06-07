@@ -6,7 +6,7 @@
  */
 import { useState, useEffect, useCallback } from "react";
 import { portalApi } from "../../utils/api";
-import { UserPlus, Search, X, Plus, Trash2, Pencil, Check, ChevronDown, ChevronUp } from "lucide-react";
+import { Search, X, Plus, Trash2, Pencil, Check, ChevronDown, ChevronUp } from "lucide-react";
 import { PageHeader, Pagination } from "../../components/admin";
 
 const CATEGORY_OPTIONS = [
@@ -429,11 +429,8 @@ export default function PortalClients() {
       <PageHeader
         title="고객 관리"
         subtitle="의뢰인 정보, 법률 사건, 관련자를 통합 관리합니다"
-        actions={
-          <button style={styles.primaryBtn} onClick={() => setModal({ client: null })}>
-            <UserPlus size={15} /> 고객 등록
-          </button>
-        }
+        onAdd={() => setModal({ client: null })}
+        addLabel="+ 고객 등록"
       />
 
       <div style={styles.searchBar}>
