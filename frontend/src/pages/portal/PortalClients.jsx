@@ -7,8 +7,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { portalApi } from "../../utils/api";
 import { UserPlus, Search, X, Plus, Trash2, Pencil, Check, ChevronDown, ChevronUp } from "lucide-react";
-import { PageHeader } from "../../components/ui/PageHeader";
-import { Pagination } from "../../components/ui/Pagination";
+import { PageHeader, Pagination } from "../../components/admin";
 
 const CATEGORY_OPTIONS = [
   { value: "", label: "분야 선택" },
