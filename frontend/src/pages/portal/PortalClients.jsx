@@ -1,481 +1,653 @@
 /**
- * 포털 고객 관리 — 내부 구성원(변호사·직원) 전용
- * 고객 목록 조회, 검색, 등록, 수정, 삭제
- * 법률 사건 관련 정보(사건번호, 관할, 관련자) 포함
+ * 포털 고객 관리 페이지
+ * - 고객 목록 CRUD (기본 정보)
+ * - 고객별 법률 사건 다중 관리 (추가/수정/삭제, 자유 입력)
+ * - 고객별 관련자 다중 관리 (추가/수정/삭제, 역할 구분)
  */
 import { useState, useEffect, useCallback } from "react";
 import { portalApi } from "../../utils/api";
-import { formatPhone } from "../../utils/formatters";
-import { Search, Plus, X, ChevronLeft, ChevronRight } from "lucide-react";
-
-const CATEGORY_LABELS = {
-  general: "일반", civil: "민사", criminal: "형사", family: "가사",
-  admin: "행정", tax: "조세", realestate: "부동산", corporate: "기업법무", other: "기타",
-};
+import { UserPlus, Search, X, Plus, Trash2, Pencil, Check, ChevronDown, ChevronUp } from "lucide-react";
+import { PageHeader } from "../../components/ui/PageHeader";
+import { Pagination } from "../../components/ui/Pagination";
 
 const CATEGORY_OPTIONS = [
-  { value: "", label: "미지정" },
-  ...Object.entries(CATEGORY_LABELS).map(([value, label]) => ({ value, label })),
+  { value: "", label: "분야 선택" },
+  { value: "civil", label: "민사" },
+  { value: "criminal", label: "형사" },
+  { value: "family", label: "가사" },
+  { value: "admin", label: "행정" },
+  { value: "tax", label: "조세" },
+  { value: "realestate", label: "부동산" },
+  { value: "corporate", label: "기업법무" },
+  { value: "other", label: "기타" },
 ];
 
-const JURISDICTION_OPTIONS = [
-  "", "서울중앙지방법원", "서울동부지방법원", "서울서부지방법원", "서울남부지방법원", "서울북부지방법원",
-  "수원지방법원", "인천지방법원", "의정부지방법원", "춘천지방법원", "대전지방법원",
-  "청주지방법원", "대구지방법원", "부산지방법원", "울산지방법원", "창원지방법원",
-  "광주지방법원", "전주지방법원", "제주지방법원", "기타",
+const ROLE_OPTIONS = [
+  { value: "", label: "역할 선택" },
+  { value: "수사관", label: "담당 수사관" },
+  { value: "판사", label: "담당 판사" },
+  { value: "상대방측", label: "상대방측" },
+  { value: "우리측", label: "우리측" },
 ];
 
-const EMPTY_FORM = {
-  name: "", phone: "", email: "", category: "", memo: "",
-  caseNumber: "", jurisdiction: "", relatedPersonName: "", relatedPersonPhone: "",
-};
+const EMPTY_CLIENT_FORM = { name: "", phone: "", email: "", category: "", memo: "" };
 
-const COLORS = {
-  accent: "#1a3a6b",
-  muted: "#94a3b8",
-  border: "#e2e8f0",
-  danger: "#ef4444",
-  text: "#0f172a",
-  bg: "#f8fafc",
-  sectionBg: "#f8fafc",
-  sectionLabel: "#64748b",
-};
+// =============================================
+// 사건 섹션 컴포넌트
+// =============================================
+function CasesSection({ clientId }) {
+  const [cases, setCases] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [addForm, setAddForm] = useState(null);
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState({});
 
-const inputStyle = {
-  width: "100%", padding: "9px 11px", fontSize: 13,
-  border: `1px solid ${COLORS.border}`, borderRadius: 6,
-  outline: "none", boxSizing: "border-box", background: "#fff",
-};
+  const fetchCases = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await portalApi.get(`/clients/${clientId}/cases`);
+      setCases(res.data?.data || []);
+    } catch { /* 무시 */ }
+    finally { setLoading(false); }
+  }, [clientId]);
 
-const labelStyle = {
-  display: "block", fontSize: 11.5, fontWeight: 600,
-  color: "#475569", marginBottom: 5,
-};
+  useEffect(() => { fetchCases(); }, [fetchCases]);
 
-function SectionTitle({ children }) {
+  async function handleAdd() {
+    if (!addForm?.caseNumber?.trim() && !addForm?.jurisdiction?.trim()) {
+      alert("사건번호 또는 관할 법원을 입력해주세요.");
+      return;
+    }
+    try {
+      const res = await portalApi.post(`/clients/${clientId}/cases`, addForm);
+      setCases((prev) => [...prev, res.data.data]);
+      setAddForm(null);
+    } catch (e) { alert(e.message || "저장에 실패했습니다."); }
+  }
+
+  async function handleEdit(id) {
+    try {
+      const res = await portalApi.patch(`/clients/${clientId}/cases/${id}`, editForm);
+      setCases((prev) => prev.map((c) => c.id === id ? res.data.data : c));
+      setEditingId(null);
+    } catch (e) { alert(e.message || "수정에 실패했습니다."); }
+  }
+
+  async function handleDelete(id) {
+    if (!confirm("이 사건 정보를 삭제하시겠습니까?")) return;
+    try {
+      await portalApi.delete(`/clients/${clientId}/cases/${id}`);
+      setCases((prev) => prev.filter((c) => c.id !== id));
+    } catch (e) { alert(e.message || "삭제에 실패했습니다."); }
+  }
+
+  function startEdit(c) {
+    setEditingId(c.id);
+    setEditForm({ caseNumber: c.caseNumber || "", jurisdiction: c.jurisdiction || "", memo: c.memo || "" });
+  }
+
+  if (loading) return <div style={styles.sectionLoading}>불러오는 중...</div>;
+
   return (
-    <div style={{
-      fontSize: 11, fontWeight: 700, color: COLORS.sectionLabel,
-      textTransform: "uppercase", letterSpacing: "0.08em",
-      margin: "18px 0 12px", paddingBottom: 6,
-      borderBottom: `1px solid ${COLORS.border}`,
-    }}>
-      {children}
+    <div style={styles.subSection}>
+      <div style={styles.subSectionHeader}>
+        <span style={styles.subSectionTitle}>법률 사건</span>
+        {!addForm && (
+          <button style={styles.addBtn} onClick={() => setAddForm({ caseNumber: "", jurisdiction: "", memo: "" })}>
+            <Plus size={13} /> 추가
+          </button>
+        )}
+      </div>
+
+      {cases.length === 0 && !addForm && (
+        <div style={styles.emptyText}>등록된 사건이 없습니다.</div>
+      )}
+
+      {cases.map((c) => (
+        <div key={c.id} style={styles.subRow}>
+          {editingId === c.id ? (
+            <div style={styles.inlineForm}>
+              <input style={styles.inlineInput} placeholder="사건번호"
+                value={editForm.caseNumber}
+                onChange={(e) => setEditForm((f) => ({ ...f, caseNumber: e.target.value }))} />
+              <input style={styles.inlineInput} placeholder="관할 법원"
+                value={editForm.jurisdiction}
+                onChange={(e) => setEditForm((f) => ({ ...f, jurisdiction: e.target.value }))} />
+              <input style={styles.inlineInput} placeholder="메모"
+                value={editForm.memo}
+                onChange={(e) => setEditForm((f) => ({ ...f, memo: e.target.value }))} />
+              <button style={styles.iconBtn} onClick={() => handleEdit(c.id)} title="저장"><Check size={14} /></button>
+              <button style={styles.iconBtn} onClick={() => setEditingId(null)} title="취소"><X size={14} /></button>
+            </div>
+          ) : (
+            <div style={styles.subRowContent}>
+              <span style={styles.subRowMain}>{c.caseNumber || "—"}</span>
+              <span style={styles.subRowSub}>{c.jurisdiction || ""}</span>
+              {c.memo && <span style={styles.subRowMemo}>{c.memo}</span>}
+              <div style={styles.subRowActions}>
+                <button style={styles.iconBtn} onClick={() => startEdit(c)} title="수정"><Pencil size={13} /></button>
+                <button style={styles.iconBtnDanger} onClick={() => handleDelete(c.id)} title="삭제"><Trash2 size={13} /></button>
+              </div>
+            </div>
+          )}
+        </div>
+      ))}
+
+      {addForm && (
+        <div style={styles.inlineForm}>
+          <input style={styles.inlineInput} placeholder="사건번호 (예: 2024가합12345)"
+            value={addForm.caseNumber}
+            onChange={(e) => setAddForm((f) => ({ ...f, caseNumber: e.target.value }))} />
+          <input style={styles.inlineInput} placeholder="관할 법원 (예: 서울중앙지방법원)"
+            value={addForm.jurisdiction}
+            onChange={(e) => setAddForm((f) => ({ ...f, jurisdiction: e.target.value }))} />
+          <input style={styles.inlineInput} placeholder="메모 (선택)"
+            value={addForm.memo}
+            onChange={(e) => setAddForm((f) => ({ ...f, memo: e.target.value }))} />
+          <button style={styles.iconBtn} onClick={handleAdd} title="저장"><Check size={14} /></button>
+          <button style={styles.iconBtn} onClick={() => setAddForm(null)} title="취소"><X size={14} /></button>
+        </div>
+      )}
     </div>
   );
 }
 
-function ClientModal({ client, onSave, onClose }) {
-  const [form, setForm] = useState(client ? {
-    name: client.name || "",
-    phone: client.phone || "",
-    email: client.email || "",
-    category: client.category || "",
-    memo: client.memo || "",
-    caseNumber: client.caseNumber || "",
-    jurisdiction: client.jurisdiction || "",
-    relatedPersonName: client.relatedPersonName || "",
-    relatedPersonPhone: client.relatedPersonPhone || "",
-  } : { ...EMPTY_FORM });
-  const [saving, setSaving] = useState(false);
+// =============================================
+// 관련자 섹션 컴포넌트
+// =============================================
+function PersonsSection({ clientId }) {
+  const [persons, setPersons] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [addForm, setAddForm] = useState(null);
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState({});
 
-  const update = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!form.name.trim()) { alert("이름을 입력해주세요."); return; }
-    if (!form.phone.trim()) { alert("전화번호를 입력해주세요."); return; }
-    setSaving(true);
+  const fetchPersons = useCallback(async () => {
+    setLoading(true);
     try {
-      if (client) {
-        await portalApi.patch(`/clients/${client.id}`, form);
-      } else {
-        await portalApi.post("/clients", form);
-      }
-      onSave();
-    } catch (err) {
-      alert(err.message || "저장에 실패했습니다.");
-    } finally {
-      setSaving(false);
-    }
-  };
+      const res = await portalApi.get(`/clients/${clientId}/persons`);
+      setPersons(res.data?.data || []);
+    } catch { /* 무시 */ }
+    finally { setLoading(false); }
+  }, [clientId]);
+
+  useEffect(() => { fetchPersons(); }, [fetchPersons]);
+
+  async function handleAdd() {
+    if (!addForm?.name?.trim()) { alert("이름을 입력해주세요."); return; }
+    try {
+      const res = await portalApi.post(`/clients/${clientId}/persons`, addForm);
+      setPersons((prev) => [...prev, res.data.data]);
+      setAddForm(null);
+    } catch (e) { alert(e.message || "저장에 실패했습니다."); }
+  }
+
+  async function handleEdit(id) {
+    try {
+      const res = await portalApi.patch(`/clients/${clientId}/persons/${id}`, editForm);
+      setPersons((prev) => prev.map((p) => p.id === id ? res.data.data : p));
+      setEditingId(null);
+    } catch (e) { alert(e.message || "수정에 실패했습니다."); }
+  }
+
+  async function handleDelete(id) {
+    if (!confirm("이 관련자 정보를 삭제하시겠습니까?")) return;
+    try {
+      await portalApi.delete(`/clients/${clientId}/persons/${id}`);
+      setPersons((prev) => prev.filter((p) => p.id !== id));
+    } catch (e) { alert(e.message || "삭제에 실패했습니다."); }
+  }
+
+  function startEdit(p) {
+    setEditingId(p.id);
+    setEditForm({ name: p.name || "", phone: p.phone || "", role: p.role || "" });
+  }
+
+  const roleLabel = (role) => ROLE_OPTIONS.find((r) => r.value === role)?.label || role || "";
+
+  if (loading) return <div style={styles.sectionLoading}>불러오는 중...</div>;
 
   return (
-    <div style={{
-      position: "fixed", inset: 0, zIndex: 1000,
-      background: "rgba(0,0,0,0.45)",
-      display: "flex", alignItems: "center", justifyContent: "center",
-      padding: "16px",
-    }}>
-      <div style={{
-        background: "#fff", borderRadius: 12, padding: "24px 28px",
-        width: "100%", maxWidth: 560,
-        maxHeight: "90vh", overflowY: "auto",
-        boxShadow: "0 20px 60px rgba(0,0,0,0.18)",
-      }}>
-        {/* 헤더 */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: COLORS.text }}>
-            {client ? "고객 정보 수정" : "신규 고객 등록"}
-          </h3>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>
-            <X size={20} color={COLORS.muted} />
+    <div style={styles.subSection}>
+      <div style={styles.subSectionHeader}>
+        <span style={styles.subSectionTitle}>관련자</span>
+        {!addForm && (
+          <button style={styles.addBtn} onClick={() => setAddForm({ name: "", phone: "", role: "" })}>
+            <Plus size={13} /> 추가
           </button>
+        )}
+      </div>
+
+      {persons.length === 0 && !addForm && (
+        <div style={styles.emptyText}>등록된 관련자가 없습니다.</div>
+      )}
+
+      {persons.map((p) => (
+        <div key={p.id} style={styles.subRow}>
+          {editingId === p.id ? (
+            <div style={styles.inlineForm}>
+              <input style={styles.inlineInput} placeholder="이름"
+                value={editForm.name}
+                onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))} />
+              <input style={styles.inlineInput} placeholder="전화번호"
+                value={editForm.phone}
+                onChange={(e) => setEditForm((f) => ({ ...f, phone: e.target.value }))} />
+              <select style={styles.inlineSelect} value={editForm.role}
+                onChange={(e) => setEditForm((f) => ({ ...f, role: e.target.value }))}>
+                {ROLE_OPTIONS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+              </select>
+              <button style={styles.iconBtn} onClick={() => handleEdit(p.id)} title="저장"><Check size={14} /></button>
+              <button style={styles.iconBtn} onClick={() => setEditingId(null)} title="취소"><X size={14} /></button>
+            </div>
+          ) : (
+            <div style={styles.subRowContent}>
+              <span style={styles.subRowMain}>{p.name}</span>
+              <span style={styles.subRowSub}>{p.phone || ""}</span>
+              {p.role && <span style={styles.roleBadge}>{roleLabel(p.role)}</span>}
+              <div style={styles.subRowActions}>
+                <button style={styles.iconBtn} onClick={() => startEdit(p)} title="수정"><Pencil size={13} /></button>
+                <button style={styles.iconBtnDanger} onClick={() => handleDelete(p.id)} title="삭제"><Trash2 size={13} /></button>
+              </div>
+            </div>
+          )}
+        </div>
+      ))}
+
+      {addForm && (
+        <div style={styles.inlineForm}>
+          <input style={styles.inlineInput} placeholder="이름 *"
+            value={addForm.name}
+            onChange={(e) => setAddForm((f) => ({ ...f, name: e.target.value }))} />
+          <input style={styles.inlineInput} placeholder="전화번호"
+            value={addForm.phone}
+            onChange={(e) => setAddForm((f) => ({ ...f, phone: e.target.value }))} />
+          <select style={styles.inlineSelect} value={addForm.role}
+            onChange={(e) => setAddForm((f) => ({ ...f, role: e.target.value }))}>
+            {ROLE_OPTIONS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+          </select>
+          <button style={styles.iconBtn} onClick={handleAdd} title="저장"><Check size={14} /></button>
+          <button style={styles.iconBtn} onClick={() => setAddForm(null)} title="취소"><X size={14} /></button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// =============================================
+// 고객 기본정보 모달 (등록 + 수정)
+// =============================================
+function ClientModal({ client, onClose, onSaved }) {
+  const isNew = !client?.id;
+  const [form, setForm] = useState(
+    isNew ? EMPTY_CLIENT_FORM : {
+      name: client.name || "",
+      phone: client.phone || "",
+      email: client.email || "",
+      category: client.category || "",
+      memo: client.memo || "",
+    }
+  );
+  const [saving, setSaving] = useState(false);
+
+  async function handleSave() {
+    if (!form.name.trim() || !form.phone.trim()) {
+      alert("이름과 전화번호를 입력해주세요.");
+      return;
+    }
+    setSaving(true);
+    try {
+      if (isNew) {
+        const res = await portalApi.post("/clients", form);
+        onSaved(res.data.data, "create");
+      } else {
+        const res = await portalApi.patch(`/clients/${client.id}`, form);
+        onSaved(res.data.data, "update");
+      }
+    } catch (e) { alert(e.message || "저장에 실패했습니다."); }
+    finally { setSaving(false); }
+  }
+
+  return (
+    <div style={styles.overlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div style={styles.modal}>
+        <div style={styles.modalHeader}>
+          <h3 style={styles.modalTitle}>{isNew ? "고객 등록" : `${client.name} 수정`}</h3>
+          <button style={styles.closeBtn} onClick={onClose}><X size={18} /></button>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          {/* ── 기본 정보 ── */}
-          <SectionTitle>기본 정보</SectionTitle>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
-            <div>
-              <label style={labelStyle}>이름 *</label>
-              <input value={form.name} onChange={(e) => update("name", e.target.value)} placeholder="홍길동" style={inputStyle} />
+        <div style={styles.modalBody}>
+          <div style={styles.section}>
+            <div style={styles.sectionLabel}>기본 정보</div>
+            <div style={styles.fieldGrid}>
+              <div style={styles.field}>
+                <label style={styles.label}>이름 *</label>
+                <input style={styles.input} value={form.name}
+                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
+              </div>
+              <div style={styles.field}>
+                <label style={styles.label}>전화번호 *</label>
+                <input style={styles.input} value={form.phone}
+                  onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} />
+              </div>
+              <div style={styles.field}>
+                <label style={styles.label}>이메일</label>
+                <input style={styles.input} type="email" value={form.email}
+                  onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} />
+              </div>
+              <div style={styles.field}>
+                <label style={styles.label}>분야</label>
+                <select style={styles.input} value={form.category}
+                  onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}>
+                  {CATEGORY_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              </div>
             </div>
-            <div>
-              <label style={labelStyle}>분야</label>
-              <select value={form.category} onChange={(e) => update("category", e.target.value)} style={inputStyle}>
-                {CATEGORY_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
-            </div>
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
-            <div>
-              <label style={labelStyle}>전화번호 *</label>
-              <input value={form.phone} onChange={(e) => update("phone", e.target.value)} placeholder="010-1234-5678" style={inputStyle} />
-            </div>
-            <div>
-              <label style={labelStyle}>이메일</label>
-              <input value={form.email} onChange={(e) => update("email", e.target.value)} placeholder="example@email.com" style={inputStyle} />
-            </div>
-          </div>
-
-          {/* ── 법률 사건 정보 ── */}
-          <SectionTitle>법률 사건 정보</SectionTitle>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
-            <div>
-              <label style={labelStyle}>사건번호</label>
-              <input
-                value={form.caseNumber}
-                onChange={(e) => update("caseNumber", e.target.value)}
-                placeholder="예: 2024가단12345"
-                style={inputStyle}
-              />
-            </div>
-            <div>
-              <label style={labelStyle}>관할 법원</label>
-              <select value={form.jurisdiction} onChange={(e) => update("jurisdiction", e.target.value)} style={inputStyle}>
-                {JURISDICTION_OPTIONS.map((j) => (
-                  <option key={j} value={j}>{j || "미지정"}</option>
-                ))}
-              </select>
+            <div style={styles.field}>
+              <label style={styles.label}>메모</label>
+              <textarea style={{ ...styles.input, height: 64, resize: "vertical" }}
+                value={form.memo}
+                onChange={(e) => setForm((f) => ({ ...f, memo: e.target.value }))} />
             </div>
           </div>
 
-          {/* ── 관련자 정보 ── */}
-          <SectionTitle>관련자 정보</SectionTitle>
+          {/* 사건/관련자는 고객 생성 후 편집 모달에서만 표시 */}
+          {!isNew && (
+            <>
+              <CasesSection clientId={client.id} />
+              <PersonsSection clientId={client.id} />
+            </>
+          )}
+        </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
-            <div>
-              <label style={labelStyle}>관련자 이름</label>
-              <input
-                value={form.relatedPersonName}
-                onChange={(e) => update("relatedPersonName", e.target.value)}
-                placeholder="상대방 또는 관련인 이름"
-                style={inputStyle}
-              />
-            </div>
-            <div>
-              <label style={labelStyle}>관련자 전화번호</label>
-              <input
-                value={form.relatedPersonPhone}
-                onChange={(e) => update("relatedPersonPhone", e.target.value)}
-                placeholder="010-0000-0000"
-                style={inputStyle}
-              />
-            </div>
-          </div>
-
-          {/* ── 메모 ── */}
-          <SectionTitle>메모</SectionTitle>
-          <div style={{ marginBottom: 20 }}>
-            <textarea
-              value={form.memo}
-              onChange={(e) => update("memo", e.target.value)}
-              placeholder="추가 메모 (사건 경위, 특이사항 등)"
-              rows={3}
-              style={{
-                ...inputStyle,
-                resize: "vertical", minHeight: 72, lineHeight: 1.5,
-              }}
-            />
-          </div>
-
-          {/* 버튼 */}
-          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-            <button
-              type="button"
-              onClick={onClose}
-              style={{
-                padding: "9px 20px", fontSize: 13, border: `1px solid ${COLORS.border}`,
-                borderRadius: 6, background: "#fff", cursor: "pointer",
-              }}
-            >
-              취소
-            </button>
-            <button
-              type="submit"
-              disabled={saving}
-              style={{
-                padding: "9px 24px", fontSize: 13, fontWeight: 600,
-                background: saving ? "#93c5fd" : COLORS.accent,
-                color: "#fff", border: "none", borderRadius: 6,
-                cursor: saving ? "not-allowed" : "pointer",
-              }}
-            >
-              {saving ? "저장 중..." : (client ? "수정 완료" : "등록")}
+        <div style={styles.modalFooter}>
+          {isNew && <span style={styles.footerNote}>등록 후 사건 및 관련자를 추가할 수 있습니다.</span>}
+          <div style={styles.footerBtns}>
+            <button style={styles.cancelBtn} onClick={onClose}>취소</button>
+            <button style={styles.saveBtn} onClick={handleSave} disabled={saving}>
+              {saving ? "저장 중..." : isNew ? "등록" : "저장"}
             </button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );
 }
 
-/** 목록에서 고객 행 클릭 시 상세 펼치기 */
-function ClientRow({ client, onEdit, onDelete }) {
-  const [expanded, setExpanded] = useState(false);
-
-  return (
-    <>
-      <tr
-        style={{ borderBottom: expanded ? "none" : `1px solid ${COLORS.border}`, cursor: "pointer" }}
-        onClick={() => setExpanded((v) => !v)}
-      >
-        <td style={{ padding: "12px 14px", fontSize: 13, fontWeight: 500, color: COLORS.text }}>
-          {client.name}
-          {client.caseNumber && (
-            <span style={{ marginLeft: 8, fontSize: 11, color: COLORS.muted, fontFamily: "monospace" }}>
-              {client.caseNumber}
-            </span>
-          )}
-        </td>
-        <td style={{ padding: "12px 14px", fontSize: 13, color: "#475569" }}>
-          {formatPhone(client.phone) || "-"}
-        </td>
-        <td style={{ padding: "12px 14px", fontSize: 13, color: "#475569" }}>
-          {client.jurisdiction || "-"}
-        </td>
-        <td style={{ padding: "12px 14px", fontSize: 12 }}>
-          {client.category ? (
-            <span style={{
-              padding: "2px 8px", background: "#eff6ff", color: "#1d4ed8",
-              borderRadius: 10, fontWeight: 500,
-            }}>
-              {CATEGORY_LABELS[client.category] || client.category}
-            </span>
-          ) : "-"}
-        </td>
-        <td style={{ padding: "12px 14px" }} onClick={(e) => e.stopPropagation()}>
-          <div style={{ display: "flex", gap: 6 }}>
-            <button
-              onClick={() => onEdit(client)}
-              style={{
-                padding: "4px 10px", fontSize: 11, border: `1px solid ${COLORS.border}`,
-                borderRadius: 5, background: "#fff", cursor: "pointer",
-              }}
-            >
-              수정
-            </button>
-            <button
-              onClick={() => onDelete(client.id)}
-              style={{
-                padding: "4px 10px", fontSize: 11, border: "1px solid #fca5a5",
-                borderRadius: 5, background: "#fff", color: COLORS.danger, cursor: "pointer",
-              }}
-            >
-              삭제
-            </button>
-          </div>
-        </td>
-      </tr>
-
-      {/* 펼쳐진 상세 행 */}
-      {expanded && (
-        <tr style={{ borderBottom: `1px solid ${COLORS.border}` }}>
-          <td colSpan={5} style={{ padding: "0 14px 14px", background: COLORS.sectionBg }}>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 12, paddingTop: 12 }}>
-              {[
-                { label: "이메일", value: client.email },
-                { label: "사건번호", value: client.caseNumber },
-                { label: "관할 법원", value: client.jurisdiction },
-                { label: "관련자", value: client.relatedPersonName ? `${client.relatedPersonName}${client.relatedPersonPhone ? ` (${formatPhone(client.relatedPersonPhone)})` : ""}` : null },
-              ].map(({ label, value }) => value ? (
-                <div key={label}>
-                  <div style={{ fontSize: 10, fontWeight: 600, color: COLORS.muted, marginBottom: 3, textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</div>
-                  <div style={{ fontSize: 12.5, color: COLORS.text }}>{value}</div>
-                </div>
-              ) : null)}
-              {client.memo && (
-                <div style={{ gridColumn: "1 / -1" }}>
-                  <div style={{ fontSize: 10, fontWeight: 600, color: COLORS.muted, marginBottom: 3, textTransform: "uppercase", letterSpacing: "0.05em" }}>메모</div>
-                  <div style={{ fontSize: 12.5, color: COLORS.text, whiteSpace: "pre-wrap" }}>{client.memo}</div>
-                </div>
-              )}
-            </div>
-          </td>
-        </tr>
-      )}
-    </>
-  );
-}
-
+// =============================================
+// 메인 페이지
+// =============================================
 export default function PortalClients() {
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(null);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [meta, setMeta] = useState({ total: 0, totalPages: 1 });
-  const [editTarget, setEditTarget] = useState(null);
-  const [showModal, setShowModal] = useState(false);
+  const [meta, setMeta] = useState(null);
+  const [modal, setModal] = useState(null);   // null | { client: null } | { client: obj }
+  const [expandedId, setExpandedId] = useState(null);
 
-  const loadClients = useCallback(async () => {
+  const fetchClients = useCallback(async () => {
     setLoading(true);
-    setError("");
+    setError(null);
     try {
-      const q = new URLSearchParams({ page, limit: 20 });
-      if (search) q.set("q", search);
-      const res = await portalApi.get(`/clients?${q.toString()}`);
-      setClients(res.data || []);
-      setMeta(res.meta || { total: 0, totalPages: 1 });
-    } catch (err) {
-      setError(err.message || "고객 목록을 불러오지 못했습니다.");
-    } finally {
-      setLoading(false);
-    }
+      const params = new URLSearchParams({ page, limit: 20 });
+      if (search) params.set("q", search);
+      const res = await portalApi.get(`/clients?${params}`);
+      setClients(res.data?.data || []);
+      setMeta(res.data?.meta || null);
+    } catch (e) {
+      if (e.status === 403) setError("내부 구성원만 이용할 수 있습니다.");
+      else setError(e.message || "오류가 발생했습니다.");
+    } finally { setLoading(false); }
   }, [page, search]);
 
-  useEffect(() => { loadClients(); }, [loadClients]);
+  useEffect(() => { fetchClients(); }, [fetchClients]);
 
-  const handleDelete = async (id) => {
-    if (!confirm("이 고객을 삭제하시겠습니까?")) return;
+  function handleSaved(savedClient, mode) {
+    if (mode === "create") {
+      setClients((prev) => [savedClient, ...prev]);
+      // 등록 직후 수정 모달로 전환 → 사건/관련자 바로 추가 가능
+      setModal({ client: savedClient });
+    } else {
+      setClients((prev) => prev.map((c) => c.id === savedClient.id ? savedClient : c));
+      setModal(null);
+    }
+  }
+
+  async function handleDelete(id, name) {
+    if (!confirm(`"${name}" 고객을 삭제하시겠습니까?`)) return;
     try {
       await portalApi.delete(`/clients/${id}`);
-      loadClients();
-    } catch (err) {
-      alert(err.message || "삭제에 실패했습니다.");
-    }
-  };
+      setClients((prev) => prev.filter((c) => c.id !== id));
+      if (expandedId === id) setExpandedId(null);
+    } catch (e) { alert(e.message || "삭제에 실패했습니다."); }
+  }
 
-  const openEdit = (client) => { setEditTarget(client); setShowModal(true); };
-  const openNew = () => { setEditTarget(null); setShowModal(true); };
-  const closeModal = () => { setShowModal(false); setEditTarget(null); };
-  const afterSave = () => { closeModal(); loadClients(); };
+  const categoryLabel = (val) => CATEGORY_OPTIONS.find((o) => o.value === val)?.label || val || "—";
 
   return (
-    <div style={{ maxWidth: 1000, margin: "0 auto" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-        <div>
-          <h1 style={{ fontSize: 20, fontWeight: 700, color: COLORS.text, margin: 0 }}>고객 관리</h1>
-          <p style={{ fontSize: 13, color: COLORS.muted, margin: "4px 0 0" }}>
-            총 {meta.total}명 · 행 클릭 시 상세 정보 펼침
-          </p>
-        </div>
-        <button
-          onClick={openNew}
-          style={{
-            display: "flex", alignItems: "center", gap: 6,
-            padding: "9px 16px", fontSize: 13, fontWeight: 600,
-            background: COLORS.accent, color: "#fff", border: "none",
-            borderRadius: 8, cursor: "pointer",
-          }}
-        >
-          <Plus size={15} /> 고객 등록
-        </button>
-      </div>
+    <div style={styles.page}>
+      <PageHeader
+        title="고객 관리"
+        subtitle="의뢰인 정보, 법률 사건, 관련자를 통합 관리합니다"
+        actions={
+          <button style={styles.primaryBtn} onClick={() => setModal({ client: null })}>
+            <UserPlus size={15} /> 고객 등록
+          </button>
+        }
+      />
 
-      {/* 검색창 */}
-      <div style={{ position: "relative", marginBottom: 16 }}>
-        <Search size={15} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: COLORS.muted }} />
+      <div style={styles.searchBar}>
+        <Search size={15} style={{ color: "#94a3b8" }} />
         <input
+          style={styles.searchInput}
+          placeholder="이름, 전화번호, 이메일 검색"
           value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-          placeholder="이름, 전화번호, 이메일 검색"
-          style={{
-            width: "100%", padding: "10px 12px 10px 36px", fontSize: 13,
-            border: `1px solid ${COLORS.border}`, borderRadius: 8,
-            outline: "none", boxSizing: "border-box",
-          }}
         />
+        {search && <button style={styles.clearBtn} onClick={() => setSearch("")}><X size={14} /></button>}
       </div>
 
-      {error && (
-        <div style={{ padding: 14, background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: 8, color: COLORS.danger, fontSize: 13, marginBottom: 16 }}>
-          {error}
-        </div>
-      )}
+      {error && <div style={styles.errorBanner}>{error}</div>}
 
-      {/* 테이블 */}
-      <div style={{ background: "#fff", border: `1px solid ${COLORS.border}`, borderRadius: 8, overflow: "hidden" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr style={{ borderBottom: `1px solid ${COLORS.border}`, background: COLORS.bg }}>
-              {["이름 / 사건번호", "전화번호", "관할 법원", "분야", ""].map((h) => (
-                <th key={h} style={{
-                  padding: "10px 14px", fontSize: 11, fontWeight: 600,
-                  color: COLORS.muted, textAlign: "left", letterSpacing: "0.05em",
-                }}>{h}</th>
+      {loading ? (
+        <div style={styles.loading}>불러오는 중...</div>
+      ) : clients.length === 0 ? (
+        <div style={styles.empty}>등록된 고객이 없습니다.</div>
+      ) : (
+        <div style={styles.tableWrap}>
+          <table style={styles.table}>
+            <thead>
+              <tr>
+                <th style={styles.th}>이름</th>
+                <th style={styles.th}>전화번호</th>
+                <th style={styles.th}>분야</th>
+                <th style={styles.th}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {clients.map((c) => (
+                <>
+                  <tr key={c.id} style={styles.tr}>
+                    <td style={styles.td}>
+                      <button
+                        style={styles.expandBtn}
+                        onClick={() => setExpandedId(expandedId === c.id ? null : c.id)}
+                      >
+                        {expandedId === c.id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                        {c.name}
+                      </button>
+                    </td>
+                    <td style={styles.td}>{c.phone}</td>
+                    <td style={styles.td}>{categoryLabel(c.category)}</td>
+                    <td style={{ ...styles.td, textAlign: "right" }}>
+                      <button style={styles.editBtn} onClick={() => setModal({ client: c })}>수정</button>
+                      <button style={styles.deleteBtn} onClick={() => handleDelete(c.id, c.name)}>삭제</button>
+                    </td>
+                  </tr>
+                  {expandedId === c.id && (
+                    <tr key={`${c.id}-detail`}>
+                      <td colSpan={4} style={styles.expandedCell}>
+                        <div style={styles.expandedContent}>
+                          {c.email && <div style={styles.detailRow}><span style={styles.detailLabel}>이메일</span>{c.email}</div>}
+                          {c.memo && <div style={styles.detailRow}><span style={styles.detailLabel}>메모</span>{c.memo}</div>}
+                          <CasesSection clientId={c.id} />
+                          <PersonsSection clientId={c.id} />
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </>
               ))}
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan={5} style={{ textAlign: "center", padding: 48, color: COLORS.muted }}>불러오는 중...</td></tr>
-            ) : clients.length === 0 ? (
-              <tr><td colSpan={5} style={{ textAlign: "center", padding: 48, color: COLORS.muted }}>고객이 없습니다</td></tr>
-            ) : clients.map((c) => (
-              <ClientRow
-                key={c.id}
-                client={c}
-                onEdit={openEdit}
-                onDelete={handleDelete}
-              />
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* 페이지네이션 */}
-      {meta.totalPages > 1 && (
-        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8, marginTop: 16 }}>
-          <button
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1}
-            style={{ padding: "6px 10px", border: `1px solid ${COLORS.border}`, borderRadius: 6, background: "#fff", cursor: "pointer" }}
-          >
-            <ChevronLeft size={16} />
-          </button>
-          <span style={{ fontSize: 13, color: COLORS.muted }}>{page} / {meta.totalPages}</span>
-          <button
-            onClick={() => setPage((p) => Math.min(meta.totalPages, p + 1))}
-            disabled={page === meta.totalPages}
-            style={{ padding: "6px 10px", border: `1px solid ${COLORS.border}`, borderRadius: 6, background: "#fff", cursor: "pointer" }}
-          >
-            <ChevronRight size={16} />
-          </button>
+            </tbody>
+          </table>
         </div>
       )}
 
-      {showModal && (
+      {meta && meta.totalPages > 1 && (
+        <Pagination currentPage={page} totalPages={meta.totalPages} onPageChange={setPage} />
+      )}
+
+      {modal && (
         <ClientModal
-          client={editTarget}
-          onSave={afterSave}
-          onClose={closeModal}
+          client={modal.client}
+          onClose={() => setModal(null)}
+          onSaved={handleSaved}
         />
       )}
     </div>
   );
 }
+
+// =============================================
+// 스타일
+// =============================================
+const styles = {
+  page: { padding: "24px", maxWidth: 960, margin: "0 auto" },
+  primaryBtn: {
+    display: "flex", alignItems: "center", gap: 6,
+    background: "#1e3a5f", color: "#fff", border: "none",
+    borderRadius: 6, padding: "8px 14px", fontSize: 13, cursor: "pointer",
+  },
+  searchBar: {
+    display: "flex", alignItems: "center", gap: 8,
+    background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8,
+    padding: "8px 12px", marginBottom: 16,
+  },
+  searchInput: { flex: 1, border: "none", outline: "none", fontSize: 14 },
+  clearBtn: { background: "none", border: "none", cursor: "pointer", padding: 0, color: "#94a3b8" },
+  errorBanner: {
+    background: "#fef2f2", border: "1px solid #fecaca", color: "#dc2626",
+    borderRadius: 8, padding: "12px 16px", marginBottom: 16, fontSize: 14,
+  },
+  loading: { textAlign: "center", color: "#94a3b8", padding: 40 },
+  empty: { textAlign: "center", color: "#94a3b8", padding: 40 },
+  tableWrap: { background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0", overflow: "hidden" },
+  table: { width: "100%", borderCollapse: "collapse" },
+  th: {
+    padding: "10px 14px", textAlign: "left", fontSize: 12,
+    color: "#64748b", background: "#f8fafc", borderBottom: "1px solid #e2e8f0", fontWeight: 600,
+  },
+  tr: { borderBottom: "1px solid #f1f5f9" },
+  td: { padding: "10px 14px", fontSize: 13, color: "#1e293b", verticalAlign: "middle" },
+  expandBtn: {
+    display: "flex", alignItems: "center", gap: 6,
+    background: "none", border: "none", cursor: "pointer",
+    fontSize: 13, color: "#1e293b", fontWeight: 500, padding: 0,
+  },
+  editBtn: {
+    background: "none", border: "1px solid #e2e8f0", borderRadius: 5,
+    padding: "4px 10px", fontSize: 12, cursor: "pointer", color: "#475569", marginRight: 6,
+  },
+  deleteBtn: {
+    background: "none", border: "1px solid #fca5a5", borderRadius: 5,
+    padding: "4px 10px", fontSize: 12, cursor: "pointer", color: "#dc2626",
+  },
+  expandedCell: { padding: 0, background: "#f8fafc", borderBottom: "2px solid #e2e8f0" },
+  expandedContent: { padding: "16px 20px", display: "flex", flexDirection: "column", gap: 12 },
+  detailRow: { display: "flex", gap: 8, fontSize: 13, color: "#374151" },
+  detailLabel: { color: "#94a3b8", minWidth: 60 },
+
+  // 사건/관련자 서브 섹션
+  subSection: { border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", overflow: "hidden" },
+  sectionLoading: { padding: "10px 14px", color: "#94a3b8", fontSize: 13 },
+  subSectionHeader: {
+    display: "flex", alignItems: "center", justifyContent: "space-between",
+    padding: "8px 14px", background: "#f1f5f9", borderBottom: "1px solid #e2e8f0",
+  },
+  subSectionTitle: { fontSize: 12, fontWeight: 600, color: "#475569" },
+  addBtn: {
+    display: "flex", alignItems: "center", gap: 4,
+    background: "none", border: "1px solid #cbd5e1", borderRadius: 5,
+    padding: "3px 8px", fontSize: 12, cursor: "pointer", color: "#475569",
+  },
+  emptyText: { padding: "10px 14px", fontSize: 12, color: "#94a3b8" },
+  subRow: { borderBottom: "1px solid #f1f5f9" },
+  subRowContent: { display: "flex", alignItems: "center", gap: 10, padding: "8px 14px", fontSize: 13 },
+  subRowMain: { fontWeight: 500, color: "#1e293b", minWidth: 120 },
+  subRowSub: { color: "#64748b", flex: 1 },
+  subRowMemo: { color: "#94a3b8", fontSize: 12, flex: 1 },
+  subRowActions: { display: "flex", gap: 4, marginLeft: "auto" },
+  roleBadge: {
+    background: "#eff6ff", color: "#2563eb", border: "1px solid #bfdbfe",
+    borderRadius: 10, padding: "1px 8px", fontSize: 11, whiteSpace: "nowrap",
+  },
+  inlineForm: { display: "flex", gap: 6, padding: "8px 14px", alignItems: "center", background: "#f8fafc" },
+  inlineInput: {
+    flex: 1, border: "1px solid #e2e8f0", borderRadius: 5,
+    padding: "5px 8px", fontSize: 12, outline: "none", minWidth: 0,
+  },
+  inlineSelect: {
+    border: "1px solid #e2e8f0", borderRadius: 5,
+    padding: "5px 8px", fontSize: 12, outline: "none", background: "#fff",
+  },
+  iconBtn: {
+    background: "none", border: "1px solid #e2e8f0", borderRadius: 5,
+    padding: "4px 6px", cursor: "pointer", display: "flex", alignItems: "center", color: "#475569",
+  },
+  iconBtnDanger: {
+    background: "none", border: "1px solid #fca5a5", borderRadius: 5,
+    padding: "4px 6px", cursor: "pointer", display: "flex", alignItems: "center", color: "#dc2626",
+  },
+
+  // 모달
+  overlay: {
+    position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)",
+    display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000,
+  },
+  modal: {
+    background: "#fff", borderRadius: 12, width: "min(680px, 96vw)",
+    maxHeight: "90vh", display: "flex", flexDirection: "column", overflow: "hidden",
+    boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
+  },
+  modalHeader: {
+    display: "flex", alignItems: "center", justifyContent: "space-between",
+    padding: "18px 24px", borderBottom: "1px solid #e2e8f0",
+  },
+  modalTitle: { margin: 0, fontSize: 16, fontWeight: 600, color: "#1e293b" },
+  closeBtn: { background: "none", border: "none", cursor: "pointer", color: "#94a3b8", display: "flex", alignItems: "center" },
+  modalBody: { flex: 1, overflowY: "auto", padding: "20px 24px", display: "flex", flexDirection: "column", gap: 20 },
+  section: { display: "flex", flexDirection: "column", gap: 10 },
+  sectionLabel: { fontSize: 12, fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" },
+  fieldGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 },
+  field: { display: "flex", flexDirection: "column", gap: 4 },
+  label: { fontSize: 12, color: "#64748b" },
+  input: {
+    border: "1px solid #e2e8f0", borderRadius: 6, padding: "8px 10px",
+    fontSize: 13, outline: "none", background: "#fff", width: "100%", boxSizing: "border-box",
+  },
+  modalFooter: {
+    display: "flex", alignItems: "center", justifyContent: "space-between",
+    padding: "14px 24px", borderTop: "1px solid #e2e8f0", gap: 10,
+  },
+  footerNote: { fontSize: 12, color: "#94a3b8" },
+  footerBtns: { display: "flex", gap: 8 },
+  cancelBtn: {
+    background: "none", border: "1px solid #e2e8f0", borderRadius: 7,
+    padding: "8px 16px", fontSize: 13, cursor: "pointer", color: "#64748b",
+  },
+  saveBtn: {
+    background: "#1e3a5f", color: "#fff", border: "none",
+    borderRadius: 7, padding: "8px 20px", fontSize: 13, cursor: "pointer",
+  },
+};

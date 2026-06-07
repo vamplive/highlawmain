@@ -1321,4 +1321,68 @@ router.delete("/clients/:id", portalAuth, internalMemberOnly, async (req, res) =
   }
 });
 
+// =============================================
+// 고객 법률 사건 (1:N)
+// =============================================
+
+router.get("/clients/:id/cases", portalAuth, internalMemberOnly, async (req, res) => {
+  try {
+    const cases = await clientService.listClientCases(req.params.id);
+    res.json({ data: cases, error: null, meta: null });
+  } catch (e) { handleError(res, e); }
+});
+
+router.post("/clients/:id/cases", portalAuth, internalMemberOnly, async (req, res) => {
+  try {
+    const inserted = await clientService.createClientCase(req.params.id, req.body);
+    res.json({ data: inserted, error: null, meta: null });
+  } catch (e) { handleError(res, e); }
+});
+
+router.patch("/clients/:id/cases/:caseId", portalAuth, internalMemberOnly, async (req, res) => {
+  try {
+    const updated = await clientService.updateClientCase(req.params.caseId, req.body);
+    res.json({ data: updated, error: null, meta: null });
+  } catch (e) { handleError(res, e); }
+});
+
+router.delete("/clients/:id/cases/:caseId", portalAuth, internalMemberOnly, async (req, res) => {
+  try {
+    const result = await clientService.deleteClientCase(req.params.caseId);
+    res.json({ data: result, error: null, meta: null });
+  } catch (e) { handleError(res, e); }
+});
+
+// =============================================
+// 고객 관련자 (1:N)
+// =============================================
+
+router.get("/clients/:id/persons", portalAuth, internalMemberOnly, async (req, res) => {
+  try {
+    const persons = await clientService.listClientPersons(req.params.id);
+    res.json({ data: persons, error: null, meta: null });
+  } catch (e) { handleError(res, e); }
+});
+
+router.post("/clients/:id/persons", portalAuth, internalMemberOnly, async (req, res) => {
+  try {
+    const inserted = await clientService.createClientPerson(req.params.id, req.body);
+    res.json({ data: inserted, error: null, meta: null });
+  } catch (e) { handleError(res, e); }
+});
+
+router.patch("/clients/:id/persons/:personId", portalAuth, internalMemberOnly, async (req, res) => {
+  try {
+    const updated = await clientService.updateClientPerson(req.params.personId, req.body);
+    res.json({ data: updated, error: null, meta: null });
+  } catch (e) { handleError(res, e); }
+});
+
+router.delete("/clients/:id/persons/:personId", portalAuth, internalMemberOnly, async (req, res) => {
+  try {
+    const result = await clientService.deleteClientPerson(req.params.personId);
+    res.json({ data: result, error: null, meta: null });
+  } catch (e) { handleError(res, e); }
+});
+
 module.exports = router;

@@ -506,11 +506,32 @@ module.exports = {
   try { sqlite.exec("ALTER TABLE clients ADD COLUMN unsubscribe_token TEXT"); } catch (e) { warnMigrationSkip(e); }
   try { sqlite.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_clients_unsubscribe_token ON clients(unsubscribe_token)"); } catch (e) { warnMigrationSkip(e); }
 
-  // 법률 사건 관련 추가 필드 (2026-06-08)
-  try { sqlite.exec("ALTER TABLE clients ADD COLUMN case_number TEXT"); } catch (e) { warnMigrationSkip(e); }
-  try { sqlite.exec("ALTER TABLE clients ADD COLUMN jurisdiction TEXT"); } catch (e) { warnMigrationSkip(e); }
-  try { sqlite.exec("ALTER TABLE clients ADD COLUMN related_person_name TEXT"); } catch (e) { warnMigrationSkip(e); }
-  try { sqlite.exec("ALTER TABLE clients ADD COLUMN related_person_phone TEXT"); } catch (e) { warnMigrationSkip(e); }
+  // 고객별 법률 사건 (1:N) 및 관련자 (1:N) 테이블 — 2026-06-08
+  try {
+    sqlite.exec(`
+      CREATE TABLE IF NOT EXISTS client_cases (
+        id TEXT PRIMARY KEY,
+        client_id TEXT NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+        case_number TEXT,
+        jurisdiction TEXT,
+        memo TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+      CREATE INDEX IF NOT EXISTS idx_client_cases_client_id ON client_cases(client_id);
+
+      CREATE TABLE IF NOT EXISTS client_related_persons (
+        id TEXT PRIMARY KEY,
+        client_id TEXT NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+        name TEXT NOT NULL,
+        phone TEXT,
+        role TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+      CREATE INDEX IF NOT EXISTS idx_client_related_persons_client_id ON client_related_persons(client_id);
+    `);
+  } catch (e) { warnMigrationSkip(e); }
   // 이메일 열람 추적 컬럼 (이미 있으면 무시)
   try { sqlite.exec("ALTER TABLE message_logs ADD COLUMN opened_at TEXT"); } catch (e) { warnMigrationSkip(e); }
   try { sqlite.exec("ALTER TABLE message_logs ADD COLUMN open_count INTEGER NOT NULL DEFAULT 0"); } catch (e) { warnMigrationSkip(e); }

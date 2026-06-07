@@ -2,10 +2,11 @@
  * 고객 서비스 — 고객 CRUD 비즈니스 로직
  * - 상담 신청 시 자동 등록되거나 관리자가 직접 등록
  */
-const { db } = require("../db");
+const { db, sqlite } = require("../db");
 const {
   clients, consultations, messageLogs,
   bookingSlots, caseFilesTable,
+  clientCases, clientRelatedPersons,
 } = require("../db/schema");
 const { eq, desc, sql, and, like, or, inArray, gte, lte } = require("drizzle-orm");
 const ACTIVITY_LABELS = {
@@ -118,8 +119,7 @@ async function listClients(filters) {
  * @returns {object} 생성된 고객 레코드
  */
 async function createClient(data) {
-  const { name, phone, email, category, memo, source, tags,
-    caseNumber, jurisdiction, relatedPersonName, relatedPersonPhone } = data;
+  const { name, phone, email, category, memo, source, tags } = data;
 
   if (!name?.trim() || !phone?.trim()) {
     throw new ServiceError("이름과 전화번호는 필수입니다", 400);
@@ -142,10 +142,6 @@ async function createClient(data) {
     memo: memo?.trim() || null,
     source: source || "manual",
     tags: normalizeTags(tags),
-    caseNumber: caseNumber?.trim() || null,
-    jurisdiction: jurisdiction?.trim() || null,
-    relatedPersonName: relatedPersonName?.trim() || null,
-    relatedPersonPhone: relatedPersonPhone ? cleanPhone(relatedPersonPhone.trim()) : null,
   }).returning();
 
   return hydrateClient(inserted);
@@ -165,8 +161,7 @@ async function updateClient(id, data) {
     throw new ServiceError("고객을 찾을 수 없습니다", 404);
   }
 
-  const { name, phone, email, category, memo, isActive, tags, smsConsent, emailConsent,
-    caseNumber, jurisdiction, relatedPersonName, relatedPersonPhone } = data;
+  const { name, phone, email, category, memo, isActive, tags, smsConsent, emailConsent } = data;
   const updateData = { updatedAt: sql`(datetime('now'))` };
   if (name !== undefined) updateData.name = name.trim();
   if (phone !== undefined) updateData.phone = cleanPhone(phone.trim());
@@ -177,10 +172,6 @@ async function updateClient(id, data) {
   if (tags !== undefined) updateData.tags = normalizeTags(tags);
   if (smsConsent !== undefined) updateData.smsConsent = smsConsent ? 1 : 0;
   if (emailConsent !== undefined) updateData.emailConsent = emailConsent ? 1 : 0;
-  if (caseNumber !== undefined) updateData.caseNumber = caseNumber?.trim() || null;
-  if (jurisdiction !== undefined) updateData.jurisdiction = jurisdiction?.trim() || null;
-  if (relatedPersonName !== undefined) updateData.relatedPersonName = relatedPersonName?.trim() || null;
-  if (relatedPersonPhone !== undefined) updateData.relatedPersonPhone = relatedPersonPhone ? cleanPhone(relatedPersonPhone.trim()) : null;
 
   const [updated] = await db.update(clients)
     .set(updateData)
@@ -534,6 +525,91 @@ async function updateClientConsentByToken(token, changes) {
   return updated ? hydrateClient(updated) : null;
 }
 
+// =============================================
+// 고객 법률 사건 CRUD
+// =============================================
+
+async function listClientCases(clientId) {
+  validateUUID(clientId);
+  return db.select().from(clientCases)
+    .where(eq(clientCases.clientId, clientId))
+    .orderBy(clientCases.createdAt);
+}
+
+async function createClientCase(clientId, data) {
+  validateUUID(clientId);
+  const { caseNumber, jurisdiction, memo } = data;
+  const [inserted] = await db.insert(clientCases).values({
+    clientId,
+    caseNumber: caseNumber?.trim() || null,
+    jurisdiction: jurisdiction?.trim() || null,
+    memo: memo?.trim() || null,
+  }).returning();
+  return inserted;
+}
+
+async function updateClientCase(id, data) {
+  validateUUID(id);
+  const { caseNumber, jurisdiction, memo } = data;
+  const updateData = { updatedAt: sql`(datetime('now'))` };
+  if (caseNumber !== undefined) updateData.caseNumber = caseNumber?.trim() || null;
+  if (jurisdiction !== undefined) updateData.jurisdiction = jurisdiction?.trim() || null;
+  if (memo !== undefined) updateData.memo = memo?.trim() || null;
+  const [updated] = await db.update(clientCases).set(updateData)
+    .where(eq(clientCases.id, id)).returning();
+  if (!updated) throw new ServiceError("사건 정보를 찾을 수 없습니다", 404);
+  return updated;
+}
+
+async function deleteClientCase(id) {
+  validateUUID(id);
+  await db.delete(clientCases).where(eq(clientCases.id, id));
+  return { deleted: true };
+}
+
+// =============================================
+// 고객 관련자 CRUD
+// =============================================
+
+async function listClientPersons(clientId) {
+  validateUUID(clientId);
+  return db.select().from(clientRelatedPersons)
+    .where(eq(clientRelatedPersons.clientId, clientId))
+    .orderBy(clientRelatedPersons.createdAt);
+}
+
+async function createClientPerson(clientId, data) {
+  validateUUID(clientId);
+  const { name, phone, role } = data;
+  if (!name?.trim()) throw new ServiceError("관련자 이름은 필수입니다", 400);
+  const [inserted] = await db.insert(clientRelatedPersons).values({
+    clientId,
+    name: name.trim(),
+    phone: phone ? cleanPhone(phone.trim()) : null,
+    role: role || null,
+  }).returning();
+  return inserted;
+}
+
+async function updateClientPerson(id, data) {
+  validateUUID(id);
+  const { name, phone, role } = data;
+  const updateData = { updatedAt: sql`(datetime('now'))` };
+  if (name !== undefined) updateData.name = name.trim();
+  if (phone !== undefined) updateData.phone = phone ? cleanPhone(phone.trim()) : null;
+  if (role !== undefined) updateData.role = role || null;
+  const [updated] = await db.update(clientRelatedPersons).set(updateData)
+    .where(eq(clientRelatedPersons.id, id)).returning();
+  if (!updated) throw new ServiceError("관련자 정보를 찾을 수 없습니다", 404);
+  return updated;
+}
+
+async function deleteClientPerson(id) {
+  validateUUID(id);
+  await db.delete(clientRelatedPersons).where(eq(clientRelatedPersons.id, id));
+  return { deleted: true };
+}
+
 module.exports = {
   listClients,
   createClient,
@@ -546,4 +622,12 @@ module.exports = {
   filterByConsent,
   findClientByUnsubscribeToken,
   updateClientConsentByToken,
+  listClientCases,
+  createClientCase,
+  updateClientCase,
+  deleteClientCase,
+  listClientPersons,
+  createClientPerson,
+  updateClientPerson,
+  deleteClientPerson,
 };

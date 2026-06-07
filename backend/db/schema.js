@@ -368,11 +368,33 @@ const clients = sqliteTable("clients", {
   emailConsent: integer("email_consent").notNull().default(1),
   // 공개 수신거부 페이지용 토큰 (클라이언트별 단일 토큰)
   unsubscribeToken: text("unsubscribe_token").$defaultFn(() => crypto.randomUUID()),
-  // 법률 사건 관련 추가 정보
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+});
+
+// =============================================
+// client_cases — 고객별 법률 사건 (1:N)
+// =============================================
+const clientCases = sqliteTable("client_cases", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  clientId: text("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
   caseNumber: text("case_number"),
   jurisdiction: text("jurisdiction"),
-  relatedPersonName: text("related_person_name"),
-  relatedPersonPhone: text("related_person_phone"),
+  memo: text("memo"),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+});
+
+// =============================================
+// client_related_persons — 고객별 관련자 (1:N)
+// role: '수사관' | '판사' | '상대방측' | '우리측'
+// =============================================
+const clientRelatedPersons = sqliteTable("client_related_persons", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  clientId: text("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  phone: text("phone"),
+  role: text("role"),
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
   updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
 });
@@ -1202,6 +1224,8 @@ module.exports = {
   caseResults,
   CLIENT_SOURCES,
   clients,
+  clientCases,
+  clientRelatedPersons,
   MESSAGE_CHANNELS,
   MESSAGE_STATUSES,
   messageTemplates,
