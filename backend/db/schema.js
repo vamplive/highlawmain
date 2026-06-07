@@ -368,6 +368,11 @@ const clients = sqliteTable("clients", {
   emailConsent: integer("email_consent").notNull().default(1),
   // 공개 수신거부 페이지용 토큰 (클라이언트별 단일 토큰)
   unsubscribeToken: text("unsubscribe_token").$defaultFn(() => crypto.randomUUID()),
+  // 법률 사건 관련 추가 정보
+  caseNumber: text("case_number"),
+  jurisdiction: text("jurisdiction"),
+  relatedPersonName: text("related_person_name"),
+  relatedPersonPhone: text("related_person_phone"),
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
   updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
 });

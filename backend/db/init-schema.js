@@ -505,6 +505,12 @@ module.exports = {
   // 공개 수신거부 토큰 — 기존 행은 NULL, 최초 수신거부 페이지 접근 전에 lazy 생성되거나 관리 UI에서 할당
   try { sqlite.exec("ALTER TABLE clients ADD COLUMN unsubscribe_token TEXT"); } catch (e) { warnMigrationSkip(e); }
   try { sqlite.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_clients_unsubscribe_token ON clients(unsubscribe_token)"); } catch (e) { warnMigrationSkip(e); }
+
+  // 법률 사건 관련 추가 필드 (2026-06-08)
+  try { sqlite.exec("ALTER TABLE clients ADD COLUMN case_number TEXT"); } catch (e) { warnMigrationSkip(e); }
+  try { sqlite.exec("ALTER TABLE clients ADD COLUMN jurisdiction TEXT"); } catch (e) { warnMigrationSkip(e); }
+  try { sqlite.exec("ALTER TABLE clients ADD COLUMN related_person_name TEXT"); } catch (e) { warnMigrationSkip(e); }
+  try { sqlite.exec("ALTER TABLE clients ADD COLUMN related_person_phone TEXT"); } catch (e) { warnMigrationSkip(e); }
   // 이메일 열람 추적 컬럼 (이미 있으면 무시)
   try { sqlite.exec("ALTER TABLE message_logs ADD COLUMN opened_at TEXT"); } catch (e) { warnMigrationSkip(e); }
   try { sqlite.exec("ALTER TABLE message_logs ADD COLUMN open_count INTEGER NOT NULL DEFAULT 0"); } catch (e) { warnMigrationSkip(e); }

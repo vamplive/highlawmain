@@ -118,7 +118,8 @@ async function listClients(filters) {
  * @returns {object} 생성된 고객 레코드
  */
 async function createClient(data) {
-  const { name, phone, email, category, memo, source, tags } = data;
+  const { name, phone, email, category, memo, source, tags,
+    caseNumber, jurisdiction, relatedPersonName, relatedPersonPhone } = data;
 
   if (!name?.trim() || !phone?.trim()) {
     throw new ServiceError("이름과 전화번호는 필수입니다", 400);
@@ -141,6 +142,10 @@ async function createClient(data) {
     memo: memo?.trim() || null,
     source: source || "manual",
     tags: normalizeTags(tags),
+    caseNumber: caseNumber?.trim() || null,
+    jurisdiction: jurisdiction?.trim() || null,
+    relatedPersonName: relatedPersonName?.trim() || null,
+    relatedPersonPhone: relatedPersonPhone ? cleanPhone(relatedPersonPhone.trim()) : null,
   }).returning();
 
   return hydrateClient(inserted);
@@ -160,7 +165,8 @@ async function updateClient(id, data) {
     throw new ServiceError("고객을 찾을 수 없습니다", 404);
   }
 
-  const { name, phone, email, category, memo, isActive, tags, smsConsent, emailConsent } = data;
+  const { name, phone, email, category, memo, isActive, tags, smsConsent, emailConsent,
+    caseNumber, jurisdiction, relatedPersonName, relatedPersonPhone } = data;
   const updateData = { updatedAt: sql`(datetime('now'))` };
   if (name !== undefined) updateData.name = name.trim();
   if (phone !== undefined) updateData.phone = cleanPhone(phone.trim());
@@ -171,6 +177,10 @@ async function updateClient(id, data) {
   if (tags !== undefined) updateData.tags = normalizeTags(tags);
   if (smsConsent !== undefined) updateData.smsConsent = smsConsent ? 1 : 0;
   if (emailConsent !== undefined) updateData.emailConsent = emailConsent ? 1 : 0;
+  if (caseNumber !== undefined) updateData.caseNumber = caseNumber?.trim() || null;
+  if (jurisdiction !== undefined) updateData.jurisdiction = jurisdiction?.trim() || null;
+  if (relatedPersonName !== undefined) updateData.relatedPersonName = relatedPersonName?.trim() || null;
+  if (relatedPersonPhone !== undefined) updateData.relatedPersonPhone = relatedPersonPhone ? cleanPhone(relatedPersonPhone.trim()) : null;
 
   const [updated] = await db.update(clients)
     .set(updateData)
