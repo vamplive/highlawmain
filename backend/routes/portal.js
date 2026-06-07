@@ -23,9 +23,21 @@ const {
   extractPortalToken,
 } = require("../lib/auth");
 const portalService = require("../services/portal-service");
+const clientService = require("../services/client-service");
 const googleCalendarOAuth = require("../lib/google-calendar-oauth");
 const { logSecurityEvent } = require("../lib/audit-log");
 const { handleError } = require("../lib/route-handler");
+const { db } = require("../db");
+const { bookingSlots, consultations } = require("../db/schema");
+const { eq, desc, sql, and } = require("drizzle-orm");
+
+/** 내부 구성원(변호사·직원) 전용 미들웨어 — 외부 의뢰인(clientId !== null)은 403 */
+function internalMemberOnly(req, res, next) {
+  if (req.portalUser?.clientId !== null && req.portalUser?.clientId !== undefined) {
+    return res.status(403).json({ data: null, error: "내부 구성원만 이용할 수 있습니다", meta: null });
+  }
+  next();
+}
 
 const router = Router();
 
@@ -1166,6 +1178,146 @@ router.get("/calendar/feed", async (req, res) => {
   } catch (e) {
     console.error("[iCal Feed Error]", e);
     res.status(500).send("iCal 생성 중 오류가 발생했습니다.");
+  }
+});
+
+// =============================================
+// 포털 예약 관리 (내부 구성원 전용)
+// =============================================
+
+/**
+ * GET /api/portal/bookings — 예약된 슬롯 목록
+ * - isAvailable=0 슬롯 (예약 완료)
+ */
+router.get("/bookings", portalAuth, internalMemberOnly, async (req, res) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
+    const offset = (page - 1) * limit;
+
+    const rows = await db
+      .select()
+      .from(bookingSlots)
+      .where(eq(bookingSlots.isAvailable, 0))
+      .orderBy(desc(bookingSlots.date), desc(bookingSlots.startTime))
+      .limit(limit)
+      .offset(offset);
+
+    const [{ total }] = await db
+      .select({ total: sql`count(*)` })
+      .from(bookingSlots)
+      .where(eq(bookingSlots.isAvailable, 0));
+
+    res.json({ data: rows, error: null, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+/**
+ * GET /api/portal/bookings/available — 가용 슬롯 목록 (예약 생성용)
+ * - ?date=YYYY-MM-DD
+ */
+router.get("/bookings/available", portalAuth, internalMemberOnly, async (req, res) => {
+  try {
+    const { date } = req.query;
+    const rows = await db
+      .select()
+      .from(bookingSlots)
+      .where(and(
+        date ? eq(bookingSlots.date, date) : sql`1=1`,
+        eq(bookingSlots.isAvailable, 1),
+      ))
+      .orderBy(bookingSlots.date, bookingSlots.startTime)
+      .limit(200);
+    res.json({ data: rows, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+/**
+ * POST /api/portal/bookings/cancel/:id — 예약 취소 (슬롯 가용 복원)
+ */
+router.post("/bookings/cancel/:id", portalAuth, internalMemberOnly, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [slot] = await db.select().from(bookingSlots).where(eq(bookingSlots.id, id));
+    if (!slot) return res.status(404).json({ data: null, error: "예약 슬롯을 찾을 수 없습니다", meta: null });
+
+    const [updated] = await db
+      .update(bookingSlots)
+      .set({ isAvailable: 1, consultationId: null })
+      .where(eq(bookingSlots.id, id))
+      .returning();
+
+    res.json({ data: updated, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+// =============================================
+// 포털 고객 관리 (내부 구성원 전용)
+// =============================================
+
+/**
+ * GET /api/portal/clients — 고객 목록 조회
+ */
+router.get("/clients", portalAuth, internalMemberOnly, async (req, res) => {
+  try {
+    const result = await clientService.listClients(req.query);
+    res.json({ data: result.items, error: null, meta: result.meta });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+/**
+ * GET /api/portal/clients/:id — 고객 단건 조회
+ */
+router.get("/clients/:id", portalAuth, internalMemberOnly, async (req, res) => {
+  try {
+    const client = await clientService.getClientById(req.params.id);
+    res.json({ data: client, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+/**
+ * POST /api/portal/clients — 고객 등록
+ */
+router.post("/clients", portalAuth, internalMemberOnly, async (req, res) => {
+  try {
+    const inserted = await clientService.createClient(req.body);
+    res.json({ data: inserted, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+/**
+ * PATCH /api/portal/clients/:id — 고객 정보 수정
+ */
+router.patch("/clients/:id", portalAuth, internalMemberOnly, async (req, res) => {
+  try {
+    const updated = await clientService.updateClient(req.params.id, req.body);
+    res.json({ data: updated, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+/**
+ * DELETE /api/portal/clients/:id — 고객 삭제
+ */
+router.delete("/clients/:id", portalAuth, internalMemberOnly, async (req, res) => {
+  try {
+    const result = await clientService.deleteClient(req.params.id);
+    res.json({ data: result, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
   }
 });
 

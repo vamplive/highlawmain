@@ -24,6 +24,8 @@ import {
   Mail,
   Bot,
   ArrowLeft,
+  Users,
+  CalendarCheck,
 } from "lucide-react";
 
 const THEME = {
@@ -534,6 +536,24 @@ export default function PortalLayout() {
               >
                 <Mail size={16} />
                 메시지 발송
+              </Link>
+
+              <Link
+                to="/portal/bookings"
+                className={`portal-sidebar-link ${location.pathname === "/portal/bookings" ? "portal-sidebar-link-active" : ""}`}
+                onClick={() => isMobile && setIsSidebarOpen(false)}
+              >
+                <CalendarCheck size={16} />
+                예약 관리
+              </Link>
+
+              <Link
+                to="/portal/clients"
+                className={`portal-sidebar-link ${location.pathname === "/portal/clients" ? "portal-sidebar-link-active" : ""}`}
+                onClick={() => isMobile && setIsSidebarOpen(false)}
+              >
+                <Users size={16} />
+                고객 관리
               </Link>
 
               <a

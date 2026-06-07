@@ -10,8 +10,8 @@ import useMediaQuery from "../../hooks/useMediaQuery";
 
 const PAGE_SIZE = 20;
 const ANALYTICS_PERIOD = "90d";
-const CATEGORY_OPTIONS = [
-  { value: "", label: "전체 분류" },
+const BLOG_TABS = [
+  { value: "", label: "전체" },
   ...BLOG_CATEGORIES,
   { value: "__uncategorized", label: "기타" },
 ];
@@ -72,12 +72,42 @@ function SelectAllCheckbox({ checked, indeterminate, onChange, disabled = false,
   );
 }
 
-function BlogFilters({ category, setCategory, status, setStatus, search, setSearch }) {
+function CategoryTabs({ category, setCategory }) {
+  return (
+    <div style={{
+      display: "flex", gap: 0, marginBottom: 18,
+      borderBottom: `2px solid ${COLORS.border}`,
+    }}>
+      {BLOG_TABS.map((tab) => {
+        const active = category === tab.value;
+        return (
+          <button
+            key={tab.value}
+            onClick={() => setCategory(tab.value)}
+            style={{
+              padding: "10px 20px",
+              fontSize: 14, fontWeight: active ? 700 : 400,
+              color: active ? "#1a3a6b" : COLORS.muted,
+              background: "transparent", border: "none",
+              borderBottom: active ? "2px solid #1a3a6b" : "2px solid transparent",
+              marginBottom: -2, cursor: "pointer",
+              transition: "color 0.15s",
+            }}
+          >
+            {tab.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function BlogFilters({ status, setStatus, search, setSearch }) {
   const isMobile = useMediaQuery("(max-width: 640px)");
   return (
     <div style={{
       display: "grid",
-      gridTemplateColumns: isMobile ? "1fr" : "minmax(220px, 1fr) 180px 180px",
+      gridTemplateColumns: isMobile ? "1fr" : "minmax(220px, 1fr) 180px",
       gap: 12,
       marginBottom: 18,
       padding: 16,
@@ -91,11 +121,6 @@ function BlogFilters({ category, setCategory, status, setStatus, search, setSear
         placeholder="제목, 요약, 태그 검색"
         style={fieldStyle}
       />
-      <select value={category} onChange={(event) => setCategory(event.target.value)} style={fieldStyle}>
-        {CATEGORY_OPTIONS.map((option) => (
-          <option key={option.value} value={option.value}>{option.label}</option>
-        ))}
-      </select>
       <select value={status} onChange={(event) => setStatus(event.target.value)} style={fieldStyle}>
         {STATUS_OPTIONS.map((option) => (
           <option key={option.value} value={option.value}>{option.label}</option>
@@ -675,10 +700,9 @@ export default function AdminBlog() {
         </Link>
       </PageHeader>
 
+      <CategoryTabs category={category} setCategory={setCategory} />
       <BlogStats posts={posts} />
       <BlogFilters
-        category={category}
-        setCategory={setCategory}
         status={status}
         setStatus={setStatus}
         search={search}

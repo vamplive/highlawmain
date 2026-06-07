@@ -31,7 +31,7 @@ async function apiFetch(path, opts = {}) {
     credentials: "include",
     headers: {
       "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(token ? { "x-portal-token": token } : {}),
       ...(csrfToken ? { "x-csrf-token": csrfToken } : {}),
       ...(opts.headers || {}),
     },

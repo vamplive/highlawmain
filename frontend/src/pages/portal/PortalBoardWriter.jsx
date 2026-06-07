@@ -8,10 +8,16 @@
  */
 import { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation, useSearchParams } from "react-router-dom";
-import { portalApi } from "../../utils/api";
+import { portalApi, api } from "../../utils/api";
 import PortalRichTextEditor from "./PortalRichTextEditor";
 import useMediaQuery from "../../hooks/useMediaQuery";
-import { ChevronLeft, Save, AlertCircle } from "lucide-react";
+import { ChevronLeft, Save, AlertCircle, Sparkles } from "lucide-react";
+
+const AI_TONES = [
+  { value: "professional", label: "전문적" },
+  { value: "friendly", label: "친근한" },
+  { value: "formal", label: "격식체" },
+];
 
 export default function PortalBoardWriter() {
   const navigate = useNavigate();
@@ -34,6 +40,8 @@ export default function PortalBoardWriter() {
 
   const [saving, setSaving] = useState(false);
   const [loadError, setLoadError] = useState("");
+  const [aiTone, setAiTone] = useState("professional");
+  const [aiLoading, setAiLoading] = useState(false);
 
   // 카테고리 목록 + 관리자 여부 조회
   useEffect(() => {
@@ -77,6 +85,20 @@ export default function PortalBoardWriter() {
       setFormIsImportant(post.isImportant === 1);
     }).catch(() => setLoadError("게시글을 불러오지 못했습니다."));
   }, [isEditing, postId, location.state]);
+
+  const handleAiWrite = async () => {
+    if (!formTitle.trim()) { alert("AI 글쓰기에 사용할 제목을 먼저 입력해주세요."); return; }
+    setAiLoading(true);
+    try {
+      const res = await api.post("/media/generate-blog-text", { topic: formTitle, tone: aiTone });
+      const { body } = res.data || {};
+      if (body) setFormContent(body);
+    } catch (e) {
+      alert(e.message || "AI 글쓰기에 실패했습니다.");
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!formTitle.trim()) { alert("제목을 입력해주세요."); return; }
@@ -205,6 +227,38 @@ export default function PortalBoardWriter() {
           <p style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 16px" }}>
             게시글 설정
           </p>
+
+          {/* AI 글쓰기 */}
+          <div style={{ marginBottom: 24, padding: "14px", background: "#faf5ff", borderRadius: 8, border: "1px solid #e9d5ff" }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: "#7c3aed", margin: "0 0 10px", display: "flex", alignItems: "center", gap: 4 }}>
+              <Sparkles size={13} /> AI 글쓰기
+            </p>
+            <label style={metaLabelStyle}>문체</label>
+            <select
+              value={aiTone}
+              onChange={(e) => setAiTone(e.target.value)}
+              style={{ ...metaSelectStyle, marginBottom: 10 }}
+            >
+              {AI_TONES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+            </select>
+            <button
+              onClick={handleAiWrite}
+              disabled={aiLoading}
+              style={{
+                width: "100%", padding: "9px 0", fontSize: 13, fontWeight: 600,
+                background: aiLoading ? "#a78bfa" : "#7c3aed",
+                color: "#fff", border: "none", borderRadius: 7,
+                cursor: aiLoading ? "not-allowed" : "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+              }}
+            >
+              <Sparkles size={14} />
+              {aiLoading ? "생성 중..." : "AI로 본문 생성"}
+            </button>
+            <p style={{ fontSize: 10, color: "#a78bfa", margin: "6px 0 0", lineHeight: 1.5 }}>
+              제목을 주제로 AI가 본문을 작성합니다. 기존 본문은 대체됩니다.
+            </p>
+          </div>
 
           {/* 카테고리 */}
           <div style={{ marginBottom: 20 }}>
