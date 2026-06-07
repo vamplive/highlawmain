@@ -127,13 +127,6 @@ async function createClient(data) {
 
   const phoneDigits = cleanPhone(phone.trim());
 
-  // 전화번호 중복 체크
-  const [existing] = await db.select().from(clients)
-    .where(eq(clients.phone, phoneDigits));
-  if (existing) {
-    throw new ServiceError("이미 등록된 전화번호입니다", 409);
-  }
-
   const [inserted] = await db.insert(clients).values({
     name: name.trim(),
     phone: phoneDigits,
