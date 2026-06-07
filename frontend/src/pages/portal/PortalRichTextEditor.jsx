@@ -52,7 +52,7 @@ function ToolButton({ active, onClick, title, children, disabled }) {
   );
 }
 
-export default function PortalRichTextEditor({ value, onChange, placeholder }) {
+export default function PortalRichTextEditor({ value, onChange, placeholder, minHeight, maxHeight }) {
   const [imageUploading, setImageUploading] = useState(false);
   const fileInputRef = useRef(null);
 
@@ -206,7 +206,7 @@ export default function PortalRichTextEditor({ value, onChange, placeholder }) {
       {/* 본문 캔버스 */}
       <div
         onClick={() => editor?.chain().focus().run()}
-        style={{ background: "#ffffff", padding: "14px 16px", minHeight: 240, maxHeight: 480, overflowY: "auto", cursor: "text" }}
+        style={{ background: "#ffffff", padding: "14px 16px", minHeight: minHeight ?? 240, maxHeight: maxHeight ?? 480, overflowY: "auto", cursor: "text" }}
       >
         <EditorContent editor={editor} className="portal-rich-text-editor" />
       </div>

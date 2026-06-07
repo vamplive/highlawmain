@@ -33,6 +33,9 @@ export default function SendTab() {
   const [clientFilter, setClientFilter] = useState("");
   const [segmentCount, setSegmentCount] = useState(0);
 
+  // 직접 입력 모드 상태
+  const [manualRecipients, setManualRecipients] = useState([]);
+
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState(null);
   const [pendingDuplicates, setPendingDuplicates] = useState(null);
@@ -47,11 +50,14 @@ export default function SendTab() {
     api.get(url).then((j) => setTemplates(j.data ?? [])).catch(() => setTemplates([]));
   }, [channel]);
 
-  // 수신자 출처 변경 시 목록 재조회 (세그먼트는 수동 트리거)
+  // 수신자 출처 변경 시 목록 재조회 (세그먼트·직접 입력은 수동 트리거)
   useEffect(() => {
     setSelectedClients(new Set());
     if (recipientSource === "segment") {
       setRecipientList([]); setSegmentCount(0); setRecipientLoading(false); return;
+    }
+    if (recipientSource === "manual") {
+      setRecipientLoading(false); return;
     }
     setRecipientLoading(true);
     const url = recipientSource === "clients"
@@ -77,7 +83,9 @@ export default function SendTab() {
   };
 
   // 채널·검색어로 수신자 필터링 (해당 채널 정보 없는 사람은 제외)
-  const filteredClients = recipientList.filter((c) => {
+  // 직접 입력 모드: manualRecipients를 소스로 사용
+  const activeList = recipientSource === "manual" ? manualRecipients : recipientList;
+  const filteredClients = activeList.filter((c) => {
     if (channel === "sms" && !c.phone) return false;
     if (channel === "email" && !c.email) return false;
     if (channel === "both" && (!c.phone || !c.email)) return false;
@@ -87,6 +95,18 @@ export default function SendTab() {
       || (c.phone || "").includes(q)
       || (c.email || "").toLowerCase().includes(q);
   });
+
+  const handleAddManualRecipient = (recipient) => {
+    setManualRecipients((prev) => {
+      if (prev.some((r) => r.id === recipient.id)) return prev;
+      return [...prev, recipient];
+    });
+  };
+
+  const handleRemoveManualRecipient = (id) => {
+    setManualRecipients((prev) => prev.filter((r) => r.id !== id));
+    setSelectedClients((prev) => { const next = new Set(prev); next.delete(id); return next; });
+  };
 
   const toggleClient = (id) => {
     setSelectedClients((prev) => {
@@ -110,7 +130,7 @@ export default function SendTab() {
   const previewSample = (() => {
     if (selectedClients.size === 0) return null;
     const firstId = [...selectedClients][0];
-    const c = recipientList.find((x) => x.id === firstId);
+    const c = activeList.find((x) => x.id === firstId);
     return c ? { name: c.name, category: c.category } : null;
   })();
 
@@ -125,7 +145,7 @@ export default function SendTab() {
     if ((channel === "email" || channel === "both") && !subject.trim())
       return showToast("이메일 제목을 입력해주세요");
 
-    const selectedList = recipientList.filter((c) => selectedClients.has(c.id));
+    const selectedList = activeList.filter((c) => selectedClients.has(c.id));
     const contacts = [];
     selectedList.forEach((c) => {
       if (channel === "sms" || channel === "both") c.phone && contacts.push(c.phone);
@@ -218,6 +238,9 @@ export default function SendTab() {
             onFilterChange={setClientFilter}
             onSegmentResult={handleSegmentResult}
             segmentCount={segmentCount}
+            manualRecipients={manualRecipients}
+            onAddManualRecipient={handleAddManualRecipient}
+            onRemoveManualRecipient={handleRemoveManualRecipient}
           />
         </section>
 

@@ -218,7 +218,7 @@ export default function AdminLawyers({ settings, update }) {
             localStorage.removeItem(draftKey);
           }
         }
-      } catch (e) {
+      } catch (_e) {
         localStorage.removeItem(draftKey);
       }
     }
@@ -246,7 +246,7 @@ export default function AdminLawyers({ settings, update }) {
             localStorage.removeItem(draftKey);
           }
         }
-      } catch (e) {
+      } catch (_e) {
         localStorage.removeItem(draftKey);
       }
     }
@@ -438,8 +438,9 @@ export default function AdminLawyers({ settings, update }) {
                         if (!file) return;
                         try {
                           const formData = new FormData();
-                          formData.append("file", file);
+                          // folder를 file보다 먼저 추가해야 multer destination 콜백에서 req.body.folder가 읽힘
                           formData.append("folder", "lawyers");
+                          formData.append("file", file);
                           const res = await api.upload("/media/upload", formData);
                           if (res.data?.url) {
                             crud.setField("photoUrl", res.data.url);

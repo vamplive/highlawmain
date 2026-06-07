@@ -211,7 +211,11 @@ router.post("/upload", adminOrPortalAuth, upload.single("file"), async (req, res
       return res.status(400).json({ data: null, error: "파일이 필요합니다", meta: null });
     }
 
-    const folder = sanitizeFolder(req.body.folder);
+    // req.file.destination은 multer가 실제로 파일을 저장한 디렉토리 경로.
+    // req.body.folder는 multipart 필드 순서에 따라 destination 콜백에서 undefined일 수 있으므로
+    // 실제 저장 경로 기준으로 URL을 구성해 404를 방지한다.
+    const actualFolder = path.relative(MEDIA_DIR, req.file.destination) || "general";
+    const folder = sanitizeFolder(actualFolder);
     const url = `/uploads/media/${folder}/${req.file.filename}`;
 
     // 이미지 EXIF/메타데이터 strip (GPS, 카메라 정보, 작성자 등 PII 제거).
