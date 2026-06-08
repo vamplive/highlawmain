@@ -34,7 +34,8 @@ const DEFAULT_BODY = `합의서
 대리인(법무법인 하이로): {{sign:변호사}}
 `;
 
-export default function AdminSettlementNew() {
+/** onCancel/onCreated 콜백이 없으면 기존 라우트 동작 그대로 유지 */
+export default function AdminSettlementNew({ onCancel, onCreated }) {
   const [title, setTitle] = useState("합의서");
   const [body, setBody] = useState(DEFAULT_BODY);
   const [templates, setTemplates] = useState([]);
@@ -85,7 +86,8 @@ export default function AdminSettlementNew() {
       // contentJson에 포함된 서명 필드를 contract_signature_fields 로 동기화
       await syncSignatureFields(contractId, body);
 
-      navigate(`/admin/contracts/${contractId}`);
+      if (onCreated) onCreated(contractId);
+      else navigate(`/admin/contracts/${contractId}`);
     } catch (e) {
       setError(e.message);
     } finally { setSaving(false); }
@@ -98,7 +100,7 @@ export default function AdminSettlementNew() {
           <h1 className="text-xl font-semibold text-gray-900">새 합의서 작성</h1>
           <p className="text-sm text-gray-500">본문에 {`{{sign:의뢰인}}`}, {`{{sign:상대방}}`}처럼 서명 위치를 지정하세요.</p>
         </div>
-        <Button variant="outline" onClick={() => navigate("/admin/contracts")}>취소</Button>
+        <Button variant="outline" onClick={() => onCancel ? onCancel() : navigate("/admin/contracts")}>취소</Button>
       </div>
 
       {templates.length > 0 && (
@@ -128,7 +130,7 @@ export default function AdminSettlementNew() {
       {error && <div className="rounded border border-red-200 bg-red-50 p-2 text-sm text-red-700">{error}</div>}
 
       <div className="flex justify-end gap-2">
-        <Button variant="outline" onClick={() => navigate("/admin/contracts")}>취소</Button>
+        <Button variant="outline" onClick={() => onCancel ? onCancel() : navigate("/admin/contracts")}>취소</Button>
         <Button onClick={handleCreate} disabled={saving}>{saving ? "생성 중..." : "생성 → 서명자 등록"}</Button>
       </div>
     </div>

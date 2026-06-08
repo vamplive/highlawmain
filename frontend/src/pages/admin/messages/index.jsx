@@ -3,7 +3,7 @@
  * 좌측 얇은 네비게이션 + 우측 넓은 발송/관리 영역
  */
 import { useState } from "react";
-import { BarChart3, Clock3, History, MailPlus, PanelsTopLeft, Send, Users, Workflow } from "lucide-react";
+import { BarChart3, Clock3, FileText, History, MailPlus, PanelsTopLeft, Send, Users, Workflow } from "lucide-react";
 import TemplatesTab from "./TemplatesTab";
 import SendTab from "./SendTab";
 import LogsTab from "./LogsTab";
@@ -11,6 +11,7 @@ import ScheduledTab from "./ScheduledTab";
 import TriggersTab from "./TriggersTab";
 import ReportTab from "./ReportTab";
 import ClientsTab from "./ClientsTab";
+import ContractsTab from "./ContractsTab";
 import { COLORS } from "../../../components/admin";
 import useMediaQuery from "../../../hooks/useMediaQuery";
 
@@ -23,6 +24,7 @@ const NAV_ITEMS = [
   { key: "triggers", label: "자동화", icon: Workflow, description: "조건 기반 자동 발송 규칙을 설정합니다" },
   { key: "logs", label: "이력", icon: History, description: "개별 발송 성공·실패 기록을 추적합니다" },
   { key: "report", label: "리포트", icon: BarChart3, description: "발송량과 실패율을 통계로 확인합니다" },
+  { key: "contracts", label: "전자계약서", icon: FileText, description: "위임계약서·합의서를 발행하고 서명 진행을 추적합니다" },
 ];
 
 export default function AdminMessages() {
@@ -96,6 +98,7 @@ export default function AdminMessages() {
           {activeView === "triggers" && <TriggersTab />}
           {activeView === "logs" && <LogsTab />}
           {activeView === "report" && <ReportTab />}
+          {activeView === "contracts" && <ContractsTab />}
         </div>
       </main>
     </div>

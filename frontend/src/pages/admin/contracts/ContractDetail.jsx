@@ -18,8 +18,10 @@ const STATUS_LABELS = {
   completed: "완료", cancelled: "취소", expired: "만료",
 };
 
-export default function AdminContractDetail() {
-  const { id } = useParams();
+/** contractId prop이 있으면 임베드 모드 — useParams 대신 prop 사용. onBack이 있으면 네비게이션 대신 콜백 호출. */
+export default function AdminContractDetail({ contractId: propContractId, onBack }) {
+  const params = useParams();
+  const id = propContractId || params.id;
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -101,7 +103,7 @@ export default function AdminContractDetail() {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6">
       <div className="lg:col-span-2 space-y-4">
         <div className="flex items-center justify-between">
-          <button onClick={() => navigate("/admin/contracts")} className="text-sm text-gray-500 hover:text-gray-800">← 목록</button>
+          <button onClick={() => onBack ? onBack() : navigate("/admin/contracts")} className="text-sm text-gray-500 hover:text-gray-800">← 목록</button>
           <div className="flex items-center gap-2">
             <span className={`rounded px-3 py-1 text-xs font-medium ${statusClass(contract.status)}`}>
               {STATUS_LABELS[contract.status] || contract.status}
