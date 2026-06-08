@@ -1706,5 +1706,52 @@ module.exports = {
     sqlite.exec("CREATE INDEX IF NOT EXISTS idx_portal_member_groups_user ON portal_member_groups(portal_user_id);");
   } catch (e) { warnMigrationSkip(e); }
 
+  // messenger_rooms / messenger_members / messenger_messages — 실시간 채팅
+  try {
+    sqlite.exec(`
+      CREATE TABLE IF NOT EXISTS messenger_rooms (
+        id TEXT PRIMARY KEY,
+        name TEXT,
+        type TEXT NOT NULL DEFAULT 'direct',
+        created_by TEXT,
+        created_by_type TEXT DEFAULT 'portal',
+        last_message_at TEXT,
+        last_message_preview TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+
+      CREATE TABLE IF NOT EXISTS messenger_members (
+        id TEXT PRIMARY KEY,
+        room_id TEXT NOT NULL,
+        user_id TEXT NOT NULL,
+        user_type TEXT NOT NULL DEFAULT 'portal',
+        display_name TEXT,
+        last_read_at TEXT,
+        joined_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+      CREATE INDEX IF NOT EXISTS idx_messenger_members_room ON messenger_members(room_id);
+      CREATE INDEX IF NOT EXISTS idx_messenger_members_user ON messenger_members(user_id, user_type);
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_messenger_members_unique ON messenger_members(room_id, user_id, user_type);
+
+      CREATE TABLE IF NOT EXISTS messenger_messages (
+        id TEXT PRIMARY KEY,
+        room_id TEXT NOT NULL,
+        sender_id TEXT NOT NULL,
+        sender_type TEXT NOT NULL DEFAULT 'portal',
+        sender_name TEXT,
+        content TEXT,
+        type TEXT NOT NULL DEFAULT 'text',
+        file_url TEXT,
+        file_name TEXT,
+        file_size INTEGER,
+        is_deleted INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+      CREATE INDEX IF NOT EXISTS idx_messenger_messages_room ON messenger_messages(room_id, created_at);
+      CREATE INDEX IF NOT EXISTS idx_messenger_messages_sender ON messenger_messages(sender_id, sender_type);
+    `);
+  } catch (e) { warnMigrationSkip(e); }
+
   },
 };

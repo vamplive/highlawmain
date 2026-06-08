@@ -631,46 +631,41 @@ export default function PortalLayout() {
             )}
 
             {/* 오른쪽 퀵 메뉴 및 아바타 */}
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
               {!isMobile && (
                 <>
-                  <Link 
-                    to="/portal/calendar" 
-                    style={{ padding: 8, borderRadius: 8, color: location.pathname === "/portal/calendar" ? THEME.accent : "#64748b", transition: "background 0.2s", display: "flex" }}
-                    title="일정 캘린더"
-                  >
-                    <Home size={20} />
-                  </Link>
-                  <Link 
-                    to="/portal/board" 
-                    style={{ padding: 8, borderRadius: 8, color: location.pathname === "/portal/board" ? THEME.accent : "#64748b", transition: "background 0.2s", display: "flex" }}
-                    title="내부 게시판"
-                  >
-                    <FileText size={20} />
-                  </Link>
-                  <Link 
-                    to="/portal/dashboard" 
-                    style={{ padding: 8, borderRadius: 8, color: location.pathname === "/portal/dashboard" ? THEME.accent : "#64748b", transition: "background 0.2s", display: "flex" }}
-                    title="사건 목록"
-                  >
-                    <Calendar size={20} />
-                  </Link>
-                  <Link 
-                    to="/portal/time-tracking" 
-                    style={{ padding: 8, borderRadius: 8, color: location.pathname === "/portal/time-tracking" ? THEME.accent : "#64748b", transition: "background 0.2s", display: "flex" }}
-                    title="타임트래킹"
-                  >
-                    <Clock size={20} />
-                  </Link>
-                  <Link 
-                    to="/portal/profile" 
-                    style={{ padding: 8, borderRadius: 8, color: location.pathname === "/portal/profile" ? THEME.accent : "#64748b", transition: "background 0.2s", display: "flex" }}
-                    title="내 프로필 설정"
-                  >
-                    <User size={20} />
-                  </Link>
-
-                  <div style={{ height: 16, width: 1, background: THEME.border, margin: "0 8px" }} />
+                  {[
+                    { to: "/portal/dashboard",    icon: <Home size={20} />,            label: "홈" },
+                    { to: "/portal/messenger",    icon: <MessageSquare size={20} />,   label: "메신저" },
+                    { to: "/portal/mail",         icon: <Mail size={20} />,            label: "메일" },
+                    { to: "/portal/calendar",     icon: <Calendar size={20} />,        label: "캘린더" },
+                    { to: "/portal/board",        icon: <FileText size={20} />,        label: "게시판" },
+                    { to: "/portal/time-tracking",icon: <Clock size={20} />,           label: "타임트래킹" },
+                    { to: "/portal/profile",      icon: <User size={20} />,            label: "마이페이지" },
+                  ].map(({ to, icon, label }) => {
+                    const isActive = location.pathname === to ||
+                      (to !== "/portal/dashboard" && location.pathname.startsWith(to));
+                    return (
+                      <Link
+                        key={to}
+                        to={to}
+                        style={{
+                          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                          padding: "5px 10px", borderRadius: 8, textDecoration: "none", minWidth: 54, height: 48,
+                          color: isActive ? THEME.accent : "#64748b",
+                          background: isActive ? THEME.accentDim : "transparent",
+                          transition: "background 0.15s, color 0.15s",
+                          gap: 2,
+                        }}
+                        onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.background = "rgba(201,168,76,0.06)"; e.currentTarget.style.color = THEME.accent; } }}
+                        onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#64748b"; } }}
+                      >
+                        {icon}
+                        <span style={{ fontSize: 10, fontWeight: isActive ? 700 : 400, whiteSpace: "nowrap", letterSpacing: "-0.01em" }}>{label}</span>
+                      </Link>
+                    );
+                  })}
+                  <div style={{ height: 32, width: 1, background: THEME.border, margin: "0 8px" }} />
                 </>
               )}
 

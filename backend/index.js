@@ -341,6 +341,7 @@ app.use("/api/tasks", require("./routes/tasks"));
 app.use("/api/court-dates", require("./routes/court-dates"));
 app.use("/api/trust-accounts", require("./routes/trust-accounts"));
 app.use("/api/conflicts", require("./routes/conflicts"));
+app.use("/api/chat", require("./routes/chat"));
 
 /* 법정 일정 알림 cron — 매분 도래한 reminder_at 을 SMS/이메일로 발송 */
 try {
@@ -628,6 +629,13 @@ app.use((err, req, res, _next) => {
 const server = app.listen(PORT, () => {
   logger.info({ port: PORT }, "server listening");
   require("./lib/scheduler").startScheduler();
+  try {
+    const { attachChatWs } = require("./lib/chat-ws");
+    attachChatWs(server);
+    logger.info("chat WebSocket server attached at /ws/chat");
+  } catch (err) {
+    logger.warn({ err }, "chat WebSocket server failed to start");
+  }
 });
 
 // 그레이스풀 셧다운 — 진행 중인 요청 완료 후 종료

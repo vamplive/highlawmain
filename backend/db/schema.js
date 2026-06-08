@@ -1192,6 +1192,44 @@ const userAiConfigs = sqliteTable("user_ai_configs", {
   updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
 });
 
+// ─── 메신저 ───────────────────────────────────────────────────────────────────
+const messengerRooms = sqliteTable("messenger_rooms", {
+  id: text("id").primaryKey(),
+  name: text("name"),
+  type: text("type").notNull().default("direct"),
+  createdBy: text("created_by"),
+  createdByType: text("created_by_type").default("portal"),
+  lastMessageAt: text("last_message_at"),
+  lastMessagePreview: text("last_message_preview"),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+});
+
+const messengerMembers = sqliteTable("messenger_members", {
+  id: text("id").primaryKey(),
+  roomId: text("room_id").notNull(),
+  userId: text("user_id").notNull(),
+  userType: text("user_type").notNull().default("portal"),
+  displayName: text("display_name"),
+  lastReadAt: text("last_read_at"),
+  joinedAt: text("joined_at").notNull().default(sql`(datetime('now'))`),
+});
+
+const messengerMessages = sqliteTable("messenger_messages", {
+  id: text("id").primaryKey(),
+  roomId: text("room_id").notNull(),
+  senderId: text("sender_id").notNull(),
+  senderType: text("sender_type").notNull().default("portal"),
+  senderName: text("sender_name"),
+  content: text("content"),
+  type: text("type").notNull().default("text"),
+  fileUrl: text("file_url"),
+  fileName: text("file_name"),
+  fileSize: integer("file_size"),
+  isDeleted: integer("is_deleted").notNull().default(0),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+});
+
 module.exports = {
   DOCUMENT_TYPES,
   DOCUMENT_STATUSES,
@@ -1302,5 +1340,10 @@ module.exports = {
 
   // AI 연동 설정
   userAiConfigs,
+
+  // 메신저
+  messengerRooms,
+  messengerMembers,
+  messengerMessages,
 };
 

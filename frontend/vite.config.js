@@ -19,6 +19,7 @@ export default defineConfig({
       '/uploads':   { target: API_TARGET, changeOrigin: true },
       '/data':      { target: API_TARGET, changeOrigin: true },
       '/sitemap.xml': { target: API_TARGET, changeOrigin: true },
+      '/ws':        { target: API_TARGET.replace(/^http/, 'ws'), ws: true, changeOrigin: true },
     },
   },
   build: {

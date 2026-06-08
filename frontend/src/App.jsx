@@ -116,6 +116,7 @@ const PortalBoard = lazy(() => import("./pages/portal/PortalBoard"));
 const PortalBoardWriter = lazy(() => import("./pages/portal/PortalBoardWriter"));
 const PortalCalendar = lazy(() => import("./pages/portal/PortalCalendar"));
 const PortalProfile = lazy(() => import("./pages/portal/PortalProfile"));
+const PortalMessenger = lazy(() => import("./pages/portal/PortalMessenger"));
 const PortalApprovals = lazy(() => import("./pages/portal/PortalApprovals"));
 const PortalAiSettings = lazy(() => import("./pages/portal/PortalAiSettings"));
 const PortalBookings = lazy(() => import("./pages/portal/PortalBookings"));
@@ -329,6 +330,7 @@ export default function App() {
           <Route path="board/write/:postId" element={<LazyRoute><PortalBoardWriter /></LazyRoute>} />
           <Route path="calendar" element={<LazyRoute><PortalCalendar /></LazyRoute>} />
           <Route path="profile" element={<LazyRoute><PortalProfile /></LazyRoute>} />
+          <Route path="messenger" element={<LazyRoute><PortalMessenger /></LazyRoute>} />
           <Route path="approvals" element={<LazyRoute><PortalApprovals /></LazyRoute>} />
           <Route path="contracts" element={<LazyRoute><PortalContracts /></LazyRoute>} />
           <Route path="contracts/:id" element={<LazyRoute><PortalContractSign /></LazyRoute>} />
