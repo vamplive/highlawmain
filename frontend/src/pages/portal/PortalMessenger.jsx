@@ -271,7 +271,7 @@ export default function PortalMessenger() {
     setMsgInput("");
 
     // WS로 전송 (서버에서 저장 후 브로드캐스트)
-    wsSend({ type: "send_message", roomId: activeRoomId, content, type: "text" });
+    wsSend({ type: "send_message", roomId: activeRoomId, content, contentType: "text" });
 
     // 타이핑 중지
     wsSend({ type: "typing", roomId: activeRoomId, isTyping: false });
@@ -305,7 +305,7 @@ export default function PortalMessenger() {
       form.append("file", file);
       const res = await api.upload(`/chat/rooms/${activeRoomId}/files`, form);
       const { fileUrl, fileName, fileSize } = res.data;
-      wsSend({ type: "send_message", roomId: activeRoomId, content: null, type: "file", fileUrl, fileName, fileSize });
+      wsSend({ type: "send_message", roomId: activeRoomId, content: null, contentType: "file", fileUrl, fileName, fileSize });
     } catch {
       showToast("파일 업로드 실패", "error");
     } finally {

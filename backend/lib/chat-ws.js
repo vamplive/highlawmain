@@ -128,7 +128,7 @@ function handleIncoming(ws, msg, roomClients, userClients) {
 }
 
 function handleSendMessage(ws, msg, roomClients) {
-  const { roomId, content, type = "text", fileUrl, fileName, fileSize } = msg;
+  const { roomId, content, contentType: type = "text", fileUrl, fileName, fileSize } = msg;
   if (!roomId) return;
 
   // 방 멤버 확인
