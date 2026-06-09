@@ -1626,6 +1626,32 @@ module.exports = {
   try { sqlite.exec("ALTER TABLE portal_users ADD COLUMN reset_token_hash TEXT"); } catch (e) { warnMigrationSkip(e); }
   try { sqlite.exec("ALTER TABLE portal_users ADD COLUMN reset_token_expires_at INTEGER"); } catch (e) { warnMigrationSkip(e); }
 
+  // contract_templates — 원본 양식 파일(HWP/PDF) 첨부 컬럼 추가
+  try { sqlite.exec("ALTER TABLE contract_templates ADD COLUMN file_url_hwp TEXT"); } catch (e) { warnMigrationSkip(e); }
+  try { sqlite.exec("ALTER TABLE contract_templates ADD COLUMN file_url_pdf TEXT"); } catch (e) { warnMigrationSkip(e); }
+
+  // 사전 복사된 계약서 원본 파일을 제목 패턴으로 자동 연동 (이미 설정된 경우 덮어쓰지 않음)
+  try {
+    sqlite.exec(`
+      UPDATE contract_templates SET
+        file_url_hwp = '/uploads/contract-templates/법률자문계약서.hwp',
+        file_url_pdf = '/uploads/contract-templates/법률자문계약서.pdf'
+      WHERE (title LIKE '%법률자문%') AND (file_url_hwp IS NULL OR file_url_pdf IS NULL)
+    `);
+    sqlite.exec(`
+      UPDATE contract_templates SET
+        file_url_hwp = '/uploads/contract-templates/수임계약서(민사).hwp',
+        file_url_pdf = '/uploads/contract-templates/수임계약서(민사).pdf'
+      WHERE (title LIKE '%민사%') AND (file_url_hwp IS NULL OR file_url_pdf IS NULL)
+    `);
+    sqlite.exec(`
+      UPDATE contract_templates SET
+        file_url_hwp = '/uploads/contract-templates/수임계약서(형사).hwp',
+        file_url_pdf = '/uploads/contract-templates/수임계약서(형사).pdf'
+      WHERE (title LIKE '%형사%') AND (file_url_hwp IS NULL OR file_url_pdf IS NULL)
+    `);
+  } catch (e) { warnMigrationSkip(e); }
+
   // portal_events — attendee_ids 컬럼 추가
   try { sqlite.exec("ALTER TABLE portal_events ADD COLUMN attendee_ids TEXT"); } catch (e) { warnMigrationSkip(e); }
 

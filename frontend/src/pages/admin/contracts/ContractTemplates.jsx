@@ -2,6 +2,7 @@
  * 계약서 양식(템플릿) 관리 — 관리자 페이지
  * - 목록 / 추가 / 편집 / 삭제
  * - "이 양식으로 발행" → 의뢰인 맞춤 계약서 인스턴스 생성
+ * - HWP/PDF 원본 파일 첨부 및 다운로드
  */
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -10,6 +11,7 @@ import { Button } from "../../../components/ui/Button";
 import { Input } from "../../../components/ui/Input";
 import { Select } from "../../../components/ui/Select";
 import { Textarea } from "../../../components/ui/Textarea";
+
 
 const CATEGORIES = [
   { value: "engagement", label: "위임계약서" },
@@ -25,6 +27,10 @@ export default function AdminContractTemplates() {
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [issueOpen, setIssueOpen] = useState(null);
+  const [uploadingId, setUploadingId] = useState(null);
+  const hwpInputRef = useRef(null);
+  const pdfInputRef = useRef(null);
+  const uploadTargetRef = useRef(null);
   const navigate = useNavigate();
 
   async function load() {
@@ -64,8 +70,43 @@ export default function AdminContractTemplates() {
     navigate(`/admin/contracts/${res.data.contract.id}`);
   }
 
+  function triggerFileUpload(templateId, type) {
+    uploadTargetRef.current = { id: templateId, type };
+    if (type === "hwp") hwpInputRef.current?.click();
+    else pdfInputRef.current?.click();
+  }
+
+  async function handleFileSelected(e, type) {
+    const file = e.target.files?.[0];
+    if (!file || !uploadTargetRef.current) return;
+    const { id } = uploadTargetRef.current;
+    const formData = new FormData();
+    formData.append("file", file);
+    setUploadingId(`${id}-${type}`);
+    try {
+      await api.upload(`/contract-templates/${id}/upload-file`, formData);
+      await load();
+    } catch (err) {
+      alert(err.message || "파일 업로드 실패");
+    } finally {
+      setUploadingId(null);
+      e.target.value = "";
+      uploadTargetRef.current = null;
+    }
+  }
+
+  async function handleFileDelete(templateId, type) {
+    if (!confirm(`이 ${type.toUpperCase()} 파일을 삭제할까요?`)) return;
+    await api.delete(`/contract-templates/${templateId}/file/${type}`);
+    load();
+  }
+
   return (
     <div className="p-6">
+      {/* 숨김 파일 입력 — triggerFileUpload()로 프로그래밍적으로 클릭 */}
+      <input ref={hwpInputRef} type="file" accept=".hwp,.hwpx,.doc,.docx" className="hidden" onChange={(e) => handleFileSelected(e, "hwp")} />
+      <input ref={pdfInputRef} type="file" accept=".pdf" className="hidden" onChange={(e) => handleFileSelected(e, "pdf")} />
+
       <div className="mb-4 flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold text-gray-900">계약서 양식 관리</h1>
@@ -82,16 +123,17 @@ export default function AdminContractTemplates() {
               <th className="px-4 py-3 text-left">분류</th>
               <th className="px-4 py-3 text-left">설명</th>
               <th className="px-4 py-3 text-left">기본</th>
+              <th className="px-4 py-3 text-left">원본 파일</th>
               <th className="px-4 py-3 text-left">수정일</th>
               <th className="px-4 py-3 text-right">작업</th>
             </tr>
           </thead>
           <tbody>
             {loading && (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">불러오는 중...</td></tr>
+              <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">불러오는 중...</td></tr>
             )}
             {!loading && templates.length === 0 && (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">
+              <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">
                 양식이 없습니다. 새 양식을 만들어보세요.
               </td></tr>
             )}
@@ -101,6 +143,14 @@ export default function AdminContractTemplates() {
                 <td className="px-4 py-3 text-xs text-gray-600">{labelOf(t.category)}</td>
                 <td className="px-4 py-3 text-xs text-gray-500">{t.description || "-"}</td>
                 <td className="px-4 py-3 text-xs">{t.is_default ? <span className="rounded bg-amber-100 px-2 py-0.5 text-amber-800">기본</span> : "-"}</td>
+                <td className="px-4 py-3">
+                  <TemplateFileBadges
+                    template={t}
+                    uploading={uploadingId}
+                    onUpload={(type) => triggerFileUpload(t.id, type)}
+                    onDelete={(type) => handleFileDelete(t.id, type)}
+                  />
+                </td>
                 <td className="px-4 py-3 text-xs text-gray-500">{fmt(t.updated_at)}</td>
                 <td className="px-4 py-3 text-right">
                   <div className="flex justify-end gap-2">
@@ -130,6 +180,69 @@ export default function AdminContractTemplates() {
           onIssue={(payload) => handleIssue(issueOpen.id, payload)}
         />
       )}
+    </div>
+  );
+}
+
+/**
+ * 템플릿 행의 HWP/PDF 파일 배지 — 다운로드 링크 + 업로드/삭제 버튼
+ */
+function TemplateFileBadges({ template, uploading, onUpload, onDelete }) {
+  const isUploadingHwp = uploading === `${template.id}-hwp`;
+  const isUploadingPdf = uploading === `${template.id}-pdf`;
+
+  return (
+    <div className="flex flex-col gap-1 text-xs">
+      {/* HWP */}
+      <div className="flex items-center gap-1">
+        {template.file_url_hwp ? (
+          <>
+            <a
+              href={template.file_url_hwp}
+              download
+              className="rounded border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-emerald-800 hover:bg-emerald-100"
+              title="HWP 다운로드"
+            >
+              HWP ↓
+            </a>
+            <button onClick={() => onDelete("hwp")} className="text-[10px] text-red-400 hover:text-red-700" title="HWP 파일 삭제">✕</button>
+          </>
+        ) : (
+          <button
+            onClick={() => onUpload("hwp")}
+            disabled={isUploadingHwp}
+            className="rounded border border-dashed border-gray-300 px-1.5 py-0.5 text-gray-400 hover:border-gray-500 hover:text-gray-600 disabled:opacity-50"
+            title="HWP 파일 업로드"
+          >
+            {isUploadingHwp ? "업로드 중..." : "HWP +"}
+          </button>
+        )}
+      </div>
+      {/* PDF */}
+      <div className="flex items-center gap-1">
+        {template.file_url_pdf ? (
+          <>
+            <a
+              href={template.file_url_pdf}
+              download
+              className="rounded border border-red-200 bg-red-50 px-1.5 py-0.5 text-red-800 hover:bg-red-100"
+              title="PDF 다운로드"
+            >
+              PDF ↓
+            </a>
+            <button onClick={() => onDelete("pdf")} className="text-[10px] text-red-400 hover:text-red-700" title="PDF 파일 삭제">✕</button>
+          </>
+        ) : (
+          <button
+            onClick={() => onUpload("pdf")}
+            disabled={isUploadingPdf}
+            className="rounded border border-dashed border-gray-300 px-1.5 py-0.5 text-gray-400 hover:border-gray-500 hover:text-gray-600 disabled:opacity-50"
+            title="PDF 파일 업로드"
+          >
+            {isUploadingPdf ? "업로드 중..." : "PDF +"}
+          </button>
+        )}
+      </div>
     </div>
   );
 }

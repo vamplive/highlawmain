@@ -2,19 +2,53 @@
  * 계약서 템플릿 API — 관리자 전용
  * - 템플릿 CRUD
  * - 의뢰인용 계약서 인스턴스로 복제 (clone-for-client)
+ * - HWP/PDF 원본 양식 파일 첨부
  */
 const { Router } = require("express");
 const crypto = require("crypto");
+const path = require("path");
+const fs = require("fs");
+const multer = require("multer");
 const { sqlite } = require("../db");
 const { adminAuth } = require("../lib/auth");
 const { logEvent } = require("../lib/audit-log");
 
 const router = Router();
 
+// ─── 계약서 파일 업로드 multer 설정 ──────────────────────────────────────
+const STORAGE_PATH = process.env.STORAGE_PATH || path.join(__dirname, "..", "data");
+const CONTRACT_FILE_DIR = path.join(STORAGE_PATH, "uploads", "contract-templates");
+
+const contractFileStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    fs.mkdirSync(CONTRACT_FILE_DIR, { recursive: true });
+    cb(null, CONTRACT_FILE_DIR);
+  },
+  filename: (_req, file, cb) => {
+    // 원본 파일명 유지 (중복 방지용 타임스탬프 prefix)
+    const ext = path.extname(file.originalname).toLowerCase();
+    const base = path.basename(file.originalname, ext)
+      .replace(/[^\w가-힣().-]/g, "_");
+    cb(null, `${base}${ext}`);
+  },
+});
+
+const contractFileUpload = multer({
+  storage: contractFileStorage,
+  limits: { fileSize: 20 * 1024 * 1024 }, // 20MB
+  fileFilter: (_req, file, cb) => {
+    const allowed = [".hwp", ".hwpx", ".pdf", ".doc", ".docx"];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowed.includes(ext)) cb(null, true);
+    else cb(new Error("HWP, PDF, DOC 파일만 업로드 가능합니다"), false);
+  },
+});
+
 router.get("/", adminAuth, (req, res) => {
   try {
     const rows = sqlite.prepare(`
-      SELECT id, title, description, category, is_default, variables_schema, created_at, updated_at
+      SELECT id, title, description, category, is_default, variables_schema,
+             file_url_hwp, file_url_pdf, created_at, updated_at
       FROM contract_templates
       ORDER BY is_default DESC, updated_at DESC
     `).all();
@@ -66,7 +100,7 @@ router.patch("/:id", adminAuth, (req, res) => {
     const row = sqlite.prepare("SELECT * FROM contract_templates WHERE id = ?").get(req.params.id);
     if (!row) return res.status(404).json({ data: null, error: "not found", meta: null });
 
-    const { title, description, category, contentJson, contentHtml, isDefault, variablesSchema } = req.body || {};
+    const { title, description, category, contentJson, contentHtml, isDefault, variablesSchema, fileUrlHwp, fileUrlPdf } = req.body || {};
     sqlite.prepare(`
       UPDATE contract_templates SET
         title = COALESCE(?, title),
@@ -76,6 +110,8 @@ router.patch("/:id", adminAuth, (req, res) => {
         content_html = COALESCE(?, content_html),
         variables_schema = COALESCE(?, variables_schema),
         is_default = COALESCE(?, is_default),
+        file_url_hwp = COALESCE(?, file_url_hwp),
+        file_url_pdf = COALESCE(?, file_url_pdf),
         updated_at = datetime('now')
       WHERE id = ?
     `).run(
@@ -86,10 +122,54 @@ router.patch("/:id", adminAuth, (req, res) => {
       contentHtml ?? null,
       variablesSchema === undefined ? null : serializeSchema(variablesSchema),
       isDefault == null ? null : (isDefault ? 1 : 0),
+      fileUrlHwp ?? null,
+      fileUrlPdf ?? null,
       req.params.id,
     );
     const updated = sqlite.prepare("SELECT * FROM contract_templates WHERE id = ?").get(req.params.id);
     res.json({ data: updated, error: null, meta: null });
+  } catch (e) {
+    res.status(500).json({ data: null, error: e.message, meta: null });
+  }
+});
+
+// ─── HWP/PDF 원본 파일 업로드 ────────────────────────────────────────────
+router.post("/:id/upload-file", adminAuth, contractFileUpload.single("file"), (req, res) => {
+  try {
+    const row = sqlite.prepare("SELECT id FROM contract_templates WHERE id = ?").get(req.params.id);
+    if (!row) return res.status(404).json({ data: null, error: "not found", meta: null });
+    if (!req.file) return res.status(400).json({ data: null, error: "파일이 없습니다", meta: null });
+
+    const ext = path.extname(req.file.filename).toLowerCase();
+    const fileUrl = `/uploads/contract-templates/${req.file.filename}`;
+    const colName = ext === ".pdf" ? "file_url_pdf" : "file_url_hwp";
+
+    sqlite.prepare(`UPDATE contract_templates SET ${colName} = ?, updated_at = datetime('now') WHERE id = ?`)
+      .run(fileUrl, req.params.id);
+
+    const updated = sqlite.prepare(`SELECT id, title, file_url_hwp, file_url_pdf FROM contract_templates WHERE id = ?`).get(req.params.id);
+    res.json({ data: updated, error: null, meta: null });
+  } catch (e) {
+    res.status(500).json({ data: null, error: e.message, meta: null });
+  }
+});
+
+// ─── 특정 파일 삭제 (HWP or PDF) ─────────────────────────────────────────
+router.delete("/:id/file/:type", adminAuth, (req, res) => {
+  try {
+    const { id, type } = req.params;
+    if (!["hwp", "pdf"].includes(type)) return res.status(400).json({ data: null, error: "type은 hwp 또는 pdf", meta: null });
+    const colName = type === "pdf" ? "file_url_pdf" : "file_url_hwp";
+    const row = sqlite.prepare(`SELECT ${colName} FROM contract_templates WHERE id = ?`).get(id);
+    if (!row) return res.status(404).json({ data: null, error: "not found", meta: null });
+
+    const fileUrl = row[colName];
+    if (fileUrl) {
+      const absPath = path.join(STORAGE_PATH, fileUrl.replace(/^\//, ""));
+      try { fs.unlinkSync(absPath); } catch (_) { /* 파일이 이미 없으면 무시 */ }
+    }
+    sqlite.prepare(`UPDATE contract_templates SET ${colName} = NULL, updated_at = datetime('now') WHERE id = ?`).run(id);
+    res.json({ data: { deleted: true }, error: null, meta: null });
   } catch (e) {
     res.status(500).json({ data: null, error: e.message, meta: null });
   }

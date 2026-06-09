@@ -30,12 +30,16 @@ const THEME = {
   textMuted: "#8a97a8",
 };
 
-// ─── 직급 정렬 순서 ────────────────────────────────────────────────────
+// ─── 직급 정렬 순서 (부서 내 카드 정렬용) ──────────────────────────────
 const POSITION_ORDER = ["대표변호사", "변호사", "전문위원", "직원", "기타"];
 function positionRank(p) {
   const i = POSITION_ORDER.indexOf(p);
   return i >= 0 ? i : POSITION_ORDER.length;
 }
+
+// ─── 부서(팀) 정렬: 등록 순서 보존, 미지정은 맨 뒤 ────────────────────
+const UNASSIGNED_TEAM = "기타";
+function teamLabel(t) { return t && t.trim() ? t.trim() : UNASSIGNED_TEAM; }
 
 // ─── 알림 아이콘 매핑 ─────────────────────────────────────────────────
 function notifIcon(type) {
@@ -70,6 +74,7 @@ export default function PortalLayout() {
   });
   const [isMobile, setIsMobile] = useState(false);
   const [boardCategories, setBoardCategories] = useState([]);
+  const [isPortalAdmin, setIsPortalAdmin] = useState(false);
 
   // ─ 알림
   const [notifications, setNotifications] = useState([]);
@@ -82,6 +87,7 @@ export default function PortalLayout() {
   const [orgData, setOrgData] = useState([]);
   const [orgSearch, setOrgSearch] = useState("");
   const [orgLoading, setOrgLoading] = useState(false);
+  const [orgSelectedMember, setOrgSelectedMember] = useState(null); // 프로필 팝업
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -104,6 +110,9 @@ export default function PortalLayout() {
     let cancelled = false;
     portalApi.get("/board-categories")
       .then((res) => { if (!cancelled) setBoardCategories(res.data || []); })
+      .catch(() => {});
+    portalApi.get("/lawyers/admin/check")
+      .then((res) => { if (!cancelled) setIsPortalAdmin(res.data?.isAdmin || false); })
       .catch(() => {});
     return () => { cancelled = true; };
   }, []);
@@ -204,16 +213,32 @@ export default function PortalLayout() {
       || (p.email || "").toLowerCase().includes(q);
   });
 
-  // 직급별 그룹
+  // 부서(team) 기준 그룹화 — 부서 내 멤버는 직급 순으로 정렬
   const groupedOrg = filteredOrg.reduce((acc, p) => {
-    const pos = p.position || "기타";
-    if (!acc[pos]) acc[pos] = [];
-    acc[pos].push(p);
+    const dept = teamLabel(p.team);
+    if (!acc[dept]) acc[dept] = [];
+    acc[dept].push(p);
     return acc;
   }, {});
 
-  const orderedGroups = Object.entries(groupedOrg)
-    .sort(([a], [b]) => positionRank(a) - positionRank(b));
+  // 부서 순서: 원본 데이터 첫 등장 순, "기타"는 항상 마지막
+  const deptOrder = [];
+  filteredOrg.forEach((p) => {
+    const dept = teamLabel(p.team);
+    if (!deptOrder.includes(dept)) deptOrder.push(dept);
+  });
+  const unassignedIdx = deptOrder.indexOf(UNASSIGNED_TEAM);
+  if (unassignedIdx > 0) {
+    deptOrder.splice(unassignedIdx, 1);
+    deptOrder.push(UNASSIGNED_TEAM);
+  }
+
+  const orderedGroups = deptOrder
+    .filter((dept) => groupedOrg[dept])
+    .map((dept) => [
+      dept,
+      [...groupedOrg[dept]].sort((a, b) => positionRank(a.position) - positionRank(b.position)),
+    ]);
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", background: THEME.pageBg, fontFamily: "system-ui, -apple-system, sans-serif" }}>
@@ -333,9 +358,41 @@ export default function PortalLayout() {
                   </div>
                   <div style={{ paddingLeft: 20 }}>
                     {filteredCategories.map((cat) => (
-                      <Link key={cat.key} to={`/portal/board?category=${cat.key}`} className={`portal-sidebar-link ${activeCategory === cat.key ? "portal-sidebar-link-active" : ""}`} onClick={() => isMobile && setIsSidebarOpen(false)}>
-                        <FolderClosed size={14} />{cat.label}
-                      </Link>
+                      <div key={cat.key} style={{ display: "flex", alignItems: "center", gap: 0 }}>
+                        <Link
+                          to={`/portal/board?category=${cat.key}`}
+                          className={`portal-sidebar-link ${activeCategory === cat.key ? "portal-sidebar-link-active" : ""}`}
+                          onClick={() => isMobile && setIsSidebarOpen(false)}
+                          style={{ flex: 1 }}
+                        >
+                          <FolderClosed size={14} />{cat.label}
+                        </Link>
+                        {isPortalAdmin && (
+                          <button
+                            type="button"
+                            title="게시판 삭제"
+                            onClick={async (e) => {
+                              e.preventDefault();
+                              if (!window.confirm(`"${cat.label}" 게시판을 삭제할까요?\n게시글은 삭제되지 않습니다.`)) return;
+                              try {
+                                await portalApi.delete(`/board-categories/${cat.id}`);
+                                setBoardCategories((prev) => prev.filter((c) => c.id !== cat.id));
+                              } catch (err) {
+                                alert(err.message || "삭제에 실패했습니다.");
+                              }
+                            }}
+                            style={{
+                              background: "transparent", border: "none", cursor: "pointer",
+                              color: "rgba(255,255,255,0.3)", padding: "4px 6px", borderRadius: 4,
+                              flexShrink: 0, lineHeight: 1, display: "flex", alignItems: "center",
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.color = "#ef4444"; e.currentTarget.style.background = "rgba(239,68,68,0.12)"; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.color = "rgba(255,255,255,0.3)"; e.currentTarget.style.background = "transparent"; }}
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        )}
+                      </div>
                     ))}
                     {filteredCategories.length === 0 && <div style={{ fontSize: 11, color: THEME.sidebarTextMuted, padding: "8px 12px" }}>검색 결과 없음</div>}
                   </div>
@@ -686,13 +743,16 @@ export default function PortalLayout() {
                 </div>
               ) : orderedGroups.length === 0 ? (
                 <div style={{ textAlign: "center", padding: 40, color: THEME.textMuted }}>검색 결과가 없습니다</div>
-              ) : orderedGroups.map(([position, members]) => (
-                <div key={position} style={{ marginBottom: 28 }}>
-                  {/* 직급 헤더 */}
+              ) : orderedGroups.map(([dept, members]) => (
+                <div key={dept} style={{ marginBottom: 28 }}>
+                  {/* 부서 헤더 */}
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
                     <div style={{ height: 1, flex: "0 0 16px", background: THEME.border }} />
-                    <span style={{ fontSize: 11, fontWeight: 700, color: THEME.textMuted, letterSpacing: "0.08em", textTransform: "uppercase", whiteSpace: "nowrap" }}>
-                      {position}
+                    <span style={{ fontSize: 12, fontWeight: 700, color: THEME.text, letterSpacing: "0.04em", whiteSpace: "nowrap" }}>
+                      {dept}
+                    </span>
+                    <span style={{ fontSize: 10, color: THEME.textMuted, whiteSpace: "nowrap" }}>
+                      {members.length}명
                     </span>
                     <div style={{ height: 1, flex: 1, background: THEME.border }} />
                   </div>
@@ -700,7 +760,7 @@ export default function PortalLayout() {
                   {/* 카드 그리드 */}
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 12 }}>
                     {members.map((p) => (
-                      <OrgCard key={p.id} person={p} accent={THEME.accent} accentDim={THEME.accentDim} text={THEME.text} textSec={THEME.textSec} textMuted={THEME.textMuted} border={THEME.border} />
+                      <OrgCard key={p.id} person={p} accent={THEME.accent} accentDim={THEME.accentDim} text={THEME.text} textSec={THEME.textSec} textMuted={THEME.textMuted} border={THEME.border} onSelect={setOrgSelectedMember} />
                     ))}
                   </div>
                 </div>
@@ -709,23 +769,111 @@ export default function PortalLayout() {
           </div>
         </div>
       )}
+
+      {/* ── 구성원 상세 프로필 팝업 ── */}
+      {orgSelectedMember && (
+        <div
+          onClick={() => setOrgSelectedMember(null)}
+          style={{ position: "fixed", inset: 0, background: "rgba(11,31,58,0.55)", zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
+        >
+          <MemberProfilePopup member={orgSelectedMember} onClose={() => setOrgSelectedMember(null)} accent={THEME.accent} accentDim={THEME.accentDim} border={THEME.border} text={THEME.text} textSec={THEME.textSec} textMuted={THEME.textMuted} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── 구성원 상세 프로필 팝업 ─────────────────────────────────────────────
+function MemberProfilePopup({ member, onClose, accent, accentDim, border, text, textSec, textMuted }) {
+  const [imgErr, setImgErr] = useState(false);
+  const initials = (member.name || "?").charAt(0);
+  const color = avatarColor(member.name || "");
+
+  return (
+    <div
+      onClick={(e) => e.stopPropagation()}
+      style={{
+        background: "#fff", borderRadius: 16, padding: 32, width: "100%", maxWidth: 360,
+        boxShadow: "0 24px 80px rgba(11,31,58,0.28)", position: "relative", textAlign: "center",
+      }}
+    >
+      <button
+        onClick={onClose}
+        style={{ position: "absolute", top: 14, right: 14, background: "transparent", border: "none", fontSize: 18, color: "#aaa", cursor: "pointer", lineHeight: 1, padding: 4 }}
+      >✕</button>
+
+      {/* 아바타 */}
+      <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
+        {member.photoUrl && !imgErr ? (
+          <div style={{ width: 88, height: 88, borderRadius: "50%", overflow: "hidden", border: `3px solid ${accentDim}` }}>
+            <img src={member.photoUrl} alt={member.name || ""} onError={() => setImgErr(true)}
+              style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 15%" }} />
+          </div>
+        ) : (
+          <div style={{ width: 88, height: 88, borderRadius: "50%", background: color, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, fontWeight: 700 }}>
+            {initials}
+          </div>
+        )}
+      </div>
+
+      {/* 이름 */}
+      <div style={{ fontSize: 20, fontWeight: 700, color: text, marginBottom: 2 }}>{member.name || "-"}</div>
+      {member.nameEn && <div style={{ fontSize: 12, color: textMuted, marginBottom: 10 }}>{member.nameEn}</div>}
+
+      {/* 직급 + 부서 */}
+      <div style={{ display: "flex", justifyContent: "center", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+        {member.position && (
+          <span style={{ background: accentDim, color: accent, fontSize: 11, fontWeight: 600, padding: "3px 12px", borderRadius: 20 }}>
+            {member.position}
+          </span>
+        )}
+        {member.team && (
+          <span style={{ background: "#f1f5f9", color: "#475569", fontSize: 11, fontWeight: 500, padding: "3px 12px", borderRadius: 20 }}>
+            {member.team}
+          </span>
+        )}
+      </div>
+
+      {/* 소개 */}
+      {member.tagline && (
+        <div style={{ fontSize: 12.5, color: textSec, fontStyle: "italic", marginBottom: 16, lineHeight: 1.5 }}>{member.tagline}</div>
+      )}
+
+      {/* 연락처 */}
+      <div style={{ borderTop: `1px solid ${border}`, paddingTop: 16, display: "flex", flexDirection: "column", gap: 6 }}>
+        {member.email && (
+          <a href={`mailto:${member.email}`} style={{ fontSize: 13, color: "#3b82f6", textDecoration: "none" }}>
+            ✉ {member.email}
+          </a>
+        )}
+        {member.phone && (
+          <a href={`tel:${member.phone}`} style={{ fontSize: 13, color: textSec, textDecoration: "none" }}>
+            ☎ {member.phone}
+          </a>
+        )}
+      </div>
     </div>
   );
 }
 
 // ─── 조직도 카드 ──────────────────────────────────────────────────────
-function OrgCard({ person, accent, accentDim, text, textSec, textMuted, border }) {
+function OrgCard({ person, accent, accentDim, text, textSec, textMuted, border, onSelect }) {
   const [imgErr, setImgErr] = useState(false);
   const initials = (person.name || "?").charAt(0);
   const color = avatarColor(person.name || "");
 
   return (
-    <div className="org-card" style={{
-      background: "#fff", borderRadius: 12, border: `1px solid ${border}`,
-      padding: 16, display: "flex", flexDirection: "column", alignItems: "center",
-      gap: 8, transition: "box-shadow 0.15s, transform 0.15s",
-      boxShadow: "0 1px 4px rgba(11,31,58,0.06)",
-    }}>
+    <div
+      className="org-card"
+      onClick={() => onSelect?.(person)}
+      style={{
+        background: "#fff", borderRadius: 12, border: `1px solid ${border}`,
+        padding: 16, display: "flex", flexDirection: "column", alignItems: "center",
+        gap: 8, transition: "box-shadow 0.15s, transform 0.15s",
+        boxShadow: "0 1px 4px rgba(11,31,58,0.06)",
+        cursor: "pointer",
+      }}
+    >
       {/* 아바타 */}
       {person.photoUrl && !imgErr ? (
         <div style={{ width: 60, height: 60, borderRadius: "50%", overflow: "hidden", border: `2px solid ${accentDim}`, flexShrink: 0 }}>
