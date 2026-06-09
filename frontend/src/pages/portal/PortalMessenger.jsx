@@ -66,6 +66,7 @@ function normalizeMsg(m) {
 function useMessengerWs(onMessage) {
   const wsRef = useRef(null);
   const reconnectTimer = useRef(null);
+  const connectRef = useRef(null);
 
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
@@ -94,13 +95,14 @@ function useMessengerWs(onMessage) {
     };
 
     ws.onclose = () => {
-      reconnectTimer.current = setTimeout(connect, 3000);
+      reconnectTimer.current = setTimeout(() => connectRef.current?.(), 3000);
     };
 
     ws.onerror = () => ws.close();
   }, [onMessage]);
 
   useEffect(() => {
+    connectRef.current = connect;
     connect();
     return () => {
       if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
