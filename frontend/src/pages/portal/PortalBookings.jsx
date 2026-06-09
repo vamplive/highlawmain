@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { portalApi } from "../../api/portalApi";
+import { portalApi } from "../../utils/api";
 
 // ─── Avatar ───────────────────────────────────────────────────────────────────
 function Avatar({ name, photoUrl, size = 32 }) {

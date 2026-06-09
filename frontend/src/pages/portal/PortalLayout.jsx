@@ -437,7 +437,6 @@ export default function PortalLayout() {
                     { to: "/portal/calendar",     icon: <Calendar size={20} />,       label: "캘린더" },
                     { to: "/portal/board",        icon: <FileText size={20} />,       label: "게시판" },
                     { to: "/portal/time-tracking",icon: <Clock size={20} />,          label: "타임트래킹" },
-                    { to: "/portal/profile",      icon: <User size={20} />,           label: "마이페이지" },
                   ].map(({ to, icon, label }) => {
                     const isActive = location.pathname === to || (to !== "/portal/dashboard" && location.pathname.startsWith(to));
                     return (
@@ -563,30 +562,38 @@ export default function PortalLayout() {
 
               {/* 프로필 아바타 + 버튼들 */}
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                {/* 프로필 아바타 — 사진이 있으면 img, 없으면 이니셜 */}
-                {effectivePhotoUrl ? (
-                  <div style={{ width: 32, height: 32, borderRadius: "50%", overflow: "hidden", flexShrink: 0, border: `2px solid ${THEME.accentDim}`, cursor: "default" }} title={displayName}>
-                    <img src={effectivePhotoUrl} alt={displayName}
-                      style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 15%" }}
-                      onError={(e) => { e.target.style.display = "none"; e.target.nextSibling.style.display = "flex"; }}
-                    />
-                    {/* 이미지 로드 실패 시 이니셜 fallback */}
-                    <div style={{ display: "none", width: "100%", height: "100%", background: THEME.accentDim, color: THEME.accent, alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 600 }}>
+                {/* 프로필 아바타 — 클릭 시 마이페이지 이동 */}
+                <Link to="/portal/profile" title={`${displayName} · 마이페이지`} style={{ textDecoration: "none", flexShrink: 0 }}>
+                  {effectivePhotoUrl ? (
+                    <div style={{ width: 32, height: 32, borderRadius: "50%", overflow: "hidden", border: `2px solid ${THEME.accentDim}`, cursor: "pointer", transition: "border-color 0.15s" }}
+                      onMouseEnter={e => e.currentTarget.style.borderColor = THEME.accent}
+                      onMouseLeave={e => e.currentTarget.style.borderColor = THEME.accentDim}
+                    >
+                      <img src={effectivePhotoUrl} alt={displayName}
+                        style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 15%" }}
+                        onError={(e) => { e.target.style.display = "none"; e.target.nextSibling.style.display = "flex"; }}
+                      />
+                      <div style={{ display: "none", width: "100%", height: "100%", background: THEME.accentDim, color: THEME.accent, alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 600 }}>
+                        {userInitial}
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{
+                      width: 32, height: 32, borderRadius: "50%",
+                      background: THEME.accentDim, color: THEME.accent,
+                      border: `1px solid rgba(201,168,76,0.25)`,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 13, fontWeight: 600,
+                      boxShadow: "0 2px 4px rgba(201,168,76,0.1)", cursor: "pointer",
+                      transition: "border-color 0.15s",
+                    }}
+                      onMouseEnter={e => e.currentTarget.style.borderColor = THEME.accent}
+                      onMouseLeave={e => e.currentTarget.style.borderColor = "rgba(201,168,76,0.25)"}
+                    >
                       {userInitial}
                     </div>
-                  </div>
-                ) : (
-                  <div style={{
-                    width: 32, height: 32, borderRadius: "50%",
-                    background: THEME.accentDim, color: THEME.accent,
-                    border: `1px solid rgba(201,168,76,0.25)`,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 13, fontWeight: 600, flexShrink: 0,
-                    boxShadow: "0 2px 4px rgba(201,168,76,0.1)", cursor: "default",
-                  }} title={displayName}>
-                    {userInitial}
-                  </div>
-                )}
+                  )}
+                </Link>
 
                 <a href="/"
                   style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", fontSize: 12, fontWeight: 500, color: THEME.textSec, background: "transparent", border: `1px solid ${THEME.border}`, borderRadius: 6, textDecoration: "none", transition: "all 0.2s" }}
