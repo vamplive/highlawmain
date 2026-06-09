@@ -1497,8 +1497,8 @@ sqlite.exec(`CREATE TABLE IF NOT EXISTS portal_bookings (
 function _getMemberInfo(id) {
   return sqlite.prepare(`
     SELECT pu.id, pu.email,
-      COALESCE(c.name, pu.email) AS name,
-      COALESCE(l.photo_url, pu.photo_url) AS photo_url
+      COALESCE(l.name, c.name, pu.email) AS name,
+      l.photo_url
     FROM portal_users pu
     LEFT JOIN clients c ON c.id = pu.client_id
     LEFT JOIN lawyers l ON LOWER(l.email) = LOWER(pu.email)
@@ -1509,21 +1509,21 @@ function _getMemberInfo(id) {
 function listPortalMembers() {
   return sqlite.prepare(`
     SELECT pu.id, pu.email,
-      COALESCE(c.name, pu.email) AS name,
-      COALESCE(l.photo_url, pu.photo_url) AS photo_url
+      COALESCE(l.name, c.name, pu.email) AS name,
+      l.photo_url
     FROM portal_users pu
     LEFT JOIN clients c ON c.id = pu.client_id
     LEFT JOIN lawyers l ON LOWER(l.email) = LOWER(pu.email)
     WHERE pu.is_active = 1
-    ORDER BY COALESCE(c.name, pu.email)
+    ORDER BY COALESCE(l.name, c.name, pu.email)
   `).all();
 }
 
 function listMemberBookings(portalUserId) {
   const rows = sqlite.prepare(`
     SELECT b.*,
-      COALESCE(c.name, pu.email) AS organizer_name,
-      COALESCE(l.photo_url, pu.photo_url) AS organizer_photo
+      COALESCE(l.name, c.name, pu.email) AS organizer_name,
+      l.photo_url AS organizer_photo
     FROM portal_bookings b
     LEFT JOIN portal_users pu ON pu.id = b.organizer_id
     LEFT JOIN clients c ON c.id = pu.client_id
