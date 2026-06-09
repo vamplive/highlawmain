@@ -34,7 +34,7 @@ export default function AdminPortalTimeOverview() {
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState("");
   const [entries, setEntries] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [_loading, setLoading] = useState(false);
 
   useEffect(() => {
     api.get("/portal/admin/users?status=active&limit=100")

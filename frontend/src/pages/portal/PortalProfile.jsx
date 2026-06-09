@@ -179,7 +179,7 @@ export default function PortalProfile() {
               localStorage.removeItem(draftKey);
             }
           }
-        } catch (e) {
+        } catch {
           localStorage.removeItem(draftKey);
         }
       }

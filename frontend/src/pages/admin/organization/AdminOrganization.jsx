@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { api } from "../../../utils/api";
 import { showToast } from "../../../utils/showToast";
 
@@ -813,11 +813,9 @@ function OrgTreeNode({ departments, getChildren, getEmpsByDept, depth }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "row", gap: 0, alignItems: "flex-start" }}>
-      {departments.map((dept, idx) => {
+      {departments.map((dept) => {
         const children = getChildren(dept.id);
         const emps = getEmpsByDept(dept.id);
-        const isLast = idx === departments.length - 1;
-
         return (
           <div key={dept.id} style={{ display: "flex", flexDirection: "column", alignItems: "center", margin: "0 8px" }}>
             {/* 연결선 위쪽 */}
@@ -875,7 +873,7 @@ function OrgTreeNode({ departments, getChildren, getEmpsByDept, depth }) {
 }
 
 /* 결재선 플로우 다이어그램 */
-function ApprovalFlowChart({ approvalSettings, approvers, departments, getDeptPath }) {
+function ApprovalFlowChart({ approvalSettings, approvers, departments }) {
   const isDept = approvalSettings.approvalLineType === "dept";
 
   if (isDept) {

@@ -1,7 +1,7 @@
 /** 관리자 예약 관리 — 예약 현황 조회, 예약 설정, 슬롯 생성, 히어로, 진행절차, FAQ 설정 */
 import { useState, useEffect } from "react";
 import { api } from "../../../utils/api";
-import { PageHeader, COLORS, fieldStyle, outlineBtnStyle, FormField, btnStyle } from "../../../components/admin";
+import { PageHeader, COLORS, outlineBtnStyle, FormField, btnStyle } from "../../../components/admin";
 import { showToast } from "../../../utils/showToast";
 import useSiteSettings from "../site-manager/useSiteSettings";
 import BookingList from "./BookingList";

@@ -13,8 +13,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Image as ImageIcon, Sparkles, Upload, Loader2, X, Link2, Wand2, RotateCcw } from "lucide-react";
 import {
   loadAiConfig,
-  getStoredPromptModel, setStoredPromptModel,
-  getStoredImageModel, setStoredImageModel,
+  getStoredPromptModel,
+  getStoredImageModel,
   getStoredPromptAiConfigId, setStoredPromptAiConfigId,
   getStoredImageAiConfigId, setStoredImageAiConfigId,
   PROMPT_MODEL_LABELS, IMAGE_MODEL_LABELS,
@@ -139,7 +139,7 @@ export default function BlogCoverImagePicker({ value, onChange, docContext, getE
   const inputRef = useRef(null);
 
   // 백엔드 ai-config 로드 후 사용자가 마지막에 고른 모델 또는 .env 기본값으로 초기화
-  const [aiConfig, setAiConfig] = useState(null);
+  const [_aiConfig, setAiConfig] = useState(null);
   const [imageModel, setImageModel] = useState("");
   const [promptModel, setPromptModel] = useState("");
   // 사용자 등록 AI 설정
@@ -169,8 +169,6 @@ export default function BlogCoverImagePicker({ value, onChange, docContext, getE
     return () => { alive = false; };
   }, []);
 
-  const handleImageModelChange = (m) => { setImageModel(m); setStoredImageModel(m); };
-  const handlePromptModelChange = (m) => { setPromptModel(m); setStoredPromptModel(m); };
   const handlePromptAiConfigChange = (id) => { setSelectedPromptAiConfigId(id); setStoredPromptAiConfigId(id); };
   const handleImageAiConfigChange = (id) => { setSelectedImageAiConfigId(id); setStoredImageAiConfigId(id); };
 

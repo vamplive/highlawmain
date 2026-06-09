@@ -11,7 +11,7 @@ const parseReceiptUrls = (urlField) => {
   if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
     try {
       return JSON.parse(trimmed);
-    } catch (e) {
+    } catch {
       return [trimmed];
     }
   }

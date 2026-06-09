@@ -10,7 +10,7 @@ import { useEffect, useState } from "react";
 import { Sparkles, Loader2, X, Wand2, Bot, Plus, ArrowRightLeft, FileText } from "lucide-react";
 import {
   loadAiConfig,
-  getStoredPromptModel, setStoredPromptModel,
+  getStoredPromptModel,
   getStoredPromptAiConfigId, setStoredPromptAiConfigId,
   PROMPT_MODEL_LABELS,
 } from "./aiModelStore";
@@ -77,15 +77,15 @@ async function callApi(path, body) {
   return json;
 }
 
-export default function BlogAutoWriteDialog({ open, onClose, editor, doc, setDoc }) {
+export default function BlogAutoWriteDialog({ open, onClose, editor, _doc, setDoc }) {
   const [phase, setPhase] = useState("idle"); // idle | generating | done
   const [topic, setTopic] = useState("");
   const [tone, setTone] = useState("전문적이고 신뢰감 있는");
   const [generatedResult, setGeneratedResult] = useState(null); // { title, body }
   const [errorMsg, setErrorMsg] = useState("");
 
-  const [aiConfig, setAiConfig] = useState(null);
-  const [promptModel, setPromptModel] = useState("");
+  const [_aiConfig, setAiConfig] = useState(null);
+  const [_promptModel, setPromptModel] = useState("");
   const [userAiConfigs, setUserAiConfigs] = useState([]);
   const [selectedPromptAiConfigId, setSelectedPromptAiConfigId] = useState("");
 
@@ -240,7 +240,7 @@ export default function BlogAutoWriteDialog({ open, onClose, editor, doc, setDoc
 
             {userAiConfigs.filter((c) => !c.modelId.includes("dall-e") && !c.modelId.includes("imagen") && !c.modelId.includes("image")).length === 0 && (
               <div style={{ background: "#fffbeb", border: "1px solid #fef3c7", padding: 10, borderRadius: 6, fontSize: 11, color: "#b45309" }}>
-                글쓰기 AI 기능을 이용하려면 <strong>포털 > AI 연동 설정</strong> 페이지에서 본인의 API 키(OpenAI, Anthropic, Google)를 먼저 등록해 주세요.
+                글쓰기 AI 기능을 이용하려면 <strong>포털 &gt; AI 연동 설정</strong> 페이지에서 본인의 API 키(OpenAI, Anthropic, Google)를 먼저 등록해 주세요.
               </div>
             )}
 

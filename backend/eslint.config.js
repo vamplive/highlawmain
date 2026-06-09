@@ -7,7 +7,7 @@ const globals = require('globals');
 module.exports = [
   // 빌드 산출물 및 데이터/커버리지 폴더는 검사 대상에서 제외
   {
-    ignores: ['node_modules/**', 'data/**', 'coverage/**'],
+    ignores: ['node_modules/**', 'data/**', 'coverage/**', 'public/**'],
   },
 
   // 공통 베이스 — eslint:recommended

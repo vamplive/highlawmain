@@ -18,7 +18,6 @@ import {
   thStyle,
   tdStyle,
 } from "../../../components/admin";
-import { formatDate } from "../../../utils/formatters";
 
 const CATEGORY_TABS = [
   { value: "all", label: "전체 목록" },

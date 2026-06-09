@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { portalApi } from "../../utils/api";
 import { T, fieldStyle, labelStyle } from "./portalStyles";
 import { 
@@ -9,8 +9,6 @@ import {
 
 export default function PortalBoard() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const navigate = useNavigate();
-  
   // URL 상태 추출
   const activeCategory = searchParams.get("category") || "";
   const activeFilter = searchParams.get("filter") || "";
@@ -114,7 +112,7 @@ export default function PortalBoard() {
       
       // 조회수 즉시 반영
       setPosts(prev => prev.map(p => p.id === id ? { ...p, viewCount: p.viewCount + 1 } : p));
-    } catch (e) {
+    } catch {
       alert("게시글을 불러올 수 없습니다.");
     }
   };
@@ -193,7 +191,7 @@ export default function PortalBoard() {
       alert("게시글이 삭제되었습니다.");
       setShowDetailModal(false);
       fetchPosts();
-    } catch (e) {
+    } catch {
       alert("삭제 권한이 없거나 삭제에 실패했습니다.");
     }
   };

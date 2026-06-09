@@ -13,8 +13,8 @@ import { useEffect, useState } from "react";
 import { Sparkles, Trash2, Plus, Loader2, Wand2, X, RotateCcw, Bot, ExternalLink } from "lucide-react";
 import {
   loadAiConfig,
-  getStoredPromptModel, setStoredPromptModel,
-  getStoredImageModel, setStoredImageModel,
+  getStoredPromptModel,
+  getStoredImageModel,
   getStoredPromptAiConfigId, setStoredPromptAiConfigId,
   getStoredImageAiConfigId, setStoredImageAiConfigId,
   PROMPT_MODEL_LABELS, IMAGE_MODEL_LABELS,
@@ -91,7 +91,7 @@ export default function BlogAutoIllustrateDialog({ open, onClose, editor, doc })
   const [errorMsg, setErrorMsg] = useState("");
 
   // 모델 선택 — 백엔드 ai-config 로드 + localStorage 사용자 마지막 선택값
-  const [aiConfig, setAiConfig] = useState(null);
+  const [_aiConfig, setAiConfig] = useState(null);
   const [imageModel, setImageModel] = useState("");
   const [promptModel, setPromptModel] = useState("");
   // 사용자 등록 AI 설정
@@ -121,8 +121,6 @@ export default function BlogAutoIllustrateDialog({ open, onClose, editor, doc })
     })();
     return () => { alive = false; };
   }, [open]);
-  const handleImageModelChange = (m) => { setImageModel(m); setStoredImageModel(m); };
-  const handlePromptModelChange = (m) => { setPromptModel(m); setStoredPromptModel(m); };
   const handlePromptAiConfigChange = (id) => { setSelectedPromptAiConfigId(id); setStoredPromptAiConfigId(id); };
   const handleImageAiConfigChange = (id) => { setSelectedImageAiConfigId(id); setStoredImageAiConfigId(id); };
 

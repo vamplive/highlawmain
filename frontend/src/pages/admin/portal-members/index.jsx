@@ -54,7 +54,7 @@ export default function AdminPortalMembers() {
     try {
       await api.patch(`/portal/admin/users/${userId}`, { role });
       await loadMembers();
-    } catch (e) {
+    } catch {
       alert("역할 변경에 실패했습니다.");
     } finally {
       setSaving(null);
