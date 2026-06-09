@@ -1245,6 +1245,12 @@ function checkIsLawyer(email) {
   return !!row;
 }
 
+function checkIsAdminByEmail(email) {
+  if (!email) return false;
+  const row = sqlite.prepare("SELECT id FROM admin_users WHERE LOWER(email) = LOWER(?) AND is_active = 1").get(email.trim());
+  return !!row;
+}
+
 async function checkIsAdmin(email) {
   if (!email) return false;
   const [admin] = await db
@@ -1773,6 +1779,7 @@ module.exports = {
 
   // 변호사 프로필
   checkIsLawyer,
+  checkIsAdminByEmail,
   checkIsAdmin,
   getLawyerProfileByEmail,
   createLawyerProfile,

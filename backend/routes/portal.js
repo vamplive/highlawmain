@@ -31,10 +31,13 @@ const notif = require("../lib/notifications");
 
 const router = Router();
 
-// 내부 구성원만 접근 가능 — clientId가 null이거나 lawyers 테이블에 등록된 이메일이어야 한다
+// 내부 구성원만 접근 가능
+// clientId가 null이거나, lawyers/admin_users 테이블에 등록된 이메일이면 통과
 function internalOnly(req, res, next) {
   if (!req.portalUser.clientId) return next();
-  if (portalService.checkIsLawyer(req.portalUser.email)) return next();
+  const email = req.portalUser.email;
+  if (portalService.checkIsLawyer(email)) return next();
+  if (portalService.checkIsAdminByEmail(email)) return next();
   return res.status(403).json({ data: null, error: "내부 구성원만 이용할 수 있습니다", meta: null });
 }
 
