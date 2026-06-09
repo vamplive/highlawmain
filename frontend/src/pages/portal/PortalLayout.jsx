@@ -8,6 +8,7 @@ import {
   Search, Home, Calendar, FileText, User, LogOut, Menu, Plus, Star,
   Trash2, FolderClosed, Clock, BookOpen, MessageSquare, ChevronRight,
   FolderOpen, Mail, Bot, ArrowLeft, Users, CalendarCheck, Bell, Network,
+  Receipt, Globe, Image, Video,
 } from "lucide-react";
 
 const THEME = {
@@ -409,18 +410,24 @@ export default function PortalLayout() {
             <>
               <div className="portal-sidebar-header">메뉴</div>
               {[
-                { to: "/portal/calendar",      icon: <Home size={16} />,         label: "일정 캘린더 (홈)" },
-                { to: "/portal/dashboard",     icon: <Calendar size={16} />,     label: "사건 목록" },
-                { to: "/portal/board",         icon: <FileText size={16} />,     label: "게시판" },
-                { to: "/portal/time-tracking", icon: <Clock size={16} />,        label: "타임트래킹" },
-                { to: "/portal/profile",       icon: <User size={16} />,         label: "프로필 설정" },
-                { to: "/portal/blog",          icon: <BookOpen size={16} />,     label: "블로그 관리" },
-                { to: "/portal/qna",           icon: <MessageSquare size={16} />,label: "법률 Q&A 관리" },
-                { to: "/portal/approvals",     icon: <FileText size={16} />,     label: "전자결재 시스템" },
-                { to: "/portal/ai-settings",   icon: <Bot size={16} />,          label: "AI 연동 설정" },
-                { to: "/portal/messages",      icon: <Mail size={16} />,         label: "메시지 발송" },
-                { to: "/portal/bookings",      icon: <CalendarCheck size={16} />,label: "예약 관리" },
-                { to: "/portal/clients",       icon: <Users size={16} />,        label: "고객 관리" },
+                { to: "/portal/calendar",        icon: <Home size={16} />,           label: "일정 캘린더 (홈)" },
+                { to: "/portal/dashboard",       icon: <Calendar size={16} />,       label: "사건 목록" },
+                { to: "/portal/board",           icon: <FileText size={16} />,       label: "게시판" },
+                { to: "/portal/time-tracking",   icon: <Clock size={16} />,          label: "타임트래킹" },
+                { to: "/portal/profile",         icon: <User size={16} />,           label: "프로필 설정" },
+                { to: "/portal/contract-admin",  icon: <FileText size={16} />,       label: "계약서 관리" },
+                { to: "/portal/receipts",        icon: <Receipt size={16} />,        label: "영수증" },
+                { to: "/portal/blog",            icon: <BookOpen size={16} />,       label: "블로그 관리" },
+                { to: "/portal/qna",             icon: <MessageSquare size={16} />,  label: "법률 Q&A 관리" },
+                { to: "/portal/reviews",         icon: <Star size={16} />,           label: "후기 관리" },
+                { to: "/portal/lectures",        icon: <Video size={16} />,          label: "강의 관리" },
+                { to: "/portal/site-manager",    icon: <Globe size={16} />,          label: "홈 편집" },
+                { to: "/portal/media",           icon: <Image size={16} />,          label: "미디어" },
+                { to: "/portal/approvals",       icon: <FileText size={16} />,       label: "전자결재 시스템" },
+                { to: "/portal/ai-settings",     icon: <Bot size={16} />,            label: "AI 연동 설정" },
+                { to: "/portal/messages",        icon: <Mail size={16} />,           label: "메시지 발송" },
+                { to: "/portal/bookings",        icon: <CalendarCheck size={16} />,  label: "예약 관리" },
+                { to: "/portal/clients",         icon: <Users size={16} />,          label: "고객 관리" },
               ].map(({ to, icon, label }) => (
                 <Link key={to} to={to}
                   className={`portal-sidebar-link ${location.pathname.startsWith(to) && (to !== "/portal/calendar" || location.pathname === to) ? "portal-sidebar-link-active" : ""}`}

@@ -347,6 +347,17 @@ export default function App() {
           <Route path="ai-settings" element={<LazyRoute><PortalAiSettings /></LazyRoute>} />
           <Route path="bookings" element={<LazyRoute><PortalBookings /></LazyRoute>} />
           <Route path="clients" element={<LazyRoute><PortalClients /></LazyRoute>} />
+          {/* 계약서 관리 (직원/변호사용) — 포털로 이전 */}
+          <Route path="contract-admin" element={<LazyRoute><AdminContracts /></LazyRoute>} />
+          <Route path="contract-admin/new-settlement" element={<LazyRoute><AdminSettlementNew /></LazyRoute>} />
+          <Route path="contract-admin/new-engagement" element={<LazyRoute><AdminEngagementNew /></LazyRoute>} />
+          <Route path="contract-admin/:id" element={<LazyRoute><AdminContractDetail /></LazyRoute>} />
+          {/* 영수증 관리 — 포털로 이전 */}
+          <Route path="receipts" element={<LazyRoute><AdminReceipts /></LazyRoute>} />
+          {/* 홍보·콘텐츠 — 포털로 이전 */}
+          <Route path="lectures" element={<LazyRoute><AdminLectures /></LazyRoute>} />
+          <Route path="site-manager" element={<LazyRoute><AdminSiteManager /></LazyRoute>} />
+          <Route path="media" element={<LazyRoute><AdminMedia /></LazyRoute>} />
         </Route>
 
         {/* 초대/서명 — 공개 (Layout 없음, 집중 모드) */}

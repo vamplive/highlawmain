@@ -7,10 +7,10 @@ import { useState, useEffect } from "react";
 import { api } from "../../../utils/api";
 
 const ROLES = [
-  { key: "대표변호사", label: "대표변호사", desc: "법무법인을 대표하는 변호사" },
-  { key: "변호사",     label: "변호사",     desc: "소속 변호사 및 파트너 변호사" },
-  { key: "전문위원",   label: "전문위원",   desc: "외부 전문위원 및 고문" },
-  { key: "직원",       label: "직원",       desc: "일반 직원 및 사무국 구성원" },
+  { key: "관리자", label: "관리자", desc: "시스템 전체 권한을 가진 관리자" },
+  { key: "대표",   label: "대표",   desc: "법무법인 대표 변호사" },
+  { key: "변호사", label: "변호사", desc: "소속 변호사 및 파트너 변호사" },
+  { key: "직원",   label: "직원",   desc: "일반 직원 및 사무국 구성원" },
 ];
 
 const S = {
@@ -23,7 +23,7 @@ const S = {
 };
 
 export default function AdminPortalMembers() {
-  const [tab, setTab] = useState("대표변호사");
+  const [tab, setTab] = useState("관리자");
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(null);

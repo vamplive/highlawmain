@@ -58,9 +58,8 @@ const MENU_TREE = [
     label: "문서·계약",
     icon: "file",
     children: [
-      { to: "/admin/contracts", label: "계약서" },
+      { to: "/admin/contracts", label: "계약서 발송 현황" },
       { to: "/admin/contract-templates", label: "계약서 양식" },
-      { to: "/admin/receipts", label: "영수증" },
       { to: "/admin/invitations", label: "발송 링크" },
     ],
   },
@@ -70,22 +69,9 @@ const MENU_TREE = [
     label: "홈페이지 관리",
     icon: "globe",
     children: [
-      { to: "/admin/site-manager", label: "홈 편집" },
       { to: "/admin/chatbot", label: "상담 챗봇" },
       { to: "/admin/documents", label: "자료실·문서" },
-      { to: "/admin/media", label: "미디어" },
       { to: "/admin/editor", label: "에디터" },
-    ],
-  },
-  {
-    id: "promo-contents",
-    label: "홍보 및 콘텐츠",
-    icon: "edit",
-    children: [
-      { to: "/admin/blog", label: "블로그·뉴스" },
-      { to: "/admin/inquiry", label: "법률 Q&A" },
-      { to: "/admin/reviews", label: "후기" },
-      { to: "/admin/lectures", label: "강의" },
     ],
   },
 
