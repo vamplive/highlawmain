@@ -302,6 +302,26 @@ async function rejectPortalUser(id) {
 }
 
 /**
+ * 관리자: 포털 사용자 역할/직급 등 필드 수정
+ * - role: 역할 분류 (대표변호사 | 변호사 | 전문위원 | 직원 | null)
+ */
+async function updatePortalUser(id, data) {
+  validateUUID(id);
+  const [existing] = await db.select().from(portalUsers).where(eq(portalUsers.id, id));
+  if (!existing) throw new ServiceError("사용자를 찾을 수 없습니다", 404);
+
+  const allowed = ["role", "position", "departmentId"];
+  const updates = {};
+  for (const key of allowed) {
+    if (key in data) updates[key] = data[key] ?? null;
+  }
+  if (Object.keys(updates).length === 0) throw new ServiceError("변경할 필드가 없습니다", 400);
+
+  const [updated] = await db.update(portalUsers).set(updates).where(eq(portalUsers.id, id)).returning();
+  return updated;
+}
+
+/**
  * 관리자: 포털 사용자 삭제
  */
 async function deletePortalUser(id) {
@@ -2009,6 +2029,7 @@ module.exports = {
   getPortalUser,
   approvePortalUser,
   rejectPortalUser,
+  updatePortalUser,
   deletePortalUser,
   // 사건
   getUserCases,
