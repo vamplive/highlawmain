@@ -816,4 +816,152 @@ router.delete("/board-categories/:id", portalAuth, async (req, res) => {
   }
 });
 
+// =============================================
+// 예약 관리 (내부 구성원 전용)
+// =============================================
+
+router.get("/bookings", portalAuth, async (req, res) => {
+  try {
+    if (req.portalUser.clientId) return res.status(403).json({ data: null, error: "내부 구성원만 이용할 수 있습니다", meta: null });
+    const result = await portalService.listPortalBookings(req.query);
+    res.json(result);
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+router.post("/bookings/cancel/:id", portalAuth, async (req, res) => {
+  try {
+    if (req.portalUser.clientId) return res.status(403).json({ data: null, error: "내부 구성원만 이용할 수 있습니다", meta: null });
+    const result = await portalService.cancelPortalBooking(req.params.id);
+    res.json({ data: result, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+// =============================================
+// 고객 관리 (내부 구성원 전용)
+// =============================================
+
+router.get("/clients", portalAuth, async (req, res) => {
+  try {
+    if (req.portalUser.clientId) return res.status(403).json({ data: null, error: "내부 구성원만 이용할 수 있습니다", meta: null });
+    const result = await portalService.listPortalClients(req.query);
+    res.json({ data: result, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+router.post("/clients", portalAuth, async (req, res) => {
+  try {
+    if (req.portalUser.clientId) return res.status(403).json({ data: null, error: "내부 구성원만 이용할 수 있습니다", meta: null });
+    const item = await portalService.createPortalClient(req.body);
+    res.status(201).json({ data: { data: item }, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+router.patch("/clients/:id", portalAuth, async (req, res) => {
+  try {
+    if (req.portalUser.clientId) return res.status(403).json({ data: null, error: "내부 구성원만 이용할 수 있습니다", meta: null });
+    const item = await portalService.updatePortalClient(req.params.id, req.body);
+    res.json({ data: { data: item }, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+router.delete("/clients/:id", portalAuth, async (req, res) => {
+  try {
+    if (req.portalUser.clientId) return res.status(403).json({ data: null, error: "내부 구성원만 이용할 수 있습니다", meta: null });
+    const result = await portalService.deletePortalClient(req.params.id);
+    res.json({ data: result, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+router.get("/clients/:clientId/cases", portalAuth, async (req, res) => {
+  try {
+    if (req.portalUser.clientId) return res.status(403).json({ data: null, error: "내부 구성원만 이용할 수 있습니다", meta: null });
+    const rows = await portalService.listClientCases(req.params.clientId);
+    res.json({ data: { data: rows }, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+router.post("/clients/:clientId/cases", portalAuth, async (req, res) => {
+  try {
+    if (req.portalUser.clientId) return res.status(403).json({ data: null, error: "내부 구성원만 이용할 수 있습니다", meta: null });
+    const item = await portalService.createClientCase(req.params.clientId, req.body);
+    res.status(201).json({ data: { data: item }, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+router.patch("/clients/:clientId/cases/:id", portalAuth, async (req, res) => {
+  try {
+    if (req.portalUser.clientId) return res.status(403).json({ data: null, error: "내부 구성원만 이용할 수 있습니다", meta: null });
+    const item = await portalService.updateClientCase(req.params.clientId, req.params.id, req.body);
+    res.json({ data: { data: item }, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+router.delete("/clients/:clientId/cases/:id", portalAuth, async (req, res) => {
+  try {
+    if (req.portalUser.clientId) return res.status(403).json({ data: null, error: "내부 구성원만 이용할 수 있습니다", meta: null });
+    const result = await portalService.deleteClientCase(req.params.clientId, req.params.id);
+    res.json({ data: result, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+router.get("/clients/:clientId/persons", portalAuth, async (req, res) => {
+  try {
+    if (req.portalUser.clientId) return res.status(403).json({ data: null, error: "내부 구성원만 이용할 수 있습니다", meta: null });
+    const rows = await portalService.listClientPersons(req.params.clientId);
+    res.json({ data: { data: rows }, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+router.post("/clients/:clientId/persons", portalAuth, async (req, res) => {
+  try {
+    if (req.portalUser.clientId) return res.status(403).json({ data: null, error: "내부 구성원만 이용할 수 있습니다", meta: null });
+    const item = await portalService.createClientPerson(req.params.clientId, req.body);
+    res.status(201).json({ data: { data: item }, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+router.patch("/clients/:clientId/persons/:id", portalAuth, async (req, res) => {
+  try {
+    if (req.portalUser.clientId) return res.status(403).json({ data: null, error: "내부 구성원만 이용할 수 있습니다", meta: null });
+    const item = await portalService.updateClientPerson(req.params.clientId, req.params.id, req.body);
+    res.json({ data: { data: item }, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+router.delete("/clients/:clientId/persons/:id", portalAuth, async (req, res) => {
+  try {
+    if (req.portalUser.clientId) return res.status(403).json({ data: null, error: "내부 구성원만 이용할 수 있습니다", meta: null });
+    const result = await portalService.deleteClientPerson(req.params.clientId, req.params.id);
+    res.json({ data: result, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
 module.exports = router;

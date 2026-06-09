@@ -12,6 +12,8 @@ const {
   caseDocuments,
   caseMessages,
   clients,
+  clientCases,
+  clientRelatedPersons,
   lawyers,
   portalTimeEntries,
   portalPosts,
@@ -19,8 +21,9 @@ const {
   portalEvents,
   adminUsers,
   courtDates,
+  bookingSlots,
 } = require("../db/schema");
-const { eq, desc, and, sql, gte, lte, between, asc, like } = require("drizzle-orm");
+const { eq, desc, and, or, sql, gte, lte, between, asc, like } = require("drizzle-orm");
 const { hashPassword, verifyPassword, dummyVerifyPassword } = require("../lib/auth");
 const { createPortalSession, deletePortalSession } = require("../lib/auth");
 const {
@@ -1460,6 +1463,237 @@ async function deleteBoardCategory(id) {
   return { deleted: true };
 }
 
+// =============================================
+// 예약 관리
+// =============================================
+
+async function listPortalBookings(query) {
+  const { page, limit, offset } = parsePagination(query);
+
+  const [{ total }] = await db.select({ total: sql`count(*)` })
+    .from(bookingSlots)
+    .where(eq(bookingSlots.isAvailable, 0));
+
+  const rows = await db.select()
+    .from(bookingSlots)
+    .where(eq(bookingSlots.isAvailable, 0))
+    .orderBy(desc(bookingSlots.date), desc(bookingSlots.startTime))
+    .limit(limit)
+    .offset(offset);
+
+  return { data: rows, meta: buildPaginationMeta(total, page, limit) };
+}
+
+async function cancelPortalBooking(slotId) {
+  validateUUID(slotId);
+  const [slot] = await db.select().from(bookingSlots).where(eq(bookingSlots.id, slotId));
+  if (!slot) throw new ServiceError("예약 슬롯을 찾을 수 없습니다", 404);
+  if (slot.isAvailable === 1) throw new ServiceError("이미 취소된 슬롯입니다", 400);
+
+  await db.update(bookingSlots)
+    .set({ isAvailable: 1, consultationId: null })
+    .where(eq(bookingSlots.id, slotId));
+
+  return { ok: true };
+}
+
+// =============================================
+// 고객 관리 (내부 구성원 전용)
+// =============================================
+
+async function listPortalClients(query) {
+  const { page, limit, offset } = parsePagination(query);
+  const { q } = query;
+
+  let whereClause = eq(clients.isActive, 1);
+  if (q && q.trim()) {
+    const term = "%" + q.trim() + "%";
+    whereClause = and(
+      eq(clients.isActive, 1),
+      sql`(${clients.name} LIKE ${term} OR ${clients.phone} LIKE ${term} OR COALESCE(${clients.email},'') LIKE ${term})`
+    );
+  }
+
+  const [{ total }] = await db.select({ total: sql`count(*)` })
+    .from(clients)
+    .where(whereClause);
+
+  const rows = await db.select({
+    id: clients.id,
+    name: clients.name,
+    phone: clients.phone,
+    email: clients.email,
+    category: clients.category,
+    memo: clients.memo,
+    source: clients.source,
+    createdAt: clients.createdAt,
+    updatedAt: clients.updatedAt,
+  })
+    .from(clients)
+    .where(whereClause)
+    .orderBy(desc(clients.createdAt))
+    .limit(limit)
+    .offset(offset);
+
+  return { data: rows, meta: buildPaginationMeta(total, page, limit) };
+}
+
+async function createPortalClient(data) {
+  const { name, phone, email, category, memo } = data;
+  if (!name || !name.trim()) throw new ServiceError("이름을 입력해주세요", 400);
+  if (!phone || !phone.trim()) throw new ServiceError("전화번호를 입력해주세요", 400);
+
+  const [inserted] = await db.insert(clients).values({
+    name: name.trim(),
+    phone: cleanPhone(phone) || phone.trim(),
+    email: email || null,
+    category: category || null,
+    memo: memo || null,
+    source: "manual",
+    isActive: 1,
+  }).returning();
+
+  return inserted;
+}
+
+async function updatePortalClient(id, data) {
+  validateUUID(id);
+  const [existing] = await db.select().from(clients).where(eq(clients.id, id));
+  if (!existing) throw new ServiceError("고객을 찾을 수 없습니다", 404);
+
+  const { name, phone, email, category, memo } = data;
+  const updates = { updatedAt: sql`(datetime('now'))` };
+  if (name !== undefined) updates.name = (name || "").trim();
+  if (phone !== undefined) updates.phone = cleanPhone(phone) || (phone || "").trim();
+  if (email !== undefined) updates.email = email || null;
+  if (category !== undefined) updates.category = category || null;
+  if (memo !== undefined) updates.memo = memo || null;
+
+  const [updated] = await db.update(clients).set(updates).where(eq(clients.id, id)).returning();
+  return updated;
+}
+
+async function deletePortalClient(id) {
+  validateUUID(id);
+  const [existing] = await db.select().from(clients).where(eq(clients.id, id));
+  if (!existing) throw new ServiceError("고객을 찾을 수 없습니다", 404);
+  await db.delete(clients).where(eq(clients.id, id));
+  return { deleted: true };
+}
+
+async function listClientCases(clientId) {
+  validateUUID(clientId);
+  return db.select()
+    .from(clientCases)
+    .where(eq(clientCases.clientId, clientId))
+    .orderBy(asc(clientCases.createdAt));
+}
+
+async function createClientCase(clientId, data) {
+  validateUUID(clientId);
+  const { caseNumber, jurisdiction, memo } = data;
+
+  const [client] = await db.select().from(clients).where(eq(clients.id, clientId));
+  if (!client) throw new ServiceError("고객을 찾을 수 없습니다", 404);
+
+  const [inserted] = await db.insert(clientCases).values({
+    clientId,
+    caseNumber: caseNumber || null,
+    jurisdiction: jurisdiction || null,
+    memo: memo || null,
+  }).returning();
+
+  return inserted;
+}
+
+async function updateClientCase(clientId, caseId, data) {
+  validateUUID(clientId);
+  validateUUID(caseId);
+
+  const [existing] = await db.select().from(clientCases)
+    .where(and(eq(clientCases.id, caseId), eq(clientCases.clientId, clientId)));
+  if (!existing) throw new ServiceError("사건을 찾을 수 없습니다", 404);
+
+  const { caseNumber, jurisdiction, memo } = data;
+  const updates = { updatedAt: sql`(datetime('now'))` };
+  if (caseNumber !== undefined) updates.caseNumber = caseNumber || null;
+  if (jurisdiction !== undefined) updates.jurisdiction = jurisdiction || null;
+  if (memo !== undefined) updates.memo = memo || null;
+
+  const [updated] = await db.update(clientCases).set(updates)
+    .where(eq(clientCases.id, caseId)).returning();
+  return updated;
+}
+
+async function deleteClientCase(clientId, caseId) {
+  validateUUID(clientId);
+  validateUUID(caseId);
+
+  const [existing] = await db.select().from(clientCases)
+    .where(and(eq(clientCases.id, caseId), eq(clientCases.clientId, clientId)));
+  if (!existing) throw new ServiceError("사건을 찾을 수 없습니다", 404);
+
+  await db.delete(clientCases).where(eq(clientCases.id, caseId));
+  return { deleted: true };
+}
+
+async function listClientPersons(clientId) {
+  validateUUID(clientId);
+  return db.select()
+    .from(clientRelatedPersons)
+    .where(eq(clientRelatedPersons.clientId, clientId))
+    .orderBy(asc(clientRelatedPersons.createdAt));
+}
+
+async function createClientPerson(clientId, data) {
+  validateUUID(clientId);
+  const { name, phone, role } = data;
+  if (!name || !name.trim()) throw new ServiceError("이름을 입력해주세요", 400);
+
+  const [client] = await db.select().from(clients).where(eq(clients.id, clientId));
+  if (!client) throw new ServiceError("고객을 찾을 수 없습니다", 404);
+
+  const [inserted] = await db.insert(clientRelatedPersons).values({
+    clientId,
+    name: name.trim(),
+    phone: phone || null,
+    role: role || null,
+  }).returning();
+
+  return inserted;
+}
+
+async function updateClientPerson(clientId, personId, data) {
+  validateUUID(clientId);
+  validateUUID(personId);
+
+  const [existing] = await db.select().from(clientRelatedPersons)
+    .where(and(eq(clientRelatedPersons.id, personId), eq(clientRelatedPersons.clientId, clientId)));
+  if (!existing) throw new ServiceError("관련자를 찾을 수 없습니다", 404);
+
+  const { name, phone, role } = data;
+  const updates = { updatedAt: sql`(datetime('now'))` };
+  if (name !== undefined) updates.name = (name || "").trim();
+  if (phone !== undefined) updates.phone = phone || null;
+  if (role !== undefined) updates.role = role || null;
+
+  const [updated] = await db.update(clientRelatedPersons).set(updates)
+    .where(eq(clientRelatedPersons.id, personId)).returning();
+  return updated;
+}
+
+async function deleteClientPerson(clientId, personId) {
+  validateUUID(clientId);
+  validateUUID(personId);
+
+  const [existing] = await db.select().from(clientRelatedPersons)
+    .where(and(eq(clientRelatedPersons.id, personId), eq(clientRelatedPersons.clientId, clientId)));
+  if (!existing) throw new ServiceError("관련자를 찾을 수 없습니다", 404);
+
+  await db.delete(clientRelatedPersons).where(eq(clientRelatedPersons.id, personId));
+  return { deleted: true };
+}
+
 async function reorderLawyerProfiles(id1, id2) {
   validateUUID(id1);
   validateUUID(id2);
@@ -1546,4 +1780,22 @@ module.exports = {
   createBoardCategory,
   updateBoardCategory,
   deleteBoardCategory,
+
+  // 예약 관리
+  listPortalBookings,
+  cancelPortalBooking,
+
+  // 고객 관리
+  listPortalClients,
+  createPortalClient,
+  updatePortalClient,
+  deletePortalClient,
+  listClientCases,
+  createClientCase,
+  updateClientCase,
+  deleteClientCase,
+  listClientPersons,
+  createClientPerson,
+  updateClientPerson,
+  deleteClientPerson,
 };
