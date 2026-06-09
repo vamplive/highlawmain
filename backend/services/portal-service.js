@@ -1239,6 +1239,12 @@ async function deletePortalEvent(id, portalUserId) {
 // 포털 변호사 프로필 설정 / 편집 / 관리자 CRUD
 // =============================================
 
+function checkIsLawyer(email) {
+  if (!email) return false;
+  const row = sqlite.prepare("SELECT id FROM lawyers WHERE LOWER(email) = LOWER(?)").get(email.trim());
+  return !!row;
+}
+
 async function checkIsAdmin(email) {
   if (!email) return false;
   const [admin] = await db
@@ -1766,6 +1772,7 @@ module.exports = {
   deletePortalEvent,
 
   // 변호사 프로필
+  checkIsLawyer,
   checkIsAdmin,
   getLawyerProfileByEmail,
   createLawyerProfile,
