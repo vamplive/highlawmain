@@ -118,6 +118,37 @@ router.get("/auto-login", (req, res) => {
   res.redirect(safePath);
 });
 
+/** POST /api/portal/find-id — 휴대폰 번호로 이메일(아이디) 찾기 */
+router.post("/find-id", async (req, res) => {
+  try {
+    const result = await portalService.findEmailByPhone(req.body?.phone);
+    res.json({ data: result, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+/** POST /api/portal/forgot-password — 비밀번호 재설정 링크 이메일 발송 */
+router.post("/forgot-password", async (req, res) => {
+  try {
+    const result = await portalService.createPortalResetToken(req.body?.input);
+    res.json({ data: result, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+/** POST /api/portal/reset-password — 토큰 검증 후 비밀번호 재설정 */
+router.post("/reset-password", async (req, res) => {
+  try {
+    const { token, password } = req.body || {};
+    const result = await portalService.resetPortalPassword(token, password);
+    res.json({ data: result, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
 /** POST /api/portal/logout */
 router.post("/logout", portalAuth, (req, res) => {
   portalService.logoutUser(extractPortalToken(req));

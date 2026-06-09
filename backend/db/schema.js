@@ -627,6 +627,9 @@ const portalUsers = sqliteTable("portal_users", {
   hireDate: text("hire_date"),
   departmentId: text("department_id"),
   position: text("position"),
+  // 비밀번호 재설정 토큰 (SHA-256 hex 해시) — 30분 만료 일회용
+  resetTokenHash: text("reset_token_hash"),
+  resetTokenExpiresAt: integer("reset_token_expires_at"),
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
   updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
 });

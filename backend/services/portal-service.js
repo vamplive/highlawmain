@@ -1818,6 +1818,186 @@ async function reorderLawyerProfiles(id1, id2) {
   return { success: true };
 }
 
+// =============================================
+// 아이디 찾기 / 비밀번호 재설정
+// =============================================
+
+/** 재설정 토큰 만료 시간: 30분 */
+const PORTAL_RESET_TOKEN_TTL_MS = 30 * 60 * 1000;
+
+/** 평문 토큰 → SHA-256 hex (DB 저장용) */
+function hashResetToken(token) {
+  return crypto.createHash("sha256").update(String(token)).digest("hex");
+}
+
+/**
+ * 전화번호로 이메일(아이디) 찾기
+ * - 마스킹된 이메일 반환 (예: ab****@gmail.com)
+ * - 계정 없으면 null 반환 (클라이언트에서 "일치 없음" 처리)
+ */
+async function findEmailByPhone(phone) {
+  if (!phone) throw new ServiceError("휴대폰 번호를 입력해주세요", 400);
+  const normalizedPhone = cleanPhone(phone);
+  if (!KOREAN_PHONE_REGEX.test(normalizedPhone)) {
+    throw new ServiceError("올바른 휴대폰 번호를 입력해주세요", 400);
+  }
+
+  const [client] = await db.select().from(clients).where(eq(clients.phone, normalizedPhone));
+  if (!client) return null;
+
+  const [user] = await db.select()
+    .from(portalUsers)
+    .where(and(eq(portalUsers.clientId, client.id), eq(portalUsers.isActive, 1)));
+  if (!user) return null;
+
+  // 이메일 앞부분 2자리 + **** + @ 이후 도메인
+  const email = user.email;
+  const atIdx = email.indexOf("@");
+  const local = email.slice(0, atIdx);
+  const domain = email.slice(atIdx);
+  const visible = local.length <= 2 ? local : local.slice(0, 2);
+  const masked = visible + "****" + domain;
+
+  return { maskedEmail: masked };
+}
+
+/**
+ * 비밀번호 재설정 링크 발송
+ * - 이메일 또는 전화번호로 포털 사용자 조회
+ * - 일회용 토큰 생성 → DB 저장(해시) + 이메일 발송
+ * - 사용자 존재 여부를 응답에서 노출하지 않음
+ */
+async function createPortalResetToken(input) {
+  const { sendEmail } = require("../lib/email-service");
+
+  if (!input) throw new ServiceError("이메일 또는 휴대폰 번호를 입력해주세요", 400);
+
+  let user = null;
+
+  const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.trim());
+  if (isEmail) {
+    [user] = await db.select().from(portalUsers)
+      .where(and(eq(portalUsers.email, input.trim().toLowerCase()), eq(portalUsers.isActive, 1)));
+  } else {
+    const normalizedPhone = cleanPhone(input);
+    if (!KOREAN_PHONE_REGEX.test(normalizedPhone)) {
+      throw new ServiceError("올바른 이메일 또는 휴대폰 번호를 입력해주세요", 400);
+    }
+    const [client] = await db.select().from(clients).where(eq(clients.phone, normalizedPhone));
+    if (client) {
+      [user] = await db.select().from(portalUsers)
+        .where(and(eq(portalUsers.clientId, client.id), eq(portalUsers.isActive, 1)));
+    }
+  }
+
+  // 사용자가 없어도 동일하게 응답 (존재 여부 노출 방지)
+  if (!user) {
+    hashResetToken(crypto.randomBytes(32).toString("hex")); // timing 평준화
+    return { sent: true };
+  }
+
+  const rawToken = crypto.randomBytes(32).toString("hex");
+  const tokenHash = hashResetToken(rawToken);
+  const expiresAt = Date.now() + PORTAL_RESET_TOKEN_TTL_MS;
+
+  await db.update(portalUsers).set({
+    resetTokenHash: tokenHash,
+    resetTokenExpiresAt: expiresAt,
+    updatedAt: sql`(datetime('now'))`,
+  }).where(eq(portalUsers.id, user.id));
+
+  const appUrl = process.env.APP_URL || "http://localhost:5173";
+  const resetUrl = `${appUrl.replace(/\/+$/, "")}/reset-password?token=${encodeURIComponent(rawToken)}`;
+
+  const html = `
+    <div style="font-family: -apple-system, 'Apple SD Gothic Neo', sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
+      <h2 style="color: #1a1a1a; margin: 0 0 16px;">비밀번호 재설정</h2>
+      <p style="color: #4a4a4a; line-height: 1.6;">
+        아래 버튼을 클릭하여 새 비밀번호를 설정해주세요.<br />
+        링크는 <strong>30분간</strong> 유효합니다.
+      </p>
+      <div style="margin: 24px 0; text-align: center;">
+        <a href="${resetUrl}"
+           style="display: inline-block; padding: 12px 28px; background: #1a1a1a; color: #fff;
+                  text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 15px;">
+          비밀번호 재설정
+        </a>
+      </div>
+      <p style="color: #8a8a8a; font-size: 12px; line-height: 1.5; word-break: break-all;">
+        버튼이 작동하지 않으면 아래 주소를 복사해 브라우저에 붙여넣으세요:<br />
+        ${resetUrl}
+      </p>
+      <p style="color: #8a8a8a; font-size: 12px; line-height: 1.5; margin-top: 24px;">
+        본인이 요청하지 않은 경우 이 메일을 무시하셔도 됩니다.<br />
+        비밀번호와 세션은 변경되지 않습니다.
+      </p>
+      <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
+      <p style="color: #bbb; font-size: 11px;">법무법인 하이로 CLIENT PORTAL</p>
+    </div>
+  `;
+
+  await sendEmail(user.email, "[법무법인 하이로] 포털 비밀번호 재설정 안내", html);
+
+  return { sent: true };
+}
+
+/**
+ * 재설정 토큰 검증 후 새 비밀번호 적용
+ * - 토큰 만료/미존재/비활성 시 동일한 오류 반환
+ * - 성공 시 비밀번호 교체 + 토큰 폐기 + 기존 세션 전체 무효화
+ */
+async function resetPortalPassword(token, newPassword) {
+  if (!token || typeof token !== "string") {
+    throw new ServiceError("토큰이 올바르지 않습니다", 400);
+  }
+  if (token.length !== 64 || !/^[0-9a-f]+$/i.test(token)) {
+    throw new ServiceError("토큰이 유효하지 않거나 만료되었습니다", 400);
+  }
+  if (!newPassword || newPassword.length < 8) {
+    throw new ServiceError("비밀번호는 8자 이상이어야 합니다", 400);
+  }
+  if (newPassword.length > 256) {
+    throw new ServiceError("비밀번호는 256자 이하로 입력해주세요", 400);
+  }
+
+  const tokenHash = hashResetToken(token);
+  const [user] = await db.select().from(portalUsers)
+    .where(eq(portalUsers.resetTokenHash, tokenHash));
+
+  const INVALID_MSG = "토큰이 유효하지 않거나 만료되었습니다";
+  if (!user || user.isActive !== 1 || !user.resetTokenExpiresAt) {
+    crypto.timingSafeEqual(Buffer.alloc(32), Buffer.alloc(32)); // timing 평준화
+    throw new ServiceError(INVALID_MSG, 400);
+  }
+  if (Date.now() > Number(user.resetTokenExpiresAt)) {
+    throw new ServiceError(INVALID_MSG, 400);
+  }
+
+  // timing-safe 비교
+  const stored = Buffer.from(user.resetTokenHash || "", "hex");
+  const provided = Buffer.from(tokenHash, "hex");
+  if (stored.length !== provided.length || !crypto.timingSafeEqual(stored, provided)) {
+    throw new ServiceError(INVALID_MSG, 400);
+  }
+
+  const newHash = hashPassword(newPassword);
+
+  await db.update(portalUsers).set({
+    passwordHash: newHash,
+    resetTokenHash: null,
+    resetTokenExpiresAt: null,
+    updatedAt: sql`(datetime('now'))`,
+  }).where(eq(portalUsers.id, user.id));
+
+  // 기존 세션 전체 무효화 (다른 기기 로그인 강제 로그아웃)
+  const { deleteAllPortalSessionsForUser } = require("../lib/auth");
+  if (typeof deleteAllPortalSessionsForUser === "function") {
+    deleteAllPortalSessionsForUser(user.id);
+  }
+
+  return { success: true };
+}
+
 module.exports = {
   // 인증
   registerUser,
@@ -1910,4 +2090,9 @@ module.exports = {
   createClientPerson,
   updateClientPerson,
   deleteClientPerson,
+
+  // 아이디 찾기 / 비밀번호 재설정
+  findEmailByPhone,
+  createPortalResetToken,
+  resetPortalPassword,
 };

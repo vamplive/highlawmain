@@ -372,6 +372,15 @@ function deletePortalSession(token) {
   deletePortalSessionStmt.run(hashSessionToken(token));
 }
 
+/**
+ * 특정 포털 사용자의 모든 세션 삭제 (비밀번호 재설정 시 강제 로그아웃)
+ * @param {string} userId
+ */
+function deleteAllPortalSessionsForUser(userId) {
+  if (!userId) return;
+  sqlite.prepare("DELETE FROM portal_sessions WHERE user_id = ?").run(userId);
+}
+
 /** 포털 세션 쿠키 이름 — HttpOnly + SameSite=Strict로 설정한다 */
 const PORTAL_SESSION_COOKIE = "portal_session";
 
@@ -483,6 +492,7 @@ module.exports = {
   createPortalSession,
   getPortalSession,
   deletePortalSession,
+  deleteAllPortalSessionsForUser,
   portalAuth,
   setPortalSessionCookie,
   clearPortalSessionCookie,

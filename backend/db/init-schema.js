@@ -1622,6 +1622,10 @@ module.exports = {
   try { sqlite.exec("ALTER TABLE portal_users ADD COLUMN department_id TEXT"); } catch (e) { warnMigrationSkip(e); }
   try { sqlite.exec("ALTER TABLE portal_users ADD COLUMN position TEXT"); } catch (e) { warnMigrationSkip(e); }
 
+  // portal_users — 비밀번호 재설정 토큰 컬럼 추가
+  try { sqlite.exec("ALTER TABLE portal_users ADD COLUMN reset_token_hash TEXT"); } catch (e) { warnMigrationSkip(e); }
+  try { sqlite.exec("ALTER TABLE portal_users ADD COLUMN reset_token_expires_at INTEGER"); } catch (e) { warnMigrationSkip(e); }
+
   // portal_events — attendee_ids 컬럼 추가
   try { sqlite.exec("ALTER TABLE portal_events ADD COLUMN attendee_ids TEXT"); } catch (e) { warnMigrationSkip(e); }
 

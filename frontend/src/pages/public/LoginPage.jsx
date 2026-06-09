@@ -2,19 +2,153 @@
  * /login — 포털 로그인/회원가입 통합 페이지 (스플릿 스크린 레이아웃)
  * - 좌측: 영상 배경 + 법인 브랜딩
  * - 우측: 로그인 탭 / 회원가입 탭
- * - 로그인 성공 → /portal/dashboard
+ * - 로그인 성공 → /portal/calendar
  * - 회원가입 성공 → 승인 대기 안내 화면
  */
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { portalApi } from "../../utils/api";
 import { isSafeHttpUrl } from "../../utils/safeUrl";
-import { KAKAO_CHANNEL_CHAT } from "../../utils/kakaoChannel";
 import "./LoginPage.css";
 
 const KOREAN_PHONE_RE = /^(01[016789]{1}|02|0[3-9]{1}[0-9]{1})\d{3,4}\d{4}$/;
 
 function cleanPhone(p) { return p.replace(/[\s-]/g, ""); }
+
+// ──────────────────────────────────────────────────
+// 아이디 찾기 모달
+// ──────────────────────────────────────────────────
+function FindIdModal({ onClose }) {
+  const [phone, setPhone] = useState("");
+  const [result, setResult] = useState(null); // { maskedEmail } | "notfound"
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const submit = async (e) => {
+    e.preventDefault();
+    const cleaned = cleanPhone(phone);
+    if (!KOREAN_PHONE_RE.test(cleaned)) {
+      return setError("올바른 휴대폰 번호를 입력해주세요 (예: 010-1234-5678)");
+    }
+    setLoading(true);
+    setError("");
+    try {
+      const res = await portalApi.post("/find-id", { phone: cleaned });
+      setResult(res.data || "notfound");
+    } catch (err) {
+      setError(err.message || "오류가 발생했습니다. 다시 시도해주세요.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="portal-modal__backdrop" onClick={onClose}>
+      <div className="portal-modal__box" onClick={(e) => e.stopPropagation()}>
+        <button className="portal-modal__close" onClick={onClose}>✕</button>
+        <h2 className="portal-modal__title">아이디 찾기</h2>
+        <p className="portal-modal__desc">가입 시 등록한 휴대폰 번호를 입력해주세요.</p>
+
+        {!result ? (
+          <form onSubmit={submit}>
+            <div className="portal-login__field">
+              <label className="portal-login__field-label">휴대폰 번호</label>
+              <input
+                type="tel"
+                className={`portal-login__input${error ? " portal-login__input--error" : ""}`}
+                value={phone}
+                onChange={(e) => { setPhone(e.target.value); setError(""); }}
+                placeholder="010-0000-0000"
+                autoFocus
+              />
+            </div>
+            {error && <div className="portal-login__error portal-login__error--danger">{error}</div>}
+            <button type="submit" className="portal-login__btn" disabled={loading}>
+              {loading ? "조회 중..." : "아이디 찾기"}
+            </button>
+          </form>
+        ) : result === "notfound" || !result.maskedEmail ? (
+          <div className="portal-modal__result portal-modal__result--warn">
+            입력하신 번호로 가입된 계정을 찾을 수 없습니다.<br />
+            번호를 확인하거나 새로 회원가입 해주세요.
+          </div>
+        ) : (
+          <div className="portal-modal__result portal-modal__result--ok">
+            가입된 이메일(아이디):&nbsp;
+            <strong>{result.maskedEmail}</strong>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────────
+// 비밀번호 찾기 모달
+// ──────────────────────────────────────────────────
+function ForgotPasswordModal({ onClose }) {
+  const [input, setInput] = useState("");
+  const [sent, setSent] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!input.trim()) return setError("이메일 또는 휴대폰 번호를 입력해주세요");
+    setLoading(true);
+    setError("");
+    try {
+      await portalApi.post("/forgot-password", { input: input.trim() });
+      setSent(true);
+    } catch (err) {
+      setError(err.message || "오류가 발생했습니다. 다시 시도해주세요.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="portal-modal__backdrop" onClick={onClose}>
+      <div className="portal-modal__box" onClick={(e) => e.stopPropagation()}>
+        <button className="portal-modal__close" onClick={onClose}>✕</button>
+        <h2 className="portal-modal__title">비밀번호 찾기</h2>
+
+        {!sent ? (
+          <>
+            <p className="portal-modal__desc">
+              가입 시 등록한 이메일 또는 휴대폰 번호를 입력하시면<br />
+              비밀번호 재설정 링크를 이메일로 발송해 드립니다.
+            </p>
+            <form onSubmit={submit}>
+              <div className="portal-login__field">
+                <label className="portal-login__field-label">이메일 또는 휴대폰 번호</label>
+                <input
+                  type="text"
+                  className={`portal-login__input${error ? " portal-login__input--error" : ""}`}
+                  value={input}
+                  onChange={(e) => { setInput(e.target.value); setError(""); }}
+                  placeholder="이메일 또는 010-0000-0000"
+                  autoFocus
+                />
+              </div>
+              {error && <div className="portal-login__error portal-login__error--danger">{error}</div>}
+              <button type="submit" className="portal-login__btn" disabled={loading}>
+                {loading ? "발송 중..." : "재설정 링크 발송"}
+              </button>
+            </form>
+          </>
+        ) : (
+          <div className="portal-modal__result portal-modal__result--ok">
+            입력하신 이메일 주소로 비밀번호 재설정 링크를 발송했습니다.<br />
+            <span style={{ color: "#888", fontSize: "13px", marginTop: "8px", display: "block" }}>
+              메일이 도착하지 않으면 스팸함을 확인해주세요. 링크는 30분간 유효합니다.
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 // ──────────────────────────────────────────────────
 // 로그인 폼
@@ -23,6 +157,7 @@ function LoginForm({ onSuccess }) {
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [modal, setModal] = useState(null); // "findId" | "forgotPassword" | null
 
   const f = (k) => (e) => { setForm({ ...form, [k]: e.target.value }); setError(""); };
 
@@ -81,29 +216,30 @@ function LoginForm({ onSuccess }) {
       )}
 
       <div className="portal-login__forgot-link-container" style={{ display: "flex", justifyContent: "space-between", marginTop: "-12px", marginBottom: "20px" }}>
-        <a
-          href={KAKAO_CHANNEL_CHAT}
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
+          type="button"
           className="portal-login__forgot-btn"
-          style={{ textDecoration: "underline" }}
+          style={{ textDecoration: "underline", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+          onClick={() => setModal("findId")}
         >
-          아이디 찾기 (카카오톡 문의)
-        </a>
-        <a
-          href={KAKAO_CHANNEL_CHAT}
-          target="_blank"
-          rel="noopener noreferrer"
+          아이디 찾기
+        </button>
+        <button
+          type="button"
           className="portal-login__forgot-btn"
-          style={{ textDecoration: "underline" }}
+          style={{ textDecoration: "underline", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+          onClick={() => setModal("forgotPassword")}
         >
-          비밀번호 찾기 (카카오톡 문의)
-        </a>
+          비밀번호 찾기
+        </button>
       </div>
 
       <button type="submit" className="portal-login__btn" disabled={loading}>
         {loading ? "로그인 중..." : "로그인"}
       </button>
+
+      {modal === "findId" && <FindIdModal onClose={() => setModal(null)} />}
+      {modal === "forgotPassword" && <ForgotPasswordModal onClose={() => setModal(null)} />}
     </form>
   );
 }
