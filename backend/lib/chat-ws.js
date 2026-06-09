@@ -306,7 +306,12 @@ function getSenderName(userId, userType) {
 function getSenderPhotoUrl(userId, userType) {
   if (userType === "portal") {
     try {
-      const row = sqlite.prepare("SELECT photo_url FROM portal_users WHERE id = ?").get(userId);
+      const row = sqlite.prepare(`
+        SELECT COALESCE(l.photo_url, pu.photo_url) as photo_url
+        FROM portal_users pu
+        LEFT JOIN lawyers l ON LOWER(l.email) = LOWER(pu.email)
+        WHERE pu.id = ?
+      `).get(userId);
       return row?.photo_url || null;
     } catch { return null; }
   }

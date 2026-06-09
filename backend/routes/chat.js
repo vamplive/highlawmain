@@ -117,9 +117,12 @@ router.get("/rooms", anyAuth, (req, res) => {
     const enriched = rooms.map((room) => {
       const members = sqlite.prepare(`
         SELECT mm.user_id, mm.user_type, mm.display_name, mm.joined_at,
-          CASE WHEN mm.user_type = 'portal' THEN pu.photo_url ELSE NULL END AS photo_url
+          CASE WHEN mm.user_type = 'portal'
+            THEN COALESCE(l.photo_url, pu.photo_url)
+            ELSE NULL END AS photo_url
         FROM messenger_members mm
         LEFT JOIN portal_users pu ON pu.id = mm.user_id AND mm.user_type = 'portal'
+        LEFT JOIN lawyers l ON LOWER(l.email) = LOWER(pu.email)
         WHERE mm.room_id = ?
       `).all(room.id);
 
@@ -253,18 +256,20 @@ router.get("/rooms/:id/messages", anyAuth, (req, res) => {
     let query, params;
     if (before) {
       query = `
-        SELECT mm.*, pu.photo_url as sender_photo_url
+        SELECT mm.*, COALESCE(l.photo_url, pu.photo_url) as sender_photo_url
         FROM messenger_messages mm
         LEFT JOIN portal_users pu ON pu.id = mm.sender_id AND mm.sender_type = 'portal'
+        LEFT JOIN lawyers l ON LOWER(l.email) = LOWER(pu.email)
         WHERE mm.room_id = ? AND mm.is_deleted = 0 AND mm.created_at < ?
         ORDER BY mm.created_at DESC LIMIT ?
       `;
       params = [roomId, before, limit];
     } else {
       query = `
-        SELECT mm.*, pu.photo_url as sender_photo_url
+        SELECT mm.*, COALESCE(l.photo_url, pu.photo_url) as sender_photo_url
         FROM messenger_messages mm
         LEFT JOIN portal_users pu ON pu.id = mm.sender_id AND mm.sender_type = 'portal'
+        LEFT JOIN lawyers l ON LOWER(l.email) = LOWER(pu.email)
         WHERE mm.room_id = ? AND mm.is_deleted = 0
         ORDER BY mm.created_at DESC LIMIT ?
       `;
