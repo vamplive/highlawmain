@@ -21,28 +21,13 @@ const {
   setPortalSessionCookie,
   clearPortalSessionCookie,
   extractPortalToken,
+  getPortalSession,
 } = require("../lib/auth");
 const portalService = require("../services/portal-service");
-const clientService = require("../services/client-service");
 const googleCalendarOAuth = require("../lib/google-calendar-oauth");
 const { logSecurityEvent } = require("../lib/audit-log");
 const { handleError } = require("../lib/route-handler");
-const { db } = require("../db");
-const { bookingSlots, consultations } = require("../db/schema");
-const { eq, desc, sql, and } = require("drizzle-orm");
-
-/** 내부 구성원(변호사·직원) 전용 미들웨어 — 외부 의뢰인(clientId !== null)은 403 */
-async function internalMemberOnly(req, res, next) {
-  try {
-    const isEmployee = await portalService.checkIsEmployee(req.portalUser.userId);
-    if (!isEmployee) {
-      return res.status(403).json({ data: null, error: "내부 구성원만 이용할 수 있습니다", meta: null });
-    }
-    next();
-  } catch (e) {
-    handleError(res, e);
-  }
-}
+const notif = require("../lib/notifications");
 
 const router = Router();
 
@@ -76,80 +61,6 @@ const photoUpload = multer({
 });
 
 // =============================================
-// 영수증 업로드 multer 설정 (지출 결의 / 경비 청구)
-// =============================================
-const RECEIPTS_DIR = path.join(STORAGE_PATH, "uploads", "receipts");
-
-const receiptStorage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    fs.mkdirSync(RECEIPTS_DIR, { recursive: true });
-    cb(null, RECEIPTS_DIR);
-  },
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase() || ".jpg";
-    cb(null, `receipt-${Date.now()}-${crypto.randomBytes(4).toString("hex")}${ext}`);
-  },
-});
-
-const receiptUpload = multer({
-  storage: receiptStorage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
-  fileFilter: (_req, file, cb) => {
-    if (/^image\/(jpeg|png|webp|gif)$/.test(file.mimetype) || file.mimetype === "application/pdf") {
-      cb(null, true);
-    } else {
-      cb(new Error("이미지 파일(JPG·PNG·WebP) 또는 PDF 파일만 업로드할 수 있습니다"), false);
-    }
-  },
-});
-
-// =============================================
-// 캘린더 일정 첨부파일 업로드 multer 설정
-// =============================================
-const CALENDAR_FILES_DIR = path.join(STORAGE_PATH, "uploads", "calendar");
-
-const calendarFileStorage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    fs.mkdirSync(CALENDAR_FILES_DIR, { recursive: true });
-    cb(null, CALENDAR_FILES_DIR);
-  },
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    cb(null, `event-${Date.now()}-${crypto.randomBytes(4).toString("hex")}${ext}`);
-  },
-});
-
-const calendarFileUpload = multer({
-  storage: calendarFileStorage,
-  limits: { fileSize: 20 * 1024 * 1024 }, // 20MB
-});
-
-const BOARD_IMAGES_DIR = path.join(STORAGE_PATH, "uploads", "board");
-
-const boardImageStorage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    fs.mkdirSync(BOARD_IMAGES_DIR, { recursive: true });
-    cb(null, BOARD_IMAGES_DIR);
-  },
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    cb(null, `post-${Date.now()}-${crypto.randomBytes(4).toString("hex")}${ext}`);
-  },
-});
-
-const boardImageUpload = multer({
-  storage: boardImageStorage,
-  limits: { fileSize: 20 * 1024 * 1024 }, // 20MB
-  fileFilter: (_req, file, cb) => {
-    if (!file.mimetype.startsWith("image/")) {
-      return cb(new Error("이미지 파일만 업로드할 수 있습니다"));
-    }
-    cb(null, true);
-  },
-});
-
-
-// =============================================
 // 공개 엔드포인트
 // =============================================
 
@@ -179,6 +90,23 @@ router.post("/login", async (req, res) => {
   }
 });
 
+/**
+ * GET /api/portal/auto-login?token=xxx&redirect=/portal/dashboard
+ * Electron 메신저 앱 → 브라우저 포털 자동 로그인
+ * 토큰이 유효하면 세션 쿠키를 설정하고 리다이렉트
+ */
+router.get("/auto-login", (req, res) => {
+  const { token, redirect } = req.query;
+  const session = token ? getPortalSession(token) : null;
+  if (!session) {
+    return res.redirect("/login?error=session_expired");
+  }
+  setPortalSessionCookie(res, token);
+  const safePath = typeof redirect === "string" && /^\/portal\//.test(redirect)
+    ? redirect
+    : "/portal/dashboard";
+  res.redirect(safePath);
+});
 
 /** POST /api/portal/logout */
 router.post("/logout", portalAuth, (req, res) => {
@@ -215,21 +143,6 @@ router.post("/upload-photo", portalAuth, (req, res) => {
     res.json({ data: { url }, error: null, meta: null });
   });
 });
-
-/** POST /api/portal/upload-receipt — 포털 지출결의/경비청구 영수증 업로드 */
-router.post("/upload-receipt", portalAuth, (req, res) => {
-  receiptUpload.single("receipt")(req, res, (err) => {
-    if (err) {
-      return res.status(400).json({ data: null, error: err.message, meta: null });
-    }
-    if (!req.file) {
-      return res.status(400).json({ data: null, error: "파일이 없습니다", meta: null });
-    }
-    const url = `/uploads/receipts/${req.file.filename}`;
-    res.json({ data: { url, originalName: req.file.originalname }, error: null, meta: null });
-  });
-});
-
 
 /** GET /api/portal/cases — 내 사건 목록 */
 router.get("/cases", portalAuth, async (req, res) => {
@@ -533,16 +446,6 @@ router.delete("/admin/users/:id", adminAuth, async (req, res) => {
   }
 });
 
-/** PATCH /api/portal/admin/users/:id — 역할 및 정보 수정 */
-router.patch("/admin/users/:id", adminAuth, async (req, res) => {
-  try {
-    const result = await portalService.updatePortalUser(req.params.id, req.body);
-    res.json({ data: result, error: null, meta: null });
-  } catch (e) {
-    handleError(res, e);
-  }
-});
-
 // =============================================
 // 관리자 엔드포인트 — 사건 관리
 // =============================================
@@ -682,174 +585,13 @@ router.delete("/posts/:id", portalAuth, async (req, res) => {
   }
 });
 
-/** POST /api/portal/posts/upload-image — 게시글 본문에 삽입할 이미지 업로드 (블로그 관리 에디터와 동일한 방식) */
-router.post("/posts/upload-image", portalAuth, async (req, res) => {
-  const isEmployee = await portalService.checkIsEmployee(req.portalUser.userId);
-  if (!isEmployee) {
-    return res.status(403).json({ data: null, error: "권한이 없습니다", meta: null });
-  }
-  boardImageUpload.single("file")(req, res, (err) => {
-    if (err) {
-      return res.status(400).json({ data: null, error: err.message, meta: null });
-    }
-    if (!req.file) {
-      return res.status(400).json({ data: null, error: "파일이 없습니다", meta: null });
-    }
-    const url = `/uploads/board/${req.file.filename}`;
-    res.json({ data: { url, name: req.file.originalname, size: req.file.size }, error: null, meta: null });
-  });
-});
-
-// =============================================
-// 포털 게시판 카테고리 — 대표변호사가 게시판(카테고리)을 추가/삭제할 수 있다
-// =============================================
-
-router.get("/board-categories", portalAuth, async (req, res) => {
-  try {
-    const isEmployee = await portalService.checkIsEmployee(req.portalUser.userId);
-    if (!isEmployee) {
-      return res.status(403).json({ data: [], error: "권한이 없습니다", meta: null });
-    }
-    const result = await portalService.listBoardCategories();
-    res.json({ data: result, error: null, meta: null });
-  } catch (e) {
-    handleError(res, e);
-  }
-});
-
-router.post("/board-categories", portalAuth, async (req, res) => {
-  try {
-    const isManagingLawyer = await portalService.checkIsManagingLawyer(req.portalUser.userId);
-    if (!isManagingLawyer) {
-      return res.status(403).json({ data: null, error: "대표변호사만 게시판을 추가할 수 있습니다", meta: null });
-    }
-    const result = await portalService.createBoardCategory(req.portalUser.userId, req.body);
-    res.status(201).json({ data: result, error: null, meta: null });
-  } catch (e) {
-    handleError(res, e);
-  }
-});
-
-router.delete("/board-categories/:id", portalAuth, async (req, res) => {
-  try {
-    const isManagingLawyer = await portalService.checkIsManagingLawyer(req.portalUser.userId);
-    if (!isManagingLawyer) {
-      return res.status(403).json({ data: null, error: "대표변호사만 게시판을 삭제할 수 있습니다", meta: null });
-    }
-    const result = await portalService.deleteBoardCategory(req.params.id);
-    res.json({ data: result, error: null, meta: null });
-  } catch (e) {
-    handleError(res, e);
-  }
-});
-
 // =============================================
 // 포털 일정 (캘린더)
 // =============================================
 
-router.get("/departments", portalAuth, async (req, res) => {
-  try {
-    const isEmployee = await portalService.checkIsEmployee(req.portalUser.userId);
-    if (!isEmployee) {
-      return res.status(403).json({ data: [], error: "권한이 없습니다", meta: null });
-    }
-    const { db } = require("../db");
-    const { departments, portalUsers, clients } = require("../db/schema");
-    const { eq } = require("drizzle-orm");
-
-    const rows = await db
-      .select({
-        id: departments.id,
-        name: departments.name,
-        parentId: departments.parentId,
-        managerUserId: departments.managerUserId,
-        managerName: clients.name,
-        managerPosition: portalUsers.position,
-      })
-      .from(departments)
-      .leftJoin(portalUsers, eq(departments.managerUserId, portalUsers.id))
-      .leftJoin(clients, eq(portalUsers.clientId, clients.id));
-
-    res.json({ data: rows, error: null, meta: null });
-  } catch (e) {
-    handleError(res, e);
-  }
-});
-
-router.get("/members", portalAuth, async (req, res) => {
-  try {
-    const isEmployee = await portalService.checkIsEmployee(req.portalUser.userId);
-    if (!isEmployee) {
-      return res.status(403).json({ data: [], error: "권한이 없습니다", meta: null });
-    }
-    const { db } = require("../db");
-    const { portalUsers, clients, departments, lawyers, LAWYER_POSITIONS } = require("../db/schema");
-    const { eq, and, sql } = require("drizzle-orm");
-
-    const rows = await db
-      .select({
-        id: portalUsers.id,
-        email: portalUsers.email,
-        name: clients.name,
-        phone: clients.phone,
-        role: portalUsers.role,
-        position: portalUsers.position,
-        departmentId: portalUsers.departmentId,
-        departmentName: departments.name,
-      })
-      .from(portalUsers)
-      .leftJoin(clients, eq(portalUsers.clientId, clients.id))
-      .leftJoin(departments, eq(portalUsers.departmentId, departments.id))
-      .where(
-        and(
-          eq(portalUsers.isActive, 1),
-          sql`(${portalUsers.clientId} IS NULL OR ${portalUsers.role} != 'client')`
-        )
-      );
-
-    // Resolve lawyers names for matching emails as display names fallback
-    const allLawyersList = await db
-      .select({
-        name: lawyers.name,
-        email: lawyers.email,
-      })
-      .from(lawyers);
-
-    const lawyerNameMap = {};
-    for (const l of allLawyersList) {
-      if (l.email) lawyerNameMap[l.email.toLowerCase().trim()] = l.name;
-    }
-
-    const resolvedRows = rows.map(r => ({
-      ...r,
-      name: lawyerNameMap[r.email?.toLowerCase().trim()] || r.name || "미지정"
-    }));
-
-    // 구성원 표시 순서: 대표변호사 > 변호사 > 전문위원 > 직원(부서별) — LAWYER_POSITIONS 순서를 기준으로 정렬하고,
-    // 같은 직위 내에서는 부서명, 그 다음 이름 순으로 정렬해 직원 목록이 부서별로 묶여 보이도록 한다.
-    const getPositionRank = (position) => {
-      const index = LAWYER_POSITIONS.indexOf(position);
-      return index === -1 ? LAWYER_POSITIONS.length : index;
-    };
-    resolvedRows.sort((a, b) => {
-      const rankDiff = getPositionRank(a.position) - getPositionRank(b.position);
-      if (rankDiff !== 0) return rankDiff;
-
-      const departmentDiff = (a.departmentName || "").localeCompare(b.departmentName || "", "ko");
-      if (departmentDiff !== 0) return departmentDiff;
-
-      return (a.name || "").localeCompare(b.name || "", "ko");
-    });
-
-    res.json({ data: resolvedRows, error: null, meta: null });
-  } catch (e) {
-    handleError(res, e);
-  }
-});
-
 router.get("/events", portalAuth, async (req, res) => {
   try {
-    const rows = await portalService.listPortalEvents(req.portalUser.userId, req.query);
+    const rows = await portalService.listPortalEvents(req.portalUser.userId);
     res.json({ data: rows, error: null, meta: null });
   } catch (e) {
     handleError(res, e);
@@ -883,50 +625,6 @@ router.delete("/events/:id", portalAuth, async (req, res) => {
   }
 });
 
-/** GET /api/portal/member-groups — 캘린더에서 함께 보고 싶은 구성원 그룹 목록 (내가 저장한 것만) */
-router.get("/member-groups", portalAuth, async (req, res) => {
-  try {
-    const rows = await portalService.listMemberGroups(req.portalUser.userId);
-    res.json({ data: rows, error: null, meta: null });
-  } catch (e) {
-    handleError(res, e);
-  }
-});
-
-/** POST /api/portal/member-groups — 현재 선택한 구성원들을 이름 지어 그룹으로 저장 */
-router.post("/member-groups", portalAuth, async (req, res) => {
-  try {
-    const result = await portalService.createMemberGroup(req.portalUser.userId, req.body);
-    res.status(201).json({ data: result, error: null, meta: null });
-  } catch (e) {
-    handleError(res, e);
-  }
-});
-
-/** DELETE /api/portal/member-groups/:id — 내가 저장한 구성원 그룹 삭제 */
-router.delete("/member-groups/:id", portalAuth, async (req, res) => {
-  try {
-    const result = await portalService.deleteMemberGroup(req.params.id, req.portalUser.userId);
-    res.json({ data: result, error: null, meta: null });
-  } catch (e) {
-    handleError(res, e);
-  }
-});
-
-/** POST /api/portal/calendar/upload-attachment — 일정 첨부파일 업로드 */
-router.post("/calendar/upload-attachment", portalAuth, (req, res) => {
-  calendarFileUpload.single("file")(req, res, (err) => {
-    if (err) {
-      return res.status(400).json({ data: null, error: err.message, meta: null });
-    }
-    if (!req.file) {
-      return res.status(400).json({ data: null, error: "파일이 없습니다", meta: null });
-    }
-    const url = `/uploads/calendar/${req.file.filename}`;
-    res.json({ data: { url, name: req.file.originalname, size: req.file.size }, error: null, meta: null });
-  });
-});
-
 // =============================================
 // 포털 변호사 프로필 설정 및 어드민 기능
 // =============================================
@@ -942,11 +640,6 @@ router.get("/lawyers/my-profile", portalAuth, async (req, res) => {
 
 router.post("/lawyers/my-profile", portalAuth, async (req, res) => {
   try {
-    const existing = await portalService.getLawyerProfileByEmail(req.portalUser.email);
-    if (existing) {
-      const result = await portalService.updateLawyerProfile(existing.id, { ...req.body, email: req.portalUser.email });
-      return res.json({ data: result, error: null, meta: null });
-    }
     const result = await portalService.createLawyerProfile(req.portalUser.email, req.body);
     res.status(201).json({ data: result, error: null, meta: null });
   } catch (e) {
@@ -958,7 +651,7 @@ router.put("/lawyers/my-profile", portalAuth, async (req, res) => {
   try {
     const profile = await portalService.getLawyerProfileByEmail(req.portalUser.email);
     if (!profile) return res.status(404).json({ data: null, error: "프로필이 존재하지 않습니다", meta: null });
-    const result = await portalService.updateLawyerProfile(profile.id, { ...req.body, email: req.portalUser.email });
+    const result = await portalService.updateLawyerProfile(profile.id, req.body);
     res.json({ data: result, error: null, meta: null });
   } catch (e) {
     handleError(res, e);
@@ -969,16 +662,6 @@ router.get("/lawyers/admin/check", portalAuth, async (req, res) => {
   try {
     const isAdmin = await portalService.checkIsAdmin(req.portalUser.email);
     res.json({ data: { isAdmin }, error: null, meta: null });
-  } catch (e) {
-    handleError(res, e);
-  }
-});
-
-/** GET /api/portal/lawyers/managing/check — 로그인한 사용자가 대표변호사인지 확인 (게시판 추가 등 권한 UI 노출용) */
-router.get("/lawyers/managing/check", portalAuth, async (req, res) => {
-  try {
-    const isManagingLawyer = await portalService.checkIsManagingLawyer(req.portalUser.userId);
-    res.json({ data: { isManagingLawyer }, error: null, meta: null });
   } catch (e) {
     handleError(res, e);
   }
@@ -1040,354 +723,97 @@ router.post("/lawyers/admin/reorder", portalAuth, async (req, res) => {
 });
 
 // =============================================
-// 구글 캘린더 연동용 iCal 피드
+// 조직도 — 모든 포털 사용자 접근 가능
 // =============================================
 
-/**
- * 이벤트를 iCalendar(RFC 5545) 형식으로 변환하는 헬퍼
- */
-function formatEventsToICal(events) {
-  let ical = [];
-  ical.push("BEGIN:VCALENDAR");
-  ical.push("VERSION:2.0");
-  ical.push("PRODID:-//Highlaw//Calendar Feed//KO");
-  ical.push("CALSCALE:GREGORIAN");
-  ical.push("METHOD:PUBLISH");
-  ical.push("X-WR-CALNAME:법무법인 하이로 일정");
-  ical.push("X-WR-TIMEZONE:Asia/Seoul");
-
-  const toICalDate = (dateStr, isAllDay) => {
-    if (!dateStr) return "";
-    const clean = dateStr.replace(/[-:]/g, "");
-    if (isAllDay) {
-      return clean.substring(0, 8);
-    }
-    let tIndex = clean.indexOf("T");
-    if (tIndex === -1) {
-      return clean.substring(0, 8);
-    }
-    let timePart = clean.substring(tIndex + 1);
-    if (timePart.length === 4) {
-      timePart += "00";
-    }
-    return clean.substring(0, 8) + "T" + timePart.substring(0, 6);
-  };
-
-  for (const event of events) {
-    const isAllDay = event.isAllDay === 1;
-    ical.push("BEGIN:VEVENT");
-    ical.push(`UID:${event.id || Math.random().toString(36).substring(2)}@highlaw.co.kr`);
-    
-    const nowStr = new Date().toISOString().replace(/[-:]/g, "").substring(0, 15) + "Z";
-    ical.push(`DTSTAMP:${nowStr}`);
-    
-    const startICal = toICalDate(event.startsAt, isAllDay);
-    const endICal = toICalDate(event.endsAt || event.startsAt, isAllDay);
-    
-    if (isAllDay) {
-      ical.push(`DTSTART;VALUE=DATE:${startICal}`);
-      try {
-        const endDateObj = new Date((event.endsAt || event.startsAt).substring(0, 10));
-        endDateObj.setDate(endDateObj.getDate() + 1);
-        const endStr = endDateObj.toISOString().substring(0, 10).replace(/[-:]/g, "");
-        ical.push(`DTEND;VALUE=DATE:${endStr}`);
-      } catch {
-        ical.push(`DTEND;VALUE=DATE:${endICal}`);
-      }
-    } else {
-      ical.push(`DTSTART:${startICal}`);
-      ical.push(`DTEND:${endICal}`);
-    }
-
-    const summary = (event.title || "")
-      .replace(/\\/g, "\\\\")
-      .replace(/,/g, "\\,")
-      .replace(/;/g, "\\;")
-      .replace(/\n/g, "\\n");
-    ical.push(`SUMMARY:${summary}`);
-
-    let descParts = [];
-    if (event.description) {
-      descParts.push(event.description);
-    }
-    if (event.ownerName) {
-      descParts.push(`담당: ${event.ownerName}`);
-    }
-    if (event.isCourtDate) {
-      descParts.push("[법정 기일]");
-    }
-    const description = descParts.join(" | ")
-      .replace(/\\/g, "\\\\")
-      .replace(/,/g, "\\,")
-      .replace(/;/g, "\\;")
-      .replace(/\n/g, "\\n");
-    if (description) {
-      ical.push(`DESCRIPTION:${description}`);
-    }
-
-    ical.push("END:VEVENT");
+router.get("/org-chart", portalAuth, async (req, res) => {
+  try {
+    const list = await portalService.listLawyersForOrgChart();
+    res.json({ data: list, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
   }
+});
 
-  ical.push("END:VCALENDAR");
-  return ical.join("\r\n");
-}
+// =============================================
+// 알림 (Notifications)
+// =============================================
 
-/** GET /api/portal/calendar/sync-info — 구글 캘린더 연동 정보 조회 */
-router.get("/calendar/sync-info", portalAuth, (req, res) => {
+router.get("/notifications", portalAuth, (req, res) => {
   try {
     const { userId } = req.portalUser;
-    
-    // IP_HASH_SECRET 기반 HMAC 토큰 생성
-    const IP_HASH_SECRET = process.env.IP_HASH_SECRET || process.env.CSRF_SECRET || "development-ip-hash-secret";
-    const token = crypto.createHmac("sha256", IP_HASH_SECRET).update(userId).digest("hex");
-    
-    // 피드 URL — APP_URL 환경변수 기반. 리버스 프록시 뒤에서 Host/protocol 헤더가
-    // 신뢰할 수 없을 수 있으므로 Host 헤더 기반 생성을 의도적으로 회피(admin-users.js와 동일 원칙).
-    const appUrl = (process.env.APP_URL || "https://highlaw.co.kr").replace(/\/+$/, "");
-    const feedUrl = `${appUrl}/api/portal/calendar/feed?userId=${userId}&token=${token}`;
-    
-    res.json({
-      data: {
-        feedUrl,
-      },
-      error: null,
-      meta: null
-    });
+    const userType = req.portalUser.userType || "portal";
+    const notifications = notif.list(userId, userType);
+    const count = notif.unreadCount(userId, userType);
+    res.json({ data: { notifications, unreadCount: count }, error: null, meta: null });
   } catch (e) {
     handleError(res, e);
   }
 });
 
-/** GET /api/portal/calendar/feed — 구글 캘린더 구독용 iCal 피드 제공 (쿠키 인증 제외) */
-router.get("/calendar/feed", async (req, res) => {
+router.post("/notifications/read-all", portalAuth, (req, res) => {
   try {
-    const { token, userId } = req.query;
-    if (!token || !userId) {
-      return res.status(400).send("검증 파라미터가 누락되었습니다.");
-    }
-
-    const IP_HASH_SECRET = process.env.IP_HASH_SECRET || process.env.CSRF_SECRET || "development-ip-hash-secret";
-    const expectedToken = crypto.createHmac("sha256", IP_HASH_SECRET).update(userId).digest("hex");
-    
-    if (token !== expectedToken) {
-      return res.status(403).send("올바르지 않은 인증 토큰입니다.");
-    }
-
-    // 해당 사용자의 캘린더 일정 조회
-    const events = await portalService.listPortalEvents(userId, {});
-    const icalData = formatEventsToICal(events);
-
-    res.setHeader("Content-Type", "text/calendar; charset=utf-8");
-    res.setHeader("Content-Disposition", "attachment; filename=calendar.ics");
-    res.send(icalData);
-  } catch (e) {
-    console.error("[iCal Feed Error]", e);
-    res.status(500).send("iCal 생성 중 오류가 발생했습니다.");
-  }
-});
-
-// =============================================
-// 포털 예약 관리 (내부 구성원 전용)
-// =============================================
-
-/**
- * GET /api/portal/bookings — 예약된 슬롯 목록
- * - isAvailable=0 슬롯 (예약 완료)
- */
-router.get("/bookings", portalAuth, internalMemberOnly, async (req, res) => {
-  try {
-    const page = Math.max(1, parseInt(req.query.page) || 1);
-    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
-    const offset = (page - 1) * limit;
-
-    const rows = await db
-      .select()
-      .from(bookingSlots)
-      .where(eq(bookingSlots.isAvailable, 0))
-      .orderBy(desc(bookingSlots.date), desc(bookingSlots.startTime))
-      .limit(limit)
-      .offset(offset);
-
-    const [{ total }] = await db
-      .select({ total: sql`count(*)` })
-      .from(bookingSlots)
-      .where(eq(bookingSlots.isAvailable, 0));
-
-    res.json({ data: rows, error: null, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } });
+    const { userId } = req.portalUser;
+    notif.markAll(userId, req.portalUser.userType || "portal");
+    res.json({ data: { ok: true }, error: null, meta: null });
   } catch (e) {
     handleError(res, e);
   }
 });
 
-/**
- * GET /api/portal/bookings/available — 가용 슬롯 목록 (예약 생성용)
- * - ?date=YYYY-MM-DD
- */
-router.get("/bookings/available", portalAuth, internalMemberOnly, async (req, res) => {
+router.post("/notifications/:id/read", portalAuth, (req, res) => {
   try {
-    const { date } = req.query;
-    const rows = await db
-      .select()
-      .from(bookingSlots)
-      .where(and(
-        date ? eq(bookingSlots.date, date) : sql`1=1`,
-        eq(bookingSlots.isAvailable, 1),
-      ))
-      .orderBy(bookingSlots.date, bookingSlots.startTime)
-      .limit(200);
-    res.json({ data: rows, error: null, meta: null });
-  } catch (e) {
-    handleError(res, e);
-  }
-});
-
-/**
- * POST /api/portal/bookings/cancel/:id — 예약 취소 (슬롯 가용 복원)
- */
-router.post("/bookings/cancel/:id", portalAuth, internalMemberOnly, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const [slot] = await db.select().from(bookingSlots).where(eq(bookingSlots.id, id));
-    if (!slot) return res.status(404).json({ data: null, error: "예약 슬롯을 찾을 수 없습니다", meta: null });
-
-    const [updated] = await db
-      .update(bookingSlots)
-      .set({ isAvailable: 1, consultationId: null })
-      .where(eq(bookingSlots.id, id))
-      .returning();
-
-    res.json({ data: updated, error: null, meta: null });
+    notif.markOne(req.params.id);
+    res.json({ data: { ok: true }, error: null, meta: null });
   } catch (e) {
     handleError(res, e);
   }
 });
 
 // =============================================
-// 포털 고객 관리 (내부 구성원 전용)
+// 게시판 카테고리
 // =============================================
 
-/**
- * GET /api/portal/clients — 고객 목록 조회
- */
-router.get("/clients", portalAuth, internalMemberOnly, async (req, res) => {
+router.get("/board-categories", portalAuth, async (req, res) => {
   try {
-    const result = await clientService.listClients(req.query);
-    res.json({ data: result.items, error: null, meta: result.meta });
+    const list = await portalService.listBoardCategories();
+    res.json({ data: list, error: null, meta: null });
   } catch (e) {
     handleError(res, e);
   }
 });
 
-/**
- * GET /api/portal/clients/:id — 고객 단건 조회
- */
-router.get("/clients/:id", portalAuth, internalMemberOnly, async (req, res) => {
+router.post("/board-categories", portalAuth, async (req, res) => {
   try {
-    const client = await clientService.getClientById(req.params.id);
-    res.json({ data: client, error: null, meta: null });
+    const isAdmin = await portalService.checkIsAdmin(req.portalUser.email);
+    if (!isAdmin) return res.status(403).json({ data: null, error: "권한이 없습니다", meta: null });
+    const result = await portalService.createBoardCategory(req.portalUser.userId, req.body);
+    res.status(201).json({ data: result, error: null, meta: null });
   } catch (e) {
     handleError(res, e);
   }
 });
 
-/**
- * POST /api/portal/clients — 고객 등록
- */
-router.post("/clients", portalAuth, internalMemberOnly, async (req, res) => {
+router.put("/board-categories/:id", portalAuth, async (req, res) => {
   try {
-    const inserted = await clientService.createClient(req.body);
-    res.json({ data: inserted, error: null, meta: null });
-  } catch (e) {
-    handleError(res, e);
-  }
-});
-
-/**
- * PATCH /api/portal/clients/:id — 고객 정보 수정
- */
-router.patch("/clients/:id", portalAuth, internalMemberOnly, async (req, res) => {
-  try {
-    const updated = await clientService.updateClient(req.params.id, req.body);
-    res.json({ data: updated, error: null, meta: null });
-  } catch (e) {
-    handleError(res, e);
-  }
-});
-
-/**
- * DELETE /api/portal/clients/:id — 고객 삭제
- */
-router.delete("/clients/:id", portalAuth, internalMemberOnly, async (req, res) => {
-  try {
-    const result = await clientService.deleteClient(req.params.id);
+    const isAdmin = await portalService.checkIsAdmin(req.portalUser.email);
+    if (!isAdmin) return res.status(403).json({ data: null, error: "권한이 없습니다", meta: null });
+    const result = await portalService.updateBoardCategory(req.params.id, req.body);
     res.json({ data: result, error: null, meta: null });
   } catch (e) {
     handleError(res, e);
   }
 });
 
-// =============================================
-// 고객 법률 사건 (1:N)
-// =============================================
-
-router.get("/clients/:id/cases", portalAuth, internalMemberOnly, async (req, res) => {
+router.delete("/board-categories/:id", portalAuth, async (req, res) => {
   try {
-    const cases = await clientService.listClientCases(req.params.id);
-    res.json({ data: cases, error: null, meta: null });
-  } catch (e) { handleError(res, e); }
-});
-
-router.post("/clients/:id/cases", portalAuth, internalMemberOnly, async (req, res) => {
-  try {
-    const inserted = await clientService.createClientCase(req.params.id, req.body);
-    res.json({ data: inserted, error: null, meta: null });
-  } catch (e) { handleError(res, e); }
-});
-
-router.patch("/clients/:id/cases/:caseId", portalAuth, internalMemberOnly, async (req, res) => {
-  try {
-    const updated = await clientService.updateClientCase(req.params.caseId, req.body);
-    res.json({ data: updated, error: null, meta: null });
-  } catch (e) { handleError(res, e); }
-});
-
-router.delete("/clients/:id/cases/:caseId", portalAuth, internalMemberOnly, async (req, res) => {
-  try {
-    const result = await clientService.deleteClientCase(req.params.caseId);
+    const isAdmin = await portalService.checkIsAdmin(req.portalUser.email);
+    if (!isAdmin) return res.status(403).json({ data: null, error: "권한이 없습니다", meta: null });
+    const result = await portalService.deleteBoardCategory(req.params.id);
     res.json({ data: result, error: null, meta: null });
-  } catch (e) { handleError(res, e); }
-});
-
-// =============================================
-// 고객 관련자 (1:N)
-// =============================================
-
-router.get("/clients/:id/persons", portalAuth, internalMemberOnly, async (req, res) => {
-  try {
-    const persons = await clientService.listClientPersons(req.params.id);
-    res.json({ data: persons, error: null, meta: null });
-  } catch (e) { handleError(res, e); }
-});
-
-router.post("/clients/:id/persons", portalAuth, internalMemberOnly, async (req, res) => {
-  try {
-    const inserted = await clientService.createClientPerson(req.params.id, req.body);
-    res.json({ data: inserted, error: null, meta: null });
-  } catch (e) { handleError(res, e); }
-});
-
-router.patch("/clients/:id/persons/:personId", portalAuth, internalMemberOnly, async (req, res) => {
-  try {
-    const updated = await clientService.updateClientPerson(req.params.personId, req.body);
-    res.json({ data: updated, error: null, meta: null });
-  } catch (e) { handleError(res, e); }
-});
-
-router.delete("/clients/:id/persons/:personId", portalAuth, internalMemberOnly, async (req, res) => {
-  try {
-    const result = await clientService.deleteClientPerson(req.params.personId);
-    res.json({ data: result, error: null, meta: null });
-  } catch (e) { handleError(res, e); }
+  } catch (e) {
+    handleError(res, e);
+  }
 });
 
 module.exports = router;

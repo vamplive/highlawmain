@@ -4,7 +4,7 @@
  * - 사건 조회/등록, 메시지 전송, 구글 캘린더 연동
  * - 타임트래킹 (사건별 시간 기록)
  */
-const { db } = require("../db");
+const { db, sqlite } = require("../db");
 const crypto = require("crypto");
 const {
   portalUsers,
@@ -17,11 +17,10 @@ const {
   portalPosts,
   portalBoardCategories,
   portalEvents,
-  portalMemberGroups,
   adminUsers,
   courtDates,
 } = require("../db/schema");
-const { eq, desc, and, sql, gte, lte, between, asc, like, or, inArray } = require("drizzle-orm");
+const { eq, desc, and, sql, gte, lte, between, asc, like } = require("drizzle-orm");
 const { hashPassword, verifyPassword, dummyVerifyPassword } = require("../lib/auth");
 const { createPortalSession, deletePortalSession } = require("../lib/auth");
 const {
@@ -36,9 +35,6 @@ const {
 /** 이메일 형식 검증 */
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const { requestOtp, verifyOtp } = require("../lib/sms-otp");
-const SMS_OTP_CONFIGURED = Boolean(process.env.ALIGO_API_KEY && process.env.ALIGO_USER_ID && process.env.ALIGO_SENDER);
-
 // =============================================
 // 회원가입 / 로그인 / 로그아웃
 // =============================================
@@ -48,7 +44,7 @@ const SMS_OTP_CONFIGURED = Boolean(process.env.ALIGO_API_KEY && process.env.ALIG
  * isActive=0: 승인 대기, 1: 승인, -1: 거절
  */
 async function registerUser(data) {
-  const { email, password, name, phone, hireDate } = data;
+  const { email, password, name, phone } = data;
 
   if (!email || !EMAIL_REGEX.test((email || "").trim())) {
     throw new ServiceError("올바른 이메일 주소를 입력해주세요", 400);
@@ -88,7 +84,6 @@ async function registerUser(data) {
     passwordHash,
     clientId: matchedClient ? matchedClient.id : null,
     isActive: 0,
-    hireDate: hireDate || null,
   }).returning();
 
   if (!matchedClient) {
@@ -115,50 +110,18 @@ async function registerUser(data) {
  */
 async function loginUser(email, password) {
   if (!email || !password) {
-    throw new ServiceError("이메일/휴대폰 번호와 비밀번호를 입력해주세요", 400);
+    throw new ServiceError("이메일과 비밀번호를 입력해주세요", 400);
   }
 
-  const input = email.trim();
-  let user = null;
-
-  // 1. 이메일 형식인 경우 이메일로 먼저 조회
-  if (input.includes("@")) {
-    const normalizedEmail = input.toLowerCase();
-    const [found] = await db
-      .select()
-      .from(portalUsers)
-      .where(eq(portalUsers.email, normalizedEmail));
-    user = found;
-  } else {
-    // 2. 이메일 형식이 아니면 휴대폰 번호로 클라이언트 조회 후 포털 계정 연결
-    const normalizedPhone = input.replace(/[\s-]/g, ""); // 공백 및 대시 제거
-    const [matchedClient] = await db
-      .select()
-      .from(clients)
-      .where(eq(clients.phone, normalizedPhone));
-
-    if (matchedClient) {
-      const [found] = await db
-        .select()
-        .from(portalUsers)
-        .where(eq(portalUsers.clientId, matchedClient.id));
-      user = found;
-    }
-  }
-
-  // 3. 휴대폰 번호로 매칭되지 않았고, @가 없었더라도 이메일 계정일 가능성이 있으므로 최종 이메일로 한 번 더 조회
-  if (!user) {
-    const normalizedEmail = input.toLowerCase();
-    const [found] = await db
-      .select()
-      .from(portalUsers)
-      .where(eq(portalUsers.email, normalizedEmail));
-    user = found;
-  }
+  const normalizedEmail = email.trim().toLowerCase();
+  const [user] = await db
+    .select()
+    .from(portalUsers)
+    .where(eq(portalUsers.email, normalizedEmail));
 
   if (!user) {
     dummyVerifyPassword();
-    throw new ServiceError("이메일/휴대폰 번호 또는 비밀번호가 올바르지 않습니다", 401);
+    throw new ServiceError("이메일 또는 비밀번호가 올바르지 않습니다", 401);
   }
 
   // 승인 상태별 오류 분기
@@ -173,7 +136,7 @@ async function loginUser(email, password) {
   }
 
   if (!verifyPassword(password, user.passwordHash)) {
-    throw new ServiceError("이메일/휴대폰 번호 또는 비밀번호가 올바르지 않습니다", 401);
+    throw new ServiceError("이메일 또는 비밀번호가 올바르지 않습니다", 401);
   }
 
   const token = createPortalSession(user.id, user.email, user.clientId);
@@ -199,13 +162,22 @@ async function getUserProfile(userId, clientId) {
       id: portalUsers.id,
       email: portalUsers.email,
       clientId: portalUsers.clientId,
-      role: portalUsers.role,
-      departmentId: portalUsers.departmentId,
-      position: portalUsers.position,
       googleConnected: sql`CASE WHEN ${portalUsers.googleRefreshToken} IS NOT NULL THEN 1 ELSE 0 END`,
     })
     .from(portalUsers)
     .where(eq(portalUsers.id, userId));
+
+  // photo_url은 Drizzle 스키마에 없으므로 raw sqlite로 조회
+  let photoUrl = null;
+  let lawyerPhotoUrl = null;
+  if (user?.email) {
+    try {
+      const puRow = sqlite.prepare("SELECT photo_url FROM portal_users WHERE id = ?").get(userId);
+      photoUrl = puRow?.photo_url || null;
+      const lwRow = sqlite.prepare("SELECT photo_url FROM lawyers WHERE LOWER(email) = LOWER(?)").get(user.email);
+      lawyerPhotoUrl = lwRow?.photo_url || null;
+    } catch { /* 무시 */ }
+  }
 
   let clientInfo = null;
   if (clientId) {
@@ -223,7 +195,7 @@ async function getUserProfile(userId, clientId) {
     clientInfo = client || null;
   }
 
-  return { user, client: clientInfo };
+  return { user: { ...user, photoUrl, lawyerPhotoUrl }, client: clientInfo };
 }
 
 // =============================================
@@ -253,7 +225,6 @@ async function listPortalUsers(query) {
       clientId: portalUsers.clientId,
       clientName: clients.name,
       clientPhone: clients.phone,
-      role: portalUsers.role,
     })
     .from(portalUsers)
     .leftJoin(clients, eq(portalUsers.clientId, clients.id))
@@ -284,7 +255,6 @@ async function getPortalUser(id) {
       clientId: portalUsers.clientId,
       clientName: clients.name,
       clientPhone: clients.phone,
-      role: portalUsers.role,
     })
     .from(portalUsers)
     .leftJoin(clients, eq(portalUsers.clientId, clients.id))
@@ -337,28 +307,6 @@ async function deletePortalUser(id) {
   if (!existing) throw new ServiceError("사용자를 찾을 수 없습니다", 404);
   await db.delete(portalUsers).where(eq(portalUsers.id, id));
   return { deleted: true };
-}
-
-/**
- * 관리자: 포털 사용자 정보 및 역할 업데이트
- */
-async function updatePortalUser(id, data) {
-  validateUUID(id);
-  const [existing] = await db.select().from(portalUsers).where(eq(portalUsers.id, id));
-  if (!existing) throw new ServiceError("사용자를 찾을 수 없습니다", 404);
-
-  const updates = { updatedAt: sql`(datetime('now'))` };
-  if ("role" in data) {
-    updates.role = data.role || null;
-  }
-
-  const [updated] = await db
-    .update(portalUsers)
-    .set(updates)
-    .where(eq(portalUsers.id, id))
-    .returning();
-
-  return updated;
 }
 
 // =============================================
@@ -1149,193 +1097,28 @@ async function deletePortalPost(id, portalUserId, isAdmin) {
 }
 
 // =============================================
-// 포털 게시판 카테고리 (대표변호사가 추가/삭제 가능)
-// =============================================
-
-async function listBoardCategories() {
-  return db
-    .select({
-      id: portalBoardCategories.id,
-      key: portalBoardCategories.key,
-      label: portalBoardCategories.label,
-      color: portalBoardCategories.color,
-      sortOrder: portalBoardCategories.sortOrder,
-      createdBy: portalBoardCategories.createdBy,
-      createdAt: portalBoardCategories.createdAt,
-    })
-    .from(portalBoardCategories)
-    .orderBy(asc(portalBoardCategories.sortOrder), asc(portalBoardCategories.createdAt));
-}
-
-/** 카테고리 key는 portal_posts.category 컬럼에 그대로 저장되므로 영문 소문자/숫자/하이픈만 허용한다 */
-const BOARD_CATEGORY_KEY_REGEX = /^[a-z0-9-]{1,30}$/;
-
-async function createBoardCategory(portalUserId, data) {
-  const key = (data.key || "").trim().toLowerCase();
-  const label = (data.label || "").trim();
-  const color = (data.color || "#64748b").trim();
-
-  if (!BOARD_CATEGORY_KEY_REGEX.test(key)) {
-    throw new ServiceError("카테고리 key는 영문 소문자/숫자/하이픈으로만 입력해주세요", 400);
-  }
-  if (!label) throw new ServiceError("게시판 이름을 입력해주세요", 400);
-
-  const [existing] = await db
-    .select({ id: portalBoardCategories.id })
-    .from(portalBoardCategories)
-    .where(eq(portalBoardCategories.key, key));
-  if (existing) throw new ServiceError("이미 사용 중인 key입니다", 409);
-
-  const [{ maxSortOrder }] = await db
-    .select({ maxSortOrder: sql`COALESCE(MAX(${portalBoardCategories.sortOrder}), -1)` })
-    .from(portalBoardCategories);
-
-  const [inserted] = await db.insert(portalBoardCategories).values({
-    key,
-    label,
-    color,
-    sortOrder: Number(maxSortOrder) + 1,
-    createdBy: portalUserId,
-  }).returning();
-
-  return inserted;
-}
-
-async function deleteBoardCategory(id) {
-  validateUUID(id);
-  const [existing] = await db.select().from(portalBoardCategories).where(eq(portalBoardCategories.id, id));
-  if (!existing) throw new ServiceError("게시판을 찾을 수 없습니다", 404);
-
-  const [{ postCount }] = await db
-    .select({ postCount: sql`count(*)` })
-    .from(portalPosts)
-    .where(eq(portalPosts.category, existing.key));
-  if (Number(postCount) > 0) {
-    throw new ServiceError("게시글이 있는 게시판은 삭제할 수 없습니다", 409);
-  }
-
-  await db.delete(portalBoardCategories).where(eq(portalBoardCategories.id, id));
-  return { deleted: true };
-}
-
-// =============================================
-// 캘린더 — 함께 보고 싶은 구성원 그룹 (사용자별 저장)
-// =============================================
-
-async function listMemberGroups(portalUserId) {
-  const rows = await db
-    .select({
-      id: portalMemberGroups.id,
-      name: portalMemberGroups.name,
-      memberIds: portalMemberGroups.memberIds,
-      createdAt: portalMemberGroups.createdAt,
-    })
-    .from(portalMemberGroups)
-    .where(eq(portalMemberGroups.portalUserId, portalUserId))
-    .orderBy(asc(portalMemberGroups.createdAt));
-
-  // 콤마로 저장된 member_ids를 배열로 변환해 프론트엔드가 바로 쓸 수 있게 한다 (attendee_ids와 동일한 방식)
-  return rows.map((row) => ({
-    ...row,
-    memberIds: (row.memberIds || "").split(",").map((id) => id.trim()).filter(Boolean),
-  }));
-}
-
-async function createMemberGroup(portalUserId, data) {
-  const name = (data.name || "").trim();
-  const memberIds = Array.isArray(data.memberIds) ? data.memberIds.filter(Boolean) : [];
-
-  if (!name) throw new ServiceError("그룹 이름을 입력해주세요", 400);
-  if (memberIds.length === 0) throw new ServiceError("구성원을 1명 이상 선택해주세요", 400);
-
-  const [inserted] = await db.insert(portalMemberGroups).values({
-    portalUserId,
-    name,
-    memberIds: memberIds.join(","),
-  }).returning();
-
-  return { ...inserted, memberIds };
-}
-
-async function deleteMemberGroup(id, portalUserId) {
-  validateUUID(id);
-  const [existing] = await db.select().from(portalMemberGroups).where(eq(portalMemberGroups.id, id));
-  if (!existing) throw new ServiceError("그룹을 찾을 수 없습니다", 404);
-
-  if (existing.portalUserId !== portalUserId) {
-    throw new ServiceError("삭제 권한이 없습니다", 403);
-  }
-
-  await db.delete(portalMemberGroups).where(eq(portalMemberGroups.id, id));
-  return { deleted: true };
-}
-
-// =============================================
 // 포털 일정 (캘린더)
 // =============================================
 
-async function listPortalEvents(portalUserId, query = {}) {
+async function listPortalEvents(portalUserId) {
   // 1. 사용자 정보 조회 (clientId, email 확인)
   const [user] = await db
     .select({
       id: portalUsers.id,
       email: portalUsers.email,
       clientId: portalUsers.clientId,
-      role: portalUsers.role,
     })
     .from(portalUsers)
     .where(eq(portalUsers.id, portalUserId));
 
   if (!user) return [];
-  const isEmployee = !user.clientId || (user.role && user.role !== "client");
 
-  // Filter target user IDs
-  let targetUserIds = [portalUserId];
-
-  if (isEmployee) {
-    if (query.company === "true") {
-      const allEmps = await db
-        .select({ id: portalUsers.id })
-        .from(portalUsers)
-        .where(
-          and(
-            eq(portalUsers.isActive, 1),
-            sql`(${portalUsers.clientId} IS NULL OR ${portalUsers.role} != 'client')`
-          )
-        );
-      targetUserIds = allEmps.map((e) => e.id);
-    } else if (query.departmentId) {
-      const deptEmps = await db
-        .select({ id: portalUsers.id })
-        .from(portalUsers)
-        .where(
-          and(
-            eq(portalUsers.isActive, 1),
-            eq(portalUsers.departmentId, query.departmentId)
-          )
-        );
-      targetUserIds = deptEmps.map((e) => e.id);
-    } else if (query.userIds) {
-      targetUserIds = query.userIds
-        .split(",")
-        .map((id) => id.trim())
-        .filter(Boolean);
-    }
-  }
-
-  // 2. 포털 사용자 개인 및 attendee로 참여한 일정 조회
-  let dbEvents = [];
-  if (targetUserIds.length > 0) {
-    const conditions = [inArray(portalEvents.portalUserId, targetUserIds)];
-    for (const userId of targetUserIds) {
-      conditions.push(like(portalEvents.attendeeIds, `%${userId}%`));
-    }
-    dbEvents = await db
-      .select()
-      .from(portalEvents)
-      .where(or(...conditions))
-      .orderBy(asc(portalEvents.startsAt));
-  }
+  // 2. 포털 사용자 개인 일정 조회
+  const userEvents = await db
+    .select()
+    .from(portalEvents)
+    .where(eq(portalEvents.portalUserId, portalUserId))
+    .orderBy(asc(portalEvents.startsAt));
 
   // 3. 의뢰인/변호사 관련 법정 일정(court_dates) 조회
   let clientCourtDates = [];
@@ -1347,215 +1130,66 @@ async function listPortalEvents(portalUserId, query = {}) {
       .orderBy(asc(courtDates.startsAt));
   }
 
-  let targetCourtDates = [];
-  if (isEmployee && targetUserIds.length > 0) {
-    const targetUsers = await db
-      .select({ id: portalUsers.id, email: portalUsers.email })
-      .from(portalUsers)
-      .where(inArray(portalUsers.id, targetUserIds));
-    const targetEmails = targetUsers
-      .map((tu) => tu.email?.toLowerCase().trim())
-      .filter(Boolean);
-
-    if (targetEmails.length > 0) {
-      const targetLawyers = await db
-        .select({ id: lawyers.id })
-        .from(lawyers)
-        .where(inArray(lawyers.email, targetEmails));
-      const lawyerIds = targetLawyers.map((l) => l.id);
-
-      if (lawyerIds.length > 0) {
-        targetCourtDates = await db
-          .select()
-          .from(courtDates)
-          .where(and(inArray(courtDates.lawyerId, lawyerIds), eq(courtDates.status, "scheduled")))
-          .orderBy(asc(courtDates.startsAt));
-      }
-    }
-  } else if (!isEmployee) {
-    if (user.email) {
-      const [lawyer] = await db
+  let lawyerCourtDates = [];
+  if (user.email) {
+    const [lawyer] = await db
+      .select()
+      .from(lawyers)
+      .where(eq(lawyers.email, user.email.toLowerCase().trim()));
+    if (lawyer) {
+      lawyerCourtDates = await db
         .select()
-        .from(lawyers)
-        .where(eq(lawyers.email, user.email.toLowerCase().trim()));
-      if (lawyer) {
-        targetCourtDates = await db
-          .select()
-          .from(courtDates)
-          .where(and(eq(courtDates.lawyerId, lawyer.id), eq(courtDates.status, "scheduled")))
-          .orderBy(asc(courtDates.startsAt));
-      }
+        .from(courtDates)
+        .where(and(eq(courtDates.lawyerId, lawyer.id), eq(courtDates.status, "scheduled")))
+        .orderBy(asc(courtDates.startsAt));
     }
   }
 
+  // 4. 중복 제거를 위해 Map 사용 (id 기준)
   const courtDatesMap = new Map();
-  for (const cd of [...clientCourtDates, ...targetCourtDates]) {
+  for (const cd of [...clientCourtDates, ...lawyerCourtDates]) {
     courtDatesMap.set(cd.id, cd);
   }
 
-  // 4. 사원 이름/직급 맵핑 및 lawyers 이메일 매칭
-  const allUsersList = await db
-    .select({
-      id: portalUsers.id,
-      email: portalUsers.email,
-      name: clients.name,
-      position: portalUsers.position,
-    })
-    .from(portalUsers)
-    .leftJoin(clients, eq(portalUsers.clientId, clients.id));
+  // 5. 법정 일정을 캘린더 이벤트 형태로 변환
+  const courtEventsMapped = Array.from(courtDatesMap.values()).map((cd) => ({
+    id: `court-${cd.id}`,
+    portalUserId: portalUserId,
+    title: `[기일] ${cd.title}${cd.caseNumber ? ` (${cd.caseNumber})` : ""}`,
+    description: [
+      cd.courtName && `법원: ${cd.courtName} ${cd.courtRoom || ""}`,
+      cd.kind && `구분: ${cd.kind}`,
+      cd.memo && `메모: ${cd.memo}`,
+    ].filter(Boolean).join("\n"),
+    startsAt: cd.startsAt,
+    endsAt: cd.endsAt || cd.startsAt,
+    isAllDay: 0,
+    color: "#ef4444", // 법정 일정은 빨간색/로즈 계열로 강조
+    isCourtDate: true,
+  }));
 
-  const allLawyersList = await db
-    .select({
-      name: lawyers.name,
-      email: lawyers.email,
-    })
-    .from(lawyers);
-
-  const lawyerNameMap = {};
-  for (const l of allLawyersList) {
-    if (l.email) lawyerNameMap[l.email.toLowerCase().trim()] = l.name;
-  }
-
-  const userNameMap = {};
-  const userObjMap = {};
-  for (const u of allUsersList) {
-    const displayName = lawyerNameMap[u.email?.toLowerCase().trim()] || u.name || "미지정";
-    userNameMap[u.id] = displayName;
-    userObjMap[u.id] = {
-      id: u.id,
-      name: displayName,
-      email: u.email,
-      position: u.position,
-    };
-  }
-
-  // 5. 일정 정보 가공
-  const enrichedEvents = dbEvents.map((evt) => {
-    const attendees = (evt.attendeeIds || "")
-      .split(",")
-      .map((id) => id.trim())
-      .filter(Boolean)
-      .map((id) => userObjMap[id])
-      .filter(Boolean);
-
-    return {
-      ...evt,
-      ownerName: userNameMap[evt.portalUserId] || "미지정",
-      attendees,
-    };
-  });
-
-  const courtEventsMapped = Array.from(courtDatesMap.values()).map((cd) => {
-    const lawyer = allLawyersList.find((l) => l.id === cd.lawyerId);
-    return {
-      id: `court-${cd.id}`,
-      portalUserId: cd.portalUserId || cd.lawyerId || null,
-      title: `[기일] ${cd.title}${cd.caseNumber ? ` (${cd.caseNumber})` : ""}`,
-      description: [
-        cd.courtName && `법원: ${cd.courtName} ${cd.courtRoom || ""}`,
-        cd.kind && `구분: ${cd.kind}`,
-        cd.memo && `메모: ${cd.memo}`,
-      ]
-        .filter(Boolean)
-        .join("\n"),
-      startsAt: cd.startsAt,
-      endsAt: cd.endsAt || cd.startsAt,
-      isAllDay: 0,
-      color: "#ef4444",
-      isCourtDate: true,
-      ownerName: lawyer ? lawyer.name : "변호사",
-      attendees: [],
-    };
-  });
-
-  return [...enrichedEvents, ...courtEventsMapped].sort((a, b) => {
+  // 6. 전체 일정 결합 후 정렬
+  return [...userEvents, ...courtEventsMapped].sort((a, b) => {
     return (a.startsAt || "").localeCompare(b.startsAt || "");
   });
 }
 
-// 반복 일정: 규칙별 단위/간격/생성 한도 (DB 무한 증식 방지를 위해 상한을 둠)
-const RECURRENCE_RULES = {
-  daily: { unit: "day", step: 1, maxOccurrences: 60 },     // 약 2개월
-  weekly: { unit: "week", step: 1, maxOccurrences: 26 },   // 약 6개월
-  monthly: { unit: "month", step: 1, maxOccurrences: 12 }, // 약 1년
-  yearly: { unit: "year", step: 1, maxOccurrences: 5 },    // 5년
-};
-
-// "YYYY-MM-DD" 또는 "YYYY-MM-DDTHH:mm" 문자열의 날짜 부분에 단위만큼 더해 새 문자열 생성
-// (시간대 변환으로 인한 날짜 어긋남을 피하기 위해 new Date(isoString) 대신 로컬 컴포넌트로 직접 계산)
-function shiftDateTimeString(value, unit, amount) {
-  if (!value) return value;
-  const datePart = value.substring(0, 10);
-  const timePart = value.length > 10 ? value.substring(10) : "";
-  const [y, m, d] = datePart.split("-").map(Number);
-  const date = new Date(y, m - 1, d);
-  if (unit === "day") date.setDate(date.getDate() + amount);
-  else if (unit === "week") date.setDate(date.getDate() + amount * 7);
-  else if (unit === "month") date.setMonth(date.getMonth() + amount);
-  else if (unit === "year") date.setFullYear(date.getFullYear() + amount);
-  const ny = date.getFullYear();
-  const nm = String(date.getMonth() + 1).padStart(2, "0");
-  const nd = String(date.getDate()).padStart(2, "0");
-  return `${ny}-${nm}-${nd}${timePart}`;
-}
-
 async function createPortalEvent(portalUserId, data) {
-  const {
-    title, description, startsAt, endsAt, isAllDay, color, attendeeIds,
-    location, videoConferenceUrl, attachmentUrls, category, recurrenceRule, reminderMinutes,
-  } = data;
+  const { title, description, startsAt, endsAt, isAllDay, color } = data;
   if (!title || !title.trim()) throw new ServiceError("일정 제목을 입력해주세요", 400);
   if (!startsAt) throw new ServiceError("시작 일시를 입력해주세요", 400);
 
-  const [creatorUser] = await db
-    .select({ clientId: portalUsers.clientId, role: portalUsers.role })
-    .from(portalUsers)
-    .where(eq(portalUsers.id, portalUserId));
-
-  const isEmployee = creatorUser && (!creatorUser.clientId || (creatorUser.role && creatorUser.role !== "client"));
-  const targetOwnerId = (isEmployee && data.portalUserId) ? data.portalUserId : portalUserId;
-
-  const rule = RECURRENCE_RULES[recurrenceRule] ? recurrenceRule : null;
-  const reminder = Number.isFinite(Number(reminderMinutes)) && Number(reminderMinutes) > 0
-    ? Number(reminderMinutes)
-    : null;
-
-  const baseValues = {
-    portalUserId: targetOwnerId,
+  const [inserted] = await db.insert(portalEvents).values({
+    portalUserId,
     title: title.trim(),
     description: description || null,
+    startsAt,
+    endsAt: endsAt || null,
     isAllDay: isAllDay ? 1 : 0,
     color: color || "#6366f1",
-    attendeeIds: attendeeIds || null,
-    location: location || null,
-    videoConferenceUrl: videoConferenceUrl || null,
-    attachmentUrls: attachmentUrls || null,
-    category: category || null,
-    recurrenceRule: rule,
-    reminderMinutes: reminder,
-  };
+  }).returning();
 
-  if (!rule) {
-    const [inserted] = await db.insert(portalEvents).values({
-      ...baseValues,
-      startsAt,
-      endsAt: endsAt || null,
-    }).returning();
-    return inserted;
-  }
-
-  // 반복 일정 — 각 회차를 개별 레코드로 생성(생성 시점에 한해 적용, 회차별 개별 수정/삭제 가능)
-  const { unit, step, maxOccurrences } = RECURRENCE_RULES[rule];
-  let firstInserted = null;
-  for (let i = 0; i < maxOccurrences; i++) {
-    const [inserted] = await db.insert(portalEvents).values({
-      ...baseValues,
-      startsAt: shiftDateTimeString(startsAt, unit, step * i),
-      endsAt: endsAt ? shiftDateTimeString(endsAt, unit, step * i) : null,
-    }).returning();
-    if (i === 0) firstInserted = inserted;
-  }
-  return firstInserted;
+  return inserted;
 }
 
 async function updatePortalEvent(id, portalUserId, data) {
@@ -1563,22 +1197,11 @@ async function updatePortalEvent(id, portalUserId, data) {
   const [existing] = await db.select().from(portalEvents).where(eq(portalEvents.id, id));
   if (!existing) throw new ServiceError("일정을 찾을 수 없습니다", 404);
 
-  const attendeesList = (existing.attendeeIds || "").split(",").map(id => id.trim()).filter(Boolean);
-  const isAuthorized = existing.portalUserId === portalUserId || attendeesList.includes(portalUserId);
-  if (!isAuthorized) {
+  if (existing.portalUserId !== portalUserId) {
     throw new ServiceError("수정 권한이 없습니다", 403);
   }
 
-  const [updaterUser] = await db
-    .select({ clientId: portalUsers.clientId, role: portalUsers.role })
-    .from(portalUsers)
-    .where(eq(portalUsers.id, portalUserId));
-  const isEmployee = updaterUser && (!updaterUser.clientId || (updaterUser.role && updaterUser.role !== "client"));
-
-  const {
-    title, description, startsAt, endsAt, isAllDay, color, attendeeIds,
-    location, videoConferenceUrl, attachmentUrls, category, reminderMinutes,
-  } = data;
+  const { title, description, startsAt, endsAt, isAllDay, color } = data;
   const updates = { updatedAt: sql`(datetime('now'))` };
   if (title !== undefined) updates.title = (title || "").trim();
   if (description !== undefined) updates.description = description;
@@ -1586,23 +1209,6 @@ async function updatePortalEvent(id, portalUserId, data) {
   if (endsAt !== undefined) updates.endsAt = endsAt;
   if (isAllDay !== undefined) updates.isAllDay = isAllDay ? 1 : 0;
   if (color !== undefined) updates.color = color;
-  if (attendeeIds !== undefined) updates.attendeeIds = attendeeIds || null;
-  if (location !== undefined) updates.location = location || null;
-  if (videoConferenceUrl !== undefined) updates.videoConferenceUrl = videoConferenceUrl || null;
-  if (attachmentUrls !== undefined) updates.attachmentUrls = attachmentUrls || null;
-  if (category !== undefined) updates.category = category || null;
-  if (reminderMinutes !== undefined) {
-    const reminder = Number.isFinite(Number(reminderMinutes)) && Number(reminderMinutes) > 0
-      ? Number(reminderMinutes)
-      : null;
-    updates.reminderMinutes = reminder;
-    // 알림 시각 또는 알림 설정이 변경되면 재발송 가능하도록 발송 여부를 초기화
-    updates.reminded = 0;
-  }
-  if (startsAt !== undefined) updates.reminded = 0;
-  if (isEmployee && data.portalUserId !== undefined) {
-    updates.portalUserId = data.portalUserId;
-  }
 
   const [updated] = await db
     .update(portalEvents)
@@ -1618,29 +1224,12 @@ async function deletePortalEvent(id, portalUserId) {
   const [existing] = await db.select().from(portalEvents).where(eq(portalEvents.id, id));
   if (!existing) throw new ServiceError("일정을 찾을 수 없습니다", 404);
 
-  const attendeesList = (existing.attendeeIds || "").split(",").map(id => id.trim()).filter(Boolean);
-  const isAuthorized = existing.portalUserId === portalUserId || attendeesList.includes(portalUserId);
-  if (!isAuthorized) {
+  if (existing.portalUserId !== portalUserId) {
     throw new ServiceError("삭제 권한이 없습니다", 403);
   }
 
   await db.delete(portalEvents).where(eq(portalEvents.id, id));
   return { deleted: true };
-}
-
-/**
- * 포털 사용자가 직원(임직원)인지 판별한다.
- * 포털 세션에는 role이 저장되지 않으므로(클라이언트 연동 후 관리자가 나중에 부여 가능),
- * 항상 DB에서 최신 clientId/role을 조회해 판단해야 한다.
- */
-async function checkIsEmployee(portalUserId) {
-  const [user] = await db
-    .select({ clientId: portalUsers.clientId, role: portalUsers.role })
-    .from(portalUsers)
-    .where(eq(portalUsers.id, portalUserId));
-
-  if (!user) return false;
-  return !user.clientId || (user.role && user.role !== "client");
 }
 
 // =============================================
@@ -1665,32 +1254,9 @@ async function getLawyerProfileByEmail(email) {
   return lawyer || null;
 }
 
-/**
- * 포털 사용자가 대표변호사인지 판별한다.
- * 포털 계정과 변호사 프로필은 별도 테이블이라, /members와 동일하게
- * 이메일을 기준으로 lawyers.position을 조회해 "대표변호사" 여부를 확인한다.
- */
-async function checkIsManagingLawyer(portalUserId) {
-  const [user] = await db
-    .select({ email: portalUsers.email })
-    .from(portalUsers)
-    .where(eq(portalUsers.id, portalUserId));
-
-  if (!user) return false;
-  const lawyer = await getLawyerProfileByEmail(user.email);
-  return lawyer?.position === "대표변호사";
-}
-
 async function createLawyerProfile(email, data) {
   const { name, nameEn, nameHanja, position, team, photoUrl, tagline, education, career, specialties, qualifications, publications, books, media, columns, cases, memberships, consultHours, blogUrl, introduction, phone } = data;
   if (!name || !name.trim()) throw new ServiceError("이름은 필수입니다", 400);
-
-  if (email) {
-    const [existing] = await db.select().from(lawyers).where(eq(lawyers.email, email.toLowerCase().trim()));
-    if (existing) {
-      return updateLawyerProfile(existing.id, { ...data, email });
-    }
-  }
 
   const id = crypto.randomUUID();
   await db.insert(lawyers).values({
@@ -1728,6 +1294,24 @@ async function createLawyerProfile(email, data) {
 async function listAllLawyers() {
   return db
     .select()
+    .from(lawyers)
+    .orderBy(asc(lawyers.sortOrder));
+}
+
+async function listLawyersForOrgChart() {
+  return db
+    .select({
+      id: lawyers.id,
+      name: lawyers.name,
+      nameEn: lawyers.nameEn,
+      position: lawyers.position,
+      team: lawyers.team,
+      photoUrl: lawyers.photoUrl,
+      tagline: lawyers.tagline,
+      email: lawyers.email,
+      phone: lawyers.phone,
+      sortOrder: lawyers.sortOrder,
+    })
     .from(lawyers)
     .orderBy(asc(lawyers.sortOrder));
 }
@@ -1808,6 +1392,74 @@ async function deleteLawyerProfile(id) {
   return { deleted: true };
 }
 
+// =============================================
+// 게시판 카테고리 관리
+// =============================================
+
+const DEFAULT_CATEGORIES = [
+  { key: "notice", label: "공지사항", color: "#ef4444", sortOrder: 0 },
+  { key: "manual", label: "업무 매뉴얼", color: "#3b82f6", sortOrder: 1 },
+  { key: "free", label: "자유게시판", color: "#10b981", sortOrder: 2 },
+  { key: "template", label: "양식", color: "#8b5cf6", sortOrder: 3 },
+];
+
+async function listBoardCategories() {
+  const [{ cnt }] = await db.select({ cnt: sql`count(*)` }).from(portalBoardCategories);
+  if (!cnt || cnt === 0) {
+    for (const cat of DEFAULT_CATEGORIES) {
+      await db.insert(portalBoardCategories).values(cat).run();
+    }
+  }
+  return db.select().from(portalBoardCategories).orderBy(asc(portalBoardCategories.sortOrder));
+}
+
+async function createBoardCategory(createdBy, data) {
+  const { key, label, color, sortOrder } = data;
+  if (!key || !key.trim()) throw new ServiceError("카테고리 키를 입력해주세요", 400);
+  if (!label || !label.trim()) throw new ServiceError("카테고리 이름을 입력해주세요", 400);
+
+  const [existing] = await db.select().from(portalBoardCategories).where(eq(portalBoardCategories.key, key.trim()));
+  if (existing) throw new ServiceError("이미 존재하는 카테고리 키입니다", 409);
+
+  const [inserted] = await db.insert(portalBoardCategories).values({
+    key: key.trim(),
+    label: label.trim(),
+    color: color || "#64748b",
+    sortOrder: sortOrder ?? 99,
+    createdBy: createdBy || null,
+  }).returning();
+
+  return inserted;
+}
+
+async function updateBoardCategory(id, data) {
+  validateUUID(id);
+  const [existing] = await db.select().from(portalBoardCategories).where(eq(portalBoardCategories.id, id));
+  if (!existing) throw new ServiceError("카테고리를 찾을 수 없습니다", 404);
+
+  const { label, color, sortOrder } = data;
+  const updates = { updatedAt: sql`(datetime('now'))` };
+  if (label !== undefined) updates.label = (label || "").trim();
+  if (color !== undefined) updates.color = color;
+  if (sortOrder !== undefined) updates.sortOrder = sortOrder;
+
+  const [updated] = await db
+    .update(portalBoardCategories)
+    .set(updates)
+    .where(eq(portalBoardCategories.id, id))
+    .returning();
+
+  return updated;
+}
+
+async function deleteBoardCategory(id) {
+  validateUUID(id);
+  const [existing] = await db.select().from(portalBoardCategories).where(eq(portalBoardCategories.id, id));
+  if (!existing) throw new ServiceError("카테고리를 찾을 수 없습니다", 404);
+  await db.delete(portalBoardCategories).where(eq(portalBoardCategories.id, id));
+  return { deleted: true };
+}
+
 async function reorderLawyerProfiles(id1, id2) {
   validateUUID(id1);
   validateUUID(id2);
@@ -1824,105 +1476,18 @@ async function reorderLawyerProfiles(id1, id2) {
   return { success: true };
 }
 
-/**
- * 비밀번호 찾기 — 이메일과 전화번호 매칭 후 SMS OTP 요청
- */
-async function forgotPassword(email, phone, req) {
-  if (!email || !phone) {
-    throw new ServiceError("이메일과 휴대폰 번호를 모두 입력해주세요", 400);
-  }
-
-  const normalizedEmail = email.trim().toLowerCase();
-  const normalizedPhone = phone.replace(/[\s-]/g, "");
-
-  // 1. portal_users와 clients를 조인하여 이메일과 전화번호가 매칭되는 사용자 검색
-  const [user] = await db
-    .select({
-      id: portalUsers.id,
-      email: portalUsers.email,
-      phone: clients.phone,
-    })
-    .from(portalUsers)
-    .innerJoin(clients, eq(portalUsers.clientId, clients.id))
-    .where(
-      and(
-        eq(portalUsers.email, normalizedEmail),
-        eq(clients.phone, normalizedPhone)
-      )
-    );
-
-  if (!user) {
-    throw new ServiceError("입력하신 정보와 일치하는 계정을 찾을 수 없습니다", 404);
-  }
-
-  // 2. OTP 발송 요청
-  const result = await requestOtp({
-    contextType: "portal_reset_password",
-    contextId: user.id,
-    phoneNumber: user.phone,
-    req,
-    dryRun: !SMS_OTP_CONFIGURED,
-  });
-
-  return {
-    verificationId: result.verificationId,
-    sentTo: result.sentTo,
-    devCode: result.devCode,
-  };
-}
-
-/**
- * 비밀번호 재설정 — OTP 검증 후 새 비밀번호 저장
- */
-async function resetPassword(verificationId, code, newPassword) {
-  if (!verificationId || !code) {
-    throw new ServiceError("인증 정보와 인증번호를 입력해주세요", 400);
-  }
-  if (!newPassword || newPassword.length < 8) {
-    throw new ServiceError("새 비밀번호는 8자 이상이어야 합니다", 400);
-  }
-
-  // 1. OTP 검증
-  const result = verifyOtp(verificationId, code);
-  if (!result.ok) {
-    throw new ServiceError(result.reason, 400);
-  }
-
-  const userId = result.row.context_id;
-  const contextType = result.row.context_type;
-
-  if (contextType !== "portal_reset_password") {
-    throw new ServiceError("올바르지 않은 인증 요청입니다", 400);
-  }
-
-  // 2. 비밀번호 업데이트
-  const passwordHash = hashPassword(newPassword);
-  await db
-    .update(portalUsers)
-    .set({
-      passwordHash,
-      updatedAt: sql`(datetime('now'))`,
-    })
-    .where(eq(portalUsers.id, userId));
-
-  return { success: true, message: "비밀번호가 성공적으로 재설정되었습니다" };
-}
-
 module.exports = {
   // 인증
   registerUser,
   loginUser,
   logoutUser,
   getUserProfile,
-  forgotPassword,
-  resetPassword,
   // 관리자: 포털 사용자
   listPortalUsers,
   getPortalUser,
   approvePortalUser,
   rejectPortalUser,
   deletePortalUser,
-  updatePortalUser,
   // 사건
   getUserCases,
   registerPortalCase,
@@ -1959,27 +1524,26 @@ module.exports = {
   getPortalPost,
   updatePortalPost,
   deletePortalPost,
-  listBoardCategories,
-  createBoardCategory,
-  deleteBoardCategory,
 
   // 캘린더
-  checkIsEmployee,
   listPortalEvents,
   createPortalEvent,
   updatePortalEvent,
   deletePortalEvent,
-  listMemberGroups,
-  createMemberGroup,
-  deleteMemberGroup,
 
   // 변호사 프로필
   checkIsAdmin,
-  checkIsManagingLawyer,
   getLawyerProfileByEmail,
   createLawyerProfile,
   updateLawyerProfile,
   listAllLawyers,
+  listLawyersForOrgChart,
   deleteLawyerProfile,
   reorderLawyerProfiles,
+
+  // 게시판 카테고리
+  listBoardCategories,
+  createBoardCategory,
+  updateBoardCategory,
+  deleteBoardCategory,
 };

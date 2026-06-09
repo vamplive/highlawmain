@@ -1,15 +1,13 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { portalApi } from "../../utils/api";
-import { fieldStyle, labelStyle } from "./portalStyles";
-import useMediaQuery from "../../hooks/useMediaQuery";
-import {
-  Plus, Search, Star, MessageSquare, Eye, Calendar,
-  Trash2, Edit, AlertCircle, FileText, ChevronLeft, ChevronRight, FolderPlus
+import { T, fieldStyle, labelStyle } from "./portalStyles";
+import { 
+  Plus, Search, Star, MessageSquare, Eye, Calendar, 
+  Trash2, Edit, AlertCircle, FileText, ChevronLeft, ChevronRight, CheckSquare, Square
 } from "lucide-react";
 
 export default function PortalBoard() {
-  const isMobile = useMediaQuery("(max-width: 640px)");
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   
@@ -17,6 +15,7 @@ export default function PortalBoard() {
   const activeCategory = searchParams.get("category") || "";
   const activeFilter = searchParams.get("filter") || "";
   const urlSearch = searchParams.get("search") || "";
+  const shouldOpenWrite = searchParams.get("write") === "true";
 
   // 데이터 상태
   const [posts, setPosts] = useState([]);
@@ -25,23 +24,32 @@ export default function PortalBoard() {
   const [page, setPage] = useState(1);
   const [isAdmin, setIsAdmin] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
-
-  // 게시판 카테고리 — 대표변호사가 추가할 수 있는 동적 목록 (DB에서 불러옴)
   const [categories, setCategories] = useState([]);
-  const [isManagingLawyer, setIsManagingLawyer] = useState(false);
-  const [showAddCategoryModal, setShowAddCategoryModal] = useState(false);
-  const [newCategoryLabel, setNewCategoryLabel] = useState("");
-  const [newCategoryKey, setNewCategoryKey] = useState("");
-  const [newCategoryColor, setNewCategoryColor] = useState("#64748b");
+
+  // 게시판 추가 모달
+  const [showCatModal, setShowCatModal] = useState(false);
+  const [catKey, setCatKey] = useState("");
+  const [catLabel, setCatLabel] = useState("");
+  const [catColor, setCatColor] = useState("#64748b");
 
   // 모달 상태
   const [selectedPost, setSelectedPost] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showWriteModal, setShowWriteModal] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+
+  // 글쓰기/수정 폼 폼상태
+  const [formCategory, setFormCategory] = useState("free");
+  const [formTitle, setFormTitle] = useState("");
+  const [formContent, setFormContent] = useState("");
+  const [formIsPinned, setFormIsPinned] = useState(false);
+  const [formIsImportant, setFormIsImportant] = useState(false);
+  const [editPostId, setEditPostId] = useState(null);
 
   // 로컬 검색어
   const [searchQuery, setSearchQuery] = useState(urlSearch);
 
-  // 1. 초기 정보 및 어드민/대표변호사 여부 확인
+  // 1. 초기 정보 및 어드민 여부 확인
   useEffect(() => {
     portalApi.get("/me").then((res) => {
       setCurrentUser(res.data?.user || null);
@@ -49,27 +57,24 @@ export default function PortalBoard() {
     portalApi.get("/lawyers/admin/check").then((res) => {
       setIsAdmin(res.data?.isAdmin || false);
     });
-    portalApi.get("/lawyers/managing/check").then((res) => {
-      setIsManagingLawyer(res.data?.isManagingLawyer || false);
-    });
-    fetchCategories();
-  }, []);
-
-  const fetchCategories = async () => {
-    try {
-      const res = await portalApi.get("/board-categories");
+    portalApi.get("/board-categories").then((res) => {
       setCategories(res.data || []);
-    } catch {
-      // 카테고리 목록은 보조 정보이므로 실패해도 게시판 자체는 동작해야 한다.
-    }
-  };
+    }).catch(() => {});
+  }, []);
 
   // 2. 게시글 목록 불러오기 (URL 파라미터 변경 시 트리거)
   useEffect(() => {
     fetchPosts();
   }, [activeCategory, activeFilter, urlSearch, page]);
 
-const fetchPosts = async () => {
+  // 3. URL에 write=true가 오면 글쓰기 모달 열기
+  useEffect(() => {
+    if (shouldOpenWrite) {
+      openCreateForm();
+    }
+  }, [shouldOpenWrite]);
+
+  const fetchPosts = async () => {
     setLoading(true);
     try {
       const params = {
@@ -109,7 +114,7 @@ const fetchPosts = async () => {
       
       // 조회수 즉시 반영
       setPosts(prev => prev.map(p => p.id === id ? { ...p, viewCount: p.viewCount + 1 } : p));
-    } catch (_e) {
+    } catch (e) {
       alert("게시글을 불러올 수 없습니다.");
     }
   };
@@ -124,71 +129,104 @@ const fetchPosts = async () => {
   };
 
   const openCreateForm = () => {
-    navigate(`/portal/board/write${activeCategory ? `?category=${activeCategory}` : ""}`);
+    setIsEditing(false);
+    setEditPostId(null);
+    setFormCategory(activeCategory || "free");
+    setFormTitle("");
+    setFormContent("");
+    setFormIsPinned(false);
+    setFormIsImportant(false);
+    setShowWriteModal(true);
+    
+    // URL에서 write 파라미터 제거
+    if (searchParams.get("write")) {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete("write");
+      setSearchParams(nextParams);
+    }
   };
 
   const openEditForm = (post) => {
+    setIsEditing(true);
+    setEditPostId(post.id);
+    setFormCategory(post.category);
+    setFormTitle(post.title);
+    setFormContent(post.content);
+    setFormIsPinned(post.isPinned === 1);
+    setFormIsImportant(post.isImportant === 1);
     setShowDetailModal(false);
-    navigate(`/portal/board/write/${post.id}`, { state: { post } });
+    setShowWriteModal(true);
   };
 
-const handleDeletePost = async (id) => {
+  const handleSavePost = async (e) => {
+    e.preventDefault();
+    if (!formTitle.trim()) return alert("제목을 입력해주세요.");
+    if (!formContent.trim()) return alert("내용을 입력해주세요.");
+
+    const payload = {
+      category: formCategory,
+      title: formTitle,
+      content: formContent,
+      isPinned: formIsPinned,
+      isImportant: formIsImportant
+    };
+
+    try {
+      if (isEditing) {
+        await portalApi.put(`/posts/${editPostId}`, payload);
+        alert("게시글이 수정되었습니다.");
+      } else {
+        await portalApi.post("/posts", payload);
+        alert("게시글이 생성되었습니다.");
+      }
+      setShowWriteModal(false);
+      fetchPosts();
+    } catch (e) {
+      alert(e.response?.data?.error || "게시글 저장에 실패했습니다.");
+    }
+  };
+
+  const handleDeletePost = async (id) => {
     if (!window.confirm("정말로 이 게시글을 삭제하시겠습니까?")) return;
     try {
       await portalApi.delete(`/posts/${id}`);
       alert("게시글이 삭제되었습니다.");
       setShowDetailModal(false);
       fetchPosts();
-    } catch (_e) {
+    } catch (e) {
       alert("삭제 권한이 없거나 삭제에 실패했습니다.");
     }
   };
 
-  // 카테고리 표시용 한글 변환 — DB에서 불러온 동적 목록 기준 (대표변호사가 추가한 게시판 포함)
   const getCategoryLabel = (key) => {
-    return categories.find((c) => c.key === key)?.label || key || "자유게시판";
+    const cat = categories.find((c) => c.key === key);
+    return cat?.label || key || "게시판";
   };
 
   const getCategoryColor = (key) => {
-    return categories.find((c) => c.key === key)?.color || "#64748b";
+    const cat = categories.find((c) => c.key === key);
+    return cat?.color || "#64748b";
   };
 
-  // 게시판 전환 탭 — 전체 게시글 / 카테고리별 게시판을 이 페이지 안에서 바로 전환
-  const boardTabs = [
-    { key: "", label: "전체 게시글" },
-    ...categories.map((c) => ({ key: c.key, label: c.label })),
-  ];
-
-  const handleSelectBoardTab = (categoryKey) => {
-    const next = new URLSearchParams();
-    if (categoryKey) next.set("category", categoryKey);
-    setSearchParams(next);
-    setPage(1);
-    setSearchQuery("");
-  };
-
-  const handleCreateCategory = async () => {
+  const handleCreateCategory = async (e) => {
+    e.preventDefault();
+    if (!catKey.trim()) return alert("카테고리 키를 입력하세요");
+    if (!catLabel.trim()) return alert("카테고리 이름을 입력하세요");
     try {
-      await portalApi.post("/board-categories", {
-        key: newCategoryKey,
-        label: newCategoryLabel,
-        color: newCategoryColor,
-      });
-      setShowAddCategoryModal(false);
-      setNewCategoryKey("");
-      setNewCategoryLabel("");
-      setNewCategoryColor("#64748b");
-      fetchCategories();
-      alert("게시판이 추가되었습니다.");
-    } catch (e) {
-      alert(e.message || "게시판 추가에 실패했습니다.");
+      await portalApi.post("/board-categories", { key: catKey.trim(), label: catLabel.trim(), color: catColor });
+      const res = await portalApi.get("/board-categories");
+      setCategories(res.data || []);
+      setShowCatModal(false);
+      setCatKey(""); setCatLabel(""); setCatColor("#64748b");
+    } catch (err) {
+      alert(err.message || "게시판 추가에 실패했습니다.");
     }
   };
 
   return (
-    <div style={{ background: "#ffffff", borderRadius: 12, border: "1px solid #e2e8f0", padding: isMobile ? "20px 18px" : "24px 32px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
+    <div style={{ background: "#ffffff", borderRadius: 12, border: "1px solid #e2e8f0", padding: "24px 32px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
       {/* ==================== 1. 게시판 제목 및 상단 액션바 ==================== */}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 12, justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
         <div>
           <h2 style={{ fontSize: 20, fontWeight: 700, color: "#0f172a", margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
             <FileText size={22} style={{ color: "#8b5cf6" }} />
@@ -202,70 +240,44 @@ const handleDeletePost = async (id) => {
           </p>
         </div>
 
-        <button
-          onClick={openCreateForm}
-          style={{
-            background: "#8b5cf6", color: "#fff", border: "none", borderRadius: 8,
-            padding: "10px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer",
-            display: "flex", alignItems: "center", gap: 8, boxShadow: "0 2px 4px rgba(139,92,246,0.2)",
-            transition: "background 0.2s"
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.background = "#7c3aed"}
-          onMouseLeave={(e) => e.currentTarget.style.background = "#8b5cf6"}
-        >
-          <Plus size={16} />
-          글쓰기
-        </button>
-      </div>
-
-      {/* ==================== 게시판 전환 탭 — 전체 게시글 / 카테고리별 게시판 ==================== */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
-        {boardTabs.map((tab) => {
-          const isActive = !activeFilter && activeCategory === tab.key;
-          return (
+        <div style={{ display: "flex", gap: 8 }}>
+          {isAdmin && (
             <button
-              key={tab.key || "all"}
-              type="button"
-              onClick={() => handleSelectBoardTab(tab.key)}
+              onClick={() => setShowCatModal(true)}
               style={{
-                padding: "8px 18px", fontSize: 13, fontWeight: 600, borderRadius: 999,
-                border: isActive ? "1px solid #8b5cf6" : "1px solid #e2e8f0",
-                background: isActive ? "#8b5cf6" : "#ffffff",
-                color: isActive ? "#ffffff" : "#475569",
-                cursor: "pointer", transition: "background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease"
+                background: "#fff", color: "#475569", border: "1px solid #cbd5e1", borderRadius: 8,
+                padding: "10px 16px", fontSize: 13, fontWeight: 500, cursor: "pointer",
+                display: "flex", alignItems: "center", gap: 6
               }}
-              onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.borderColor = "#8b5cf6"; e.currentTarget.style.color = "#8b5cf6"; } }}
-              onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.borderColor = "#e2e8f0"; e.currentTarget.style.color = "#475569"; } }}
             >
-              {tab.label}
+              <Plus size={14} />
+              게시판 추가
             </button>
-          );
-        })}
-
-        {isManagingLawyer && (
+          )}
           <button
-            type="button"
-            onClick={() => setShowAddCategoryModal(true)}
+            onClick={openCreateForm}
             style={{
-              display: "flex", alignItems: "center", gap: 6,
-              padding: "8px 18px", fontSize: 13, fontWeight: 600, borderRadius: 999,
-              border: "1px dashed #94a3b8", background: "#ffffff", color: "#64748b",
-              cursor: "pointer"
+              background: "#8b5cf6", color: "#fff", border: "none", borderRadius: 8,
+              padding: "10px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer",
+              display: "flex", alignItems: "center", gap: 8, boxShadow: "0 2px 4px rgba(139,92,246,0.2)",
+              transition: "background 0.2s"
             }}
+            onMouseEnter={(e) => e.currentTarget.style.background = "#7c3aed"}
+            onMouseLeave={(e) => e.currentTarget.style.background = "#8b5cf6"}
           >
-            <FolderPlus size={15} />
-            게시판 추가
+            <Plus size={16} />
+            글쓰기
           </button>
-        )}
+        </div>
       </div>
 
       {/* ==================== 2. 상세 필터 및 검색바 ==================== */}
-      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 12, background: "#f8fafc", padding: "12px 16px", borderRadius: 8, marginBottom: 16 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f8fafc", padding: "12px 16px", borderRadius: 8, marginBottom: 16 }}>
         <div style={{ display: "flex", gap: 16, fontSize: 13, color: "#64748b" }}>
           <span>전체 <strong>{posts.length}</strong>건</span>
         </div>
 
-        <form onSubmit={handleSearchSubmit} style={{ display: "flex", gap: 8, width: isMobile ? "100%" : "auto" }}>
+        <form onSubmit={handleSearchSubmit} style={{ display: "flex", gap: 8 }}>
           <input
             type="text"
             placeholder="이 게시판에서 검색"
@@ -273,7 +285,7 @@ const handleDeletePost = async (id) => {
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{
               padding: "6px 12px", fontSize: 12.5, border: "1px solid #cbd5e1", borderRadius: 6,
-              outline: "none", width: isMobile ? "100%" : 220
+              outline: "none", width: 220
             }}
           />
           <button
@@ -290,7 +302,7 @@ const handleDeletePost = async (id) => {
 
       {/* ==================== 3. 게시글 리스트 테이블 ==================== */}
       <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", minWidth: 600, borderCollapse: "collapse", textAlign: "left", fontSize: 13.5 }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: 13.5 }}>
           <thead>
             <tr style={{ borderBottom: "2px solid #e2e8f0", color: "#475569", fontWeight: 600 }}>
               <th style={{ padding: "12px 8px", width: 80 }}>카테고리</th>
@@ -438,7 +450,7 @@ const handleDeletePost = async (id) => {
             </h3>
 
             {/* 작성자 메타 정보 */}
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 16, fontSize: 12, color: "#64748b", borderBottom: "1px solid #f1f5f9", paddingBottom: 16, marginBottom: 16 }}>
+            <div style={{ display: "flex", gap: 16, fontSize: 12, color: "#64748b", borderBottom: "1px solid #f1f5f9", paddingBottom: 16, marginBottom: 16 }}>
               <span>작성자: <strong>{selectedPost.authorName || "익명"}</strong> ({selectedPost.authorEmail})</span>
               <div style={{ width: 1, background: "#cbd5e1" }} />
               <span style={{ display: "flex", alignItems: "center", gap: 4 }}><Calendar size={13} /> {selectedPost.createdAt}</span>
@@ -446,26 +458,13 @@ const handleDeletePost = async (id) => {
               <span style={{ display: "flex", alignItems: "center", gap: 4 }}><Eye size={13} /> {selectedPost.viewCount}</span>
             </div>
 
-            {/* 내용 본문 — 블로그 상세 페이지와 동일하게 에디터가 만든 HTML을 그대로 렌더링한다 */}
-            <div
-              className="portal-board-post-content"
-              style={{
-                fontSize: 14.5, color: "#334155", lineHeight: 1.7, minHeight: 180,
-                background: "#f8fafc", padding: 16, borderRadius: 8, marginBottom: 24,
-              }}
-              dangerouslySetInnerHTML={{ __html: selectedPost.content || "" }}
-            />
-            <style>{`
-              .portal-board-post-content img { max-width: 100%; border-radius: 6px; }
-              .portal-board-post-content blockquote {
-                border-left: 3px solid #cbd5e1; margin: 0; padding-left: 14px; color: #64748b;
-              }
-              .portal-board-post-content a { color: #6d28d9; text-decoration: underline; }
-              .portal-board-post-content p { margin: 0 0 12px; }
-              .portal-board-post-content h2, .portal-board-post-content h3, .portal-board-post-content h4 {
-                margin: 20px 0 10px;
-              }
-            `}</style>
+            {/* 내용 본문 */}
+            <div style={{ 
+              fontSize: 14.5, color: "#334155", lineHeight: 1.6, minHeight: 180,
+              whiteSpace: "pre-wrap", background: "#f8fafc", padding: 16, borderRadius: 8, marginBottom: 24 
+            }}>
+              {selectedPost.content}
+            </div>
 
             {/* 컨트롤 버튼 */}
             <div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -511,57 +510,158 @@ const handleDeletePost = async (id) => {
         </div>
       )}
 
-      {/* ==================== 6. 게시판 추가 모달 (대표변호사 전용) ==================== */}
-      {showAddCategoryModal && (
+      {/* ==================== 6. 게시판 추가 모달 (어드민 전용) ==================== */}
+      {showCatModal && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
+          background: "rgba(15,23,42,0.3)", zIndex: 1100, display: "flex",
+          alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)"
+        }}>
+          <form onSubmit={handleCreateCategory} style={{
+            background: "#ffffff", borderRadius: 12, width: "100%", maxWidth: 400,
+            padding: 24, boxShadow: "0 20px 25px -5px rgba(0,0,0,0.15)"
+          }}>
+            <h3 style={{ fontSize: 17, fontWeight: 700, color: "#0f172a", margin: "0 0 20px" }}>
+              게시판 추가
+            </h3>
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 4 }}>카테고리 키 (영문, 예: faq)</label>
+              <input
+                type="text"
+                placeholder="영문 소문자와 하이픈만 사용"
+                value={catKey}
+                onChange={(e) => setCatKey(e.target.value.replace(/[^a-z0-9-_]/g, ""))}
+                style={{ width: "100%", padding: "8px 10px", fontSize: 13, border: "1px solid #cbd5e1", borderRadius: 6, boxSizing: "border-box" }}
+                required
+              />
+            </div>
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 4 }}>게시판 이름</label>
+              <input
+                type="text"
+                placeholder="예: FAQ, 공지사항"
+                value={catLabel}
+                onChange={(e) => setCatLabel(e.target.value)}
+                style={{ width: "100%", padding: "8px 10px", fontSize: 13, border: "1px solid #cbd5e1", borderRadius: 6, boxSizing: "border-box" }}
+                required
+              />
+            </div>
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 4 }}>태그 색상</label>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <input
+                  type="color"
+                  value={catColor}
+                  onChange={(e) => setCatColor(e.target.value)}
+                  style={{ width: 40, height: 36, border: "1px solid #cbd5e1", borderRadius: 6, cursor: "pointer", padding: 2 }}
+                />
+                <span style={{ fontSize: 13, color: "#64748b" }}>{catColor}</span>
+                <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 4, background: `${catColor}20`, color: catColor }}>미리보기</span>
+              </div>
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+              <button
+                type="button"
+                onClick={() => { setShowCatModal(false); setCatKey(""); setCatLabel(""); setCatColor("#64748b"); }}
+                style={{ background: "#fff", color: "#475569", border: "1px solid #cbd5e1", borderRadius: 6, padding: "8px 16px", fontSize: 13, cursor: "pointer" }}
+              >
+                취소
+              </button>
+              <button
+                type="submit"
+                style={{ background: "#8b5cf6", color: "#fff", border: "none", borderRadius: 6, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+              >
+                추가
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* ==================== 7. 글쓰기 및 수정 모달 ==================== */}
+      {showWriteModal && (
         <div style={{
           position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
           background: "rgba(15,23,42,0.3)", zIndex: 1000, display: "flex",
           alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)"
         }}>
-          <form
-            onSubmit={(e) => { e.preventDefault(); handleCreateCategory(); }}
-            style={{ background: "#ffffff", borderRadius: 12, width: "100%", maxWidth: 420, padding: 24 }}
-          >
-            <h3 style={{ fontSize: 16, fontWeight: 700, color: "#1e293b", marginBottom: 20 }}>새 게시판 추가</h3>
+          <form onSubmit={handleSavePost} style={{
+            background: "#ffffff", borderRadius: 12, width: "100%", maxWidth: 640,
+            padding: 24, boxShadow: "0 20px 25px -5px rgba(0,0,0,0.15)",
+            maxHeight: "90vh", overflowY: "auto"
+          }}>
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: "#0f172a", margin: "0 0 20px" }}>
+              {isEditing ? "게시글 수정" : "새 게시글 작성"}
+            </h3>
 
+            {/* 카테고리 선택 */}
             <div style={{ marginBottom: 16 }}>
-              <label style={labelStyle}>게시판 이름</label>
+              <label style={labelStyle}>게시판 카테고리</label>
+              <select
+                value={formCategory}
+                onChange={(e) => setFormCategory(e.target.value)}
+                style={fieldStyle}
+              >
+                {categories.map((cat) => (
+                  <option key={cat.key} value={cat.key}>{cat.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* 제목 입력 */}
+            <div style={{ marginBottom: 16 }}>
+              <label style={labelStyle}>제목</label>
               <input
                 type="text"
-                value={newCategoryLabel}
-                onChange={(e) => setNewCategoryLabel(e.target.value)}
-                placeholder="예: 송무 자료실"
-                required
+                placeholder="제목을 입력하세요"
+                value={formTitle}
+                onChange={(e) => setFormTitle(e.target.value)}
                 style={fieldStyle}
+                required
               />
             </div>
 
-            <div style={{ marginBottom: 16 }}>
-              <label style={labelStyle}>식별 키 (영문 소문자, 숫자, 하이픈만 사용)</label>
-              <input
-                type="text"
-                value={newCategoryKey}
-                onChange={(e) => setNewCategoryKey(e.target.value)}
-                placeholder="예: litigation-archive"
-                required
-                style={fieldStyle}
-              />
+            {/* 중요 / 필독 체크박스 (어드민 또는 특정 권한 소유자만 필독 설정 허용) */}
+            <div style={{ display: "flex", gap: 20, marginBottom: 16 }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#475569", cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={formIsImportant}
+                  onChange={(e) => setFormIsImportant(e.target.checked)}
+                />
+                <Star size={14} style={{ color: "#f59e0b", fill: formIsImportant ? "#f59e0b" : "transparent" }} />
+                중요 표시
+              </label>
+
+              {isAdmin && (
+                <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#475569", cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={formIsPinned}
+                    onChange={(e) => setFormIsPinned(e.target.checked)}
+                  />
+                  <span>상단 필독 고정</span>
+                </label>
+              )}
             </div>
 
+            {/* 내용 본문 */}
             <div style={{ marginBottom: 24 }}>
-              <label style={labelStyle}>색상</label>
-              <input
-                type="color"
-                value={newCategoryColor}
-                onChange={(e) => setNewCategoryColor(e.target.value)}
-                style={{ width: 60, height: 36, border: "1px solid #e2e8f0", borderRadius: 6, cursor: "pointer" }}
+              <label style={labelStyle}>본문 내용</label>
+              <textarea
+                placeholder="내용을 작성해 주세요..."
+                value={formContent}
+                onChange={(e) => setFormContent(e.target.value)}
+                style={{ ...fieldStyle, height: 240, resize: "vertical" }}
+                required
               />
             </div>
 
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+            {/* 버튼들 */}
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
               <button
                 type="button"
-                onClick={() => setShowAddCategoryModal(false)}
+                onClick={() => setShowWriteModal(false)}
                 style={{
                   background: "#fff", color: "#475569", border: "1px solid #cbd5e1", borderRadius: 6,
                   padding: "8px 16px", fontSize: 13, fontWeight: 500, cursor: "pointer"
@@ -577,7 +677,7 @@ const handleDeletePost = async (id) => {
                   boxShadow: "0 2px 4px rgba(139,92,246,0.15)"
                 }}
               >
-                추가
+                {isEditing ? "수정 완료" : "등록"}
               </button>
             </div>
           </form>
