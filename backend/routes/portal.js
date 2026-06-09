@@ -827,21 +827,39 @@ router.delete("/board-categories/:id", portalAuth, async (req, res) => {
 });
 
 // =============================================
-// 예약 관리 (내부 구성원 전용)
+// 구성원 미팅 예약 (전체 구성원 이용 가능)
 // =============================================
 
-router.get("/bookings", portalAuth, internalOnly, async (req, res) => {
+router.get("/members", portalAuth, async (req, res) => {
   try {
-    const result = await portalService.listPortalBookings(req.query);
-    res.json(result);
+    const members = portalService.listPortalMembers();
+    res.json({ data: members, myId: req.portalUser.userId, error: null });
   } catch (e) {
     handleError(res, e);
   }
 });
 
-router.post("/bookings/cancel/:id", portalAuth, internalOnly, async (req, res) => {
+router.get("/bookings", portalAuth, async (req, res) => {
   try {
-    const result = await portalService.cancelPortalBooking(req.params.id);
+    const bookings = portalService.listMemberBookings(req.portalUser.userId);
+    res.json({ data: bookings, myId: req.portalUser.userId, error: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+router.post("/bookings", portalAuth, async (req, res) => {
+  try {
+    const booking = portalService.createMemberBooking(req.portalUser.userId, req.body);
+    res.status(201).json({ data: booking, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+router.post("/bookings/:id/cancel", portalAuth, async (req, res) => {
+  try {
+    const result = portalService.cancelMemberBooking(req.params.id, req.portalUser.userId);
     res.json({ data: result, error: null, meta: null });
   } catch (e) {
     handleError(res, e);

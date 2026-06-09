@@ -1476,35 +1476,137 @@ async function deleteBoardCategory(id) {
 }
 
 // =============================================
-// 예약 관리
+// 구성원 미팅 예약 시스템
 // =============================================
 
-async function listPortalBookings(query) {
-  const { page, limit, offset } = parsePagination(query);
+sqlite.exec(`CREATE TABLE IF NOT EXISTS portal_bookings (
+  id TEXT PRIMARY KEY,
+  organizer_id TEXT NOT NULL,
+  title TEXT NOT NULL,
+  description TEXT,
+  starts_at TEXT NOT NULL,
+  ends_at TEXT,
+  location TEXT,
+  attendee_ids TEXT DEFAULT '',
+  event_ids TEXT DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'confirmed',
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+)`);
 
-  const [{ total }] = await db.select({ total: sql`count(*)` })
-    .from(bookingSlots)
-    .where(eq(bookingSlots.isAvailable, 0));
-
-  const rows = await db.select()
-    .from(bookingSlots)
-    .where(eq(bookingSlots.isAvailable, 0))
-    .orderBy(desc(bookingSlots.date), desc(bookingSlots.startTime))
-    .limit(limit)
-    .offset(offset);
-
-  return { data: rows, meta: buildPaginationMeta(total, page, limit) };
+function _getMemberInfo(id) {
+  return sqlite.prepare(`
+    SELECT pu.id, pu.email,
+      COALESCE(c.name, pu.email) AS name,
+      COALESCE(l.photo_url, pu.photo_url) AS photo_url
+    FROM portal_users pu
+    LEFT JOIN clients c ON c.id = pu.client_id
+    LEFT JOIN lawyers l ON LOWER(l.email) = LOWER(pu.email)
+    WHERE pu.id = ?
+  `).get(id);
 }
 
-async function cancelPortalBooking(slotId) {
-  validateUUID(slotId);
-  const [slot] = await db.select().from(bookingSlots).where(eq(bookingSlots.id, slotId));
-  if (!slot) throw new ServiceError("예약 슬롯을 찾을 수 없습니다", 404);
-  if (slot.isAvailable === 1) throw new ServiceError("이미 취소된 슬롯입니다", 400);
+function listPortalMembers() {
+  return sqlite.prepare(`
+    SELECT pu.id, pu.email,
+      COALESCE(c.name, pu.email) AS name,
+      COALESCE(l.photo_url, pu.photo_url) AS photo_url
+    FROM portal_users pu
+    LEFT JOIN clients c ON c.id = pu.client_id
+    LEFT JOIN lawyers l ON LOWER(l.email) = LOWER(pu.email)
+    WHERE pu.is_active = 1
+    ORDER BY COALESCE(c.name, pu.email)
+  `).all();
+}
 
-  await db.update(bookingSlots)
-    .set({ isAvailable: 1, consultationId: null })
-    .where(eq(bookingSlots.id, slotId));
+function listMemberBookings(portalUserId) {
+  const rows = sqlite.prepare(`
+    SELECT b.*,
+      COALESCE(c.name, pu.email) AS organizer_name,
+      COALESCE(l.photo_url, pu.photo_url) AS organizer_photo
+    FROM portal_bookings b
+    LEFT JOIN portal_users pu ON pu.id = b.organizer_id
+    LEFT JOIN clients c ON c.id = pu.client_id
+    LEFT JOIN lawyers l ON LOWER(l.email) = LOWER(pu.email)
+    WHERE b.status = 'confirmed'
+      AND (
+        b.organizer_id = ?
+        OR (',' || COALESCE(b.attendee_ids,'') || ',') LIKE ('%,' || ? || ',%')
+      )
+    ORDER BY b.starts_at ASC
+  `).all(portalUserId, portalUserId);
+
+  return rows.map(row => {
+    const attendeeIds = row.attendee_ids ? row.attendee_ids.split(",").filter(Boolean) : [];
+    const attendees = attendeeIds.map(id => _getMemberInfo(id)).filter(Boolean);
+    return {
+      id: row.id,
+      organizerId: row.organizer_id,
+      organizerName: row.organizer_name,
+      organizerPhoto: row.organizer_photo,
+      title: row.title,
+      description: row.description,
+      startsAt: row.starts_at,
+      endsAt: row.ends_at,
+      location: row.location,
+      attendees,
+      status: row.status,
+      createdAt: row.created_at,
+    };
+  });
+}
+
+function createMemberBooking(organizerId, data) {
+  const { title, description, startsAt, endsAt, location, attendeeIds = [] } = data;
+  if (!title || !title.trim()) throw new ServiceError("제목을 입력해주세요", 400);
+  if (!startsAt) throw new ServiceError("시작 시간을 입력해주세요", 400);
+
+  const id = crypto.randomUUID();
+  const now = new Date().toISOString().replace("T", " ").slice(0, 19);
+  const uniqueAttendees = attendeeIds.filter(aid => aid !== organizerId);
+  const allParticipants = [organizerId, ...uniqueAttendees];
+  const eventIds = [];
+
+  for (const userId of allParticipants) {
+    const eventId = crypto.randomUUID();
+    sqlite.prepare(`
+      INSERT INTO portal_events
+        (id, portal_user_id, title, description, starts_at, ends_at, is_all_day, color, attendee_ids, location, category, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, 0, '#3b82f6', ?, ?, 'booking', ?, ?)
+    `).run(eventId, userId, title.trim(), description || null, startsAt, endsAt || null, uniqueAttendees.join(","), location || null, now, now);
+    eventIds.push(eventId);
+  }
+
+  sqlite.prepare(`
+    INSERT INTO portal_bookings
+      (id, organizer_id, title, description, starts_at, ends_at, location, attendee_ids, event_ids, status, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'confirmed', ?, ?)
+  `).run(id, organizerId, title.trim(), description || null, startsAt, endsAt || null, location || null, uniqueAttendees.join(","), eventIds.join(","), now, now);
+
+  const organizer = _getMemberInfo(organizerId);
+  const attendees = uniqueAttendees.map(aid => _getMemberInfo(aid)).filter(Boolean);
+  return {
+    id, organizerId,
+    organizerName: organizer?.name || null,
+    organizerPhoto: organizer?.photo_url || null,
+    title: title.trim(), description, startsAt, endsAt, location,
+    attendees, status: "confirmed", createdAt: now,
+  };
+}
+
+function cancelMemberBooking(bookingId, portalUserId) {
+  const booking = sqlite.prepare("SELECT * FROM portal_bookings WHERE id = ?").get(bookingId);
+  if (!booking) throw new ServiceError("예약을 찾을 수 없습니다", 404);
+  if (booking.organizer_id !== portalUserId) throw new ServiceError("예약 생성자만 취소할 수 있습니다", 403);
+  if (booking.status === "cancelled") throw new ServiceError("이미 취소된 예약입니다", 400);
+
+  const eventIds = booking.event_ids ? booking.event_ids.split(",").filter(Boolean) : [];
+  for (const eventId of eventIds) {
+    sqlite.prepare("DELETE FROM portal_events WHERE id = ?").run(eventId);
+  }
+
+  const now = new Date().toISOString().replace("T", " ").slice(0, 19);
+  sqlite.prepare("UPDATE portal_bookings SET status = 'cancelled', updated_at = ? WHERE id = ?").run(now, bookingId);
 
   return { ok: true };
 }
@@ -1795,9 +1897,11 @@ module.exports = {
   updateBoardCategory,
   deleteBoardCategory,
 
-  // 예약 관리
-  listPortalBookings,
-  cancelPortalBooking,
+  // 구성원 미팅 예약
+  listPortalMembers,
+  listMemberBookings,
+  createMemberBooking,
+  cancelMemberBooking,
 
   // 고객 관리
   listPortalClients,
