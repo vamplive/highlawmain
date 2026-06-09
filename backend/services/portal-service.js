@@ -1494,56 +1494,50 @@ sqlite.exec(`CREATE TABLE IF NOT EXISTS portal_bookings (
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 )`);
 
+function _enrichMember(u) {
+  let name = u.email;
+  let photo_url = null;
+  if (u.client_id) {
+    const c = sqlite.prepare("SELECT name FROM clients WHERE id = ?").get(u.client_id);
+    if (c?.name) name = c.name;
+  }
+  const l = sqlite.prepare("SELECT name, photo_url FROM lawyers WHERE LOWER(email) = LOWER(?)").get(u.email);
+  if (l?.name) name = l.name;
+  if (l?.photo_url) photo_url = l.photo_url;
+  return { id: u.id, email: u.email, name, photo_url };
+}
+
 function _getMemberInfo(id) {
-  return sqlite.prepare(`
-    SELECT pu.id, pu.email,
-      COALESCE(l.name, c.name, pu.email) AS name,
-      l.photo_url
-    FROM portal_users pu
-    LEFT JOIN clients c ON c.id = pu.client_id
-    LEFT JOIN lawyers l ON LOWER(l.email) = LOWER(pu.email)
-    WHERE pu.id = ?
-  `).get(id);
+  const u = sqlite.prepare("SELECT id, email, client_id FROM portal_users WHERE id = ?").get(id);
+  if (!u) return null;
+  return _enrichMember(u);
 }
 
 function listPortalMembers() {
-  return sqlite.prepare(`
-    SELECT pu.id, pu.email,
-      COALESCE(l.name, c.name, pu.email) AS name,
-      l.photo_url
-    FROM portal_users pu
-    LEFT JOIN clients c ON c.id = pu.client_id
-    LEFT JOIN lawyers l ON LOWER(l.email) = LOWER(pu.email)
-    WHERE pu.is_active = 1
-    ORDER BY COALESCE(l.name, c.name, pu.email)
-  `).all();
+  const users = sqlite.prepare("SELECT id, email, client_id FROM portal_users WHERE is_active = 1").all();
+  return users.map(_enrichMember).sort((a, b) => a.name.localeCompare(b.name, "ko"));
 }
 
 function listMemberBookings(portalUserId) {
   const rows = sqlite.prepare(`
-    SELECT b.*,
-      COALESCE(l.name, c.name, pu.email) AS organizer_name,
-      l.photo_url AS organizer_photo
-    FROM portal_bookings b
-    LEFT JOIN portal_users pu ON pu.id = b.organizer_id
-    LEFT JOIN clients c ON c.id = pu.client_id
-    LEFT JOIN lawyers l ON LOWER(l.email) = LOWER(pu.email)
-    WHERE b.status = 'confirmed'
+    SELECT * FROM portal_bookings
+    WHERE status = 'confirmed'
       AND (
-        b.organizer_id = ?
-        OR (',' || COALESCE(b.attendee_ids,'') || ',') LIKE ('%,' || ? || ',%')
+        organizer_id = ?
+        OR (',' || COALESCE(attendee_ids,'') || ',') LIKE ('%,' || ? || ',%')
       )
-    ORDER BY b.starts_at ASC
+    ORDER BY starts_at ASC
   `).all(portalUserId, portalUserId);
 
   return rows.map(row => {
+    const organizer = _getMemberInfo(row.organizer_id) || { name: null, photo_url: null };
     const attendeeIds = row.attendee_ids ? row.attendee_ids.split(",").filter(Boolean) : [];
     const attendees = attendeeIds.map(id => _getMemberInfo(id)).filter(Boolean);
     return {
       id: row.id,
       organizerId: row.organizer_id,
-      organizerName: row.organizer_name,
-      organizerPhoto: row.organizer_photo,
+      organizerName: organizer.name,
+      organizerPhoto: organizer.photo_url,
       title: row.title,
       description: row.description,
       startsAt: row.starts_at,

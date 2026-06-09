@@ -202,7 +202,7 @@ function BookingCard({ booking, myId, onCancel }) {
 }
 
 // ─── CreateModal ──────────────────────────────────────────────────────────────
-function CreateModal({ members, myId, onClose, onCreated }) {
+function CreateModal({ members, membersErr, onRetryMembers, myId, onClose, onCreated }) {
   const [form, setForm] = useState({ title: "", startsAt: "", endsAt: "", location: "", description: "" });
   const [attendees, setAttendees] = useState([]);
   const [saving, setSaving] = useState(false);
@@ -283,7 +283,16 @@ function CreateModal({ members, myId, onClose, onCreated }) {
                 <span style={{ fontWeight: 400, color: "#6b7280", marginLeft: 6 }}>({attendees.length}명 선택됨)</span>
               )}
             </label>
-            <MemberPicker members={members} selected={attendees} onChange={setAttendees} myId={myId} />
+            {membersErr ? (
+              <div style={{ padding: "10px 12px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, fontSize: 13, color: "#dc2626" }}>
+                {membersErr}
+                <button type="button" onClick={onRetryMembers} style={{ marginLeft: 10, fontSize: 12, color: "#2563eb", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>
+                  다시 시도
+                </button>
+              </div>
+            ) : (
+              <MemberPicker members={members} selected={attendees} onChange={setAttendees} myId={myId} />
+            )}
             {attendees.length > 0 && (
               <p style={{ margin: "6px 0 0", fontSize: 12, color: "#6b7280" }}>
                 선택된 구성원의 캘린더에 자동으로 일정이 추가됩니다.
@@ -316,6 +325,7 @@ function CreateModal({ members, myId, onClose, onCreated }) {
 export default function PortalBookings() {
   const [bookings, setBookings] = useState([]);
   const [members, setMembers] = useState([]);
+  const [membersErr, setMembersErr] = useState("");
   const [myId, setMyId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -335,12 +345,13 @@ export default function PortalBookings() {
   }, []);
 
   const loadMembers = useCallback(async () => {
+    setMembersErr("");
     try {
       const res = await portalApi.get("/members");
       setMembers(res.data || []);
-      if (res.myId) setMyId(id => id || res.myId);
-    } catch {
-      // ignore
+      if (res.myId) setMyId(prev => prev || res.myId);
+    } catch (e) {
+      setMembersErr(e?.message || "구성원 목록을 불러오지 못했습니다");
     }
   }, []);
 
@@ -419,6 +430,8 @@ export default function PortalBookings() {
       {showModal && (
         <CreateModal
           members={members}
+          membersErr={membersErr}
+          onRetryMembers={loadMembers}
           myId={myId}
           onClose={() => setShowModal(false)}
           onCreated={handleCreated}
