@@ -23,13 +23,24 @@ const router = Router();
 const STORAGE_PATH = process.env.STORAGE_PATH || path.join(__dirname, "..", "data");
 const CHAT_UPLOAD_DIR = path.join(STORAGE_PATH, "uploads", "chat");
 
+// busboy 1.x는 Content-Disposition 파일명을 latin1로 읽음.
+// UTF-8 한글 파일명을 올바르게 복원한다.
+function decodeMultipartFilename(raw) {
+  try {
+    return Buffer.from(raw, "latin1").toString("utf8");
+  } catch {
+    return raw;
+  }
+}
+
 const chatStorage = multer.diskStorage({
   destination: (_req, _file, cb) => {
     fs.mkdirSync(CHAT_UPLOAD_DIR, { recursive: true });
     cb(null, CHAT_UPLOAD_DIR);
   },
   filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
+    const decoded = decodeMultipartFilename(file.originalname);
+    const ext = path.extname(decoded).toLowerCase();
     cb(null, `chat-${Date.now()}-${crypto.randomBytes(4).toString("hex")}${ext}`);
   },
 });
@@ -105,12 +116,17 @@ router.get("/rooms", anyAuth, (req, res) => {
     // 각 방에 대해 멤버 정보 + 읽지 않은 메시지 수 첨부
     const enriched = rooms.map((room) => {
       const members = sqlite.prepare(`
-        SELECT user_id, user_type, display_name, joined_at FROM messenger_members WHERE room_id = ?
+        SELECT mm.user_id, mm.user_type, mm.display_name, mm.joined_at,
+          CASE WHEN mm.user_type = 'portal' THEN pu.photo_url ELSE NULL END AS photo_url
+        FROM messenger_members mm
+        LEFT JOIN portal_users pu ON pu.id = mm.user_id AND mm.user_type = 'portal'
+        WHERE mm.room_id = ?
       `).all(room.id);
 
       const enrichedMembers = members.map((m) => ({
         ...m,
         displayName: m.display_name || getUserDisplayName(m.user_id, m.user_type),
+        photoUrl: m.photo_url || null,
       }));
 
       const unreadCount = sqlite.prepare(`
@@ -237,16 +253,20 @@ router.get("/rooms/:id/messages", anyAuth, (req, res) => {
     let query, params;
     if (before) {
       query = `
-        SELECT * FROM messenger_messages
-        WHERE room_id = ? AND is_deleted = 0 AND created_at < ?
-        ORDER BY created_at DESC LIMIT ?
+        SELECT mm.*, pu.photo_url as sender_photo_url
+        FROM messenger_messages mm
+        LEFT JOIN portal_users pu ON pu.id = mm.sender_id AND mm.sender_type = 'portal'
+        WHERE mm.room_id = ? AND mm.is_deleted = 0 AND mm.created_at < ?
+        ORDER BY mm.created_at DESC LIMIT ?
       `;
       params = [roomId, before, limit];
     } else {
       query = `
-        SELECT * FROM messenger_messages
-        WHERE room_id = ? AND is_deleted = 0
-        ORDER BY created_at DESC LIMIT ?
+        SELECT mm.*, pu.photo_url as sender_photo_url
+        FROM messenger_messages mm
+        LEFT JOIN portal_users pu ON pu.id = mm.sender_id AND mm.sender_type = 'portal'
+        WHERE mm.room_id = ? AND mm.is_deleted = 0
+        ORDER BY mm.created_at DESC LIMIT ?
       `;
       params = [roomId, limit];
     }
@@ -300,7 +320,7 @@ router.post("/rooms/:id/files", anyAuth, chatUpload.single("file"), (req, res) =
     res.json({
       data: {
         fileUrl,
-        fileName: req.file.originalname,
+        fileName: decodeMultipartFilename(req.file.originalname),
         fileSize: req.file.size,
         mimeType: req.file.mimetype,
       },
@@ -317,9 +337,11 @@ router.post("/rooms/:id/files", anyAuth, chatUpload.single("file"), (req, res) =
 router.get("/users", anyAuth, (req, res) => {
   try {
     const portalUsers = sqlite.prepare(`
-      SELECT pu.id, 'portal' as user_type, COALESCE(c.name, pu.email) as display_name, pu.email
+      SELECT pu.id, 'portal' as user_type, COALESCE(c.name, pu.email) as display_name, pu.email,
+             COALESCE(l.photo_url, pu.photo_url) as photo_url
       FROM portal_users pu
       LEFT JOIN clients c ON pu.client_id = c.id
+      LEFT JOIN lawyers l ON LOWER(l.email) = LOWER(pu.email)
       WHERE pu.is_active = 1
       ORDER BY COALESCE(c.name, pu.email)
     `).all();
@@ -352,6 +374,49 @@ router.delete("/messages/:id", anyAuth, (req, res) => {
 
     sqlite.prepare("UPDATE messenger_messages SET is_deleted = 1, content = NULL WHERE id = ?").run(id);
     res.json({ data: { deleted: true }, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+// ─── 채팅방 이름 변경 ─────────────────────────────────────────────────
+/** PATCH /api/chat/rooms/:id/name */
+router.patch("/rooms/:id/name", anyAuth, (req, res) => {
+  try {
+    const user = getCurrentUser(req);
+    const { id: roomId } = req.params;
+    const { name } = req.body;
+
+    if (!name || typeof name !== "string" || !name.trim()) {
+      return res.status(400).json({ data: null, error: "이름을 입력하세요", meta: null });
+    }
+
+    const member = sqlite.prepare(
+      "SELECT 1 FROM messenger_members WHERE room_id = ? AND user_id = ? AND user_type = ?"
+    ).get(roomId, user.id, user.type);
+    if (!member) {
+      return res.status(403).json({ data: null, error: "접근 권한이 없습니다", meta: null });
+    }
+
+    sqlite.prepare("UPDATE messenger_rooms SET name = ? WHERE id = ?").run(name.trim(), roomId);
+    res.json({ data: { ok: true, name: name.trim() }, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+// ─── 채팅방 나가기 ───────────────────────────────────────────────────
+/** POST /api/chat/rooms/:id/leave */
+router.post("/rooms/:id/leave", anyAuth, (req, res) => {
+  try {
+    const user = getCurrentUser(req);
+    const { id: roomId } = req.params;
+
+    sqlite.prepare(
+      "DELETE FROM messenger_members WHERE room_id = ? AND user_id = ? AND user_type = ?"
+    ).run(roomId, user.id, user.type);
+
+    res.json({ data: { ok: true }, error: null, meta: null });
   } catch (e) {
     handleError(res, e);
   }
