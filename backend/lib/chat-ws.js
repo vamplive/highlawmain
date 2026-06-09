@@ -9,6 +9,7 @@ const crypto = require("crypto");
 const { sqlite } = require("../db");
 const { extractPortalToken, getPortalSession } = require("./auth");
 const logger = require("./logger");
+const notif = require("./notifications");
 
 // WebSocket readyState 상수
 const WS_OPEN = 1;
@@ -111,7 +112,7 @@ function attachChatWs(httpServer) {
 function handleIncoming(ws, msg, roomClients, userClients) {
   switch (msg.type) {
     case "send_message":
-      handleSendMessage(ws, msg, roomClients);
+      handleSendMessage(ws, msg, roomClients, userClients);
       break;
     case "typing":
       handleTyping(ws, msg, roomClients);
@@ -127,7 +128,7 @@ function handleIncoming(ws, msg, roomClients, userClients) {
   }
 }
 
-function handleSendMessage(ws, msg, roomClients) {
+function handleSendMessage(ws, msg, roomClients, userClients) {
   const { roomId, content, contentType: type = "text", fileUrl, fileName, fileSize } = msg;
   if (!roomId) return;
 
@@ -142,8 +143,9 @@ function handleSendMessage(ws, msg, roomClients) {
   const now = new Date().toISOString().replace("T", " ").slice(0, 19);
   const msgId = crypto.randomUUID();
 
-  // 발신자 이름 조회
+  // 발신자 이름 + 프로필사진 조회
   const senderName = getSenderName(ws.userId, ws.userType);
+  const senderPhotoUrl = getSenderPhotoUrl(ws.userId, ws.userType);
 
   // DB 저장
   sqlite.prepare(`
@@ -169,6 +171,7 @@ function handleSendMessage(ws, msg, roomClients) {
       senderId: ws.userId,
       senderType: ws.userType,
       senderName,
+      senderPhotoUrl: senderPhotoUrl || null,
       content: content || null,
       type,
       fileUrl: fileUrl || null,
@@ -180,6 +183,25 @@ function handleSendMessage(ws, msg, roomClients) {
   };
 
   broadcastToRoom(roomClients, roomId, outgoing);
+
+  // 방에 없는 멤버에게 알림 생성
+  try {
+    const roomMembers = sqlite.prepare(
+      "SELECT user_id, user_type FROM messenger_members WHERE room_id = ? AND NOT (user_id = ? AND user_type = ?)"
+    ).all(roomId, ws.userId, ws.userType);
+
+    const roomRow = sqlite.prepare("SELECT name FROM messenger_rooms WHERE id = ?").get(roomId);
+    const notifTitle = `${senderName}: ${(content || "[파일]").slice(0, 50)}`;
+    const notifBody = roomRow?.name || null;
+
+    for (const m of roomMembers) {
+      const memberWs = userClients?.get(`${m.user_type}:${m.user_id}`);
+      const isInRoom = memberWs && roomClients.get(roomId)?.has(memberWs);
+      if (!isInRoom) {
+        notif.create(m.user_id, m.user_type, "message", notifTitle, notifBody, "/portal/messenger");
+      }
+    }
+  } catch { /* 알림 실패가 메시지 전송에 영향을 미치지 않도록 */ }
 }
 
 function handleTyping(ws, msg, roomClients) {
@@ -279,6 +301,16 @@ function getSenderName(userId, userType) {
     return row ? (row.name || row.username || "관리자") : "관리자";
   }
   return "사용자";
+}
+
+function getSenderPhotoUrl(userId, userType) {
+  if (userType === "portal") {
+    try {
+      const row = sqlite.prepare("SELECT photo_url FROM portal_users WHERE id = ?").get(userId);
+      return row?.photo_url || null;
+    } catch { return null; }
+  }
+  return null;
 }
 
 module.exports = { attachChatWs };

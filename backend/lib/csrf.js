@@ -137,6 +137,17 @@ function csrfProtection(req, res, next) {
     return next();
   }
 
+  // API 토큰 헤더(x-portal-token, Authorization Bearer)가 있으면 CSRF 면제.
+  // 커스텀 헤더는 브라우저의 cross-site 폼/fetch에서 자동으로 첨부될 수 없으므로
+  // 토큰 자체가 CSRF 방어 역할을 한다. (Electron 데스크톱 앱, 모바일 등 API 클라이언트)
+  if (req.get("x-portal-token")) {
+    return next();
+  }
+  const authHeader = req.get("Authorization") || "";
+  if (authHeader.startsWith("Bearer ")) {
+    return next();
+  }
+
   const headerToken = req.get("x-csrf-token");
 
   if (!headerToken || !verifyCsrfToken(headerToken)) {
