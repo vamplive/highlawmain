@@ -1,22 +1,14 @@
-import { useState, useEffect } from "react";
+/** 관리자 변호사 관리 — CRUD + 학력/경력/논문 등 항목별 행 단위 편집. */
 import useCrudForm from "../../../hooks/useCrudForm";
 import { api } from "../../../utils/api";
 import {
   PageHeader, EditPanel, FormField, EmptyState, ErrorBanner,
-  RepeatableEditor, outlineBtnStyle, COLORS, btnStyle,
+  RepeatableEditor, outlineBtnStyle, COLORS,
 } from "../../../components/admin";
 import LecturesSection from "./LecturesSection";
-import useSiteSettings from "../site-manager/useSiteSettings";
 
 const POSITIONS = ["대표변호사", "변호사", "전문위원", "직원"];
 const POSITION_OPTIONS = POSITIONS.map((p) => ({ value: p, label: p }));
-
-const SUB_TABS = [
-  { key: "hero", label: "히어로" },
-  { key: "lawyer", label: "변호사" },
-  { key: "advisor", label: "전문위원" },
-  { key: "staff", label: "직원" }
-];
 
 /** JSON 문자열 → 배열, 줄바꿈 텍스트도 허용 */
 function parseArray(value) {
@@ -136,45 +128,11 @@ const CASE_FIELDS = [
   { key: "outcome", label: "결과", placeholder: "예: 일부승소", width: "120px" },
 ];
 
-export default function AdminLawyers({ settings, update }) {
-  const [activeSubTab, setActiveSubTab] = useState("lawyer");
-  const localSettings = useSiteSettings();
-  const s = settings || localSettings.settings;
-  const upd = update || localSettings.update;
-
-  const [savingHero, setSavingHero] = useState(false);
-  const saveHeroSettings = async () => {
-    setSavingHero(true);
-    try {
-      const heroContent = s["partners/hero"];
-      await api.post("/site-settings/bulk", {
-        settings: [{ page: "partners", section: "hero", content: heroContent }]
-      });
-      alert("히어로 설정이 저장되었습니다.");
-    } catch (err) {
-      alert("저장 실패: " + err.message);
-    } finally {
-      setSavingHero(false);
-    }
-  };
-
+export default function AdminLawyers() {
   const crud = useCrudForm("/lawyers", EMPTY_FORM, {
     queryParams: "?all=true",
     mapToForm: mapRowToForm,
     validate: (form) => !form.name.trim() ? "이름을 입력해주세요" : null,
-  });
-
-  const filteredItems = crud.items.filter((item) => {
-    if (activeSubTab === "lawyer") {
-      return item.position === "대표변호사" || item.position === "변호사";
-    }
-    if (activeSubTab === "advisor") {
-      return item.position === "전문위원";
-    }
-    if (activeSubTab === "staff") {
-      return item.position === "직원";
-    }
-    return false;
   });
 
   // 배열 필드를 JSON 문자열로 직렬화 후 직접 API 호출 — useCrudForm.save 는 form 상태 closure 를 사용하므로 우회
@@ -190,8 +148,6 @@ export default function AdminLawyers({ settings, update }) {
       } else {
         await api.patch(`/lawyers/${crud.editing}`, payload);
       }
-      // 저장 성공 시 임시본 삭제
-      localStorage.removeItem(`admin_lawyer_profile_draft_${crud.editing}`);
       crud.cancelEdit();
       crud.load();
     } catch (err) {
@@ -200,356 +156,145 @@ export default function AdminLawyers({ settings, update }) {
     }
   };
 
-  const openEditWithDraft = (item) => {
-    crud.openEdit(item);
-    const draftKey = `admin_lawyer_profile_draft_${item.id}`;
-    const savedDraft = localStorage.getItem(draftKey);
-    if (savedDraft) {
-      try {
-        const parsedDraft = JSON.parse(savedDraft);
-        const initialForm = mapRowToForm(item);
-        const isDifferent = Object.keys(initialForm).some(
-          (key) => String(initialForm[key]) !== String(parsedDraft[key])
-        );
-        if (isDifferent) {
-          if (window.confirm("이전에 수정 중이던 임시 저장본이 있습니다. 불러오시겠습니까?")) {
-            crud.setForm(parsedDraft);
-          } else {
-            localStorage.removeItem(draftKey);
-          }
-        }
-      } catch (_e) {
-        localStorage.removeItem(draftKey);
-      }
-    }
-  };
-
-  const openNewWithDraft = (overrides = {}) => {
-    let defaultPosition = "변호사";
-    if (activeSubTab === "advisor") defaultPosition = "전문위원";
-    if (activeSubTab === "staff") defaultPosition = "직원";
-    const initialForm = { ...EMPTY_FORM, position: defaultPosition, sortOrder: crud.items.length + 1, ...overrides };
-    crud.openNew(initialForm);
-
-    const draftKey = `admin_lawyer_profile_draft_new`;
-    const savedDraft = localStorage.getItem(draftKey);
-    if (savedDraft) {
-      try {
-        const parsedDraft = JSON.parse(savedDraft);
-        const isDifferent = Object.keys(initialForm).some(
-          (key) => String(initialForm[key]) !== String(parsedDraft[key])
-        );
-        if (isDifferent) {
-          if (window.confirm("이전에 등록 중이던 임시 저장본이 있습니다. 불러오시겠습니까?")) {
-            crud.setForm(parsedDraft);
-          } else {
-            localStorage.removeItem(draftKey);
-          }
-        }
-      } catch (_e) {
-        localStorage.removeItem(draftKey);
-      }
-    }
-  };
-
-  const cancelEditAndClearDraft = () => {
-    const draftKey = `admin_lawyer_profile_draft_${crud.editing}`;
-    localStorage.removeItem(draftKey);
-    crud.cancelEdit();
-  };
-
-  // 실시간 변경 시마다 자동 임시저장
-  useEffect(() => {
-    if (!crud.isEditing || !crud.editing) return;
-    const draftKey = `admin_lawyer_profile_draft_${crud.editing}`;
-    localStorage.setItem(draftKey, JSON.stringify(crud.form));
-  }, [crud.form, crud.isEditing, crud.editing]);
-
   // 단순 파생값 헬퍼
   const setArr = (key) => (next) => crud.setField(key, next);
 
-  const moveUp = async (filteredIndex) => {
-    if (filteredIndex === 0) return;
-    const current = filteredItems[filteredIndex];
-    const prev = filteredItems[filteredIndex - 1];
-
-    const masterList = [...crud.items].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
-    const idxCurrent = masterList.findIndex((item) => item.id === current.id);
-    const idxPrev = masterList.findIndex((item) => item.id === prev.id);
-
-    if (idxCurrent === -1 || idxPrev === -1) return;
-
-    const temp = masterList[idxCurrent];
-    masterList[idxCurrent] = masterList[idxPrev];
-    masterList[idxPrev] = temp;
-
-    const updates = [];
-    masterList.forEach((item, index) => {
-      const newOrder = index + 1;
-      if (item.sortOrder !== newOrder) {
-        updates.push({ id: item.id, sortOrder: newOrder });
-      }
-    });
+  const moveUp = async (index) => {
+    if (index === 0) return;
+    const current = crud.items[index];
+    const prev = crud.items[index - 1];
+    const currentOrder = current.sortOrder;
+    const prevOrder = prev.sortOrder;
 
     try {
-      await Promise.all(
-        updates.map(({ id, sortOrder }) => api.patch(`/lawyers/${id}`, { sortOrder }))
-      );
+      await Promise.all([
+        crud.patchItem(current.id, { sortOrder: prevOrder }),
+        crud.patchItem(prev.id, { sortOrder: currentOrder }),
+      ]);
       crud.load();
     } catch (err) {
       alert("순서 변경 실패: " + err.message);
     }
   };
 
-  const moveDown = async (filteredIndex) => {
-    if (filteredIndex === filteredItems.length - 1) return;
-    const current = filteredItems[filteredIndex];
-    const next = filteredItems[filteredIndex + 1];
-
-    const masterList = [...crud.items].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
-    const idxCurrent = masterList.findIndex((item) => item.id === current.id);
-    const idxNext = masterList.findIndex((item) => item.id === next.id);
-
-    if (idxCurrent === -1 || idxNext === -1) return;
-
-    const temp = masterList[idxCurrent];
-    masterList[idxCurrent] = masterList[idxNext];
-    masterList[idxNext] = temp;
-
-    const updates = [];
-    masterList.forEach((item, index) => {
-      const newOrder = index + 1;
-      if (item.sortOrder !== newOrder) {
-        updates.push({ id: item.id, sortOrder: newOrder });
-      }
-    });
+  const moveDown = async (index) => {
+    if (index === crud.items.length - 1) return;
+    const current = crud.items[index];
+    const next = crud.items[index + 1];
+    const currentOrder = current.sortOrder;
+    const nextOrder = next.sortOrder;
 
     try {
-      await Promise.all(
-        updates.map(({ id, sortOrder }) => api.patch(`/lawyers/${id}`, { sortOrder }))
-      );
+      await Promise.all([
+        crud.patchItem(current.id, { sortOrder: nextOrder }),
+        crud.patchItem(next.id, { sortOrder: currentOrder }),
+      ]);
       crud.load();
     } catch (err) {
       alert("순서 변경 실패: " + err.message);
     }
-  };
-
-  const handleAdd = () => {
-    openNewWithDraft();
   };
 
   return (
     <div>
       <ErrorBanner message={crud.error} onDismiss={crud.clearError} />
-      {activeSubTab !== "hero" ? (
-        <PageHeader
-          title="구성원 관리"
-          onAdd={handleAdd}
-          addLabel={`+ ${SUB_TABS.find((t) => t.key === activeSubTab)?.label} 등록`}
-        />
-      ) : (
-        <PageHeader title="구성원 관리" />
-      )}
+      <PageHeader
+        title="변호사 관리"
+        onAdd={() => crud.openNew({ sortOrder: crud.items.length })}
+        addLabel="+ 변호사 등록"
+      />
 
-      {/* 구성원 유형 탭 */}
-      <div style={{ display: "flex", gap: 0, borderBottom: `2px solid ${COLORS.borderLight}`, marginBottom: 20 }}>
-        {SUB_TABS.map((tab) => {
-          const isActive = activeSubTab === tab.key;
-          return (
-            <button
-              key={tab.key}
-              onClick={() => { setActiveSubTab(tab.key); }}
-              style={{
-                padding: "10px 22px", fontSize: 13, fontWeight: isActive ? 600 : 400,
-                color: isActive ? COLORS.accent : COLORS.textSecondary,
-                background: "none", border: "none", cursor: "pointer",
-                borderBottom: isActive ? `2px solid ${COLORS.accent}` : "2px solid transparent",
-                marginBottom: -2, whiteSpace: "nowrap", transition: "all 0.15s",
-              }}
-            >
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
-
-      {activeSubTab === "hero" ? (
-        <div style={{ background: "#fff", padding: 24, border: `1px solid ${COLORS.borderLight}`, borderRadius: 6, marginBottom: 24 }}>
-          <h3 style={{ fontSize: 15, fontWeight: 600, color: COLORS.text, marginBottom: 16 }}>히어로 섹션 편집</h3>
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <FormField
-              label="제목 (Heading)"
-              value={s["partners/hero"]?.heading || ""}
-              onChange={(v) => upd("partners/hero", "heading", v)}
-              placeholder="구성원"
-            />
-            <FormField
-              label="부제목 (Subheading)"
-              value={s["partners/hero"]?.subheading || ""}
-              onChange={(v) => upd("partners/hero", "subheading", v)}
-              placeholder="PEOPLE"
-            />
-            <FormField
-              label="설명 (Description)"
-              value={s["partners/hero"]?.description || ""}
-              onChange={(v) => upd("partners/hero", "description", v)}
-              type="textarea"
-              placeholder="설명을 입력해 주세요."
-            />
-            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
-              <button
-                onClick={saveHeroSettings}
-                disabled={savingHero}
-                style={{
-                  ...btnStyle(COLORS.accent),
-                  padding: "8px 16px",
-                  fontSize: 13,
-                }}
-              >
-                {savingHero ? "저장 중..." : "저장"}
-              </button>
+      {/* ── 편집 폼 ── */}
+      {crud.isEditing && (
+        <EditPanel isNew={crud.isNew} entityName="변호사" onSave={save} onCancel={crud.cancelEdit}>
+          <SectionTitle>기본 정보</SectionTitle>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4" style={{ marginBottom: 16 }}>
+            <FormField label="이름" value={crud.form.name} onChange={(v) => crud.setField("name", v)} required placeholder="홍길동" />
+            <FormField label="한자 이름" value={crud.form.nameHanja} onChange={(v) => crud.setField("nameHanja", v)} placeholder="洪吉童" />
+            <FormField label="영문 이름" value={crud.form.nameEn} onChange={(v) => crud.setField("nameEn", v)} placeholder="Gil-Dong Hong" />
+            <FormField label="직위" value={crud.form.position} onChange={(v) => crud.setField("position", v)} type="select" options={POSITION_OPTIONS} required />
+            <FormField label="팀" value={crud.form.team} onChange={(v) => crud.setField("team", v)} placeholder="예: 건설·부동산팀" />
+            <FormField label="사진 URL" value={crud.form.photoUrl} onChange={(v) => crud.setField("photoUrl", v)} placeholder="/lawyers/.../photo.jpg" />
+            <FormField label="이메일" value={crud.form.email} onChange={(v) => crud.setField("email", v)} placeholder="lawyer@HIGHLAW.com" />
+            <FormField label="전화번호" value={crud.form.phone} onChange={(v) => crud.setField("phone", v)} placeholder="준비 중" />
+            <FormField label="상담시간" value={crud.form.consultHours} onChange={(v) => crud.setField("consultHours", v)} placeholder="평일 09:30 – 18:00" />
+            <FormField label="블로그 URL" value={crud.form.blogUrl} onChange={(v) => crud.setField("blogUrl", v)} placeholder="https://blog.naver.com/..." />
+            <FormField label="정렬 순서" value={crud.form.sortOrder} onChange={(v) => crud.setField("sortOrder", v)} type="number" />
+            <div className="flex items-end">
+              <label className="flex items-center gap-2 cursor-pointer" style={{ fontSize: 14 }}>
+                <input type="checkbox" checked={crud.form.isActive === 1} onChange={(e) => crud.setField("isActive", e.target.checked ? 1 : 0)} />
+                사이트에 표시
+              </label>
             </div>
           </div>
-        </div>
-      ) : (
-        <>
-          {/* ── 편집 폼 ── */}
-          {crud.isEditing && (
-            <EditPanel isNew={crud.isNew} entityName="변호사" onSave={save} onCancel={cancelEditAndClearDraft}>
-              <SectionTitle>기본 정보</SectionTitle>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4" style={{ marginBottom: 16 }}>
-                <FormField label="이름" value={crud.form.name} onChange={(v) => crud.setField("name", v)} required placeholder="홍길동" />
-                <FormField label="한자 이름" value={crud.form.nameHanja} onChange={(v) => crud.setField("nameHanja", v)} placeholder="洪吉童" />
-                <FormField label="영문 이름" value={crud.form.nameEn} onChange={(v) => crud.setField("nameEn", v)} placeholder="Gil-Dong Hong" />
-                <FormField label="직위" value={crud.form.position} onChange={(v) => crud.setField("position", v)} type="select" options={POSITION_OPTIONS} required />
-                <FormField label="팀" value={crud.form.team} onChange={(v) => crud.setField("team", v)} placeholder="예: 건설·부동산팀" />
-                <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
-                  <div style={{ flex: 1 }}>
-                    <FormField label="사진 URL" value={crud.form.photoUrl} onChange={(v) => crud.setField("photoUrl", v)} placeholder="/lawyers/.../photo.jpg" />
-                  </div>
-                  <div style={{ marginBottom: 4 }}>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      id="partner-photo-upload"
-                      style={{ display: "none" }}
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        try {
-                          const formData = new FormData();
-                          // folder를 file보다 먼저 추가해야 multer destination 콜백에서 req.body.folder가 읽힘
-                          formData.append("folder", "lawyers");
-                          formData.append("file", file);
-                          const res = await api.upload("/media/upload", formData);
-                          if (res.data?.url) {
-                            crud.setField("photoUrl", res.data.url);
-                            alert("사진이 성공적으로 업로드되었습니다.");
-                          }
-                        } catch (err) {
-                          alert("업로드 실패: " + err.message);
-                        }
-                      }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => document.getElementById("partner-photo-upload")?.click()}
-                      style={{
-                        ...outlineBtnStyle(),
-                        padding: "8px 12px",
-                        fontSize: 13,
-                        height: 38,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 4
-                      }}
-                    >
-                      내 컴퓨터에서 선택
-                    </button>
-                  </div>
-                </div>
-                <FormField label="이메일" value={crud.form.email} onChange={(v) => crud.setField("email", v)} placeholder="lawyer@HIGHLAW.com" />
-                <FormField label="전화번호" value={crud.form.phone} onChange={(v) => crud.setField("phone", v)} placeholder="준비 중" />
-                <FormField label="상담시간" value={crud.form.consultHours} onChange={(v) => crud.setField("consultHours", v)} placeholder="평일 09:30 – 18:00" />
-                <FormField label="블로그 URL" value={crud.form.blogUrl} onChange={(v) => crud.setField("blogUrl", v)} placeholder="https://blog.naver.com/..." />
-                <FormField label="정렬 순서" value={crud.form.sortOrder} onChange={(v) => crud.setField("sortOrder", v)} type="number" />
-                <div className="flex items-end">
-                  <label className="flex items-center gap-2 cursor-pointer" style={{ fontSize: 14 }}>
-                    <input type="checkbox" checked={crud.form.isActive === 1} onChange={(e) => crud.setField("isActive", e.target.checked ? 1 : 0)} />
-                    사이트에 표시
-                  </label>
-                </div>
-              </div>
 
-              <FormField label="태그라인 (한 줄 소개)" value={crud.form.tagline} onChange={(v) => crud.setField("tagline", v)} placeholder="건설과 부동산 분쟁의 실전 해결" />
-              <div style={{ marginTop: 12 }} />
-              <FormField label="소개글" value={crud.form.introduction} onChange={(v) => crud.setField("introduction", v)} type="textarea" placeholder="변호사 소개글" />
+          <FormField label="태그라인 (한 줄 소개)" value={crud.form.tagline} onChange={(v) => crud.setField("tagline", v)} placeholder="건설과 부동산 분쟁의 실전 해결" />
+          <div style={{ marginTop: 12 }} />
+          <FormField label="소개글" value={crud.form.introduction} onChange={(v) => crud.setField("introduction", v)} type="textarea" placeholder="변호사 소개글" />
 
-              {crud.form.photoUrl && (
-                <div style={{ marginTop: 16 }}>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: "#444", display: "block", marginBottom: 4 }}>사진 미리보기</label>
-                  <img src={crud.form.photoUrl} alt="미리보기" style={{ width: 120, height: 150, objectFit: "cover", border: "1px solid #ddd", borderRadius: 4 }}
-                    onError={(e) => { e.target.style.display = "none"; }} />
-                </div>
-              )}
-
-              <SectionTitle>학력 · 경력</SectionTitle>
-              <RepeatableEditor label="학력" value={crud.form.education} onChange={setArr("education")} fields={TIMELINE_FIELDS} />
-              <RepeatableEditor label="경력" value={crud.form.career} onChange={setArr("career")} fields={TIMELINE_FIELDS} />
-
-              <SectionTitle>업무분야 · 자격 · 소속</SectionTitle>
-              <RepeatableEditor label="전문 업무분야" value={crud.form.specialties} onChange={setArr("specialties")} simple
-                fields={[{ key: "value", placeholder: "예: 건설" }]} addLabel="+ 분야 추가" />
-              <RepeatableEditor label="자격" value={crud.form.qualifications} onChange={setArr("qualifications")} simple
-                fields={[{ key: "value", placeholder: "예: 대한변호사협회 인증 형사법 전문변호사" }]} addLabel="+ 자격 추가" />
-              <RepeatableEditor label="소속 위원회 · 학회" value={crud.form.memberships} onChange={setArr("memberships")} simple
-                fields={[{ key: "value", placeholder: "예: 한국건설법학회" }]} addLabel="+ 소속 추가" />
-
-              <SectionTitle>논문 · 저서</SectionTitle>
-              <RepeatableEditor label="논문" value={crud.form.publications} onChange={setArr("publications")} fields={PUBLICATION_FIELDS} addLabel="+ 논문 추가" />
-              <RepeatableEditor label="저서" value={crud.form.books} onChange={setArr("books")} fields={BOOK_FIELDS} addLabel="+ 저서 추가" />
-
-              <SectionTitle>미디어 · 칼럼</SectionTitle>
-              <RepeatableEditor label="미디어" value={crud.form.media} onChange={setArr("media")} fields={MEDIA_FIELDS} addLabel="+ 미디어 추가" />
-              <RepeatableEditor label="칼럼" value={crud.form.columns} onChange={setArr("columns")} fields={COLUMN_FIELDS} addLabel="+ 칼럼 추가" />
-
-              <SectionTitle>주요 수행사례</SectionTitle>
-              <RepeatableEditor label="수행사례 (변호사법·광고규정 준수 익명 표기)" value={crud.form.cases} onChange={setArr("cases")} fields={CASE_FIELDS} addLabel="+ 사례 추가" />
-
-              <SectionTitle>강의 · 세미나</SectionTitle>
-              {crud.isNew ? (
-                <p style={{ fontSize: 13, color: COLORS.muted, padding: "8px 0" }}>
-                  변호사 정보를 먼저 저장한 뒤 강의를 등록할 수 있습니다.
-                </p>
-              ) : (
-                <LecturesSection lawyerId={crud.editing} />
-              )}
-            </EditPanel>
-          )}
-
-          {/* ── 변호사 목록 ── */}
-          {crud.loading ? (
-            <p style={{ color: COLORS.muted, fontSize: 14 }}>로딩 중...</p>
-          ) : filteredItems.length === 0 ? (
-            <EmptyState icon="⚖️" message={`등록된 ${SUB_TABS.find((t) => t.key === activeSubTab)?.label || ""}가 없습니다`} />
-          ) : (
-            <div className="space-y-3">
-              {filteredItems.map((lawyer, index) => (
-                <LawyerCard
-                  key={lawyer.id}
-                  lawyer={lawyer}
-                  index={index}
-                  totalItems={filteredItems.length}
-                  onEdit={() => openEditWithDraft(lawyer)}
-                  onRemove={() => crud.remove(lawyer.id)}
-                  onToggleActive={() => crud.patchItem(lawyer.id, { isActive: lawyer.isActive ? 0 : 1 })}
-                  onMoveUp={() => moveUp(index)}
-                  onMoveDown={() => moveDown(index)}
-                />
-              ))}
+          {crud.form.photoUrl && (
+            <div style={{ marginTop: 16 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "#444", display: "block", marginBottom: 4 }}>사진 미리보기</label>
+              <img src={crud.form.photoUrl} alt="미리보기" style={{ width: 120, height: 150, objectFit: "cover", border: "1px solid #ddd", borderRadius: 4 }}
+                onError={(e) => { e.target.style.display = "none"; }} />
             </div>
           )}
-        </>
+
+          <SectionTitle>학력 · 경력</SectionTitle>
+          <RepeatableEditor label="학력" value={crud.form.education} onChange={setArr("education")} fields={TIMELINE_FIELDS} />
+          <RepeatableEditor label="경력" value={crud.form.career} onChange={setArr("career")} fields={TIMELINE_FIELDS} />
+
+          <SectionTitle>업무분야 · 자격 · 소속</SectionTitle>
+          <RepeatableEditor label="전문 업무분야" value={crud.form.specialties} onChange={setArr("specialties")} simple
+            fields={[{ key: "value", placeholder: "예: 건설" }]} addLabel="+ 분야 추가" />
+          <RepeatableEditor label="자격" value={crud.form.qualifications} onChange={setArr("qualifications")} simple
+            fields={[{ key: "value", placeholder: "예: 대한변호사협회 인증 형사법 전문변호사" }]} addLabel="+ 자격 추가" />
+          <RepeatableEditor label="소속 위원회 · 학회" value={crud.form.memberships} onChange={setArr("memberships")} simple
+            fields={[{ key: "value", placeholder: "예: 한국건설법학회" }]} addLabel="+ 소속 추가" />
+
+          <SectionTitle>논문 · 저서</SectionTitle>
+          <RepeatableEditor label="논문" value={crud.form.publications} onChange={setArr("publications")} fields={PUBLICATION_FIELDS} addLabel="+ 논문 추가" />
+          <RepeatableEditor label="저서" value={crud.form.books} onChange={setArr("books")} fields={BOOK_FIELDS} addLabel="+ 저서 추가" />
+
+          <SectionTitle>미디어 · 칼럼</SectionTitle>
+          <RepeatableEditor label="미디어" value={crud.form.media} onChange={setArr("media")} fields={MEDIA_FIELDS} addLabel="+ 미디어 추가" />
+          <RepeatableEditor label="칼럼" value={crud.form.columns} onChange={setArr("columns")} fields={COLUMN_FIELDS} addLabel="+ 칼럼 추가" />
+
+          <SectionTitle>주요 수행사례</SectionTitle>
+          <RepeatableEditor label="수행사례 (변호사법·광고규정 준수 익명 표기)" value={crud.form.cases} onChange={setArr("cases")} fields={CASE_FIELDS} addLabel="+ 사례 추가" />
+
+          <SectionTitle>강의 · 세미나</SectionTitle>
+          {crud.isNew ? (
+            <p style={{ fontSize: 13, color: COLORS.muted, padding: "8px 0" }}>
+              변호사 정보를 먼저 저장한 뒤 강의를 등록할 수 있습니다.
+            </p>
+          ) : (
+            <LecturesSection lawyerId={crud.editing} />
+          )}
+        </EditPanel>
+      )}
+
+      {/* ── 변호사 목록 ── */}
+      {crud.loading ? (
+        <p style={{ color: COLORS.muted, fontSize: 14 }}>로딩 중...</p>
+      ) : crud.items.length === 0 ? (
+        <EmptyState icon="⚖️" message="등록된 변호사가 없습니다" />
+      ) : (
+        <div className="space-y-3">
+          {crud.items.map((lawyer, index) => (
+            <LawyerCard
+              key={lawyer.id}
+              lawyer={lawyer}
+              index={index}
+              totalItems={crud.items.length}
+              onEdit={() => crud.openEdit(lawyer)}
+              onRemove={() => crud.remove(lawyer.id)}
+              onToggleActive={() => crud.patchItem(lawyer.id, { isActive: lawyer.isActive ? 0 : 1 })}
+              onMoveUp={() => moveUp(index)}
+              onMoveDown={() => moveDown(index)}
+            />
+          ))}
+        </div>
       )}
     </div>
   );

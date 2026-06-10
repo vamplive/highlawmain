@@ -8,15 +8,6 @@ import ErrorState from "../../components/ui/ErrorState";
 import Seo from "../../components/Seo";
 import { buildBreadcrumbJsonLd } from "../../lib/seo";
 import { PublicHero, SurfaceCard } from "../../components/public/PublicDesign";
-import { useSiteSettingsPage } from "../../hooks/useSiteSettings";
-
-const BLOG_DEFAULTS = {
-  hero: {
-    heading: "블로그",
-    subheading: "BLOG",
-    description: "법률 이슈와 판례 분석, 실무 가이드를 제공합니다."
-  }
-};
 
 /** 블로그 카테고리 라벨/키 매핑 */
 const CATEGORY_OPTIONS = [
@@ -42,7 +33,6 @@ export default function BlogPage() {
   const ref = useReveal();
   const listRef = useRef();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { settings: pageSettings } = useSiteSettingsPage("news", BLOG_DEFAULTS);
   const [posts, setPosts] = useState([]);
   const [meta, setMeta] = useState({ total: 0, page: 1, totalPages: 1 });
   // URL ?category= 파라미터를 단일 진실 소스로 사용 — 헤더 드롭다운 링크와 연동
@@ -116,9 +106,9 @@ export default function BlogPage() {
         ])}
       />
       <PublicHero
-        eyebrow={pageSettings.hero?.subheading}
-        title={pageSettings.hero?.heading}
-        description={pageSettings.hero?.description}
+        eyebrow="BLOG"
+        title="블로그"
+        description="법률 이슈와 판례 분석, 실무 가이드를 제공합니다."
       />
 
       {/* ==================== 카테고리 필터 ==================== */}

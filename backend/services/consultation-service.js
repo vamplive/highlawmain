@@ -256,7 +256,6 @@ function mapConsultationRow(row) {
     preferredTime2: row.preferred_time_2,
     preferredDate3: row.preferred_date_3,
     preferredTime3: row.preferred_time_3,
-    attachmentUrls: row.attachment_urls,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -279,10 +278,10 @@ const createSlotConsultationTx = sqlite.transaction((dbData) => {
   return sqlite.prepare(`
     INSERT INTO consultations (
       id, name, phone, email, category, message,
-      consent_id, invitation_id, meeting_type, schedule_mode, booking_slot_id, attachment_urls
+      consent_id, invitation_id, meeting_type, schedule_mode, booking_slot_id
     ) VALUES (
       @id, @name, @phone, @email, @category, @message,
-      @consentId, @invitationId, @meetingType, @scheduleMode, @bookingSlotId, @attachmentUrls
+      @consentId, @invitationId, @meetingType, @scheduleMode, @bookingSlotId
     )
     RETURNING *
   `).get({ id, ...dbData });
@@ -308,7 +307,6 @@ async function createConsultation(data) {
     preferredSlots,
     consentId,
     invitationId,
-    attachmentUrls,
   } = data;
 
   // 필수값 검증
@@ -372,7 +370,6 @@ async function createConsultation(data) {
     scheduleMode,
     consentId: consentId || null,
     invitationId: invitationId || null,
-    attachmentUrls: attachmentUrls || null,
   };
 
   let selectedSlot = null;
@@ -552,9 +549,9 @@ async function listConsultations(filters) {
 }
 
 /**
- * 상담 상태/메모/상세 정보 수정 (관리자)
+ * 상담 상태/메모 수정 (관리자)
  * @param {string} id - 상담 UUID
- * @param {object} data - 수정할 필드 데이터
+ * @param {object} data - { status, adminNote }
  * @returns {object} 수정된 상담 레코드
  */
 async function updateConsultation(id, data) {
@@ -565,15 +562,8 @@ async function updateConsultation(id, data) {
     throw new ServiceError("상담 내역을 찾을 수 없습니다", 404);
   }
 
-  const { name, phone, email, category, meetingType, message, status, adminNote } = data;
+  const { status, adminNote } = data;
   const updateData = { updatedAt: sql`(datetime('now'))` };
-  
-  if (name !== undefined) updateData.name = name;
-  if (phone !== undefined) updateData.phone = phone;
-  if (email !== undefined) updateData.email = email;
-  if (category !== undefined) updateData.category = category;
-  if (meetingType !== undefined) updateData.meetingType = meetingType;
-  if (message !== undefined) updateData.message = message;
   if (status !== undefined) updateData.status = status;
   if (adminNote !== undefined) updateData.adminNote = adminNote;
 

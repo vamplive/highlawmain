@@ -93,12 +93,6 @@ router.get("/admin/questions", adminAuth, wrap(async (req, res) => {
   res.json({ data: result.items, error: null, meta: result.meta });
 }));
 
-// POST /api/qna/admin/questions — 관리자 질문 직접 생성
-router.post("/admin/questions", adminAuth, wrap(async (req, res) => {
-  const inserted = await qnaService.adminCreateQuestion(req.body);
-  res.json({ data: inserted, error: null, meta: null });
-}));
-
 // GET /api/qna/admin/questions/:id — 관리자 상세 (PII 포함)
 router.get("/admin/questions/:id", adminAuth, wrap(async (req, res) => {
   const { db } = require("../db");

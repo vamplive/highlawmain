@@ -57,16 +57,6 @@ function formatDate(dateStr) {
 export default function HomeNewsSection() {
   const [posts, setPosts] = useState(FALLBACK_POSTS);
   const [activeTab, setActiveTab] = useState("construction_realestate");
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -99,9 +89,16 @@ export default function HomeNewsSection() {
         </div>
 
         {/* ── 2컬럼 본문 ── */}
-        <div className="hp-news-grid">
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1.8fr",
+            gap: 24,
+            alignItems: "stretch",
+          }}
+        >
           {/* 좌측: CTA 카드 2개 */}
-          <div className="hp-news-cta-col">
+          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
             {/* 카카오톡 상담 */}
             <a
               href={KAKAO_CHANNEL_CHAT}
@@ -112,10 +109,8 @@ export default function HomeNewsSection() {
                 display: "flex",
                 flexDirection: "column",
                 justifyContent: "space-between",
-                padding: "32px 28px",
-                background: "linear-gradient(rgba(237, 232, 222, 0.82), rgba(237, 232, 222, 0.82)), url(/brand/kakao-cta-bg.png)",
-                backgroundSize: "cover",
-                backgroundPosition: "center",
+                padding: "40px 36px",
+                background: "#ede8de",
                 borderRadius: 12,
                 textDecoration: "none",
                 transition: "transform 0.2s ease, box-shadow 0.2s ease",
@@ -128,19 +123,19 @@ export default function HomeNewsSection() {
                 <p style={{ fontSize: 11, letterSpacing: "0.24em", color: "#8a7550", marginBottom: 14, textTransform: "uppercase", fontWeight: 600 }}>
                   QUICK CONTACT
                 </p>
-                <h3 style={{ fontSize: 24, fontWeight: 700, color: "#111", marginBottom: 10, letterSpacing: "-0.02em", lineHeight: 1.2 }}>
+                <h3 style={{ fontSize: 26, fontWeight: 700, color: "#111", marginBottom: 10, letterSpacing: "-0.02em", lineHeight: 1.2 }}>
                   카카오톡 상담
                 </h3>
-                <p style={{ fontSize: 14, color: "#555", fontWeight: 300, lineHeight: 1.6 }}>
+                <p style={{ fontSize: 15, color: "#555", fontWeight: 300, lineHeight: 1.7 }}>
                   카카오톡으로 빠른 답변을 받아 보세요
                 </p>
               </div>
-              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 28 }}>
                 <span style={{
-                  width: 36, height: 36, borderRadius: "50%",
+                  width: 40, height: 40, borderRadius: "50%",
                   background: "rgba(138,117,80,0.15)",
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 16, color: "#8a7550",
+                  fontSize: 18, color: "#8a7550",
                 }}>→</span>
               </div>
             </a>
@@ -153,10 +148,8 @@ export default function HomeNewsSection() {
                 display: "flex",
                 flexDirection: "column",
                 justifyContent: "space-between",
-                padding: "32px 28px",
-                background: "linear-gradient(150deg, rgba(11, 31, 58, 0.88) 0%, rgba(26, 58, 107, 0.88) 100%), url(/brand/consult-cta-bg.png)",
-                backgroundSize: "cover",
-                backgroundPosition: "center",
+                padding: "40px 36px",
+                background: "linear-gradient(150deg, #0b1f3a 0%, #1a3a6b 100%)",
                 borderRadius: 12,
                 textDecoration: "none",
                 transition: "transform 0.2s ease, box-shadow 0.2s ease",
@@ -169,28 +162,38 @@ export default function HomeNewsSection() {
                 <p style={{ fontSize: 11, letterSpacing: "0.24em", color: "rgba(201,168,76,0.75)", marginBottom: 14, textTransform: "uppercase", fontWeight: 600 }}>
                   1:1 LEGAL CONSULTATION
                 </p>
-                <h3 style={{ fontSize: 24, fontWeight: 700, color: "#fff", marginBottom: 10, letterSpacing: "-0.02em", lineHeight: 1.2 }}>
+                <h3 style={{ fontSize: 26, fontWeight: 700, color: "#fff", marginBottom: 10, letterSpacing: "-0.02em", lineHeight: 1.2 }}>
                   상담 신청
                 </h3>
-                <p style={{ fontSize: 14, color: "rgba(255,255,255,0.58)", fontWeight: 300, lineHeight: 1.6 }}>
+                <p style={{ fontSize: 15, color: "rgba(255,255,255,0.58)", fontWeight: 300, lineHeight: 1.7 }}>
                   1:1 맞춤 법률 상담을 신청하세요
                 </p>
               </div>
-              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 28 }}>
                 <span style={{
-                  width: 36, height: 36, borderRadius: "50%",
+                  width: 40, height: 40, borderRadius: "50%",
                   background: "rgba(201,168,76,0.18)",
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 16, color: "var(--accent-gold)",
+                  fontSize: 18, color: "var(--accent-gold)",
                 }}>→</span>
               </div>
             </Link>
           </div>
 
           {/* 우측: 소식과 자료 패널 */}
-          <div className="hp-news-content-col">
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: 12,
+              padding: "36px 40px 28px",
+              display: "flex",
+              flexDirection: "column",
+              border: "1px solid #e2e5ea",
+              boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
+            }}
+          >
             {/* 패널 헤더 + 탭 */}
-            <div className="hp-news-panel-header">
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 18 }}>
               <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
                 <span style={{ fontSize: 11, letterSpacing: "0.22em", color: "var(--accent-gold)", fontWeight: 700, textTransform: "uppercase" }}>
                   LATEST
@@ -199,7 +202,7 @@ export default function HomeNewsSection() {
                   소식과 자료
                 </h3>
               </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              <div style={{ display: "flex", gap: 8 }}>
                 {TABS.map((tab) => {
                   const isActive = activeTab === tab.id;
                   return (
@@ -233,7 +236,7 @@ export default function HomeNewsSection() {
             <div style={{ height: 1, background: "linear-gradient(to right, var(--accent-gold), transparent)", opacity: 0.4, marginBottom: 4 }} />
 
             {/* 기사 목록 */}
-            <div style={{ flex: 1, minWidth: 0, width: "100%" }}>
+            <div style={{ flex: 1 }}>
               {filteredPosts.length === 0 ? (
                 <p style={{ padding: "48px 0", textAlign: "center", fontSize: 15, color: "#ccc" }}>
                   게시된 글이 없습니다.
@@ -245,71 +248,39 @@ export default function HomeNewsSection() {
                     to={`/blog/${post.slug}`}
                     style={{
                       display: "flex",
-                      flexDirection: isMobile ? "column" : "row",
-                      alignItems: isMobile ? "flex-start" : "center",
-                      gap: isMobile ? 4 : 12,
-                      padding: isMobile ? "12px 10px" : "11px 10px",
+                      alignItems: "center",
+                      gap: 16,
+                      padding: "16px 10px",
                       borderBottom: idx < filteredPosts.length - 1 ? "1px solid #f0f0f4" : "none",
                       textDecoration: "none",
                       borderRadius: 4,
                       transition: "background 0.15s, padding-left 0.15s",
-                      minWidth: 0,
-                      width: "100%",
                     }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = "#fafbfc"; e.currentTarget.style.paddingLeft = "16px"; }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = "#fafbfc"; e.currentTarget.style.paddingLeft = "18px"; }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.paddingLeft = "10px"; }}
                   >
-                    {isMobile ? (
-                      <>
-                        {/* 제목 */}
-                        <span
-                          style={{
-                            fontSize: 14,
-                            color: "#1a1a2e",
-                            lineHeight: 1.4,
-                            fontWeight: 500,
-                            width: "100%",
-                            display: "-webkit-box",
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: "vertical",
-                            overflow: "hidden",
-                            letterSpacing: "-0.01em",
-                          }}
-                        >
-                          {post.title}
-                        </span>
-                        {/* 날짜 */}
-                        <span style={{ fontSize: 11, color: "#adb5bd", letterSpacing: "0.01em", marginTop: 2 }}>
-                          {formatDate(post.publishedAt || post.createdAt)}
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        {/* 날짜 */}
-                        <span style={{ fontSize: 12, color: "#adb5bd", flexShrink: 0, letterSpacing: "0.01em" }}>
-                          {formatDate(post.publishedAt || post.createdAt)}
-                        </span>
-                        {/* 골드 구분 점 */}
-                        <span style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--accent-gold)", flexShrink: 0, opacity: 0.7 }} />
-                        {/* 제목 */}
-                        <span
-                          style={{
-                            fontSize: 15,
-                            color: "#1a1a2e",
-                            lineHeight: 1.45,
-                            fontWeight: 400,
-                            flex: 1,
-                            minWidth: 0,
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                            letterSpacing: "-0.01em",
-                          }}
-                        >
-                          {post.title}
-                        </span>
-                      </>
-                    )}
+                    {/* 날짜 */}
+                    <span style={{ fontSize: 12.5, color: "#adb5bd", flexShrink: 0, letterSpacing: "0.01em", minWidth: 80 }}>
+                      {formatDate(post.publishedAt || post.createdAt)}
+                    </span>
+                    {/* 골드 구분 점 */}
+                    <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--accent-gold)", flexShrink: 0, opacity: 0.7 }} />
+                    {/* 제목 */}
+                    <span
+                      style={{
+                        fontSize: 16,
+                        color: "#1a1a2e",
+                        lineHeight: 1.45,
+                        fontWeight: 400,
+                        flex: 1,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        letterSpacing: "-0.01em",
+                      }}
+                    >
+                      {post.title}
+                    </span>
                   </Link>
                 ))
               )}
@@ -318,7 +289,7 @@ export default function HomeNewsSection() {
             {/* 전체보기 */}
             <div style={{ display: "flex", justifyContent: "flex-end", paddingTop: 14, marginTop: "auto", borderTop: "1px solid #f0f2f5" }}>
               <Link
-                to={activeTab ? `/blog?category=${activeTab}` : "/blog"}
+                to="/blog"
                 style={{
                   fontSize: 12,
                   color: "#8a6520",
@@ -334,7 +305,7 @@ export default function HomeNewsSection() {
                 onMouseEnter={(e) => { e.currentTarget.style.gap = "10px"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.gap = "5px"; }}
               >
-                {TABS.find((t) => t.id === activeTab)?.label} 전체보기 <span>→</span>
+                전체보기 <span>→</span>
               </Link>
             </div>
           </div>

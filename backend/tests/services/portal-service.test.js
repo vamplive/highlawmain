@@ -173,6 +173,6 @@ describe("실 DB 404 경로 (valid UUID지만 존재하지 않음)", () => {
 
   it("loginUser: 이메일 미등록 → 401", async () => {
     await expect(loginUser(`ghost-${Date.now()}@nowhere.test`, "password123"))
-      .rejects.toThrow(/올바르지 않습니다/);
+      .rejects.toThrow(/이메일 또는 비밀번호/);
   });
 });

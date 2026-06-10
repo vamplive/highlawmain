@@ -11,7 +11,6 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import { T } from "./portalStyles";
 import { STATUS_MAP } from "./portalConstants";
-import useMediaQuery from "../../hooks/useMediaQuery";
 
 /**
  * 사건 기록 API 는 /api/case-records 네임스페이스에 있어서
@@ -155,13 +154,13 @@ function DocumentList({ documents, selectedId, onSelect }) {
 }
 
 /** 우측 문서 본문 뷰어 — PDF/이미지 미리보기 + 메타 + 요지 탭 */
-function DocumentDetail({ doc, minHeight }) {
+function DocumentDetail({ doc }) {
   const [tab, setTab] = useState("viewer");
 
   if (!doc) {
     return (
       <div style={{
-        height: "100%", minHeight, display: "flex", alignItems: "center", justifyContent: "center",
+        height: "100%", display: "flex", alignItems: "center", justifyContent: "center",
         color: T.textMuted, fontSize: 13, padding: 40, textAlign: "center",
       }}>
         좌측에서 문서를 선택하시면 본문을 확인하실 수 있습니다
@@ -173,7 +172,7 @@ function DocumentDetail({ doc, minHeight }) {
   const isImage = (doc.mimeType || "").startsWith("image/") || /\.(png|jpg|jpeg|gif|webp)$/i.test(doc.url || "");
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       {/* 메타 헤더 */}
       <div style={{ padding: "14px 20px", borderBottom: `1px solid ${T.border}` }}>
         <div style={{ fontSize: 14, fontWeight: 600, color: T.text, marginBottom: 4 }}>
@@ -276,7 +275,6 @@ function DocumentDetail({ doc, minHeight }) {
 }
 
 export default function PortalCaseRecords() {
-  const isMobile = useMediaQuery("(max-width: 768px)");
   const { id } = useParams();
   const [caseFile, setCaseFile] = useState(null);
   const [documents, setDocuments] = useState([]);
@@ -333,17 +331,15 @@ export default function PortalCaseRecords() {
 
       {/* 두 패널 레이아웃 */}
       <div style={{
-        display: "grid", gridTemplateColumns: isMobile ? "1fr" : "minmax(260px, 320px) 1fr",
-        gap: 0, height: isMobile ? "auto" : 640,
+        display: "grid", gridTemplateColumns: "minmax(260px, 320px) 1fr",
+        gap: 0, height: 640,
         background: T.card, border: `1px solid ${T.border}`, borderRadius: 10,
         overflow: "hidden",
       }}>
         {/* 좌측 */}
         <div style={{
-          borderRight: isMobile ? "none" : `1px solid ${T.border}`,
-          borderBottom: isMobile ? `1px solid ${T.border}` : "none",
+          borderRight: `1px solid ${T.border}`,
           display: "flex", flexDirection: "column", overflow: "hidden",
-          maxHeight: isMobile ? 320 : "none",
         }}>
           <div style={{
             padding: "12px 14px", borderBottom: `1px solid ${T.border}`,
@@ -360,7 +356,7 @@ export default function PortalCaseRecords() {
 
         {/* 우측 */}
         <div style={{ overflow: "hidden" }}>
-          <DocumentDetail doc={selected} minHeight={isMobile ? 420 : undefined} />
+          <DocumentDetail doc={selected} />
         </div>
       </div>
     </div>

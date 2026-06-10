@@ -1,5 +1,5 @@
 /** 관리자 사이트 콘텐츠 관리 — 탭 라우팅 오케스트레이터 */
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { PageHeader } from "../../../components/admin";
 import { COLORS, btnStyle } from "../../../components/admin/styles";
@@ -19,13 +19,9 @@ import ThemeSection from "./ThemeSection";
 import SeoSection from "./SeoSection";
 import AnnouncementsSection from "./AnnouncementsSection";
 import HistorySection from "./HistorySection";
-import AdminLawyers from "../lawyers";
-import AdminBlog from "../blog";
-import AdminRecruit from "../recruit";
-import AdminBookings from "../bookings";
 
 /** 독립 저장을 관리하는 탭 (하단 저장 바 미표시) */
-const SELF_SAVING_TABS = ["seo", "announcements", "history", "hero-videos", "partners", "news", "recruit", "consultations"];
+const SELF_SAVING_TABS = ["seo", "announcements", "history", "hero-videos"];
 /** 미리보기 가능한 탭 */
 const PREVIEWABLE_TABS = ["home", "about", "practice", "layout"];
 
@@ -53,7 +49,7 @@ export default function AdminSiteManager() {
   } = useSiteSettings();
 
   const sectionProps = { settings, update, updateItem, addItem, removeItem };
-  const isPreviewable = true;
+  const isPreviewable = PREVIEWABLE_TABS.includes(activeTab);
   const showPreview = previewMode && isPreviewable;
   const langToggle = <LangToggle editingLang={editingLang} setEditingLang={setEditingLang} />;
 
@@ -69,10 +65,6 @@ export default function AdminSiteManager() {
       case "seo": return <SeoSection toast={toast} setToast={setToast} />;
       case "announcements": return <AnnouncementsSection toast={toast} setToast={setToast} />;
       case "history": return <HistorySection />;
-      case "partners": return <AdminLawyers {...sectionProps} />;
-      case "news": return <AdminBlog {...sectionProps} />;
-      case "recruit": return <AdminRecruit {...sectionProps} />;
-      case "consultations": return <AdminBookings {...sectionProps} />;
       default: return null;
     }
   };
@@ -115,7 +107,6 @@ export default function AdminSiteManager() {
           <div style={{ flex: isMobile ? "1 1 auto" : "0 0 55%", minWidth: 0, paddingBottom: dirty ? 80 : 0 }}>{renderTabContent()}</div>
           <PreviewPane
             activeTab={activeTab}
-            settings={settings}
             previewDevice={previewDevice}
             setPreviewDevice={setPreviewDevice}
             isMobile={isMobile}
@@ -144,83 +135,11 @@ export default function AdminSiteManager() {
   );
 }
 
-function getPreviewUrl(tab) {
-  switch (tab) {
-    case "about":
-      return "/about";
-    case "practice":
-      return "/practice";
-    case "partners":
-      return "/partners";
-    case "news":
-      return "/blog";
-    case "recruit":
-      return "/recruit";
-    case "consultations":
-      return "/consultation";
-    default:
-      return "/";
-  }
-}
-
 /** 미리보기 패널 */
-function PreviewPane({ activeTab, settings, previewDevice, setPreviewDevice, isMobile }) {
-  const iframeRef = useRef(null);
-
-  const reloadIframe = () => {
-    if (iframeRef.current) {
-      const src = iframeRef.current.src;
-      iframeRef.current.src = "";
-      iframeRef.current.src = src;
-    }
-  };
-
-  useEffect(() => {
-    const iframe = iframeRef.current;
-    if (!iframe) return;
-
-    const pages = ["home", "about", "practice", "layout", "seo"];
-
-    const getPageSettings = (p) => {
-      const pageSettings = {};
-      Object.entries(settings).forEach(([key, content]) => {
-        const [prefix, ...sec] = key.split("/");
-        if (prefix === p) {
-          pageSettings[sec.join("/")] = content;
-        }
-      });
-      return pageSettings;
-    };
-
-    const sendData = () => {
-      if (!iframe.contentWindow) return;
-      pages.forEach((p) => {
-        iframe.contentWindow.postMessage(
-          {
-            type: "preview-settings",
-            page: p,
-            settings: getPageSettings(p),
-          },
-          window.location.origin
-        );
-      });
-    };
-
-    sendData();
-
-    const handleLoad = () => {
-      sendData();
-    };
-
-    iframe.addEventListener("load", handleLoad);
-    return () => {
-      iframe.removeEventListener("load", handleLoad);
-    };
-  }, [settings, activeTab]);
-
+function PreviewPane({ activeTab, previewDevice, setPreviewDevice, isMobile }) {
   return (
     <div style={{ flex: isMobile ? "1 1 auto" : "0 0 45%", minWidth: 0 }}>
-      <div style={{ display: "flex", gap: 4, marginBottom: 8, alignItems: "center" }}>
+      <div style={{ display: "flex", gap: 4, marginBottom: 8 }}>
         {[{ key: "desktop", label: "Desktop" }, { key: "mobile", label: "Mobile" }].map((d) => (
           <button key={d.key} onClick={() => setPreviewDevice(d.key)} style={{
             padding: "4px 12px", fontSize: 11, fontWeight: previewDevice === d.key ? 600 : 400,
@@ -231,23 +150,13 @@ function PreviewPane({ activeTab, settings, previewDevice, setPreviewDevice, isM
             {d.label}
           </button>
         ))}
-        <button onClick={reloadIframe} style={{
-          padding: "4px 10px", fontSize: 11, fontWeight: 400,
-          color: COLORS.textSecondary,
-          background: "rgba(26,58,107,0.08)",
-          border: "none", borderRadius: 4, cursor: "pointer",
-          marginLeft: "auto", display: "flex", alignItems: "center", gap: 4
-        }}>
-          🔄 새로고침
-        </button>
       </div>
       <div style={{
         border: `1px solid ${COLORS.border}`, borderRadius: 8, overflow: "hidden",
         background: "#f0f0f0", height: isMobile ? "62vh" : "calc(100vh - 200px)", display: "flex", justifyContent: "center",
       }}>
         <iframe
-          ref={iframeRef}
-          src={`${getPreviewUrl(activeTab)}?preview=1`}
+          src={`/${activeTab === "layout" ? "" : activeTab}?preview=1`}
           style={{ width: previewDevice === "mobile" ? "min(375px, 100%)" : "100%", height: "100%", border: "none", background: "#fff", transition: "width 0.3s" }}
           title="미리보기"
         />

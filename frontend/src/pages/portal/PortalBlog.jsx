@@ -6,12 +6,11 @@ import { BLOG_CATEGORIES, DOC_STATUS_META } from "../editor/modules/constants";
 import { api } from "../../utils/api";
 import { formatDate, truncate } from "../../utils/formatters";
 import { showToast } from "../../utils/showToast";
-import useMediaQuery from "../../hooks/useMediaQuery";
 
 const PAGE_SIZE = 20;
 const ANALYTICS_PERIOD = "90d";
-const BLOG_TABS = [
-  { value: "", label: "전체" },
+const CATEGORY_OPTIONS = [
+  { value: "", label: "전체 분류" },
   ...BLOG_CATEGORIES,
   { value: "__uncategorized", label: "기타" },
 ];
@@ -72,42 +71,11 @@ function SelectAllCheckbox({ checked, indeterminate, onChange, disabled = false,
   );
 }
 
-function CategoryTabs({ category, setCategory }) {
-  return (
-    <div style={{
-      display: "flex", gap: 0, marginBottom: 18,
-      borderBottom: `2px solid ${COLORS.border}`,
-    }}>
-      {BLOG_TABS.map((tab) => {
-        const active = category === tab.value;
-        return (
-          <button
-            key={tab.value}
-            onClick={() => setCategory(tab.value)}
-            style={{
-              padding: "10px 20px",
-              fontSize: 14, fontWeight: active ? 700 : 400,
-              color: active ? "#1a3a6b" : COLORS.muted,
-              background: "transparent", border: "none",
-              borderBottom: active ? "2px solid #1a3a6b" : "2px solid transparent",
-              marginBottom: -2, cursor: "pointer",
-              transition: "color 0.15s",
-            }}
-          >
-            {tab.label}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-function BlogFilters({ status, setStatus, search, setSearch }) {
-  const isMobile = useMediaQuery("(max-width: 640px)");
+function BlogFilters({ category, setCategory, status, setStatus, search, setSearch }) {
   return (
     <div style={{
       display: "grid",
-      gridTemplateColumns: isMobile ? "1fr" : "minmax(220px, 1fr) 180px",
+      gridTemplateColumns: "minmax(220px, 1fr) 180px 180px",
       gap: 12,
       marginBottom: 18,
       padding: 16,
@@ -121,6 +89,11 @@ function BlogFilters({ status, setStatus, search, setSearch }) {
         placeholder="제목, 요약, 태그 검색"
         style={fieldStyle}
       />
+      <select value={category} onChange={(event) => setCategory(event.target.value)} style={fieldStyle}>
+        {CATEGORY_OPTIONS.map((option) => (
+          <option key={option.value} value={option.value}>{option.label}</option>
+        ))}
+      </select>
       <select value={status} onChange={(event) => setStatus(event.target.value)} style={fieldStyle}>
         {STATUS_OPTIONS.map((option) => (
           <option key={option.value} value={option.value}>{option.label}</option>
@@ -131,7 +104,6 @@ function BlogFilters({ status, setStatus, search, setSearch }) {
 }
 
 function BlogStats({ posts }) {
-  const isMobile = useMediaQuery("(max-width: 640px)");
   const stats = useMemo(() => {
     const base = { total: posts.length, published: 0, scheduled: 0, draft: 0 };
     for (const post of posts) base[getPostStatus(post)] += 1;
@@ -146,7 +118,7 @@ function BlogStats({ posts }) {
   ];
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2, minmax(0, 1fr))" : "repeat(4, minmax(120px, 1fr))", gap: 12, marginBottom: 18 }}>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(120px, 1fr))", gap: 12, marginBottom: 18 }}>
       {items.map(([label, value]) => (
         <div key={label} style={{
           padding: "14px 16px",
@@ -176,8 +148,7 @@ function BlogTable({
 
   return (
     <div style={{ border: `1px solid ${COLORS.border}`, borderRadius: 8, overflow: "hidden", background: "#fff" }}>
-      <div style={{ overflowX: "auto" }}>
-      <table style={{ width: "100%", minWidth: 760, borderCollapse: "collapse", fontSize: 13 }}>
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
         <thead>
           <tr style={{ background: COLORS.bgForm, borderBottom: `1px solid ${COLORS.border}` }}>
             <th style={{ ...thStyle, width: 44, textAlign: "center" }}>
@@ -286,13 +257,11 @@ function BlogTable({
           })}
         </tbody>
       </table>
-      </div>
     </div>
   );
 }
 
 function BlogAnalyticsModal({ post, data, loading, onClose }) {
-  const isMobile = useMediaQuery("(max-width: 640px)");
   if (!post) return null;
   const readers = data?.readers || [];
   const keywords = data?.searchKeywords || [];
@@ -312,7 +281,7 @@ function BlogAnalyticsModal({ post, data, loading, onClose }) {
           <div style={{ padding: 48, textAlign: "center", color: COLORS.textMuted }}>분석 데이터를 불러오는 중...</div>
         ) : (
           <div style={{ padding: 24 }}>
-            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2, minmax(0, 1fr))" : "repeat(4, minmax(120px, 1fr))", gap: 12, marginBottom: 20 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(120px, 1fr))", gap: 12, marginBottom: 20 }}>
               {[
                 ["누적 조회수", data?.cumulativeViewCount ?? post.viewCount ?? 0],
                 ["동의 기반 로그", data?.totalLoggedViews ?? 0],
@@ -326,7 +295,7 @@ function BlogAnalyticsModal({ post, data, loading, onClose }) {
               ))}
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "320px 1fr", gap: 18 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "320px 1fr", gap: 18 }}>
               <section>
                 <h3 style={{ fontSize: 14, margin: "0 0 10px", color: COLORS.text }}>검색 유입 키워드</h3>
                 <div style={{ border: `1px solid ${COLORS.border}`, borderRadius: 8, overflow: "hidden" }}>
@@ -395,7 +364,6 @@ function BlogAnalyticsModal({ post, data, loading, onClose }) {
 }
 
 function BlogOverallAnalyticsModal({ data, loading, onClose, onOpenPost }) {
-  const isMobile = useMediaQuery("(max-width: 640px)");
   const keywords = data?.searchKeywords || [];
   const topPosts = data?.topPosts || [];
 
@@ -414,7 +382,7 @@ function BlogOverallAnalyticsModal({ data, loading, onClose, onOpenPost }) {
           <div style={{ padding: 48, textAlign: "center", color: COLORS.textMuted }}>전체 분석 데이터를 불러오는 중...</div>
         ) : (
           <div style={{ padding: 24 }}>
-            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2, minmax(0, 1fr))" : "repeat(4, minmax(120px, 1fr))", gap: 12, marginBottom: 20 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(120px, 1fr))", gap: 12, marginBottom: 20 }}>
               {[
                 ["게시글", data?.totalPosts ?? 0],
                 ["누적 조회수", data?.cumulativeViewCount ?? 0],
@@ -428,11 +396,11 @@ function BlogOverallAnalyticsModal({ data, loading, onClose, onOpenPost }) {
               ))}
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 320px", gap: 18 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 18 }}>
               <section>
                 <h3 style={{ fontSize: 14, margin: "0 0 10px", color: COLORS.text }}>게시글별 조회수</h3>
-                <div style={{ border: `1px solid ${COLORS.border}`, borderRadius: 8, overflow: "auto" }}>
-                  <table style={{ width: "100%", minWidth: 480, borderCollapse: "collapse", fontSize: 12 }}>
+                <div style={{ border: `1px solid ${COLORS.border}`, borderRadius: 8, overflow: "hidden" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
                     <thead>
                       <tr style={{ background: COLORS.bgForm }}>
                         {["게시글", "누적 조회", "동의 로그", "방문자"].map((header, index) => (
@@ -700,9 +668,10 @@ export default function AdminBlog() {
         </Link>
       </PageHeader>
 
-      <CategoryTabs category={category} setCategory={setCategory} />
       <BlogStats posts={posts} />
       <BlogFilters
+        category={category}
+        setCategory={setCategory}
         status={status}
         setStatus={setStatus}
         search={search}
@@ -714,7 +683,6 @@ export default function AdminBlog() {
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          flexWrap: "wrap",
           gap: 12,
           marginBottom: 12,
           padding: "12px 14px",

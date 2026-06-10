@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import useReveal from "../../hooks/useReveal";
 import { api } from "../../utils/api";
-import { useSiteSettingsPage } from "../../hooks/useSiteSettings";
 import Seo from "../../components/Seo";
 import { PublicHero, SectionHeading, SurfaceCard } from "../../components/public/PublicDesign";
 
@@ -19,26 +18,6 @@ const TABS = [
   { id: "apply", label: "지원 안내", labelEn: "APPLY GUIDE" },
   { id: "contact", label: "채용 문의", labelEn: "CONTACT" },
 ];
-
-const RECRUIT_DEFAULTS = {
-  hero: {
-    heading: "인재 채용",
-    subheading: "CAREERS AT HIGHLAW",
-    description: "신의성실(Loyalty)과 품격(Dignity)을 바탕으로, 탁월한 법률 솔루션을 창출해 나갈 하이로의 인재를 모십니다."
-  },
-  apply: {
-    steps: [
-      { step: "01", title: "온라인 지원", desc: "공식 채용 시스템을 통해 인적사항 및 이력서를 등록합니다." },
-      { step: "02", title: "서류 전형", desc: "제출하신 서류를 바탕으로 종합적인 자격 요건을 정밀 검토합니다." },
-      { step: "03", title: "면접 전형", desc: "실무진 및 파트너 면접을 거쳐 전문 역량과 가치관을 평가합니다." },
-      { step: "04", title: "최종 합격", desc: "개별 전형 결과를 통보하고 처우 및 근무 조건을 최종 협의합니다." }
-    ]
-  },
-  contact: {
-    email: "mingukang@highlaw.net"
-  }
-};
-
 
 
 function PostCard({ post }) {
@@ -214,8 +193,6 @@ export default function RecruitPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get("tab") || "recruit";
 
-  const { settings: pageSettings } = useSiteSettingsPage("recruit", RECRUIT_DEFAULTS);
-
   useEffect(() => {
     api.get("/recruit")
       .then((res) => setPosts(res.data || []))
@@ -233,11 +210,10 @@ export default function RecruitPage() {
 
       <PublicHero
         image="/construction-hero3.jpg"
-        eyebrow={pageSettings.hero?.subheading || "CAREERS AT HIGHLAW"}
-        title={pageSettings.hero?.heading || "인재 채용"}
-        description={pageSettings.hero?.description || "신의성실(Loyalty)과 품격(Dignity)을 바탕으로, 탁월한 법률 솔루션을 창출해 나갈 하이로의 인재를 모십니다."}
+        eyebrow="CAREERS AT HIGHLAW"
+        title="인재 채용"
+        description="신의성실(Loyalty)과 품격(Dignity)을 바탕으로, 탁월한 법률 솔루션을 창출해 나갈 하이로의 인재를 모십니다."
       />
-
 
       <style>{`
         @keyframes tabFadeIn {
@@ -349,7 +325,12 @@ export default function RecruitPage() {
                 marginBottom: 48,
                 position: "relative",
               }} className="stagger">
-                {(pageSettings.apply?.steps || []).map((item, idx) => (
+                {[
+                  { step: "01", title: "온라인 지원", desc: "공식 채용 시스템을 통해 인적사항 및 이력서를 등록합니다." },
+                  { step: "02", title: "서류 전형", desc: "제출하신 서류를 바탕으로 종합적인 자격 요건을 정밀 검토합니다." },
+                  { step: "03", title: "면접 전형", desc: "실무진 및 파트너 면접을 거쳐 전문 역량과 가치관을 평가합니다." },
+                  { step: "04", title: "최종 합격", desc: "개별 전형 결과를 통보하고 처우 및 근무 조건을 최종 협의합니다." }
+                ].map((item, idx) => (
                   <SurfaceCard key={idx} style={{ padding: "28px 20px", display: "flex", flexDirection: "column", textAlign: "left", height: "100%" }}>
                     <span className="font-serif" style={{ fontSize: 24, fontWeight: 700, color: "var(--accent-gold)", marginBottom: 12, display: "block" }}>
                       {item.step}
@@ -464,7 +445,7 @@ export default function RecruitPage() {
                     채용과 관련된 모든 문의사항은 아래를 통해 접수해 주세요.
                   </p>
                   <a
-                    href={`mailto:${pageSettings.contact?.email || "mingukang@highlaw.net"}`}
+                    href="mailto:mingukang@highlaw.net"
                     style={{
                       display: "inline-block",
                       fontSize: 22, fontWeight: 600,
@@ -476,7 +457,7 @@ export default function RecruitPage() {
                     onMouseEnter={(e) => { e.currentTarget.style.opacity = "0.8"; }}
                     onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; }}
                   >
-                    {pageSettings.contact?.email || "mingukang@highlaw.net"}
+                    mingukang@highlaw.net
                   </a>
                   <p style={{ margin: "8px 0 0", fontSize: 13, color: "rgba(255,255,255,0.5)" }}>으로 문의 바랍니다.</p>
                 </div>

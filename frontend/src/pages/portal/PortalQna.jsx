@@ -3,7 +3,6 @@ import { useEffect, useState, useCallback } from "react";
 import { api } from "../../utils/api";
 import { PageHeader, ErrorBanner, EmptyState, COLORS, badgeStyle, btnStyle, smallBtnStyle, fieldStyle, labelStyle, formContainerStyle, thStyle, tdStyle } from "../../components/admin";
 import { formatDate } from "../../utils/formatters";
-import useMediaQuery from "../../hooks/useMediaQuery";
 
 const STATUS_TABS = [
   { value: "pending", label: "승인 대기", color: COLORS.warning },
@@ -31,7 +30,7 @@ export default function PortalQna() {
     setLoading(true);
     setError(null);
     try {
-      const res = await api.get(`/inquiry/admin/questions?status=${status}&limit=50`);
+      const res = await api.get(`/qna/admin/questions?status=${status}&limit=50`);
       setItems(res.data || []);
     } catch (e) {
       setError(e.message || "목록을 불러오지 못했습니다");
@@ -43,7 +42,7 @@ export default function PortalQna() {
   useEffect(() => { load(); }, [load]);
 
   useEffect(() => {
-    api.get("/inquiry/categories")
+    api.get("/qna/categories")
       .then((res) => {
         // 트리를 평면화하고 소분류만 추출 (depth=2)
         const flat = [];
@@ -61,11 +60,7 @@ export default function PortalQna() {
 
   async function handleSave(id, updates) {
     try {
-      if (id === "new") {
-        await api.post("/inquiry/admin/questions", updates);
-      } else {
-        await api.patch(`/inquiry/admin/questions/${id}`, updates);
-      }
+      await api.patch(`/qna/admin/questions/${id}`, updates);
       setSelected(null);
       await load();
     } catch (e) {
@@ -76,7 +71,7 @@ export default function PortalQna() {
   async function handleDelete(id) {
     if (!confirm("정말 삭제하시겠습니까? 복구할 수 없습니다.")) return;
     try {
-      await api.delete(`/inquiry/admin/questions/${id}`);
+      await api.delete(`/qna/admin/questions/${id}`);
       setSelected(null);
       await load();
     } catch (e) {
@@ -86,7 +81,7 @@ export default function PortalQna() {
 
   async function toggleFeatured(item) {
     try {
-      await api.patch(`/inquiry/admin/questions/${item.id}`, { isFeatured: item.isFeatured ? 0 : 1 });
+      await api.patch(`/qna/admin/questions/${item.id}`, { isFeatured: item.isFeatured ? 0 : 1 });
       await load();
     } catch (e) {
       setError(e.message || "변경 실패");
@@ -96,26 +91,7 @@ export default function PortalQna() {
   return (
     <div>
       <ErrorBanner message={error} onDismiss={() => setError(null)} />
-      <PageHeader title="법률 Q&A 관리">
-        <button
-          onClick={() => setSelected({
-            id: "new",
-            status: "published",
-            title: "",
-            body: "",
-            categoryId: "",
-            answer: "",
-            answeredBy: "법무법인 하이로",
-            displayName: "관리자",
-            isPrivate: 0,
-            isFeatured: 0,
-            metaDescription: "",
-          })}
-          style={btnStyle(COLORS.primary)}
-        >
-          + 새 Q&A 작성
-        </button>
-      </PageHeader>
+      <PageHeader title="법률 Q&A 관리" />
 
       {/* 상태 탭 */}
       <div style={{ display: "flex", gap: 8, borderBottom: `1px solid ${COLORS.border}`, marginBottom: 24 }}>
@@ -154,8 +130,7 @@ export default function PortalQna() {
       ) : items.length === 0 ? (
         <EmptyState message={`${STATUS_LABEL[status]} 상태의 질문이 없습니다`} />
       ) : (
-        <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", minWidth: 760, borderCollapse: "collapse", fontSize: 13, background: "#fff", border: `1px solid ${COLORS.borderLight}` }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, background: "#fff", border: `1px solid ${COLORS.borderLight}` }}>
           <thead style={{ background: "#f7f8fa", borderBottom: `1px solid ${COLORS.border}` }}>
             <tr>
               <th style={{ ...thStyle, width: 90 }}>상태</th>
@@ -204,7 +179,6 @@ export default function PortalQna() {
             ))}
           </tbody>
         </table>
-        </div>
       )}
     </div>
   );
@@ -212,14 +186,9 @@ export default function PortalQna() {
 
 /** 질문 편집/답변 패널 */
 function QuestionEditor({ question, categories, onSave, onDelete, onCancel }) {
-  const isMobile = useMediaQuery("(max-width: 640px)");
   const [title, setTitle] = useState(question.title || "");
   const [body, setBody] = useState(question.body || "");
-  const [categoryId, setCategoryId] = useState(() => {
-    if (question.categoryId) return question.categoryId;
-    const subcats = categories.filter((c) => c.depth === 2);
-    return subcats.length > 0 ? subcats[0].id : "";
-  });
+  const [categoryId, setCategoryId] = useState(question.categoryId || "");
   const [answer, setAnswer] = useState(question.answer || "");
   const [answeredBy, setAnsweredBy] = useState(question.answeredBy || "법무법인 하이로");
   const [displayName, setDisplayName] = useState(question.displayName || "");
@@ -252,7 +221,6 @@ function QuestionEditor({ question, categories, onSave, onDelete, onCancel }) {
     await onSave(question.id, {
       title, body, categoryId, displayName,
       answer, answeredBy, metaDescription,
-      status: question.status,
     });
     setSaving(false);
   }
@@ -305,7 +273,7 @@ function QuestionEditor({ question, categories, onSave, onDelete, onCancel }) {
         <textarea value={answer} onChange={(e) => setAnswer(e.target.value)} rows={10} style={{ ...fieldStyle, resize: "vertical" }} placeholder="관련 법령/판례 + 구체적 조언 + 상담 유도..." />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12, marginBottom: 14 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
         <div>
           <label style={labelStyle}>답변자</label>
           <input type="text" value={answeredBy} onChange={(e) => setAnsweredBy(e.target.value)} style={fieldStyle} maxLength={80} />
@@ -323,11 +291,9 @@ function QuestionEditor({ question, categories, onSave, onDelete, onCancel }) {
 
       {/* 액션 버튼 */}
       <div style={{ display: "flex", gap: 8, justifyContent: "space-between", alignItems: "center", paddingTop: 16, borderTop: `1px solid ${COLORS.border}` }}>
-        {question.id !== "new" ? (
-          <button onClick={() => onDelete(question.id)} disabled={saving} style={smallBtnStyle(COLORS.danger)}>
-            삭제
-          </button>
-        ) : <div />}
+        <button onClick={() => onDelete(question.id)} disabled={saving} style={smallBtnStyle(COLORS.danger)}>
+          삭제
+        </button>
         <div style={{ display: "flex", gap: 8 }}>
           <button onClick={onCancel} disabled={saving} style={{ ...btnStyle(), background: "#fff", color: COLORS.textSecondary, border: `1px solid ${COLORS.border}` }}>취소</button>
           <button onClick={saveOnly} disabled={saving} style={btnStyle(COLORS.textSecondary)}>임시 저장</button>

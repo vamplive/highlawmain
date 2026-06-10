@@ -75,8 +75,9 @@ export const MEETING_TYPE_OPTIONS = [
   { value: "video", label: "화상 상담", description: "Google Meet 자동 생성" },
 ];
 
-/** 예약 방식 — 일정 협의 요청만 지원 (슬롯 선택 기능 제거됨) */
+/** 예약 방식 — 공개 슬롯에서 선택 vs 일정 협의 요청 */
 export const SCHEDULE_MODE_OPTIONS = [
+  { value: "slot", label: "예약 가능 시간에서 선택" },
   { value: "request", label: "일정 협의 요청" },
 ];
 
@@ -88,14 +89,13 @@ export const INITIAL_FORM = {
   category: "civil",
   message: "",
   meetingType: "in_person",
-  scheduleMode: "request",
+  scheduleMode: "slot",
   bookingSlotId: "",
   preferredSlots: [
     { date: "", time: "" },
     { date: "", time: "" },
     { date: "", time: "" },
   ],
-  attachmentUrls: "",
   agreed: false,
 };
 

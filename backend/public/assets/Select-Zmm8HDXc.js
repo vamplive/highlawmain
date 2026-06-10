@@ -1,1 +1,0 @@
-import{j as t}from"./vendor-react-B153i_ke.js";function s({className:r="",children:o,...e}){return t.jsx("select",{className:`flex h-9 w-full rounded-md border border-[var(--border-color)] bg-transparent px-3 py-1 text-sm transition-colors focus:outline-none focus:ring-1 focus:ring-[var(--accent-gold)] ${r}`,...e,children:o})}export{s as S};

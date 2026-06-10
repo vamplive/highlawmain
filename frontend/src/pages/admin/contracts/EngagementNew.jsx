@@ -177,8 +177,7 @@ const DEFAULT_ARTICLES = [
   },
 ];
 
-/** onCancel/onCreated 콜백이 없으면 기존 라우트 동작 그대로 유지 */
-export default function AdminEngagementNew({ onCancel, onCreated }) {
+export default function AdminEngagementNew() {
   const navigate = useNavigate();
   const [clients, setClients] = useState([]);
   const [clientSearch, setClientSearch] = useState("");
@@ -341,8 +340,7 @@ export default function AdminEngagementNew({ onCancel, onCreated }) {
         phoneNumber: "", verificationLevel: 1, orderIndex: 1,
       }).catch(() => {});
 
-      if (onCreated) onCreated(contractId);
-      else navigate(`/admin/contracts/${contractId}`);
+      navigate(`/admin/contracts/${contractId}`);
     } catch (e) {
       setError(e.message);
     } finally { setSaving(false); }
@@ -363,7 +361,7 @@ export default function AdminEngagementNew({ onCancel, onCreated }) {
           <h1 className="text-xl font-semibold text-gray-900">새 위임계약서 작성</h1>
           <p className="text-sm text-gray-500">의뢰인을 선택하면 정보가 자동으로 채워집니다.</p>
         </div>
-        <Button variant="outline" onClick={() => onCancel ? onCancel() : navigate("/admin/contracts")}>취소</Button>
+        <Button variant="outline" onClick={() => navigate("/admin/contracts")}>취소</Button>
       </div>
 
       {/* 의뢰인(갑) */}
@@ -528,7 +526,7 @@ export default function AdminEngagementNew({ onCancel, onCreated }) {
       {error && <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
 
       <div className="flex justify-end gap-3">
-        <Button variant="outline" onClick={() => onCancel ? onCancel() : navigate("/admin/contracts")}>취소</Button>
+        <Button variant="outline" onClick={() => navigate("/admin/contracts")}>취소</Button>
         <Button onClick={handleCreate} disabled={saving}>
           {saving ? "생성 중..." : "위임계약서 생성 → 서명 진행"}
         </Button>

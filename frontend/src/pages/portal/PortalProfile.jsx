@@ -7,7 +7,6 @@
 import { useState, useEffect, useRef } from "react";
 import { portalApi } from "../../utils/api";
 import { T, fieldStyle, labelStyle } from "./portalStyles";
-import useMediaQuery from "../../hooks/useMediaQuery";
 import {
   User,
   GraduationCap,
@@ -34,83 +33,6 @@ const SUB_TABS = [
   { key: "activities", label: "활동 & 이력",  Icon: BookOpen },
 ];
 
-// JSON array or string parser helper
-function parseJsonArray(value) {
-  if (!value) return [];
-  if (Array.isArray(value)) return value;
-  try {
-    const parsed = JSON.parse(value);
-    if (Array.isArray(parsed)) return parsed;
-  } catch {}
-  return String(value).split("\n").map((s) => s.trim()).filter(Boolean);
-}
-
-// Convert JSON array of objects/strings to newline-separated text for textarea
-function jsonToText(value, keys = []) {
-  const arr = parseJsonArray(value);
-  return arr
-    .map((item) => {
-      if (!item) return "";
-      if (typeof item === "string") return item;
-      if (keys.length > 0) {
-        const parts = keys.map((k) => (item[k] !== undefined && item[k] !== null ? String(item[k]).trim() : ""));
-        while (parts.length > 0 && parts[parts.length - 1] === "") {
-          parts.pop();
-        }
-        return parts.join(" / ");
-      }
-      return Object.values(item).join(" / ");
-    })
-    .filter(Boolean)
-    .join("\n");
-}
-
-// Convert newline-separated text to JSON array of objects
-function textToJSON(text, keys = []) {
-  if (!text) return JSON.stringify([]);
-  const lines = text.split("\n").map((s) => s.trim()).filter(Boolean);
-  const arr = lines.map((line) => {
-    const parts = line.split("/").map((p) => p.trim());
-    if (keys.length > 0) {
-      const obj = {};
-      keys.forEach((key, idx) => {
-        if (idx === keys.length - 1 && parts.length > keys.length) {
-          obj[key] = parts.slice(idx).join(" / ");
-        } else {
-          obj[key] = parts[idx] || "";
-        }
-      });
-      return obj;
-    }
-    return line;
-  });
-  return JSON.stringify(arr);
-}
-
-// Specialties helper (comma-separated strings)
-function specialtiesToText(value) {
-  const arr = parseJsonArray(value);
-  return arr.join(", ");
-}
-
-function textToSpecialties(text) {
-  if (!text) return JSON.stringify([]);
-  const arr = text.split(",").map((s) => s.trim()).filter(Boolean);
-  return JSON.stringify(arr);
-}
-
-// Simple list (newline-separated strings)
-function listToText(value) {
-  const arr = parseJsonArray(value);
-  return arr.join("\n");
-}
-
-function textToList(text) {
-  if (!text) return JSON.stringify([]);
-  const arr = text.split("\n").map((s) => s.trim()).filter(Boolean);
-  return JSON.stringify(arr);
-}
-
 const EMPTY_FORM = {
   name: "", nameEn: "", nameHanja: "",
   position: "변호사", team: "",
@@ -123,7 +45,6 @@ const EMPTY_FORM = {
 };
 
 export default function PortalProfile() {
-  const isMobile = useMediaQuery("(max-width: 640px)");
   const [subTab, setSubTab] = useState("basic");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -146,16 +67,14 @@ export default function PortalProfile() {
       const email = meRes.data?.user?.email || "";
 
       const res = await portalApi.get("/lawyers/my-profile");
-      let initialForm = EMPTY_FORM;
-      let hasProfile = false;
-
-      if (res.data) {
-        const prof = res.data;
-        hasProfile = true;
-        initialForm = mapToForm(prof);
+      if (res.data?.data) {
+        const prof = res.data.data;
+        setProfileExists(true);
+        setForm(mapToForm(prof));
+        setPhotoPreview(prof.photoUrl || null);
       } else {
-        hasProfile = false;
-        initialForm = { ...EMPTY_FORM, email };
+        setProfileExists(false);
+        setForm({ ...EMPTY_FORM, email });
       }
 
       // 로컬 스토리지에 미저장 임시본이 있는지 확인
@@ -194,13 +113,6 @@ export default function PortalProfile() {
     }
   };
 
-  // 입력 변경 시마다 실시간 자동 임시저장
-  useEffect(() => {
-    if (loading || !form.email) return;
-    localStorage.setItem(`portal_profile_draft_${form.email}`, JSON.stringify(form));
-  }, [form, loading]);
-
-
   const mapToForm = (prof) => ({
     name: prof.name || "",
     nameEn: prof.nameEn || "",
@@ -212,18 +124,18 @@ export default function PortalProfile() {
     email: prof.email || "",
     phone: prof.phone || "",
     blogUrl: prof.blogUrl || "",
-    education: jsonToText(prof.education, ["period", "title", "detail"]),
-    career: jsonToText(prof.career, ["period", "title", "detail"]),
-    qualifications: listToText(prof.qualifications),
-    specialties: specialtiesToText(prof.specialties),
+    education: prof.education || "",
+    career: prof.career || "",
+    qualifications: prof.qualifications || "",
+    specialties: prof.specialties || "",
     introduction: prof.introduction || "",
     consultHours: prof.consultHours || "",
-    publications: jsonToText(prof.publications, ["year", "title", "journal", "url"]),
-    books: jsonToText(prof.books, ["year", "title", "publisher", "role"]),
-    media: jsonToText(prof.media, ["date", "outlet", "title", "url"]),
-    columns: jsonToText(prof.columns, ["date", "title", "excerpt", "url"]),
-    cases: jsonToText(prof.cases, ["year", "category", "caseNumber", "description", "outcome"]),
-    memberships: listToText(prof.memberships),
+    publications: prof.publications || "",
+    books: prof.books || "",
+    media: prof.media || "",
+    columns: prof.columns || "",
+    cases: prof.cases || "",
+    memberships: prof.memberships || "",
   });
 
   const field = (key) => (e) => setForm((prev) => ({ ...prev, [key]: e.target.value }));
@@ -268,30 +180,14 @@ export default function PortalProfile() {
 
     setSaving(true);
     try {
-      const payload = {
-        ...form,
-        education: textToJSON(form.education, ["period", "title", "detail"]),
-        career: textToJSON(form.career, ["period", "title", "detail"]),
-        qualifications: textToList(form.qualifications),
-        specialties: textToSpecialties(form.specialties),
-        publications: textToJSON(form.publications, ["year", "title", "journal", "url"]),
-        books: textToJSON(form.books, ["year", "title", "publisher", "role"]),
-        media: textToJSON(form.media, ["date", "outlet", "title", "url"]),
-        columns: textToJSON(form.columns, ["date", "title", "excerpt", "url"]),
-        cases: textToJSON(form.cases, ["year", "category", "caseNumber", "description", "outcome"]),
-        memberships: textToList(form.memberships),
-      };
-
       if (profileExists) {
-        await portalApi.put("/lawyers/my-profile", payload);
+        await portalApi.put("/lawyers/my-profile", form);
         showToast("프로필이 수정되었습니다", "success");
       } else {
-        await portalApi.post("/lawyers/my-profile", payload);
+        await portalApi.post("/lawyers/my-profile", form);
         showToast("프로필이 등록되었습니다", "success");
         setProfileExists(true);
       }
-      // 저장 성공 시 임시본 삭제
-      localStorage.removeItem(`portal_profile_draft_${form.email}`);
     } catch (err) {
       showToast(err.message || "저장에 실패했습니다", "error");
     } finally {
@@ -316,14 +212,19 @@ export default function PortalProfile() {
         </h1>
         <p style={{ fontSize: 13, color: T.textSec }}>
           홈페이지에 소개되는 본인 변호사 프로필을 편집합니다.
+          다른 변호사 프로필 편집·순서 변경은{" "}
+          <a href="/admin/lawyers" style={{ color: T.accent }} target="_blank" rel="noreferrer">
+            관리자 페이지
+          </a>
+          에서 가능합니다.
         </p>
       </div>
 
       <form onSubmit={handleSubmit}>
         <div style={{
-          display: "grid", gridTemplateColumns: isMobile ? "1fr" : "180px 1fr", gap: 24,
+          display: "grid", gridTemplateColumns: "180px 1fr", gap: 24,
           background: "#fff", borderRadius: 12, border: `1px solid ${T.border}`,
-          padding: isMobile ? 18 : 28, boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+          padding: 28, boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
         }}>
 
           {/* 왼쪽 사이드 탭 메뉴 */}
@@ -438,7 +339,7 @@ export default function PortalProfile() {
                   </div>
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
                   <div>
                     <label style={labelStyle}>이름 *</label>
                     <input style={fieldStyle} value={form.name} onChange={field("name")} required placeholder="홍길동" />
@@ -462,8 +363,8 @@ export default function PortalProfile() {
                     <input style={fieldStyle} value={form.team} onChange={field("team")} placeholder="기업법무팀" />
                   </div>
                   <div>
-                    <label style={labelStyle}>이메일 *</label>
-                    <input type="email" style={{ ...fieldStyle, background: "#f5f5f5", cursor: "not-allowed" }} value={form.email} disabled />
+                    <label style={labelStyle}>이메일</label>
+                    <input type="email" style={fieldStyle} value={form.email} onChange={field("email")} placeholder="name@highlaw.co.kr" />
                   </div>
                   <div>
                     <label style={labelStyle}>연락처</label>
@@ -519,7 +420,7 @@ export default function PortalProfile() {
 
             {/* 활동 & 이력 탭 */}
             {subTab === "activities" && (
-              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                 <div>
                   <label style={labelStyle}>학술 발표 / 논문</label>
                   <textarea style={{ ...fieldStyle, height: 100, resize: "vertical" }} value={form.publications} onChange={field("publications")} placeholder="건설 하도급법 연구 (2023)" />

@@ -1,10 +1,9 @@
 import { useState } from "react";
-import { CalendarClock, ExternalLink, Send, Sparkles, Tags, ImagePlus, Bot } from "lucide-react";
+import { CalendarClock, ExternalLink, Send, Sparkles, Tags, ImagePlus } from "lucide-react";
 import { BLOG_CATEGORIES } from "./constants";
 import { deriveBlogPublishMetadata, isValidFutureSchedule } from "./blogPublishingUtils";
 import BlogCoverImagePicker from "./BlogCoverImagePicker";
 import BlogAutoIllustrateDialog from "./BlogAutoIllustrateDialog";
-import BlogAutoWriteDialog from "./BlogAutoWriteDialog";
 
 const inputStyle = {
   height: 40,
@@ -50,7 +49,6 @@ export default function BlogComposerPanel({
   const isScheduled = doc.status === "scheduled";
   const scheduleReady = !isScheduled || isValidFutureSchedule(doc.scheduledPublishAt);
   const [autoIllustrateOpen, setAutoIllustrateOpen] = useState(false);
-  const [autoWriteOpen, setAutoWriteOpen] = useState(false);
 
   return (
     <section
@@ -194,22 +192,6 @@ export default function BlogComposerPanel({
       <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
         <button
           type="button"
-          onClick={() => setAutoWriteOpen(true)}
-          disabled={!editor}
-          style={{
-            display: "inline-flex", alignItems: "center", gap: 6,
-            height: 30, padding: "0 12px", fontSize: 12,
-            border: "1px solid #6366f1", borderRadius: 4,
-            background: "#fff", color: "#6366f1", cursor: editor ? "pointer" : "not-allowed",
-            opacity: editor ? 1 : 0.5,
-          }}
-          title={editor ? "AI 도우미를 이용해 새로운 글을 작성합니다" : "에디터 로드 후 사용 가능"}
-        >
-          <Bot size={13} />
-          AI 글쓰기
-        </button>
-        <button
-          type="button"
           onClick={() => setAutoIllustrateOpen(true)}
           disabled={!editor}
           style={{
@@ -225,7 +207,7 @@ export default function BlogComposerPanel({
           AI 본문 이미지 자동 추가
         </button>
         <span style={{ fontSize: 11, color: "#64748b" }}>
-          추천 프롬프트를 수정·삭제·재생성 가능합니다.
+          본문을 어느 정도 작성한 뒤 누르세요. 추천 프롬프트를 수정·삭제·재생성 가능합니다.
         </span>
       </div>
 
@@ -234,14 +216,6 @@ export default function BlogComposerPanel({
         onClose={() => setAutoIllustrateOpen(false)}
         editor={editor}
         doc={doc}
-      />
-
-      <BlogAutoWriteDialog
-        open={autoWriteOpen}
-        onClose={() => setAutoWriteOpen(false)}
-        editor={editor}
-        doc={doc}
-        setDoc={setDoc}
       />
 
       {isScheduled && (

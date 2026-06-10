@@ -157,21 +157,8 @@
 }
 
 .hp-grid-practice {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 20px;
-}
-
-@media (max-width: 1024px) {
-  .hp-grid-practice {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 640px) {
-  .hp-grid-practice {
-    grid-template-columns: 1fr;
-  }
 }
 
 .hp-grid-people {
@@ -358,8 +345,7 @@
 @media (max-width: 768px) {
   .hp-hero-copy { font-size: 15px; }
   .hp-scroll-indicator { display: none; }
-  /* 모바일: CTA 섹션 패딩을 헤더 겹침 방지를 위해 124px 상단 패딩으로 수정 */
-  .hp-cta-section { padding: 124px 20px 72px; }
+  .hp-cta-section { padding: 72px 20px; }
 
   /* 히어로 콘텐츠: 모바일에서 하강 폭 축소 */
   .hp-hero-content-shifted {
@@ -404,64 +390,5 @@
   .hp-hero-content-shifted {
     transform: translateY(24vh);
     transition: transform 0.5s ease;
-  }
-}
-
-/* 스크롤바 숨기기 */
-.hide-scrollbar {
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE 10+ */
-}
-.hide-scrollbar::-webkit-scrollbar {
-  display: none; /* Safari and Chrome */
-}
-
-/* 뉴스 섹션 반응형 스타일 */
-.hp-news-grid {
-  display: grid;
-  grid-template-columns: 1fr 1.8fr;
-  gap: 24px;
-  align-items: stretch;
-}
-.hp-news-cta-col {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-.hp-news-content-col {
-  background: #fff;
-  border-radius: 12px;
-  padding: 24px 32px 20px;
-  display: flex;
-  flex-direction: column;
-  border: 1px solid #e2e5ea;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
-}
-.hp-news-panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 18px;
-}
-
-@media (max-width: 1024px) {
-  .hp-news-grid {
-    grid-template-columns: 1fr;
-  }
-  .hp-news-cta-col {
-    display: none !important;
-  }
-  .hp-news-content-col {
-    padding: 20px 16px 16px;
-  }
-}
-
-@media (max-width: 768px) {
-  .hp-news-panel-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
   }
 }

@@ -25,27 +25,14 @@ const STATUS = {
 };
 
 const CATEGORY_LABELS = {
-  general: "일반",
-  civil: "민사",
-  criminal: "형사",
-  labor: "인사노무",
-  "serious-accident": "중대재해",
-  corporate: "기업",
-  defense: "방산",
-  "military-criminal": "군형사",
-  entertainment: "엔터테인먼트",
-  administrative: "행정",
-  family: "가사 및 상속",
-  "intellectual-property": "지적재산권",
-  immigration: "이민",
-  other: "기타",
+  general: "일반", civil: "민사", criminal: "형사", family: "가사",
+  admin: "행정", tax: "조세", realestate: "부동산", corporate: "기업법무", other: "기타",
 };
 
 export default function ConsultationsPanel() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [confirmTarget, setConfirmTarget] = useState(null);
-  const [editTarget, setEditTarget] = useState(null);
 
   const load = () => {
     setLoading(true);
@@ -53,17 +40,6 @@ export default function ConsultationsPanel() {
       .then((j) => setRows(j.data || []))
       .catch(() => setRows([]))
       .finally(() => setLoading(false));
-  };
-
-  const handleDelete = async (id) => {
-    if (!confirm("이 상담 신청 내역을 완전히 삭제하시겠습니까?")) return;
-    try {
-      await api.delete(`/consultations/${id}`);
-      showToast("상담 신청 내역이 삭제되었습니다");
-      load();
-    } catch (err) {
-      showToast("삭제 실패: " + err.message);
-    }
   };
 
   useEffect(() => {
@@ -81,13 +57,7 @@ export default function ConsultationsPanel() {
     <>
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {rows.map((c) => (
-          <ConsultationRow
-            key={c.id}
-            consultation={c}
-            onConfirm={() => setConfirmTarget(c)}
-            onEdit={() => setEditTarget(c)}
-            onDelete={() => handleDelete(c.id)}
-          />
+          <ConsultationRow key={c.id} consultation={c} onConfirm={() => setConfirmTarget(c)} />
         ))}
       </div>
       {confirmTarget && (
@@ -97,19 +67,12 @@ export default function ConsultationsPanel() {
           onDone={() => { setConfirmTarget(null); load(); }}
         />
       )}
-      {editTarget && (
-        <EditDialog
-          consultation={editTarget}
-          onClose={() => setEditTarget(null)}
-          onDone={() => { setEditTarget(null); load(); }}
-        />
-      )}
     </>
   );
 }
 
 /** 상담 카드 1건 */
-function ConsultationRow({ consultation, onConfirm, onEdit, onDelete }) {
+function ConsultationRow({ consultation, onConfirm }) {
   const c = consultation;
   const meet = MEETING_TYPE[c.meetingType] || MEETING_TYPE.in_person;
   const status = STATUS[c.status] || STATUS.pending;
@@ -118,17 +81,6 @@ function ConsultationRow({ consultation, onConfirm, onEdit, onDelete }) {
   const preferredSlots = [1, 2, 3]
     .map((n) => ({ date: c[`preferredDate${n}`], time: c[`preferredTime${n}`] }))
     .filter((s) => s.date);
-
-  const parseAttachments = (urlsString) => {
-    if (!urlsString) return [];
-    try {
-      const parsed = JSON.parse(urlsString);
-      if (Array.isArray(parsed)) return parsed;
-    } catch (_) {}
-    return [];
-  };
-
-  const attachments = parseAttachments(c.attachmentUrls);
 
   return (
     <div style={{
@@ -152,13 +104,9 @@ function ConsultationRow({ consultation, onConfirm, onEdit, onDelete }) {
             <span>접수 {formatDate(c.createdAt)}</span>
           </div>
         </div>
-        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-          {canConfirm && (
-            <button onClick={onConfirm} style={outlineBtnStyle(COLORS.accent)}>확정하기</button>
-          )}
-          <button onClick={onEdit} style={outlineBtnStyle(COLORS.textSecondary)}>수정</button>
-          <button onClick={onDelete} style={outlineBtnStyle(COLORS.danger)}>삭제</button>
-        </div>
+        {canConfirm && (
+          <button onClick={onConfirm} style={outlineBtnStyle(COLORS.accent)}>확정하기</button>
+        )}
       </div>
 
       {/* 슬롯 또는 희망 일정 */}
@@ -181,31 +129,6 @@ function ConsultationRow({ consultation, onConfirm, onEdit, onDelete }) {
       {c.message && (
         <div style={{ fontSize: 13, color: COLORS.textSecondary, whiteSpace: "pre-wrap", lineHeight: 1.5 }}>
           {c.message}
-        </div>
-      )}
-
-      {attachments.length > 0 && (
-        <div style={{
-          display: "flex", flexWrap: "wrap", gap: 8, padding: "8px 12px",
-          background: "#f8f9fb", border: `1px solid ${COLORS.borderLight}`, borderRadius: 4, marginTop: 4
-        }}>
-          <span style={{ fontSize: 12, fontWeight: 500, color: COLORS.textSecondary, display: "flex", alignItems: "center" }}>
-            📎 첨부파일:
-          </span>
-          {attachments.map((file, idx) => (
-            <a
-              key={idx}
-              href={file.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                fontSize: 12, color: COLORS.navy, textDecoration: "underline",
-                background: "#fff", border: `1px solid ${COLORS.border}`, padding: "2px 8px", borderRadius: 4
-              }}
-            >
-              {file.name || "다운로드"}
-            </a>
-          ))}
         </div>
       )}
     </div>
@@ -294,146 +217,5 @@ function Badge({ text, color }) {
       fontSize: 11, padding: "2px 8px", borderRadius: 4,
       background: `${color}15`, color, fontWeight: 500,
     }}>{text}</span>
-  );
-}
-
-function EditDialog({ consultation, onClose, onDone }) {
-  const c = consultation;
-  const [name, setName] = useState(c.name || "");
-  const [phone, setPhone] = useState(c.phone || "");
-  const [email, setEmail] = useState(c.email || "");
-  const [category, setCategory] = useState(c.category || "civil");
-  const [meetingType, setMeetingType] = useState(c.meetingType || "in_person");
-  const [message, setMessage] = useState(c.message || "");
-  const [status, setStatus] = useState(c.status || "pending");
-  const [adminNote, setAdminNote] = useState(c.adminNote || "");
-  const [busy, setBusy] = useState(false);
-
-  async function submit() {
-    if (!name.trim()) return showToast("이름을 입력해주세요", "error");
-    if (!phone.trim() && !email.trim()) return showToast("연락처 또는 이메일을 입력해주세요", "error");
-    if (message.trim().length < 10) return showToast("내용은 10자 이상 입력해주세요", "error");
-
-    setBusy(true);
-    try {
-      await api.patch(`/consultations/${c.id}`, {
-        name: name.trim(),
-        phone: phone.trim(),
-        email: email.trim() || null,
-        category,
-        meetingType,
-        message: message.trim(),
-        status,
-        adminNote: adminNote.trim() || null,
-      });
-      showToast("상담 신청 내역이 수정되었습니다");
-      onDone();
-    } catch (err) {
-      showToast("수정 실패: " + err.message);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <div onClick={onClose} style={{
-      position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 50,
-      display: "flex", alignItems: "center", justifyContent: "center", padding: 20,
-    }}>
-      <div onClick={(e) => e.stopPropagation()} style={{
-        background: "#fff", borderRadius: 8, padding: 24, maxWidth: 520, width: "100%",
-        display: "flex", flexDirection: "column", gap: 16, maxHeight: "90vh", overflowY: "auto"
-      }}>
-        <h3 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>상담 신청 정보 수정</h3>
-        
-        <div>
-          <label style={{ fontSize: 12, color: COLORS.textSecondary, display: "block", marginBottom: 6 }}>이름</label>
-          <input
-            type="text" value={name} onChange={(e) => setName(e.target.value)}
-            style={{ width: "100%", padding: "10px 12px", border: `1px solid ${COLORS.borderField}`, borderRadius: 4, fontSize: 13 }}
-          />
-        </div>
-
-        <div style={{ display: "flex", gap: 12 }}>
-          <div style={{ flex: 1 }}>
-            <label style={{ fontSize: 12, color: COLORS.textSecondary, display: "block", marginBottom: 6 }}>연락처</label>
-            <input
-              type="text" value={phone} onChange={(e) => setPhone(e.target.value)}
-              style={{ width: "100%", padding: "10px 12px", border: `1px solid ${COLORS.borderField}`, borderRadius: 4, fontSize: 13 }}
-            />
-          </div>
-          <div style={{ flex: 1 }}>
-            <label style={{ fontSize: 12, color: COLORS.textSecondary, display: "block", marginBottom: 6 }}>이메일</label>
-            <input
-              type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-              style={{ width: "100%", padding: "10px 12px", border: `1px solid ${COLORS.borderField}`, borderRadius: 4, fontSize: 13 }}
-            />
-          </div>
-        </div>
-
-        <div style={{ display: "flex", gap: 12 }}>
-          <div style={{ flex: 1 }}>
-            <label style={{ fontSize: 12, color: COLORS.textSecondary, display: "block", marginBottom: 6 }}>상담 분야</label>
-            <select
-              value={category} onChange={(e) => setCategory(e.target.value)}
-              style={{ width: "100%", padding: "10px 12px", border: `1px solid ${COLORS.borderField}`, borderRadius: 4, fontSize: 13, background: "#fff" }}
-            >
-              {Object.entries(CATEGORY_LABELS).map(([val, label]) => (
-                <option key={val} value={val}>{label}</option>
-              ))}
-            </select>
-          </div>
-          <div style={{ flex: 1 }}>
-            <label style={{ fontSize: 12, color: COLORS.textSecondary, display: "block", marginBottom: 6 }}>상담 방식</label>
-            <select
-              value={meetingType} onChange={(e) => setMeetingType(e.target.value)}
-              style={{ width: "100%", padding: "10px 12px", border: `1px solid ${COLORS.borderField}`, borderRadius: 4, fontSize: 13, background: "#fff" }}
-            >
-              {Object.entries(MEETING_TYPE).map(([val, item]) => (
-                <option key={val} value={val}>{item.label}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div>
-          <label style={{ fontSize: 12, color: COLORS.textSecondary, display: "block", marginBottom: 6 }}>진행 상태</label>
-          <select
-            value={status} onChange={(e) => setStatus(e.target.value)}
-            style={{ width: "100%", padding: "10px 12px", border: `1px solid ${COLORS.borderField}`, borderRadius: 4, fontSize: 13, background: "#fff" }}
-          >
-            {Object.entries(STATUS).map(([val, item]) => (
-              <option key={val} value={val}>{item.label}</option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label style={{ fontSize: 12, color: COLORS.textSecondary, display: "block", marginBottom: 6 }}>상담 내용</label>
-          <textarea
-            value={message} onChange={(e) => setMessage(e.target.value)} rows={3}
-            style={{ width: "100%", padding: "10px 12px", border: `1px solid ${COLORS.borderField}`, borderRadius: 4, fontSize: 13, resize: "vertical" }}
-          />
-        </div>
-
-        <div>
-          <label style={{ fontSize: 12, color: COLORS.textSecondary, display: "block", marginBottom: 6 }}>관리자 메모</label>
-          <textarea
-            value={adminNote} onChange={(e) => setAdminNote(e.target.value)} rows={2}
-            style={{ width: "100%", padding: "10px 12px", border: `1px solid ${COLORS.borderField}`, borderRadius: 4, fontSize: 13, resize: "vertical" }}
-          />
-        </div>
-
-        <div style={{ display: "flex", gap: 8, justifySpace: "between", justifyContent: "flex-end" }}>
-          <button onClick={onClose} disabled={busy} style={outlineBtnStyle(COLORS.muted)}>취소</button>
-          <button onClick={submit} disabled={busy} style={{
-            padding: "8px 20px", background: COLORS.accent, color: "#fff",
-            border: "none", borderRadius: 4, cursor: busy ? "not-allowed" : "pointer", fontSize: 13, fontWeight: 500,
-          }}>
-            {busy ? "처리 중..." : "저장"}
-          </button>
-        </div>
-      </div>
-    </div>
   );
 }
