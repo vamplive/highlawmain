@@ -14,7 +14,6 @@ export default function AdminLogin({ onLogin }) {
   const [username, setUsername] = useState("");
   const [pw, setPw] = useState("");
   const [err, setErr] = useState("");
-  const [tab, setTab] = useState("admin");
   const [clock, setClock] = useState(new Date());
   const [attempts, setAttempts] = useState(0);
   const [locked, setLocked] = useState(false);
@@ -169,24 +168,6 @@ export default function AdminLogin({ onLogin }) {
           <div className="admin-login__label">ADMINISTRATION</div>
           <h1 className="admin-login__heading">관리자 인증</h1>
 
-          {/* 역할 전환 탭 */}
-          <div className="admin-login__tabs">
-            <button
-              type="button"
-              className={`admin-login__tab ${tab === "admin" ? "admin-login__tab--active" : "admin-login__tab--inactive"}`}
-              onClick={() => setTab("admin")}
-            >
-              관리자
-            </button>
-            <button
-              type="button"
-              className={`admin-login__tab ${tab === "staff" ? "admin-login__tab--active" : "admin-login__tab--inactive"}`}
-              onClick={() => setTab("staff")}
-            >
-              직원
-            </button>
-          </div>
-
           {/* 인증 폼 */}
           <form onSubmit={submit}>
             <label htmlFor="admin-username" className="admin-login__pw-label">USERNAME</label>
@@ -199,7 +180,7 @@ export default function AdminLogin({ onLogin }) {
               disabled={locked}
               autoFocus
               placeholder="admin"
-              autoComplete="username"
+              autoComplete="off"
             />
             <label htmlFor="admin-password" className="admin-login__pw-label" style={{ marginTop: 16 }}>PASSWORD</label>
             <input
@@ -209,7 +190,7 @@ export default function AdminLogin({ onLogin }) {
               value={pw}
               onChange={(e) => { setPw(e.target.value); setErr(""); }}
               disabled={locked}
-              autoComplete="current-password"
+              autoComplete="new-password"
             />
 
             {err && (
