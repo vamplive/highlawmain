@@ -172,7 +172,7 @@ function BlogTable({
             const status = getPostStatus(post);
             const statusMeta = DOC_STATUS_META[status];
             const tags = parseTags(post.tags);
-            const editorUrl = `/admin/editor/blog:${post.id}`;
+            const editorUrl = `${basePath}/editor/blog:${post.id}`;
             const selected = selectedIds.has(post.id);
 
             return (
@@ -450,7 +450,7 @@ function BlogOverallAnalyticsModal({ data, loading, onClose, onOpenPost }) {
   );
 }
 
-export default function AdminBlog() {
+export default function AdminBlog({ basePath = "/admin" }) {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState("");
@@ -660,10 +660,10 @@ export default function AdminBlog() {
         <button onClick={handleOpenOverallAnalytics} style={outlineBtnStyle("#1a3a6b")}>
           전체 조회 분석
         </button>
-        <Link to="/admin/editor" style={{ ...outlineBtnStyle(), textDecoration: "none", display: "inline-flex", alignItems: "center" }}>
+        <Link to={`${basePath}/editor`} style={{ ...outlineBtnStyle(), textDecoration: "none", display: "inline-flex", alignItems: "center" }}>
           에디터 열기
         </Link>
-        <Link to="/admin/editor?mode=blog" style={{ ...outlineBtnStyle("#1a3a6b"), textDecoration: "none", display: "inline-flex", alignItems: "center" }}>
+        <Link to={`${basePath}/editor?mode=blog`} style={{ ...outlineBtnStyle("#1a3a6b"), textDecoration: "none", display: "inline-flex", alignItems: "center" }}>
           + 새 블로그 작성
         </Link>
       </PageHeader>

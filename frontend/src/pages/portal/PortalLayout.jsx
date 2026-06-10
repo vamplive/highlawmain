@@ -148,7 +148,7 @@ export default function PortalLayout() {
   // ─ 현재 경로 기반 그룹 활성 여부 — 조건부 return 전에 계산해야 hooks 순서가 유지됨
   const SYSTEM_PATHS_LOCAL = ["/portal/profile", "/portal/lectures", "/portal/approvals", "/portal/ai-settings"];
   const CLIENT_PATHS_LOCAL = ["/portal/clients", "/portal/messages", "/portal/contract-admin", "/portal/receipts", "/portal/reviews", "/portal/bookings"];
-  const isBlogActiveEarly = location.pathname.startsWith("/admin/blog") || location.pathname.startsWith("/portal/editor");
+  const isBlogActiveEarly = location.pathname.startsWith("/portal/blog") || location.pathname.startsWith("/portal/editor");
   const isSystemActiveEarly = SYSTEM_PATHS_LOCAL.some(p => location.pathname.startsWith(p));
   const isClientActiveEarly = CLIENT_PATHS_LOCAL.some(p => location.pathname.startsWith(p));
 
@@ -455,7 +455,7 @@ export default function PortalLayout() {
                 onToggle={() => setOpenGroups(p => ({ ...p, blog: !p.blog }))}
               >
                 {[
-                  { to: "/admin/blog",    icon: <FileText size={14} />, label: "블로그 목록" },
+                  { to: "/portal/blog",   icon: <FileText size={14} />, label: "블로그 목록" },
                   { to: "/portal/editor", icon: <Plus size={14} />,     label: "새 글 쓰기" },
                 ].map(({ to, icon, label }) => (
                   <Link key={to} to={to}
