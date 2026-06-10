@@ -76,7 +76,7 @@ export default function PortalLayout() {
   const [isMobile, setIsMobile] = useState(false);
   const [boardCategories, setBoardCategories] = useState([]);
   const [isPortalAdmin, setIsPortalAdmin] = useState(false);
-  const [openGroups, setOpenGroups] = useState({ system: false, client: false });
+  const [openGroups, setOpenGroups] = useState({ blog: false, system: false, client: false });
 
   // ─ 알림
   const [notifications, setNotifications] = useState([]);
@@ -193,16 +193,18 @@ export default function PortalLayout() {
 
   const SYSTEM_PATHS = ["/portal/profile", "/portal/lectures", "/portal/approvals", "/portal/ai-settings"];
   const CLIENT_PATHS = ["/portal/clients", "/portal/messages", "/portal/contract-admin", "/portal/receipts", "/portal/reviews", "/portal/bookings"];
+  const isBlogActive = location.pathname.startsWith("/blog");
   const isSystemActive = SYSTEM_PATHS.some(p => location.pathname.startsWith(p));
   const isClientActive = CLIENT_PATHS.some(p => location.pathname.startsWith(p));
 
   // 현재 경로가 그룹 내 항목이면 자동으로 펼침
   useEffect(() => {
     setOpenGroups(prev => ({
+      blog: prev.blog || isBlogActive,
       system: prev.system || isSystemActive,
       client: prev.client || isClientActive,
     }));
-  }, [isSystemActive, isClientActive]);
+  }, [isBlogActive, isSystemActive, isClientActive]);
 
   // 프로필 사진 — lawyerPhotoUrl(변호사 프로필) > photoUrl(직접 업로드) > 이니셜
   const effectivePhotoUrl = userProfile?.user?.lawyerPhotoUrl || userProfile?.user?.photoUrl || null;
@@ -436,6 +438,33 @@ export default function PortalLayout() {
                   {icon}{label}
                 </Link>
               ))}
+
+              {/* ─ 블로그 그룹 */}
+              <SidebarGroup
+                label="블로그"
+                icon={<BookOpen size={16} />}
+                open={openGroups.blog}
+                active={isBlogActive}
+                onToggle={() => setOpenGroups(p => ({ ...p, blog: !p.blog }))}
+              >
+                {[
+                  { to: "/blog?category=construction_realestate", label: "하이로 뉴스" },
+                  { to: "/blog?category=case_analysis",           label: "판례 분석" },
+                  { to: "/blog?category=law_guide",               label: "법률 가이드" },
+                ].map(({ to, label }) => {
+                  const catKey = new URLSearchParams(to.split("?")[1]).get("category");
+                  const qs = new URLSearchParams(location.search).get("category");
+                  const isActive = location.pathname === "/blog" && qs === catKey;
+                  return (
+                    <a key={to} href={to}
+                      className={`portal-sidebar-link ${isActive ? "portal-sidebar-link-active" : ""}`}
+                      style={{ fontSize: 12, paddingLeft: 10 }}
+                    >
+                      <FileText size={14} />{label}
+                    </a>
+                  );
+                })}
+              </SidebarGroup>
 
               {/* ─ 고객 그룹 */}
               <SidebarGroup
