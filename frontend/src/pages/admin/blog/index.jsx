@@ -143,6 +143,7 @@ function BlogTable({
   onTogglePage,
   onDelete,
   onOpenAnalytics,
+  basePath = "/admin",
 }) {
   const headers = ["분류", "제목", "상태", "태그", "발행/예약일", "조회", "관리"];
 
@@ -728,6 +729,7 @@ export default function AdminBlog({ basePath = "/admin" }) {
           onTogglePage={handleTogglePage}
           onDelete={handleDelete}
           onOpenAnalytics={handleOpenAnalytics}
+          basePath={basePath}
         />
       )}
 
