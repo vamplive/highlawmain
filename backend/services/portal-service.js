@@ -722,7 +722,7 @@ async function getPortalTimeSummary(portalUserId) {
       )
     )
     .groupBy(portalTimeEntries.caseId, caseFilesTable.title, caseFilesTable.caseNumber)
-    .orderBy(desc(sql`totalMinutes`));
+    .orderBy(desc(sql`COALESCE(SUM(${portalTimeEntries.durationMinutes}), 0)`));
 
   return rows;
 }

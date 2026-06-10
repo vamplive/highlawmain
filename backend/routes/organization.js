@@ -64,8 +64,8 @@ router.delete("/departments/:id", (req, res) => {
 router.get("/users", (req, res) => {
   try {
     const rows = sqlite.prepare(`
-      SELECT id, name, email, role, position, department_id, hire_date, is_active, created_at
-      FROM portal_users ORDER BY name ASC
+      SELECT id, email, role, position, department_id, hire_date, is_active, created_at
+      FROM portal_users ORDER BY email ASC
     `).all();
     res.json({ data: rows, error: null, meta: null });
   } catch (e) { sendError(res, e, "GET users"); }
@@ -86,7 +86,7 @@ router.put("/users/:id", (req, res) => {
     if (updates.length === 0) return res.status(400).json({ data: null, error: "수정할 항목이 없습니다", meta: null });
     params.push(row.id);
     sqlite.prepare(`UPDATE portal_users SET ${updates.join(", ")} WHERE id = ?`).run(...params);
-    const updated = sqlite.prepare("SELECT id, name, email, role, position, department_id, hire_date, is_active FROM portal_users WHERE id = ?").get(row.id);
+    const updated = sqlite.prepare("SELECT id, email, role, position, department_id, hire_date, is_active FROM portal_users WHERE id = ?").get(row.id);
     res.json({ data: updated, error: null, meta: null });
   } catch (e) { sendError(res, e, "PUT users/:id"); }
 });
@@ -128,7 +128,7 @@ router.get("/lawyers-link", (req, res) => {
   try {
     const rows = sqlite.prepare(`
       SELECT l.id, l.name_ko, l.name_en, l.role, l.position,
-             pu.id as portal_user_id, pu.name as portal_user_name, pu.email as portal_user_email
+             pu.id as portal_user_id, pu.email as portal_user_email
       FROM lawyers l
       LEFT JOIN portal_users pu ON pu.email = l.email
       ORDER BY l.name_ko ASC
