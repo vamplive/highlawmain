@@ -124,7 +124,9 @@ function findActive(pathname) {
   for (const group of MENU_TREE) {
     if (group.children) {
       for (const child of group.children) {
-        if (pathname === child.to || pathname.startsWith(child.to + "/")) {
+        // 쿼리 파라미터 무시하고 pathname만 비교해 그룹 활성 여부 결정
+        const childPath = child.to.includes("?") ? child.to.split("?")[0] : child.to;
+        if (pathname === childPath || pathname.startsWith(childPath + "/")) {
           return { group, child };
         }
       }
@@ -134,6 +136,18 @@ function findActive(pathname) {
     }
   }
   return { group: null, child: null };
+}
+
+/** 개별 자식 링크의 활성 여부 — 쿼리 파라미터까지 포함해 정확히 비교 */
+function isChildLinkActive(child, pathname, search) {
+  if (child.to.includes("?")) {
+    const [childPath, childQuery] = child.to.split("?");
+    if (pathname !== childPath) return false;
+    const childParams = new URLSearchParams(childQuery);
+    const currParams = new URLSearchParams(search);
+    return Array.from(childParams.entries()).every(([k, v]) => currParams.get(k) === v);
+  }
+  return pathname === child.to || pathname.startsWith(child.to + "/");
 }
 
 /** 사이드바 아이콘 SVG */
@@ -180,7 +194,8 @@ export default function AdminLayout({ onLogout, children }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [hoveredItem, setHoveredItem] = useState(null);
-  const { pathname } = useLocation();
+  const location = useLocation();
+  const { pathname, search } = location;
   const isMobile = useMediaQuery("(max-width: 899px)");
   const isEditor = pathname.startsWith("/admin/editor");
   const sidebarWidth = isMobile ? 260 : (collapsed ? 68 : 240);
@@ -350,30 +365,33 @@ export default function AdminLayout({ onLogout, children }) {
                 </button>
                 {!isCompact && isExpanded && (
                   <div style={{ paddingLeft: 14, marginTop: 2, marginBottom: 6 }}>
-                    {group.children.map((child) => (
-                      <NavLink
-                        key={child.to}
-                        to={child.to}
-                        onClick={() => { if (isMobile) setMobileOpen(false); }}
-                        onMouseEnter={() => setHoveredItem(child.to)}
-                        onMouseLeave={() => setHoveredItem(null)}
-                        style={({ isActive }) => ({
-                          display: "block",
-                          padding: "7px 12px 7px 28px",
-                          fontSize: 12.5,
-                          fontWeight: isActive ? 600 : 400,
-                          color: isActive ? THEME.accent : (hoveredItem === child.to ? "#ffffff" : THEME.sidebarText),
-                          background: isActive ? THEME.accentDim : (hoveredItem === child.to ? THEME.sidebarHoverBg : "transparent"),
-                          borderRadius: 6,
-                          textDecoration: "none",
-                          borderLeft: isActive ? `2px solid ${THEME.accent}` : "2px solid transparent",
-                          marginBottom: 1,
-                          transition: "background-color 150ms ease, color 150ms ease",
-                        })}
-                      >
-                        {child.label}
-                      </NavLink>
-                    ))}
+                    {group.children.map((child) => {
+                      const isActive = isChildLinkActive(child, pathname, search);
+                      return (
+                        <Link
+                          key={child.to}
+                          to={child.to}
+                          onClick={() => { if (isMobile) setMobileOpen(false); }}
+                          onMouseEnter={() => setHoveredItem(child.to)}
+                          onMouseLeave={() => setHoveredItem(null)}
+                          style={{
+                            display: "block",
+                            padding: "7px 12px 7px 28px",
+                            fontSize: 12.5,
+                            fontWeight: isActive ? 600 : 400,
+                            color: isActive ? THEME.accent : (hoveredItem === child.to ? "#ffffff" : THEME.sidebarText),
+                            background: isActive ? THEME.accentDim : (hoveredItem === child.to ? THEME.sidebarHoverBg : "transparent"),
+                            borderRadius: 6,
+                            textDecoration: "none",
+                            borderLeft: isActive ? `2px solid ${THEME.accent}` : "2px solid transparent",
+                            marginBottom: 1,
+                            transition: "background-color 150ms ease, color 150ms ease",
+                          }}
+                        >
+                          {child.label}
+                        </Link>
+                      );
+                    })}
                   </div>
                 )}
               </div>
