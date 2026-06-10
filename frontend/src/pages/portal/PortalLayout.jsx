@@ -148,7 +148,7 @@ export default function PortalLayout() {
   // ─ 현재 경로 기반 그룹 활성 여부 — 조건부 return 전에 계산해야 hooks 순서가 유지됨
   const SYSTEM_PATHS_LOCAL = ["/portal/profile", "/portal/lectures", "/portal/approvals", "/portal/ai-settings"];
   const CLIENT_PATHS_LOCAL = ["/portal/clients", "/portal/messages", "/portal/contract-admin", "/portal/receipts", "/portal/reviews", "/portal/bookings"];
-  const isBlogActiveEarly = location.pathname.startsWith("/blog");
+  const isBlogActiveEarly = location.pathname.startsWith("/admin/blog") || location.pathname.startsWith("/portal/editor");
   const isSystemActiveEarly = SYSTEM_PATHS_LOCAL.some(p => location.pathname.startsWith(p));
   const isClientActiveEarly = CLIENT_PATHS_LOCAL.some(p => location.pathname.startsWith(p));
 
@@ -455,22 +455,17 @@ export default function PortalLayout() {
                 onToggle={() => setOpenGroups(p => ({ ...p, blog: !p.blog }))}
               >
                 {[
-                  { to: "/blog?category=construction_realestate", label: "하이로 뉴스" },
-                  { to: "/blog?category=case_analysis",           label: "판례 분석" },
-                  { to: "/blog?category=law_guide",               label: "법률 가이드" },
-                ].map(({ to, label }) => {
-                  const catKey = new URLSearchParams(to.split("?")[1]).get("category");
-                  const qs = new URLSearchParams(location.search).get("category");
-                  const isActive = location.pathname === "/blog" && qs === catKey;
-                  return (
-                    <a key={to} href={to}
-                      className={`portal-sidebar-link ${isActive ? "portal-sidebar-link-active" : ""}`}
-                      style={{ fontSize: 12, paddingLeft: 10 }}
-                    >
-                      <FileText size={14} />{label}
-                    </a>
-                  );
-                })}
+                  { to: "/admin/blog",    icon: <FileText size={14} />, label: "블로그 목록" },
+                  { to: "/portal/editor", icon: <Plus size={14} />,     label: "새 글 쓰기" },
+                ].map(({ to, icon, label }) => (
+                  <Link key={to} to={to}
+                    className={`portal-sidebar-link ${location.pathname.startsWith(to) ? "portal-sidebar-link-active" : ""}`}
+                    onClick={() => isMobile && setIsSidebarOpen(false)}
+                    style={{ fontSize: 12, paddingLeft: 10 }}
+                  >
+                    {icon}{label}
+                  </Link>
+                ))}
               </SidebarGroup>
 
               {/* ─ 고객 그룹 */}

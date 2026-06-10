@@ -34,10 +34,9 @@ export default function AdminSiteManager() {
   // URL 쿼리 ?tab= 로 초기 탭 결정 (딥링크 지원). 잘못된 값이면 "home"으로 폴백.
   const [searchParams, setSearchParams] = useSearchParams();
   const urlTab = searchParams.get("tab");
-  const initialTab = VALID_TAB_KEYS.includes(urlTab) ? urlTab : "home";
-  const [activeTab, setActiveTabState] = useState(initialTab);
+  // URL을 단일 진실 공급원으로 사용 — useState를 쓰면 사이드바 링크로 URL만 변경될 때 탭이 갱신되지 않음
+  const activeTab = VALID_TAB_KEYS.includes(urlTab) ? urlTab : "home";
   const setActiveTab = (key) => {
-    setActiveTabState(key);
     setSearchParams({ tab: key }, { replace: true });
   };
 
