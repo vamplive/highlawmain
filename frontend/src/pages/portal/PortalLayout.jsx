@@ -145,6 +145,22 @@ export default function PortalLayout() {
     return () => document.removeEventListener("mousedown", close);
   }, [showNotifPanel]);
 
+  // ─ 현재 경로 기반 그룹 활성 여부 — 조건부 return 전에 계산해야 hooks 순서가 유지됨
+  const SYSTEM_PATHS_LOCAL = ["/portal/profile", "/portal/lectures", "/portal/approvals", "/portal/ai-settings"];
+  const CLIENT_PATHS_LOCAL = ["/portal/clients", "/portal/messages", "/portal/contract-admin", "/portal/receipts", "/portal/reviews", "/portal/bookings"];
+  const isBlogActiveEarly = location.pathname.startsWith("/blog");
+  const isSystemActiveEarly = SYSTEM_PATHS_LOCAL.some(p => location.pathname.startsWith(p));
+  const isClientActiveEarly = CLIENT_PATHS_LOCAL.some(p => location.pathname.startsWith(p));
+
+  // 현재 경로가 그룹 내 항목이면 자동으로 펼침 — 반드시 조건부 return 전에 위치해야 함
+  useEffect(() => {
+    setOpenGroups(prev => ({
+      blog: prev.blog || isBlogActiveEarly,
+      system: prev.system || isSystemActiveEarly,
+      client: prev.client || isClientActiveEarly,
+    }));
+  }, [isBlogActiveEarly, isSystemActiveEarly, isClientActiveEarly]);
+
   if (authState === "checking") return null;
   if (authState === "unauthed") return <Navigate to="/login" replace />;
 
@@ -191,20 +207,11 @@ export default function PortalLayout() {
   const activeFilter = queryParams.get("filter") || "";
   const isBoardMode = location.pathname.startsWith("/portal/board");
 
-  const SYSTEM_PATHS = ["/portal/profile", "/portal/lectures", "/portal/approvals", "/portal/ai-settings"];
-  const CLIENT_PATHS = ["/portal/clients", "/portal/messages", "/portal/contract-admin", "/portal/receipts", "/portal/reviews", "/portal/bookings"];
-  const isBlogActive = location.pathname.startsWith("/blog");
-  const isSystemActive = SYSTEM_PATHS.some(p => location.pathname.startsWith(p));
-  const isClientActive = CLIENT_PATHS.some(p => location.pathname.startsWith(p));
-
-  // 현재 경로가 그룹 내 항목이면 자동으로 펼침
-  useEffect(() => {
-    setOpenGroups(prev => ({
-      blog: prev.blog || isBlogActive,
-      system: prev.system || isSystemActive,
-      client: prev.client || isClientActive,
-    }));
-  }, [isBlogActive, isSystemActive, isClientActive]);
+  const SYSTEM_PATHS = SYSTEM_PATHS_LOCAL;
+  const CLIENT_PATHS = CLIENT_PATHS_LOCAL;
+  const isBlogActive = isBlogActiveEarly;
+  const isSystemActive = isSystemActiveEarly;
+  const isClientActive = isClientActiveEarly;
 
   // 프로필 사진 — lawyerPhotoUrl(변호사 프로필) > photoUrl(직접 업로드) > 이니셜
   const effectivePhotoUrl = userProfile?.user?.lawyerPhotoUrl || userProfile?.user?.photoUrl || null;
