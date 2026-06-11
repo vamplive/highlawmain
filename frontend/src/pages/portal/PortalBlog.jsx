@@ -1,7 +1,7 @@
 /** 포털 블로그 목록 — 카테고리 탭 + 공개 API 사용 (포털 세션만으로 작동) */
 import { useState, useEffect, useCallback } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { portalApi, api } from "../../utils/api";
+import { portalApi } from "../../utils/api";
 import { Plus, Edit, Eye, Tag, ChevronRight } from "lucide-react";
 
 const CATEGORIES = [
@@ -53,16 +53,8 @@ export default function PortalBlog() {
       const params = new URLSearchParams({ page: currentPage, limit: PAGE_SIZE });
       if (activeCategory) params.set("category", activeCategory);
 
-      // 어드민이면 초안 포함 전체 조회, 아니면 공개 게시글만
-      let res;
-      if (isAdmin) {
-        params.set("all", "true");
-        res = await api.get(`/blog?${params}`);
-      } else {
-        res = await fetch(`/api/blog?${params}`).then((r) => r.json());
-        res = { data: res.data || [], meta: res.meta };
-      }
-
+      // 항상 공개 API 사용 (portal_session으로는 admin API 호출 불가)
+      const res = await fetch(`/api/blog?${params}`).then((r) => r.json());
       setPosts(res.data || []);
       setTotalPages(res.meta?.totalPages || 1);
     } catch {
@@ -70,7 +62,7 @@ export default function PortalBlog() {
     } finally {
       setLoading(false);
     }
-  }, [activeCategory, currentPage, isAdmin]);
+  }, [activeCategory, currentPage]);
 
   useEffect(() => { loadPosts(); }, [loadPosts]);
 

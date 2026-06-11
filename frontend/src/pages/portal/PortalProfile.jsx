@@ -73,14 +73,13 @@ export default function PortalProfile() {
       const email = meRes.data?.user?.email || "";
 
       const res = await portalApi.get("/lawyers/my-profile");
+      let hasProfile = false;
+      let initialForm = { ...EMPTY_FORM, email };
+
       if (res.data?.data) {
         const prof = res.data.data;
-        setProfileExists(true);
-        setForm(mapToForm(prof));
-        setPhotoPreview(prof.photoUrl || null);
-      } else {
-        setProfileExists(false);
-        setForm({ ...EMPTY_FORM, email });
+        hasProfile = true;
+        initialForm = mapToForm(prof);
       }
 
       // 로컬 스토리지에 미저장 임시본이 있는지 확인

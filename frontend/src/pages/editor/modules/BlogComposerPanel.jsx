@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { CalendarClock, ExternalLink, Send, Sparkles, Tags, ImagePlus } from "lucide-react";
-import { BLOG_CATEGORIES } from "./constants";
+import { BLOG_CATEGORIES, PRACTICE_AREAS } from "./constants";
 import { deriveBlogPublishMetadata, isValidFutureSchedule } from "./blogPublishingUtils";
 import BlogCoverImagePicker from "./BlogCoverImagePicker";
 import BlogAutoIllustrateDialog from "./BlogAutoIllustrateDialog";
@@ -79,6 +79,17 @@ export default function BlogComposerPanel({
           >
             {BLOG_CATEGORIES.map((category) => (
               <option key={category.value} value={category.value}>{category.label}</option>
+            ))}
+          </select>
+        </Field>
+        <Field label="업무분야 (사건사례)">
+          <select
+            value={doc.practiceArea || ""}
+            onChange={(e) => update({ practiceArea: e.target.value || null })}
+            style={inputStyle}
+          >
+            {PRACTICE_AREAS.map((a) => (
+              <option key={a.value} value={a.value}>{a.label}</option>
             ))}
           </select>
         </Field>

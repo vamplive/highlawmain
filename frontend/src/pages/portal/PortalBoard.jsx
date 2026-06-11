@@ -1,14 +1,14 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { portalApi } from "../../utils/api";
 import { T, fieldStyle, labelStyle } from "./portalStyles";
 import {
   Plus, Search, Star, MessageSquare, Eye, Calendar,
-  Trash2, Edit, AlertCircle, FileText, ChevronLeft, ChevronRight, CheckSquare, Square
+  Trash2, Edit, AlertCircle, FileText, ChevronLeft, ChevronRight
 } from "lucide-react";
-import BoardRichEditor from "../../components/BoardRichEditor";
 
 export default function PortalBoard() {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   // URL 상태 추출
   const activeCategory = searchParams.get("category") || "";
@@ -31,20 +31,9 @@ export default function PortalBoard() {
   const [catLabel, setCatLabel] = useState("");
   const [catColor, setCatColor] = useState("#64748b");
 
-  // 모달 상태
+  // 상세 보기 모달
   const [selectedPost, setSelectedPost] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
-  const [showWriteModal, setShowWriteModal] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-
-  // 글쓰기/수정 폼 폼상태
-  const [formCategory, setFormCategory] = useState("free");
-  const [formTitle, setFormTitle] = useState("");
-  const [formContent, setFormContent] = useState("");
-  const [formAttachments, setFormAttachments] = useState([]);
-  const [formIsPinned, setFormIsPinned] = useState(false);
-  const [formIsImportant, setFormIsImportant] = useState(false);
-  const [editPostId, setEditPostId] = useState(null);
 
   // 로컬 검색어
   const [searchQuery, setSearchQuery] = useState(urlSearch);
@@ -67,10 +56,10 @@ export default function PortalBoard() {
     fetchPosts();
   }, [activeCategory, activeFilter, urlSearch, page]);
 
-  // 3. URL에 write=true가 오면 글쓰기 모달 열기
+  // 3. URL에 write=true가 오면 글쓰기 페이지로 이동
   useEffect(() => {
     if (shouldOpenWrite) {
-      openCreateForm();
+      navigate("/portal/board/write");
     }
   }, [shouldOpenWrite]);
 
@@ -129,65 +118,12 @@ export default function PortalBoard() {
   };
 
   const openCreateForm = () => {
-    setIsEditing(false);
-    setEditPostId(null);
-    setFormCategory(activeCategory || "free");
-    setFormTitle("");
-    setFormContent("");
-    setFormAttachments([]);
-    setFormIsPinned(false);
-    setFormIsImportant(false);
-    setShowWriteModal(true);
-    
-    // URL에서 write 파라미터 제거
-    if (searchParams.get("write")) {
-      const nextParams = new URLSearchParams(searchParams);
-      nextParams.delete("write");
-      setSearchParams(nextParams);
-    }
+    navigate("/portal/board/write");
   };
 
   const openEditForm = (post) => {
-    setIsEditing(true);
-    setEditPostId(post.id);
-    setFormCategory(post.category);
-    setFormTitle(post.title);
-    setFormContent(post.content);
-    setFormAttachments(post.attachments ? (typeof post.attachments === "string" ? JSON.parse(post.attachments) : post.attachments) : []);
-    setFormIsPinned(post.isPinned === 1);
-    setFormIsImportant(post.isImportant === 1);
     setShowDetailModal(false);
-    setShowWriteModal(true);
-  };
-
-  const handleSavePost = async (e) => {
-    e.preventDefault();
-    if (!formTitle.trim()) return alert("제목을 입력해주세요.");
-    const textOnly = formContent.replace(/<[^>]*>/g, "").trim();
-    if (!textOnly && !formContent.includes("<img")) return alert("내용을 입력해주세요.");
-
-    const payload = {
-      category: formCategory,
-      title: formTitle,
-      content: formContent,
-      attachments: JSON.stringify(formAttachments),
-      isPinned: formIsPinned,
-      isImportant: formIsImportant
-    };
-
-    try {
-      if (isEditing) {
-        await portalApi.put(`/posts/${editPostId}`, payload);
-        alert("게시글이 수정되었습니다.");
-      } else {
-        await portalApi.post("/posts", payload);
-        alert("게시글이 생성되었습니다.");
-      }
-      setShowWriteModal(false);
-      fetchPosts();
-    } catch (e) {
-      alert(e.response?.data?.error || "게시글 저장에 실패했습니다.");
-    }
+    navigate(`/portal/board/write/${post.id}`);
   };
 
   const handleDeletePost = async (id) => {
@@ -617,113 +553,6 @@ export default function PortalBoard() {
         </div>
       )}
 
-      {/* ==================== 7. 글쓰기 및 수정 모달 ==================== */}
-      {showWriteModal && (
-        <div style={{
-          position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
-          background: "rgba(15,23,42,0.3)", zIndex: 1000, display: "flex",
-          alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)"
-        }}>
-          <form onSubmit={handleSavePost} style={{
-            background: "#ffffff", borderRadius: 12, width: "100%", maxWidth: 860,
-            padding: 24, boxShadow: "0 20px 25px -5px rgba(0,0,0,0.15)",
-            maxHeight: "92vh", overflowY: "auto"
-          }}>
-            <h3 style={{ fontSize: 18, fontWeight: 700, color: "#0f172a", margin: "0 0 20px" }}>
-              {isEditing ? "게시글 수정" : "새 게시글 작성"}
-            </h3>
-
-            {/* 카테고리 선택 */}
-            <div style={{ marginBottom: 16 }}>
-              <label style={labelStyle}>게시판 카테고리</label>
-              <select
-                value={formCategory}
-                onChange={(e) => setFormCategory(e.target.value)}
-                style={fieldStyle}
-              >
-                {categories.map((cat) => (
-                  <option key={cat.key} value={cat.key}>{cat.label}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* 제목 입력 */}
-            <div style={{ marginBottom: 16 }}>
-              <label style={labelStyle}>제목</label>
-              <input
-                type="text"
-                placeholder="제목을 입력하세요"
-                value={formTitle}
-                onChange={(e) => setFormTitle(e.target.value)}
-                style={fieldStyle}
-                required
-              />
-            </div>
-
-            {/* 중요 / 필독 체크박스 (어드민 또는 특정 권한 소유자만 필독 설정 허용) */}
-            <div style={{ display: "flex", gap: 20, marginBottom: 16 }}>
-              <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#475569", cursor: "pointer" }}>
-                <input
-                  type="checkbox"
-                  checked={formIsImportant}
-                  onChange={(e) => setFormIsImportant(e.target.checked)}
-                />
-                <Star size={14} style={{ color: "#f59e0b", fill: formIsImportant ? "#f59e0b" : "transparent" }} />
-                중요 표시
-              </label>
-
-              {isAdmin && (
-                <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#475569", cursor: "pointer" }}>
-                  <input
-                    type="checkbox"
-                    checked={formIsPinned}
-                    onChange={(e) => setFormIsPinned(e.target.checked)}
-                  />
-                  <span>상단 필독 고정</span>
-                </label>
-              )}
-            </div>
-
-            {/* 내용 본문 — 리치 에디터 */}
-            <div style={{ marginBottom: 24 }}>
-              <label style={labelStyle}>본문 내용</label>
-              <div style={{ marginTop: 4 }}>
-                <BoardRichEditor
-                  value={formContent}
-                  onChange={setFormContent}
-                  placeholder="내용을 작성해 주세요..."
-                  attachments={formAttachments}
-                  onAttachmentsChange={setFormAttachments}
-                />
-              </div>
-            </div>
-
-            {/* 버튼들 */}
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
-              <button
-                type="button"
-                onClick={() => setShowWriteModal(false)}
-                style={{
-                  background: "#fff", color: "#475569", border: "1px solid #cbd5e1", borderRadius: 6,
-                  padding: "8px 16px", fontSize: 13, fontWeight: 500, cursor: "pointer"
-                }}
-              >
-                취소
-              </button>
-              <button
-                type="submit"
-                style={{
-                  background: "#8b5cf6", color: "#fff", border: "none", borderRadius: 6,
-                  padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer",
-                  boxShadow: "0 2px 4px rgba(139,92,246,0.15)"
-                }}
-              >
-                {isEditing ? "수정 완료" : "등록"}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
     </div>
   );
 }

@@ -277,6 +277,7 @@ const blogPosts = sqliteTable("blog_posts", {
   geoFaq: text("geo_faq"),
   geoKeywords: text("geo_keywords"),
   footnotes: text("footnotes"),
+  practiceArea: text("practice_area"),
   isPublished: integer("is_published").notNull().default(0),
   viewCount: integer("view_count").notNull().default(0),
   publishedAt: text("published_at"),

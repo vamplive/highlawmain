@@ -205,7 +205,7 @@ async function publishDueScheduledPosts() {
 
 /**
  * 게시글 목록 조회 (페이지네이션 + 카테고리 필터)
- * @param {object} filters - { page, limit, category, all }
+ * @param {object} filters - { page, limit, category, practiceArea, all }
  * @returns {{ items: Array, meta: object }}
  */
 async function listPosts(filters) {
@@ -222,6 +222,9 @@ async function listPosts(filters) {
   }
   if (filters.category) {
     conditions.push(eq(blogPosts.category, filters.category));
+  }
+  if (filters.practiceArea) {
+    conditions.push(eq(blogPosts.practiceArea, filters.practiceArea));
   }
 
   const where = conditions.length > 0 ? and(...conditions) : undefined;
@@ -255,6 +258,7 @@ async function listPosts(filters) {
         seoDescription: blogPosts.seoDescription,
         canonicalUrl: blogPosts.canonicalUrl,
         ogImageUrl: blogPosts.ogImageUrl,
+        practiceArea: blogPosts.practiceArea,
         isPublished: blogPosts.isPublished,
         viewCount: blogPosts.viewCount,
         publishedAt: blogPosts.publishedAt,
@@ -365,7 +369,7 @@ async function registerView(slug, options = {}) {
  */
 async function createPost(data) {
   const {
-    title, category, excerpt, content, author, thumbnailUrl,
+    title, category, practiceArea, excerpt, content, author, thumbnailUrl,
     seoTitle, seoDescription, canonicalUrl, ogImageUrl, footnotes,
     geoSummary, geoFaq, geoKeywords,
     isPublished, slug: customSlug, tags,
@@ -390,6 +394,7 @@ async function createPost(data) {
         title,
         slug,
         category: category ?? "construction_realestate",
+        practiceArea: practiceArea ?? null,
         excerpt: excerpt ?? null,
         content: sanitizedContent,
         author: author ?? null,
@@ -475,7 +480,7 @@ async function updatePost(id, data) {
   await snapshotPostVersion(existing, data.updatedBy || "admin");
 
   const allowedFields = [
-    "title", "slug", "category", "excerpt", "content", "author", "thumbnailUrl",
+    "title", "slug", "category", "practiceArea", "excerpt", "content", "author", "thumbnailUrl",
     "tags", "seoTitle", "seoDescription", "canonicalUrl", "ogImageUrl", "isPublished",
     "scheduledPublishAt", "footnotes", "geoSummary", "geoFaq", "geoKeywords",
   ];

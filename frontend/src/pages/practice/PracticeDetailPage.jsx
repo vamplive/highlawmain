@@ -2,6 +2,7 @@
  * 업무분야 상세 페이지 — 4대 분야(불법파견·게임사기·노동·군사건) 공통 템플릿
  * URL의 :field 슬러그로 데이터를 분기한다.
  */
+import { useState, useEffect } from "react";
 import { Link, useParams, Navigate } from "react-router-dom";
 import { ArrowRight, Phone, CheckCircle2, AlertTriangle } from "lucide-react";
 import useReveal from "../../hooks/useReveal";
@@ -402,10 +403,30 @@ const FIELDS = {
   },
 };
 
+function usePracticeCases(field) {
+  const [cases, setCases] = useState([]);
+  useEffect(() => {
+    if (!field) return;
+    fetch(`/api/blog?practiceArea=${encodeURIComponent(field)}&limit=6`)
+      .then((r) => r.json())
+      .then((res) => setCases(res.data || []))
+      .catch(() => {});
+  }, [field]);
+  return cases;
+}
+
+function formatDate(v) {
+  if (!v) return "";
+  const d = new Date(String(v).replace(" ", "T"));
+  if (isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("ko-KR", { year: "numeric", month: "short", day: "numeric" });
+}
+
 export default function PracticeDetailPage() {
   const { field } = useParams();
   const data = FIELDS[field];
   const ref = useReveal();
+  const cases = usePracticeCases(field);
 
   if (!data) return <Navigate to="/practice" replace />;
 
@@ -478,6 +499,57 @@ export default function PracticeDetailPage() {
           </div>
         </div>
       </section>
+
+      {/* ━━━ 사건사례 ━━━ */}
+      {cases.length > 0 && (
+        <section style={{ background: "var(--bg-primary)", padding: "var(--section-py) 24px" }}>
+          <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+            <SectionHeading eyebrow="CASE STUDIES" title={`${data.title} 사건사례`} />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 stagger">
+              {cases.map((post) => (
+                <a
+                  key={post.id}
+                  href={`/blog/${post.slug}`}
+                  className="reveal"
+                  style={{ textDecoration: "none", display: "block" }}
+                >
+                  <SurfaceCard style={{ padding: "24px 22px", height: "100%", cursor: "pointer" }}>
+                    {post.thumbnailUrl && (
+                      <div style={{ marginBottom: 14, borderRadius: 6, overflow: "hidden", height: 140 }}>
+                        <img src={post.thumbnailUrl} alt={post.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      </div>
+                    )}
+                    <h4 style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)", marginBottom: 8, lineHeight: 1.5 }}>
+                      {post.title}
+                    </h4>
+                    {post.excerpt && (
+                      <p style={{ fontSize: 13, color: "var(--gray-500)", lineHeight: 1.7, margin: "0 0 12px", fontWeight: 300,
+                        display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                        {post.excerpt}
+                      </p>
+                    )}
+                    <span style={{ fontSize: 12, color: "var(--gray-400)", display: "flex", alignItems: "center", gap: 4 }}>
+                      {formatDate(post.publishedAt || post.createdAt)}
+                      <span style={{ marginLeft: "auto", color: "var(--accent-gold)", fontSize: 12, fontWeight: 600 }}>
+                        자세히 보기 →
+                      </span>
+                    </span>
+                  </SurfaceCard>
+                </a>
+              ))}
+            </div>
+            <div style={{ textAlign: "center", marginTop: 32 }}>
+              <Link
+                to={`/blog?practiceArea=${field}`}
+                style={{ fontSize: 13, fontWeight: 600, color: "var(--accent-gold)", textDecoration: "none",
+                  display: "inline-flex", alignItems: "center", gap: 4 }}
+              >
+                {data.title} 관련 글 모두 보기 <ArrowRight size={14} />
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ━━━ CTA ━━━ */}
       <section style={{ background: "linear-gradient(135deg, #0a1628 0%, #0f1d32 100%)", padding: "80px 24px" }}>
