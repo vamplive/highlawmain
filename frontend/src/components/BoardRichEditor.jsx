@@ -169,7 +169,7 @@ export default function BoardRichEditor({
     try {
       const form = new FormData();
       form.append("image", file);
-      const res = await portalApi.post("/board/upload-image", form);
+      const res = await portalApi.upload("/board/upload-image", form);
       const url = res.data?.url;
       if (url) editor.chain().focus().setImage({ src: url, alt: file.name }).run();
     } catch { alert("이미지 업로드에 실패했습니다."); }
@@ -183,7 +183,7 @@ export default function BoardRichEditor({
     try {
       const form = new FormData();
       files.forEach((f) => form.append("files", f));
-      const res = await portalApi.post("/board/upload-attachments", form);
+      const res = await portalApi.upload("/board/upload-attachments", form);
       const uploaded = res.data?.files || [];
       onAttachmentsChange?.([...attachments, ...uploaded]);
     } catch { alert("첨부파일 업로드에 실패했습니다."); }

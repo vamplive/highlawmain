@@ -43,7 +43,7 @@ export default function PortalBoardWriter() {
 
     if (isEditing) {
       portalApi.get(`/posts/${postId}`).then((res) => {
-        const post = res.data?.data;
+        const post = res.data;
         if (!post) return;
         setFormCategory(post.category || "free");
         setFormTitle(post.title || "");

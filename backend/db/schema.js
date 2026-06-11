@@ -1082,6 +1082,7 @@ const portalPosts = sqliteTable("portal_posts", {
   viewCount: integer("view_count").notNull().default(0),
   isPinned: integer("is_pinned").notNull().default(0), // 필독
   isImportant: integer("is_important").notNull().default(0), // 중요
+  attachments: text("attachments"), // JSON array of {name, url, size, mime}
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
   updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
 });

@@ -76,18 +76,19 @@ export default function PortalBoard() {
       // 사이드바 필터 쿼리 설정
       if (activeFilter === "pinned") params.pinnedOnly = "true";
       
-      const res = await portalApi.get("/posts", { params });
-      
+      const qs = new URLSearchParams(params).toString();
+      const res = await portalApi.get(`/posts?${qs}`);
+
       // 프론트엔드 레벨 필터링 (필요 시)
-      let list = res.data?.data || [];
+      let list = res.data || [];
       if (activeFilter === "important") {
         list = list.filter(p => p.isImportant === 1);
       } else if (activeFilter === "mine" && currentUser) {
         list = list.filter(p => p.portalUserId === currentUser.id);
       }
-      
+
       setPosts(list);
-      setMeta(res.data?.meta || { page: 1, limit: 10, totalPages: 1 });
+      setMeta(res.meta || { page: 1, limit: 10, totalPages: 1 });
     } catch (e) {
       console.error("[PortalBoard] 게시글 로드 실패:", e);
     } finally {
@@ -98,7 +99,7 @@ export default function PortalBoard() {
   const fetchPostDetail = async (id) => {
     try {
       const res = await portalApi.get(`/posts/${id}`);
-      setSelectedPost(res.data?.data);
+      setSelectedPost(res.data);
       setShowDetailModal(true);
       
       // 조회수 즉시 반영
