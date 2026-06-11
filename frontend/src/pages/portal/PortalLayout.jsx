@@ -455,8 +455,8 @@ export default function PortalLayout() {
                 onToggle={() => setOpenGroups(p => ({ ...p, blog: !p.blog }))}
               >
                 {[
-                  { to: "/portal/blog",   icon: <FileText size={14} />, label: "블로그 목록" },
-                  { to: "/portal/editor", icon: <Plus size={14} />,     label: "새 글 쓰기" },
+                  { to: "/portal/blog",              icon: <FileText size={14} />, label: "블로그 목록" },
+                  { to: "/portal/editor?mode=blog", icon: <Plus size={14} />,     label: "새 글 쓰기" },
                 ].map(({ to, icon, label }) => (
                   <Link key={to} to={to}
                     className={`portal-sidebar-link ${location.pathname.startsWith(to) ? "portal-sidebar-link-active" : ""}`}

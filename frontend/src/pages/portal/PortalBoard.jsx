@@ -2,10 +2,11 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { portalApi } from "../../utils/api";
 import { T, fieldStyle, labelStyle } from "./portalStyles";
-import { 
-  Plus, Search, Star, MessageSquare, Eye, Calendar, 
+import {
+  Plus, Search, Star, MessageSquare, Eye, Calendar,
   Trash2, Edit, AlertCircle, FileText, ChevronLeft, ChevronRight, CheckSquare, Square
 } from "lucide-react";
+import BoardRichEditor from "../../components/BoardRichEditor";
 
 export default function PortalBoard() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -40,6 +41,7 @@ export default function PortalBoard() {
   const [formCategory, setFormCategory] = useState("free");
   const [formTitle, setFormTitle] = useState("");
   const [formContent, setFormContent] = useState("");
+  const [formAttachments, setFormAttachments] = useState([]);
   const [formIsPinned, setFormIsPinned] = useState(false);
   const [formIsImportant, setFormIsImportant] = useState(false);
   const [editPostId, setEditPostId] = useState(null);
@@ -132,6 +134,7 @@ export default function PortalBoard() {
     setFormCategory(activeCategory || "free");
     setFormTitle("");
     setFormContent("");
+    setFormAttachments([]);
     setFormIsPinned(false);
     setFormIsImportant(false);
     setShowWriteModal(true);
@@ -150,6 +153,7 @@ export default function PortalBoard() {
     setFormCategory(post.category);
     setFormTitle(post.title);
     setFormContent(post.content);
+    setFormAttachments(post.attachments ? (typeof post.attachments === "string" ? JSON.parse(post.attachments) : post.attachments) : []);
     setFormIsPinned(post.isPinned === 1);
     setFormIsImportant(post.isImportant === 1);
     setShowDetailModal(false);
@@ -159,12 +163,14 @@ export default function PortalBoard() {
   const handleSavePost = async (e) => {
     e.preventDefault();
     if (!formTitle.trim()) return alert("제목을 입력해주세요.");
-    if (!formContent.trim()) return alert("내용을 입력해주세요.");
+    const textOnly = formContent.replace(/<[^>]*>/g, "").trim();
+    if (!textOnly && !formContent.includes("<img")) return alert("내용을 입력해주세요.");
 
     const payload = {
       category: formCategory,
       title: formTitle,
       content: formContent,
+      attachments: JSON.stringify(formAttachments),
       isPinned: formIsPinned,
       isImportant: formIsImportant
     };
@@ -456,13 +462,48 @@ export default function PortalBoard() {
               <span style={{ display: "flex", alignItems: "center", gap: 4 }}><Eye size={13} /> {selectedPost.viewCount}</span>
             </div>
 
-            {/* 내용 본문 */}
-            <div style={{ 
-              fontSize: 14.5, color: "#334155", lineHeight: 1.6, minHeight: 180,
-              whiteSpace: "pre-wrap", background: "#f8fafc", padding: 16, borderRadius: 8, marginBottom: 24 
-            }}>
-              {selectedPost.content}
-            </div>
+            {/* 내용 본문 — HTML 렌더링 */}
+            <div
+              className="tiptap-board"
+              style={{ fontSize: 14.5, color: "#334155", lineHeight: 1.7, minHeight: 180, background: "#f8fafc", padding: 16, borderRadius: 8, marginBottom: 16 }}
+              dangerouslySetInnerHTML={{ __html: selectedPost.content }}
+            />
+
+            {/* 첨부파일 목록 */}
+            {selectedPost.attachments && (() => {
+              try {
+                const atts = typeof selectedPost.attachments === "string" ? JSON.parse(selectedPost.attachments) : selectedPost.attachments;
+                if (!Array.isArray(atts) || atts.length === 0) return null;
+                return (
+                  <div style={{ border: "1px solid #e2e8f0", borderRadius: 6, padding: "10px 14px", marginBottom: 16, background: "#fff" }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: "#475569", marginBottom: 6 }}>첨부파일 ({atts.length})</div>
+                    {atts.map((f, i) => (
+                      <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, marginBottom: 4 }}>
+                        <span>📄</span>
+                        <a href={f.url} download={f.name} style={{ color: "#2563eb", textDecoration: "none" }}>{f.name}</a>
+                        {f.size && <span style={{ color: "#9ca3af", fontSize: 11 }}>({(f.size / 1024).toFixed(1)}KB)</span>}
+                      </div>
+                    ))}
+                  </div>
+                );
+              } catch { return null; }
+            })()}
+            <style>{`
+              .tiptap-board h1{font-size:22px;font-weight:700;margin:14px 0 6px}
+              .tiptap-board h2{font-size:18px;font-weight:700;margin:12px 0 5px}
+              .tiptap-board h3{font-size:15px;font-weight:700;margin:10px 0 4px}
+              .tiptap-board ul{padding-left:22px;list-style:disc}
+              .tiptap-board ol{padding-left:22px;list-style:decimal}
+              .tiptap-board li{margin:2px 0}
+              .tiptap-board a{color:#2563eb;text-decoration:underline}
+              .tiptap-board blockquote{border-left:3px solid #cbd5e1;padding-left:12px;color:#64748b;margin:8px 0}
+              .tiptap-board code{background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:13px}
+              .tiptap-board table{width:100%;border-collapse:collapse;margin:8px 0}
+              .tiptap-board th,.tiptap-board td{border:1px solid #cbd5e1;padding:6px 10px}
+              .tiptap-board th{background:#f8fafc;font-weight:700}
+              .tiptap-board img{max-width:100%;height:auto;border-radius:4px;margin:4px 0}
+              .tiptap-board hr{border:none;border-top:2px solid #e2e8f0;margin:14px 0}
+            `}</style>
 
             {/* 컨트롤 버튼 */}
             <div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -584,9 +625,9 @@ export default function PortalBoard() {
           alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)"
         }}>
           <form onSubmit={handleSavePost} style={{
-            background: "#ffffff", borderRadius: 12, width: "100%", maxWidth: 640,
+            background: "#ffffff", borderRadius: 12, width: "100%", maxWidth: 860,
             padding: 24, boxShadow: "0 20px 25px -5px rgba(0,0,0,0.15)",
-            maxHeight: "90vh", overflowY: "auto"
+            maxHeight: "92vh", overflowY: "auto"
           }}>
             <h3 style={{ fontSize: 18, fontWeight: 700, color: "#0f172a", margin: "0 0 20px" }}>
               {isEditing ? "게시글 수정" : "새 게시글 작성"}
@@ -643,16 +684,18 @@ export default function PortalBoard() {
               )}
             </div>
 
-            {/* 내용 본문 */}
+            {/* 내용 본문 — 리치 에디터 */}
             <div style={{ marginBottom: 24 }}>
               <label style={labelStyle}>본문 내용</label>
-              <textarea
-                placeholder="내용을 작성해 주세요..."
-                value={formContent}
-                onChange={(e) => setFormContent(e.target.value)}
-                style={{ ...fieldStyle, height: 240, resize: "vertical" }}
-                required
-              />
+              <div style={{ marginTop: 4 }}>
+                <BoardRichEditor
+                  value={formContent}
+                  onChange={setFormContent}
+                  placeholder="내용을 작성해 주세요..."
+                  attachments={formAttachments}
+                  onAttachmentsChange={setFormAttachments}
+                />
+              </div>
             </div>
 
             {/* 버튼들 */}

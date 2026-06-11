@@ -120,6 +120,7 @@ const PortalApprovals = lazy(() => import("./pages/portal/PortalApprovals"));
 const PortalAiSettings = lazy(() => import("./pages/portal/PortalAiSettings"));
 const PortalBookings = lazy(() => import("./pages/portal/PortalBookings"));
 const PortalClients = lazy(() => import("./pages/portal/PortalClients"));
+const PortalBlog = lazy(() => import("./pages/portal/PortalBlog"));
 const AdminOrganization = lazy(() => import("./pages/admin/organization/AdminOrganization"));
 
 /** 지연 로딩 컴포넌트를 Suspense로 감싸는 헬퍼 */
@@ -336,7 +337,7 @@ export default function App() {
           <Route path="approvals" element={<LazyRoute><PortalApprovals /></LazyRoute>} />
           <Route path="contracts" element={<LazyRoute><PortalContracts /></LazyRoute>} />
           <Route path="contracts/:id" element={<LazyRoute><PortalContractSign /></LazyRoute>} />
-          <Route path="blog" element={<LazyRoute><AdminBlog basePath="/portal" /></LazyRoute>} />
+          <Route path="blog" element={<LazyRoute><PortalBlog /></LazyRoute>} />
           <Route path="qna" element={<Navigate to="/admin/inquiry" replace />} />
           <Route path="messages" element={<LazyRoute><AdminMessages /></LazyRoute>} />
           <Route path="reviews" element={<LazyRoute><PortalReviews /></LazyRoute>} />

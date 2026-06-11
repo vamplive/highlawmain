@@ -16,6 +16,7 @@ import {
   HelpCircle,
   Upload,
   X,
+  Lock,
 } from "lucide-react";
 import { showToast } from "../../utils/showToast";
 
@@ -27,10 +28,11 @@ const POSITION_OPTIONS = [
 ];
 
 const SUB_TABS = [
-  { key: "basic",      label: "기본 정보",    Icon: User },
-  { key: "career",     label: "학력 & 경력",  Icon: GraduationCap },
-  { key: "fields",     label: "전문 분야",    Icon: Briefcase },
-  { key: "activities", label: "활동 & 이력",  Icon: BookOpen },
+  { key: "basic",      label: "기본 정보",       Icon: User },
+  { key: "career",     label: "학력 & 경력",     Icon: GraduationCap },
+  { key: "fields",     label: "전문 분야",       Icon: Briefcase },
+  { key: "activities", label: "활동 & 이력",     Icon: BookOpen },
+  { key: "password",   label: "비밀번호 재설정", Icon: Lock },
 ];
 
 const EMPTY_FORM = {
@@ -50,6 +52,10 @@ export default function PortalProfile() {
   const [saving, setSaving] = useState(false);
   const [profileExists, setProfileExists] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
+
+  // 비밀번호 변경 상태
+  const [pwForm, setPwForm] = useState({ current: "", next: "", confirm: "" });
+  const [pwSaving, setPwSaving] = useState(false);
 
   // 사진 업로드 상태
   const [photoPreview, setPhotoPreview] = useState(null);
@@ -448,24 +454,89 @@ export default function PortalProfile() {
               </div>
             )}
 
-            {/* 저장 버튼 */}
-            <div style={{ borderTop: `1px solid ${T.border}`, paddingTop: 16, display: "flex", justifyContent: "flex-end" }}>
-              <button
-                type="submit"
-                disabled={saving}
-                style={{
-                  padding: "11px 28px", fontSize: 14, fontWeight: 700,
-                  color: "#fff", background: T.accent, border: "none",
-                  borderRadius: 6, cursor: saving ? "default" : "pointer",
-                  opacity: saving ? 0.6 : 1, transition: "opacity 0.2s",
-                }}
-              >
-                {saving ? "저장 중..." : profileExists ? "프로필 수정" : "프로필 등록"}
-              </button>
-            </div>
+            {/* 비밀번호 재설정 탭 */}
+            {subTab === "password" && (
+              <PasswordChangeForm pwForm={pwForm} setPwForm={setPwForm} pwSaving={pwSaving} setPwSaving={setPwSaving} />
+            )}
+
+            {/* 저장 버튼 — 비밀번호 탭에서는 숨김 (해당 탭 자체 버튼 사용) */}
+            {subTab !== "password" && (
+              <div style={{ borderTop: `1px solid ${T.border}`, paddingTop: 16, display: "flex", justifyContent: "flex-end" }}>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  style={{
+                    padding: "11px 28px", fontSize: 14, fontWeight: 700,
+                    color: "#fff", background: T.accent, border: "none",
+                    borderRadius: 6, cursor: saving ? "default" : "pointer",
+                    opacity: saving ? 0.6 : 1, transition: "opacity 0.2s",
+                  }}
+                >
+                  {saving ? "저장 중..." : profileExists ? "프로필 수정" : "프로필 등록"}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </form>
     </div>
+  );
+}
+
+function PasswordChangeForm({ pwForm, setPwForm, pwSaving, setPwSaving }) {
+  const set = (key) => (e) => setPwForm((p) => ({ ...p, [key]: e.target.value }));
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!pwForm.current) return showToast("현재 비밀번호를 입력해주세요");
+    if (pwForm.next.length < 8) return showToast("새 비밀번호는 8자 이상이어야 합니다");
+    if (pwForm.next !== pwForm.confirm) return showToast("새 비밀번호와 확인 비밀번호가 일치하지 않습니다");
+
+    setPwSaving(true);
+    try {
+      await portalApi.post("/change-password", { currentPassword: pwForm.current, newPassword: pwForm.next });
+      showToast("비밀번호가 변경되었습니다");
+      setPwForm({ current: "", next: "", confirm: "" });
+    } catch (err) {
+      showToast(err.message || "비밀번호 변경에 실패했습니다");
+    } finally {
+      setPwSaving(false);
+    }
+  };
+
+  const inputStyle = {
+    ...fieldStyle,
+    marginTop: 4,
+  };
+
+  return (
+    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 18, maxWidth: 400 }}>
+      <div>
+        <label style={labelStyle}>현재 비밀번호</label>
+        <input type="password" value={pwForm.current} onChange={set("current")} style={inputStyle} autoComplete="current-password" required />
+      </div>
+      <div>
+        <label style={labelStyle}>새 비밀번호 <span style={{ color: "#94a3b8", fontWeight: 400 }}>(8자 이상)</span></label>
+        <input type="password" value={pwForm.next} onChange={set("next")} style={inputStyle} autoComplete="new-password" required />
+      </div>
+      <div>
+        <label style={labelStyle}>새 비밀번호 확인</label>
+        <input type="password" value={pwForm.confirm} onChange={set("confirm")} style={inputStyle} autoComplete="new-password" required />
+      </div>
+      <div style={{ borderTop: `1px solid ${T.border}`, paddingTop: 16 }}>
+        <button
+          type="submit"
+          disabled={pwSaving}
+          style={{
+            padding: "11px 28px", fontSize: 14, fontWeight: 700,
+            color: "#fff", background: T.accent, border: "none",
+            borderRadius: 6, cursor: pwSaving ? "default" : "pointer",
+            opacity: pwSaving ? 0.6 : 1,
+          }}
+        >
+          {pwSaving ? "변경 중..." : "비밀번호 변경"}
+        </button>
+      </div>
+    </form>
   );
 }

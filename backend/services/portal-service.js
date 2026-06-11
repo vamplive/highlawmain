@@ -2116,4 +2116,25 @@ module.exports = {
   findEmailByPhone,
   createPortalResetToken,
   resetPortalPassword,
+  changePortalPassword,
 };
+
+async function changePortalPassword(userId, currentPassword, newPassword) {
+  if (!newPassword || newPassword.length < 8) {
+    throw new ServiceError("새 비밀번호는 8자 이상이어야 합니다", 400);
+  }
+  if (newPassword.length > 256) {
+    throw new ServiceError("비밀번호는 256자 이하로 입력해주세요", 400);
+  }
+
+  const [user] = await db.select().from(portalUsers).where(eq(portalUsers.id, userId));
+  if (!user) throw new ServiceError("사용자를 찾을 수 없습니다", 404);
+
+  if (!verifyPassword(currentPassword, user.passwordHash)) {
+    throw new ServiceError("현재 비밀번호가 올바르지 않습니다", 401);
+  }
+
+  const newHash = hashPassword(newPassword);
+  await db.update(portalUsers).set({ passwordHash: newHash }).where(eq(portalUsers.id, userId));
+  return { success: true };
+}
