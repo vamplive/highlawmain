@@ -3,7 +3,7 @@
  * - 에디터 우측에 슬라이드 오버레이로 표시
  * - 부제, 저자, 출처, 날짜, 유형, 상태, 중요도 편집
  */
-import { BLOG_CATEGORIES, DOC_TYPES } from "./constants";
+import { BLOG_CATEGORIES, PRACTICE_AREAS, DOC_TYPES } from "./constants";
 import { BlogPrePublishChecklist } from "./BlogPublishingTools";
 import { deriveBlogPublishMetadata, getBlogPublishStatus } from "./blogPublishingUtils";
 
@@ -164,6 +164,12 @@ export function MetaDrawer({ doc, setDoc, open, onClose, editorHtml = "" }) {
           doc.blogCategory || "construction_realestate",
           (e) => setDoc((d) => ({ ...d, blogCategory: e.target.value })),
           BLOG_CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)
+        )}
+        {isBlogDoc && selectField(
+          "업무분야 (사건사례)",
+          doc.practiceArea || "",
+          (e) => setDoc((d) => ({ ...d, practiceArea: e.target.value || null })),
+          PRACTICE_AREAS.map((a) => <option key={a.value} value={a.value}>{a.label}</option>)
         )}
         <div style={{ marginBottom: 12 }}>
           <label style={{ display: "block", fontSize: 11, color: "#888", marginBottom: 4 }}>중요도 (1~5)</label>

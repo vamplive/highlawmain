@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import BlogCoverImagePicker from "./BlogCoverImagePicker";
 import BlogAutoIllustrateDialog from "./BlogAutoIllustrateDialog";
-import { BLOG_CATEGORIES } from "./constants";
+import { BLOG_CATEGORIES, PRACTICE_AREAS } from "./constants";
 import { deriveBlogPublishMetadata, isValidFutureSchedule } from "./blogPublishingUtils";
 
 const FONT_FAMILIES = [
@@ -562,6 +562,17 @@ export default function BlogSimpleShell({
                 style={{ height: 36, padding: "0 10px", fontSize: 13, border: "1px solid #e5e7eb", borderRadius: 6, background: "#fff" }}
               >
                 {BLOG_CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+              </select>
+            </label>
+
+            <label style={{ display: "grid", gap: 6 }}>
+              <span style={{ fontSize: 12, color: "#475569", fontWeight: 500 }}>업무분야 (사건사례)</span>
+              <select
+                value={doc.practiceArea || ""}
+                onChange={(e) => update({ practiceArea: e.target.value || null })}
+                style={{ height: 36, padding: "0 10px", fontSize: 13, border: "1px solid #e5e7eb", borderRadius: 6, background: "#fff" }}
+              >
+                {PRACTICE_AREAS.map((a) => <option key={a.value} value={a.value}>{a.label}</option>)}
               </select>
             </label>
 

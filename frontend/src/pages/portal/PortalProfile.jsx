@@ -76,8 +76,8 @@ export default function PortalProfile() {
       let hasProfile = false;
       let initialForm = { ...EMPTY_FORM, email };
 
-      if (res.data?.data) {
-        const prof = res.data.data;
+      if (res.data) {
+        const prof = res.data;
         hasProfile = true;
         initialForm = mapToForm(prof);
       }
