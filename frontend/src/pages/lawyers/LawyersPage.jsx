@@ -54,22 +54,12 @@ function useRevealOnChange(deps) {
 
 export default function LawyersPage() {
   const [lawyers, setLawyers] = useState([]);
-  const [activeTab, setActiveTab] = useState("lawyer"); // 'lawyer', 'advisor', 'staff'
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
-  const filteredLawyers = lawyers.filter((l) => {
-    if (activeTab === "lawyer") {
-      return l.position === "대표변호사" || l.position === "변호사";
-    }
-    if (activeTab === "advisor") {
-      return l.position === "전문위원";
-    }
-    if (activeTab === "staff") {
-      return l.position === "직원";
-    }
-    return false;
-  });
+  const filteredLawyers = lawyers.filter(
+    (l) => l.position === "대표변호사" || l.position === "변호사"
+  );
 
   const ref = useRevealOnChange([filteredLawyers]);
 
@@ -122,61 +112,8 @@ export default function LawyersPage() {
         description={"각 분야 전문가들이 유기적으로 협력하여\n의뢰인에게 최선의 솔루션을 제공합니다"}
       />
 
-      {/* ==================== 탭 컨트롤 ==================== */}
-      <div style={{ background: "#fff", paddingTop: 48, paddingBottom: 0 }}>
-        <div className="container" style={{ maxWidth: 1000 }}>
-          <div
-            role="tablist"
-            aria-label="구성원 섹션 선택"
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              gap: "12px",
-              flexWrap: "wrap",
-              marginBottom: 40
-            }}
-          >
-            {[
-              { id: "lawyer", label: "변호사" },
-              { id: "advisor", label: "전문위원" },
-              { id: "staff", label: "직원" }
-            ].map((tab) => {
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  style={{
-                    padding: "10px 24px",
-                    minHeight: 44,
-                    fontSize: 13,
-                    fontWeight: isActive ? 600 : 400,
-                    border: "1px solid",
-                    borderColor: isActive ? "var(--accent-gold)" : "rgba(0,0,0,0.12)",
-                    borderRadius: 24,
-                    background: isActive ? "var(--accent-gold)" : "transparent",
-                    color: isActive ? "#fff" : "var(--gray-500)",
-                    cursor: "pointer",
-                    transition: "all 0.3s ease",
-                    letterSpacing: "0.05em",
-                    fontFamily: "inherit",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                  aria-selected={isActive}
-                  role="tab"
-                >
-                  {tab.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
       {/* ==================== 구성원 카드 그리드 ==================== */}
-      <section className="section" style={{ background: "#fff", paddingTop: 40 }}>
+      <section className="section" style={{ background: "#fff", paddingTop: 64 }}>
         <div className="container" style={{ maxWidth: 1040 }}>
           {loading ? (
             <div
