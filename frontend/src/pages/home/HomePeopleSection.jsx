@@ -13,7 +13,9 @@ export default function HomePeopleSection({ copy, settings }) {
     api.get("/lawyers")
       .then((res) => {
         if (cancelled) return;
-        const rows = res.data || [];
+        const rows = (res.data || []).filter(
+          (l) => l.position === "대표변호사" || l.position === "변호사"
+        );
         setLawyerList(rows.length ? rows : FALLBACK_LAWYERS);
         setUsingFallback(rows.length === 0);
       })
