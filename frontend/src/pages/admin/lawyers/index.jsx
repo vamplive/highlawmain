@@ -139,10 +139,22 @@ function PhotoUploader({ value, onChange }) {
     setUploading(true);
     try {
       const formData = new FormData();
+      formData.append("folder", "lawyers"); // folder 먼저 — multer destination 콜백 타이밍
       formData.append("file", file);
-      formData.append("folder", "lawyers");
-      const res = await api.upload("/media/upload", formData);
-      if (res.data?.url) onChange(res.data.url);
+
+      const csrfMatch = document.cookie.match(/(?:^|;\s*)csrf-token=([^;]*)/);
+      const headers = {};
+      if (csrfMatch) headers["x-csrf-token"] = decodeURIComponent(csrfMatch[1]);
+
+      const res = await fetch("/api/media/upload", {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+        headers,
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error || "업로드 실패");
+      if (json?.data?.url) onChange(json.data.url);
     } catch (err) {
       alert("사진 업로드 실패: " + (err.message || "알 수 없는 오류"));
     } finally {
