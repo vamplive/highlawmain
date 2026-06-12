@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { portalApi } from "../../utils/api";
 import { T, fieldStyle, labelStyle } from "./portalStyles";
-import { 
-  Plus, Search, Star, MessageSquare, Eye, Calendar, 
-  Trash2, Edit, AlertCircle, FileText, ChevronLeft, ChevronRight, CheckSquare, Square
+import {
+  Plus, Search, Star, MessageSquare, Eye, Calendar,
+  Trash2, Edit, AlertCircle, FileText, ChevronLeft, ChevronRight
 } from "lucide-react";
 
 export default function PortalBoard() {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   // URL 상태 추출
   const activeCategory = searchParams.get("category") || "";
@@ -30,19 +31,9 @@ export default function PortalBoard() {
   const [catLabel, setCatLabel] = useState("");
   const [catColor, setCatColor] = useState("#64748b");
 
-  // 모달 상태
+  // 상세 보기 모달
   const [selectedPost, setSelectedPost] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
-  const [showWriteModal, setShowWriteModal] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-
-  // 글쓰기/수정 폼 폼상태
-  const [formCategory, setFormCategory] = useState("free");
-  const [formTitle, setFormTitle] = useState("");
-  const [formContent, setFormContent] = useState("");
-  const [formIsPinned, setFormIsPinned] = useState(false);
-  const [formIsImportant, setFormIsImportant] = useState(false);
-  const [editPostId, setEditPostId] = useState(null);
 
   // 로컬 검색어
   const [searchQuery, setSearchQuery] = useState(urlSearch);
@@ -65,10 +56,10 @@ export default function PortalBoard() {
     fetchPosts();
   }, [activeCategory, activeFilter, urlSearch, page]);
 
-  // 3. URL에 write=true가 오면 글쓰기 모달 열기
+  // 3. URL에 write=true가 오면 글쓰기 페이지로 이동
   useEffect(() => {
     if (shouldOpenWrite) {
-      openCreateForm();
+      navigate("/portal/board/write");
     }
   }, [shouldOpenWrite]);
 
@@ -85,18 +76,19 @@ export default function PortalBoard() {
       // 사이드바 필터 쿼리 설정
       if (activeFilter === "pinned") params.pinnedOnly = "true";
       
-      const res = await portalApi.get("/posts", { params });
-      
+      const qs = new URLSearchParams(params).toString();
+      const res = await portalApi.get(`/posts?${qs}`);
+
       // 프론트엔드 레벨 필터링 (필요 시)
-      let list = res.data?.data || [];
+      let list = res.data || [];
       if (activeFilter === "important") {
         list = list.filter(p => p.isImportant === 1);
       } else if (activeFilter === "mine" && currentUser) {
         list = list.filter(p => p.portalUserId === currentUser.id);
       }
-      
+
       setPosts(list);
-      setMeta(res.data?.meta || { page: 1, limit: 10, totalPages: 1 });
+      setMeta(res.meta || { page: 1, limit: 10, totalPages: 1 });
     } catch (e) {
       console.error("[PortalBoard] 게시글 로드 실패:", e);
     } finally {
@@ -107,7 +99,7 @@ export default function PortalBoard() {
   const fetchPostDetail = async (id) => {
     try {
       const res = await portalApi.get(`/posts/${id}`);
-      setSelectedPost(res.data?.data);
+      setSelectedPost(res.data);
       setShowDetailModal(true);
       
       // 조회수 즉시 반영
@@ -127,61 +119,12 @@ export default function PortalBoard() {
   };
 
   const openCreateForm = () => {
-    setIsEditing(false);
-    setEditPostId(null);
-    setFormCategory(activeCategory || "free");
-    setFormTitle("");
-    setFormContent("");
-    setFormIsPinned(false);
-    setFormIsImportant(false);
-    setShowWriteModal(true);
-    
-    // URL에서 write 파라미터 제거
-    if (searchParams.get("write")) {
-      const nextParams = new URLSearchParams(searchParams);
-      nextParams.delete("write");
-      setSearchParams(nextParams);
-    }
+    navigate("/portal/board/write");
   };
 
   const openEditForm = (post) => {
-    setIsEditing(true);
-    setEditPostId(post.id);
-    setFormCategory(post.category);
-    setFormTitle(post.title);
-    setFormContent(post.content);
-    setFormIsPinned(post.isPinned === 1);
-    setFormIsImportant(post.isImportant === 1);
     setShowDetailModal(false);
-    setShowWriteModal(true);
-  };
-
-  const handleSavePost = async (e) => {
-    e.preventDefault();
-    if (!formTitle.trim()) return alert("제목을 입력해주세요.");
-    if (!formContent.trim()) return alert("내용을 입력해주세요.");
-
-    const payload = {
-      category: formCategory,
-      title: formTitle,
-      content: formContent,
-      isPinned: formIsPinned,
-      isImportant: formIsImportant
-    };
-
-    try {
-      if (isEditing) {
-        await portalApi.put(`/posts/${editPostId}`, payload);
-        alert("게시글이 수정되었습니다.");
-      } else {
-        await portalApi.post("/posts", payload);
-        alert("게시글이 생성되었습니다.");
-      }
-      setShowWriteModal(false);
-      fetchPosts();
-    } catch (e) {
-      alert(e.response?.data?.error || "게시글 저장에 실패했습니다.");
-    }
+    navigate(`/portal/board/write/${post.id}`);
   };
 
   const handleDeletePost = async (id) => {
@@ -456,13 +399,48 @@ export default function PortalBoard() {
               <span style={{ display: "flex", alignItems: "center", gap: 4 }}><Eye size={13} /> {selectedPost.viewCount}</span>
             </div>
 
-            {/* 내용 본문 */}
-            <div style={{ 
-              fontSize: 14.5, color: "#334155", lineHeight: 1.6, minHeight: 180,
-              whiteSpace: "pre-wrap", background: "#f8fafc", padding: 16, borderRadius: 8, marginBottom: 24 
-            }}>
-              {selectedPost.content}
-            </div>
+            {/* 내용 본문 — HTML 렌더링 */}
+            <div
+              className="tiptap-board"
+              style={{ fontSize: 14.5, color: "#334155", lineHeight: 1.7, minHeight: 180, background: "#f8fafc", padding: 16, borderRadius: 8, marginBottom: 16 }}
+              dangerouslySetInnerHTML={{ __html: selectedPost.content }}
+            />
+
+            {/* 첨부파일 목록 */}
+            {selectedPost.attachments && (() => {
+              try {
+                const atts = typeof selectedPost.attachments === "string" ? JSON.parse(selectedPost.attachments) : selectedPost.attachments;
+                if (!Array.isArray(atts) || atts.length === 0) return null;
+                return (
+                  <div style={{ border: "1px solid #e2e8f0", borderRadius: 6, padding: "10px 14px", marginBottom: 16, background: "#fff" }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: "#475569", marginBottom: 6 }}>첨부파일 ({atts.length})</div>
+                    {atts.map((f, i) => (
+                      <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, marginBottom: 4 }}>
+                        <span>📄</span>
+                        <a href={f.url} download={f.name} style={{ color: "#2563eb", textDecoration: "none" }}>{f.name}</a>
+                        {f.size && <span style={{ color: "#9ca3af", fontSize: 11 }}>({(f.size / 1024).toFixed(1)}KB)</span>}
+                      </div>
+                    ))}
+                  </div>
+                );
+              } catch { return null; }
+            })()}
+            <style>{`
+              .tiptap-board h1{font-size:22px;font-weight:700;margin:14px 0 6px}
+              .tiptap-board h2{font-size:18px;font-weight:700;margin:12px 0 5px}
+              .tiptap-board h3{font-size:15px;font-weight:700;margin:10px 0 4px}
+              .tiptap-board ul{padding-left:22px;list-style:disc}
+              .tiptap-board ol{padding-left:22px;list-style:decimal}
+              .tiptap-board li{margin:2px 0}
+              .tiptap-board a{color:#2563eb;text-decoration:underline}
+              .tiptap-board blockquote{border-left:3px solid #cbd5e1;padding-left:12px;color:#64748b;margin:8px 0}
+              .tiptap-board code{background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:13px}
+              .tiptap-board table{width:100%;border-collapse:collapse;margin:8px 0}
+              .tiptap-board th,.tiptap-board td{border:1px solid #cbd5e1;padding:6px 10px}
+              .tiptap-board th{background:#f8fafc;font-weight:700}
+              .tiptap-board img{max-width:100%;height:auto;border-radius:4px;margin:4px 0}
+              .tiptap-board hr{border:none;border-top:2px solid #e2e8f0;margin:14px 0}
+            `}</style>
 
             {/* 컨트롤 버튼 */}
             <div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -576,111 +554,6 @@ export default function PortalBoard() {
         </div>
       )}
 
-      {/* ==================== 7. 글쓰기 및 수정 모달 ==================== */}
-      {showWriteModal && (
-        <div style={{
-          position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
-          background: "rgba(15,23,42,0.3)", zIndex: 1000, display: "flex",
-          alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)"
-        }}>
-          <form onSubmit={handleSavePost} style={{
-            background: "#ffffff", borderRadius: 12, width: "100%", maxWidth: 640,
-            padding: 24, boxShadow: "0 20px 25px -5px rgba(0,0,0,0.15)",
-            maxHeight: "90vh", overflowY: "auto"
-          }}>
-            <h3 style={{ fontSize: 18, fontWeight: 700, color: "#0f172a", margin: "0 0 20px" }}>
-              {isEditing ? "게시글 수정" : "새 게시글 작성"}
-            </h3>
-
-            {/* 카테고리 선택 */}
-            <div style={{ marginBottom: 16 }}>
-              <label style={labelStyle}>게시판 카테고리</label>
-              <select
-                value={formCategory}
-                onChange={(e) => setFormCategory(e.target.value)}
-                style={fieldStyle}
-              >
-                {categories.map((cat) => (
-                  <option key={cat.key} value={cat.key}>{cat.label}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* 제목 입력 */}
-            <div style={{ marginBottom: 16 }}>
-              <label style={labelStyle}>제목</label>
-              <input
-                type="text"
-                placeholder="제목을 입력하세요"
-                value={formTitle}
-                onChange={(e) => setFormTitle(e.target.value)}
-                style={fieldStyle}
-                required
-              />
-            </div>
-
-            {/* 중요 / 필독 체크박스 (어드민 또는 특정 권한 소유자만 필독 설정 허용) */}
-            <div style={{ display: "flex", gap: 20, marginBottom: 16 }}>
-              <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#475569", cursor: "pointer" }}>
-                <input
-                  type="checkbox"
-                  checked={formIsImportant}
-                  onChange={(e) => setFormIsImportant(e.target.checked)}
-                />
-                <Star size={14} style={{ color: "#f59e0b", fill: formIsImportant ? "#f59e0b" : "transparent" }} />
-                중요 표시
-              </label>
-
-              {isAdmin && (
-                <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#475569", cursor: "pointer" }}>
-                  <input
-                    type="checkbox"
-                    checked={formIsPinned}
-                    onChange={(e) => setFormIsPinned(e.target.checked)}
-                  />
-                  <span>상단 필독 고정</span>
-                </label>
-              )}
-            </div>
-
-            {/* 내용 본문 */}
-            <div style={{ marginBottom: 24 }}>
-              <label style={labelStyle}>본문 내용</label>
-              <textarea
-                placeholder="내용을 작성해 주세요..."
-                value={formContent}
-                onChange={(e) => setFormContent(e.target.value)}
-                style={{ ...fieldStyle, height: 240, resize: "vertical" }}
-                required
-              />
-            </div>
-
-            {/* 버튼들 */}
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
-              <button
-                type="button"
-                onClick={() => setShowWriteModal(false)}
-                style={{
-                  background: "#fff", color: "#475569", border: "1px solid #cbd5e1", borderRadius: 6,
-                  padding: "8px 16px", fontSize: 13, fontWeight: 500, cursor: "pointer"
-                }}
-              >
-                취소
-              </button>
-              <button
-                type="submit"
-                style={{
-                  background: "#8b5cf6", color: "#fff", border: "none", borderRadius: 6,
-                  padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer",
-                  boxShadow: "0 2px 4px rgba(139,92,246,0.15)"
-                }}
-              >
-                {isEditing ? "수정 완료" : "등록"}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
     </div>
   );
 }

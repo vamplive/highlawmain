@@ -1,35 +1,14 @@
 /** 상담 절차 + 연락처 섹션 */
 import { STEPS, CONTACT_INFO } from "./consultationConstants";
-import { Phone, MessageCircle, AtSign, Clock, Send } from "lucide-react";
+import { Send } from "lucide-react";
 import { useLanguage, useSiteSettingsPage } from "../../hooks/useSiteSettings";
 import { LAYOUT_DEFAULTS } from "../../components/layout/layoutConfig";
 import { SectionHeading, SurfaceCard } from "../../components/public/PublicDesign";
 import { safeHttpUrl } from "../../utils/safeUrl";
 import { TELEGRAM_CONTACT_URL } from "../../utils/telegramContact";
-import { KAKAO_CHANNEL_CHAT } from "../../utils/kakaoChannel";
-
-const CONSULTATIONS_DEFAULTS = {
-  steps: {
-    items: [
-      { step: "01", title: "사건 분석 및 진단", desc: "초기 자료를 신속히 검토하고 핵심 쟁점과 위험요소를 명확히 정리합니다." },
-      { step: "02", title: "전략 설계 및 실행", desc: "협상·소송·집행 단계별 목표를 설정하고 일정 중심으로 추진합니다." },
-      { step: "03", title: "맞춤형 전략 수립", desc: "사건의 쟁점을 빠르게 분석해 의뢰인에게 최적화된 대응 전략을 제시합니다." },
-      { step: "04", title: "결과 관리 및 사후 대응", desc: "판결 이후 이행, 추가 분쟁 예방까지 의뢰인의 리스크를 관리합니다." },
-    ]
-  },
-  contact: {
-    phone: "준비 중",
-    email: "준비 중",
-    hours: "평일 09:00 - 18:00 (예약 상담 우선)"
-  }
-};
 
 /** @param {{ compact?: boolean }} props compact=true 시 section/container 래퍼 생략 */
 export default function ConsultationSteps({ compact = false }) {
-  const { settings: consSettings } = useSiteSettingsPage("consultations", CONSULTATIONS_DEFAULTS);
-  const steps = consSettings.steps?.items || CONSULTATIONS_DEFAULTS.steps.items;
-  const contactConfig = consSettings.contact || CONSULTATIONS_DEFAULTS.contact;
-
   const content = (
     <>
       <SectionHeading
@@ -40,7 +19,7 @@ export default function ConsultationSteps({ compact = false }) {
 
       {/* 절차 카드 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 stagger" style={{ marginBottom: 80 }}>
-        {steps.map((s, i) => (
+        {STEPS.map((s, i) => (
           <SurfaceCard
             key={i}
             className="reveal text-center"
@@ -56,7 +35,7 @@ export default function ConsultationSteps({ compact = false }) {
       </div>
 
       {/* 연락처 */}
-      <ContactInfoSection contactConfig={contactConfig} />
+      <ContactInfoSection />
     </>
   );
 
@@ -70,32 +49,20 @@ export default function ConsultationSteps({ compact = false }) {
 }
 
 /** 연락처 카드 목록 */
-function ContactInfoSection({ contactConfig }) {
+function ContactInfoSection() {
   const lang = useLanguage();
   const { settings } = useSiteSettingsPage("layout", LAYOUT_DEFAULTS, lang);
   const contact = settings.contact || LAYOUT_DEFAULTS.contact;
   const telegramUrl = safeHttpUrl(contact.telegramUrl, TELEGRAM_CONTACT_URL);
   const showTelegram = (contact.telegramEnabled !== false || !contact.telegramUrl) && !!telegramUrl;
-
-  const phoneVal = contactConfig?.phone || "준비 중";
-  const emailVal = contactConfig?.email || "준비 중";
-  const hoursVal = contactConfig?.hours || "평일 09:00 - 18:00 (예약 상담 우선)";
-
-  const items = [
-    { label: "전화", value: phoneVal, icon: Phone, href: phoneVal !== "준비 중" ? `tel:${phoneVal}` : null },
-    { label: "카카오톡 상담", value: "카카오톡으로 빠른 상담", icon: MessageCircle, href: KAKAO_CHANNEL_CHAT },
-    { label: "이메일", value: emailVal, icon: AtSign, href: emailVal !== "준비 중" ? `mailto:${emailVal}` : null },
-    { label: "영업시간", value: hoursVal, icon: Clock, href: null },
-  ];
-
   const contactItems = showTelegram
     ? [
-        items[0],
-        items[1],
+        CONTACT_INFO[0],
+        CONTACT_INFO[1],
         { label: "텔레그램 상담", value: "텔레그램으로 빠른 상담", icon: Send, href: telegramUrl },
-        ...items.slice(2),
+        ...CONTACT_INFO.slice(2),
       ]
-    : items;
+    : CONTACT_INFO;
 
   return (
     <div className="reveal">

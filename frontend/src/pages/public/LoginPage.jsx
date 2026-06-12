@@ -163,7 +163,7 @@ function LoginForm({ onSuccess }) {
 
   const submit = async (e) => {
     e.preventDefault();
-    if (!form.email.trim() || !form.password) return setError("이메일/휴대폰 번호와 비밀번호를 입력해주세요");
+    if (!form.email.trim() || !form.password) return setError("이메일과 비밀번호를 입력해주세요");
     setLoading(true);
     setError("");
     try {
@@ -179,20 +179,16 @@ function LoginForm({ onSuccess }) {
   const isPending = error.includes("승인 대기");
 
   return (
-    <form onSubmit={submit} className="portal-login__form-inner" autoComplete="off">
-      {/* 브라우저(크롬 등) 자동완성 방지용 더미 필드 */}
-      <input type="text" name="email" style={{ display: "none" }} tabIndex={-1} />
-      <input type="password" name="password" style={{ display: "none" }} tabIndex={-1} />
-
+    <form onSubmit={submit} className="portal-login__form-inner">
       <div className="portal-login__field">
-        <label className="portal-login__field-label">이메일 또는 휴대폰 번호</label>
+        <label className="portal-login__field-label">이메일</label>
         <input
-          type="text"
+          type="email"
           className={`portal-login__input${error && !isPending ? " portal-login__input--error" : ""}`}
           value={form.email}
           onChange={f("email")}
-          placeholder="이메일 또는 휴대폰 번호 입력"
-          autoComplete="off"
+          placeholder="example@email.com"
+          autoComplete="email"
           autoFocus
         />
       </div>
@@ -205,7 +201,7 @@ function LoginForm({ onSuccess }) {
           value={form.password}
           onChange={f("password")}
           placeholder="비밀번호를 입력하세요"
-          autoComplete="new-password"
+          autoComplete="current-password"
         />
       </div>
 
@@ -248,7 +244,7 @@ function LoginForm({ onSuccess }) {
 // 회원가입 폼
 // ──────────────────────────────────────────────────
 function RegisterForm({ onSuccess }) {
-  const [form, setForm] = useState({ email: "", name: "", phone: "", password: "", passwordConfirm: "", hireDate: "" });
+  const [form, setForm] = useState({ email: "", name: "", phone: "", password: "", passwordConfirm: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -277,7 +273,6 @@ function RegisterForm({ onSuccess }) {
         name: form.name.trim(),
         phone: form.phone.trim(),
         password: form.password,
-        hireDate: form.hireDate || null,
       });
       onSuccess(form.name.trim());
     } catch (err) {
@@ -324,16 +319,6 @@ function RegisterForm({ onSuccess }) {
             autoComplete="tel"
           />
         </div>
-      </div>
-
-      <div className="portal-login__field">
-        <label className="portal-login__field-label">입사일 (직원의 경우만 기재)</label>
-        <input
-          type="date"
-          className="portal-login__input"
-          value={form.hireDate}
-          onChange={f("hireDate")}
-        />
       </div>
 
       <div className="portal-login__field">
@@ -394,7 +379,6 @@ function RegisterSuccess({ name, onLoginClick }) {
   );
 }
 
-
 // ──────────────────────────────────────────────────
 // 메인 컴포넌트
 // ──────────────────────────────────────────────────
@@ -422,15 +406,15 @@ export default function LoginPage() {
       .catch(() => {});
   }, []);
 
-  // 이미 로그인되어 있으면 캘린더 일정(홈)으로 이동
+  // 이미 로그인되어 있으면 대시보드로 이동
   useEffect(() => {
     portalApi.get("/me")
-      .then(() => navigate("/portal/calendar", { replace: true }))
+      .then(() => navigate("/portal/dashboard", { replace: true }))
       .catch(() => {/* 미인증 — 로그인 페이지 유지 */});
   }, [navigate]);
 
   const handleLoginSuccess = () => {
-    navigate("/portal/calendar", { replace: true });
+    navigate("/portal/dashboard", { replace: true });
   };
 
   const handleRegisterSuccess = (name) => {
@@ -533,9 +517,7 @@ export default function LoginPage() {
               onLoginClick={() => handleTabChange("login")}
             />
           ) : tab === "login" ? (
-            <LoginForm
-              onSuccess={handleLoginSuccess}
-            />
+            <LoginForm onSuccess={handleLoginSuccess} />
           ) : (
             <RegisterForm onSuccess={handleRegisterSuccess} />
           )}

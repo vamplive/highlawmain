@@ -119,8 +119,22 @@ router.patch("/:id", adminAuth, async (req, res) => {
       "publications", "books", "media", "columns", "cases", "memberships",
       "consultHours", "blogUrl", "introduction", "email", "phone", "sortOrder", "isActive",
     ];
+    // 포털에서 작성한 상세 콘텐츠 필드 — 빈 값으로 덮어쓰지 않도록 보호
+    const PROTECTED_CONTENT_FIELDS = new Set([
+      "education", "career", "qualifications", "publications", "books",
+      "media", "columns", "cases", "memberships", "introduction",
+    ]);
     for (const f of fields) {
-      if (req.body[f] !== undefined) updates[f] = req.body[f];
+      if (req.body[f] !== undefined) {
+        const newVal = req.body[f];
+        if (PROTECTED_CONTENT_FIELDS.has(f)) {
+          const isEmpty = !newVal || newVal === "[]" || newVal === "null" || newVal === "";
+          const existingVal = existing[f];
+          const hasExisting = existingVal && existingVal !== "[]" && existingVal !== "null" && existingVal !== "";
+          if (isEmpty && hasExisting) continue; // 기존 내용 보호
+        }
+        updates[f] = newVal;
+      }
     }
     updates.updatedAt = new Date().toISOString().replace("T", " ").slice(0, 19);
 

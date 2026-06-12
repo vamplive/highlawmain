@@ -5,7 +5,7 @@
 const { Router } = require("express");
 const crypto = require("crypto");
 const { handleError } = require("../lib/route-handler");
-const { adminAuth, adminOrPortalAuth } = require("../lib/auth");
+const { adminAuth } = require("../lib/auth");
 const blogService = require("../services/blog-service");
 
 const router = Router();
@@ -22,7 +22,7 @@ const BOT_UA_RE = /bot|crawler|spider|slurp|bingpreview|facebookexternalhit|kaka
 const IP_HASH_SECRET = process.env.IP_HASH_SECRET || process.env.CSRF_SECRET || "development-ip-hash-secret";
 
 function adminOnlyWhenAll(req, res, next) {
-  if (req.query.all === "true") return adminOrPortalAuth(req, res, next);
+  if (req.query.all === "true") return adminAuth(req, res, next);
   return next();
 }
 
@@ -168,7 +168,7 @@ router.get("/:slug", async (req, res) => {
 });
 
 // POST /api/blog — 게시글 생성
-router.post("/", adminOrPortalAuth, async (req, res) => {
+router.post("/", adminAuth, async (req, res) => {
   try {
     const inserted = await blogService.createPost(req.body);
     res.json({ data: inserted, error: null, meta: null });
@@ -178,7 +178,7 @@ router.post("/", adminOrPortalAuth, async (req, res) => {
 });
 
 // GET /api/blog/:id/versions — 게시글 버전 히스토리
-router.get("/:id/versions", adminOrPortalAuth, async (req, res) => {
+router.get("/:id/versions", adminAuth, async (req, res) => {
   try {
     const versions = await blogService.listVersions(req.params.id);
     res.json({ data: versions, error: null, meta: null });
@@ -188,12 +188,12 @@ router.get("/:id/versions", adminOrPortalAuth, async (req, res) => {
 });
 
 // POST /api/blog/:id/versions/:versionNo/restore — 특정 버전으로 복구
-router.post("/:id/versions/:versionNo/restore", adminOrPortalAuth, async (req, res) => {
+router.post("/:id/versions/:versionNo/restore", adminAuth, async (req, res) => {
   try {
     const restored = await blogService.restoreVersion(
       req.params.id,
       req.params.versionNo,
-      req.adminUser?.userId || req.portalUser?.userId || "admin"
+      req.adminUser?.userId || "admin"
     );
     res.json({ data: restored, error: null, meta: null });
   } catch (e) {
@@ -202,7 +202,7 @@ router.post("/:id/versions/:versionNo/restore", adminOrPortalAuth, async (req, r
 });
 
 // PATCH /api/blog/:id — 게시글 수정
-router.patch("/:id", adminOrPortalAuth, async (req, res) => {
+router.patch("/:id", adminAuth, async (req, res) => {
   try {
     const updated = await blogService.updatePost(req.params.id, req.body);
     res.json({ data: updated, error: null, meta: null });
@@ -212,7 +212,7 @@ router.patch("/:id", adminOrPortalAuth, async (req, res) => {
 });
 
 // DELETE /api/blog/:id — 게시글 삭제
-router.delete("/:id", adminOrPortalAuth, async (req, res) => {
+router.delete("/:id", adminAuth, async (req, res) => {
   try {
     const result = await blogService.deletePost(req.params.id);
     res.json({ data: result, error: null, meta: null });

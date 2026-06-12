@@ -125,11 +125,13 @@ export default function useDocumentManager(editor, footnoteState = {}) {
     title: b.title || "",
     documentType: "blog",
     blogCategory: b.category || "construction_realestate",
+    practiceArea: b.practiceArea || null,
     status: blogStatusFromPost(b),
     _source: "blog",
     _blogId: b.id,
     _blogSlug: b.slug,
     _blogCategory: b.category,
+    _blogPracticeArea: b.practiceArea,
     _blogContent: b.content,
     _blogExcerpt: b.excerpt,
     _blogAuthor: b.author,
@@ -492,6 +494,7 @@ export default function useDocumentManager(editor, footnoteState = {}) {
     const payload = {
       title: currentDoc.title.trim(),
       category: currentDoc.blogCategory || "construction_realestate",
+      practiceArea: currentDoc.practiceArea || null,
       content: html,
       excerpt: currentDoc.summary || buildExcerpt(htmlToPlainText(html)) || null,
       author: currentDoc.author || null,
@@ -542,6 +545,8 @@ export default function useDocumentManager(editor, footnoteState = {}) {
           _blogId: post.id,
           _blogSlug: post.slug,
           _blogCategory: post.category,
+          _blogPracticeArea: post.practiceArea,
+          practiceArea: post.practiceArea || null,
         }));
       }
       clearAutoSave();

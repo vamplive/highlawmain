@@ -63,18 +63,32 @@ const MENU_TREE = [
       { to: "/admin/invitations", label: "발송 링크" },
     ],
   },
-  // ── 홈페이지 관련 ────────────────────────────────────
+  { id: "messages", to: "/admin/messages", label: "메시지", icon: "mail" },
+
+  // ── 홈페이지 섹션별 편집 ─────────────────────────────
   {
-    id: "homepage-mgmt",
-    label: "홈페이지 관리",
+    id: "homepage",
+    label: "홈페이지",
     icon: "globe",
     children: [
-      { to: "/admin/chatbot", label: "상담 챗봇" },
-      { to: "/admin/documents", label: "자료실·문서" },
-      { to: "/admin/editor", label: "에디터" },
+      // 각 메뉴별 편집 — site-manager?tab=xxx 로 직접 이동
+      { to: "/admin/site-manager?tab=home",              label: "Index 편집" },
+      { to: "/admin/site-manager?tab=about",             label: "소개란 편집" },
+      { to: "/admin/site-manager?tab=members",           label: "구성원 편집" },
+      { to: "/admin/site-manager?tab=practice",          label: "업무 분야" },
+      { to: "/admin/site-manager?tab=news-edit",         label: "소식" },
+      { to: "/admin/site-manager?tab=recruit-edit",      label: "채용" },
+      { to: "/admin/site-manager?tab=consultation-edit", label: "상담/문의" },
+      { to: "/admin/site-manager?tab=layout",            label: "공통 (헤더/푸터)" },
+      // 개별 관리 도구
+      { to: "/admin/chatbot",   label: "상담 챗봇" },
+      { to: "/admin/reviews",   label: "후기" },
+      { to: "/admin/lectures",  label: "강의" },
+      { to: "/admin/media",     label: "미디어" },
+      { to: "/admin/documents", label: "자료실" },
+      { to: "/admin/editor",    label: "에디터" },
     ],
   },
-
 
   // ── 포털(인트라넷) 관련 ───────────────────────────────
   {
@@ -84,7 +98,6 @@ const MENU_TREE = [
     children: [
       { to: "/admin/portal-users", label: "회원 승인" },
       { to: "/admin/portal-members", label: "구성원 관리" },
-      { to: "/admin/organization", label: "조직도 & 결재 관리" },
       { to: "/admin/portal-board-admin", label: "게시판 관리" },
       { to: "/admin/portal-time-overview", label: "업무시간 현황" },
     ],
@@ -111,7 +124,9 @@ function findActive(pathname) {
   for (const group of MENU_TREE) {
     if (group.children) {
       for (const child of group.children) {
-        if (pathname === child.to || pathname.startsWith(child.to + "/")) {
+        // 쿼리 파라미터 무시하고 pathname만 비교해 그룹 활성 여부 결정
+        const childPath = child.to.includes("?") ? child.to.split("?")[0] : child.to;
+        if (pathname === childPath || pathname.startsWith(childPath + "/")) {
           return { group, child };
         }
       }
@@ -121,6 +136,18 @@ function findActive(pathname) {
     }
   }
   return { group: null, child: null };
+}
+
+/** 개별 자식 링크의 활성 여부 — 쿼리 파라미터까지 포함해 정확히 비교 */
+function isChildLinkActive(child, pathname, search) {
+  if (child.to.includes("?")) {
+    const [childPath, childQuery] = child.to.split("?");
+    if (pathname !== childPath) return false;
+    const childParams = new URLSearchParams(childQuery);
+    const currParams = new URLSearchParams(search);
+    return Array.from(childParams.entries()).every(([k, v]) => currParams.get(k) === v);
+  }
+  return pathname === child.to || pathname.startsWith(child.to + "/");
 }
 
 /** 사이드바 아이콘 SVG */
@@ -167,7 +194,8 @@ export default function AdminLayout({ onLogout, children }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [hoveredItem, setHoveredItem] = useState(null);
-  const { pathname } = useLocation();
+  const location = useLocation();
+  const { pathname, search } = location;
   const isMobile = useMediaQuery("(max-width: 899px)");
   const isEditor = pathname.startsWith("/admin/editor");
   const sidebarWidth = isMobile ? 260 : (collapsed ? 68 : 240);
@@ -337,30 +365,33 @@ export default function AdminLayout({ onLogout, children }) {
                 </button>
                 {!isCompact && isExpanded && (
                   <div style={{ paddingLeft: 14, marginTop: 2, marginBottom: 6 }}>
-                    {group.children.map((child) => (
-                      <NavLink
-                        key={child.to}
-                        to={child.to}
-                        onClick={() => { if (isMobile) setMobileOpen(false); }}
-                        onMouseEnter={() => setHoveredItem(child.to)}
-                        onMouseLeave={() => setHoveredItem(null)}
-                        style={({ isActive }) => ({
-                          display: "block",
-                          padding: "7px 12px 7px 28px",
-                          fontSize: 12.5,
-                          fontWeight: isActive ? 600 : 400,
-                          color: isActive ? THEME.accent : (hoveredItem === child.to ? "#ffffff" : THEME.sidebarText),
-                          background: isActive ? THEME.accentDim : (hoveredItem === child.to ? THEME.sidebarHoverBg : "transparent"),
-                          borderRadius: 6,
-                          textDecoration: "none",
-                          borderLeft: isActive ? `2px solid ${THEME.accent}` : "2px solid transparent",
-                          marginBottom: 1,
-                          transition: "background-color 150ms ease, color 150ms ease",
-                        })}
-                      >
-                        {child.label}
-                      </NavLink>
-                    ))}
+                    {group.children.map((child) => {
+                      const isActive = isChildLinkActive(child, pathname, search);
+                      return (
+                        <Link
+                          key={child.to}
+                          to={child.to}
+                          onClick={() => { if (isMobile) setMobileOpen(false); }}
+                          onMouseEnter={() => setHoveredItem(child.to)}
+                          onMouseLeave={() => setHoveredItem(null)}
+                          style={{
+                            display: "block",
+                            padding: "7px 12px 7px 28px",
+                            fontSize: 12.5,
+                            fontWeight: isActive ? 600 : 400,
+                            color: isActive ? THEME.accent : (hoveredItem === child.to ? "#ffffff" : THEME.sidebarText),
+                            background: isActive ? THEME.accentDim : (hoveredItem === child.to ? THEME.sidebarHoverBg : "transparent"),
+                            borderRadius: 6,
+                            textDecoration: "none",
+                            borderLeft: isActive ? `2px solid ${THEME.accent}` : "2px solid transparent",
+                            marginBottom: 1,
+                            transition: "background-color 150ms ease, color 150ms ease",
+                          }}
+                        >
+                          {child.label}
+                        </Link>
+                      );
+                    })}
                   </div>
                 )}
               </div>

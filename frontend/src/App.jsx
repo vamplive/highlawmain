@@ -110,8 +110,6 @@ const PortalCaseRegister = lazy(() => import("./pages/portal/PortalCaseRegister"
 const PortalTimeTracking = lazy(() => import("./pages/portal/PortalTimeTracking"));
 const PortalContracts = lazy(() => import("./pages/portal/PortalContracts"));
 const PortalContractSign = lazy(() => import("./pages/portal/PortalContractSign"));
-const PortalBlog = lazy(() => import("./pages/portal/PortalBlog"));
-const PortalQna = lazy(() => import("./pages/portal/PortalQna"));
 const PortalReviews = lazy(() => import("./pages/portal/PortalReviews"));
 const PortalBoard = lazy(() => import("./pages/portal/PortalBoard"));
 const PortalBoardWriter = lazy(() => import("./pages/portal/PortalBoardWriter"));
@@ -122,6 +120,7 @@ const PortalApprovals = lazy(() => import("./pages/portal/PortalApprovals"));
 const PortalAiSettings = lazy(() => import("./pages/portal/PortalAiSettings"));
 const PortalBookings = lazy(() => import("./pages/portal/PortalBookings"));
 const PortalClients = lazy(() => import("./pages/portal/PortalClients"));
+const PortalBlog = lazy(() => import("./pages/portal/PortalBlog"));
 const AdminOrganization = lazy(() => import("./pages/admin/organization/AdminOrganization"));
 
 /** 지연 로딩 컴포넌트를 Suspense로 감싸는 헬퍼 */
@@ -339,7 +338,7 @@ export default function App() {
           <Route path="contracts" element={<LazyRoute><PortalContracts /></LazyRoute>} />
           <Route path="contracts/:id" element={<LazyRoute><PortalContractSign /></LazyRoute>} />
           <Route path="blog" element={<LazyRoute><PortalBlog /></LazyRoute>} />
-          <Route path="qna" element={<LazyRoute><PortalQna /></LazyRoute>} />
+          <Route path="qna" element={<Navigate to="/admin/inquiry" replace />} />
           <Route path="messages" element={<LazyRoute><AdminMessages /></LazyRoute>} />
           <Route path="reviews" element={<LazyRoute><PortalReviews /></LazyRoute>} />
           <Route path="editor" element={<LazyRoute><EditorPage /></LazyRoute>} />
@@ -354,10 +353,10 @@ export default function App() {
           <Route path="contract-admin/:id" element={<LazyRoute><AdminContractDetail /></LazyRoute>} />
           {/* 영수증 관리 — 포털로 이전 */}
           <Route path="receipts" element={<LazyRoute><AdminReceipts /></LazyRoute>} />
-          {/* 홍보·콘텐츠 — 포털로 이전 */}
+          {/* 홍보·콘텐츠 — admin 전용 */}
           <Route path="lectures" element={<LazyRoute><AdminLectures /></LazyRoute>} />
-          <Route path="site-manager" element={<LazyRoute><AdminSiteManager /></LazyRoute>} />
-          <Route path="media" element={<LazyRoute><AdminMedia /></LazyRoute>} />
+          <Route path="site-manager" element={<Navigate to="/admin/site-manager" replace />} />
+          <Route path="media" element={<Navigate to="/admin/media" replace />} />
         </Route>
 
         {/* 초대/서명 — 공개 (Layout 없음, 집중 모드) */}

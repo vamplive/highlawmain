@@ -722,7 +722,7 @@ async function getPortalTimeSummary(portalUserId) {
       )
     )
     .groupBy(portalTimeEntries.caseId, caseFilesTable.title, caseFilesTable.caseNumber)
-    .orderBy(desc(sql`totalMinutes`));
+    .orderBy(desc(sql`COALESCE(SUM(${portalTimeEntries.durationMinutes}), 0)`));
 
   return rows;
 }
@@ -1008,6 +1008,7 @@ async function listPortalPosts(query) {
       viewCount: portalPosts.viewCount,
       isPinned: portalPosts.isPinned,
       isImportant: portalPosts.isImportant,
+      attachments: portalPosts.attachments,
       createdAt: portalPosts.createdAt,
       updatedAt: portalPosts.updatedAt,
       authorEmail: portalUsers.email,
@@ -1030,7 +1031,7 @@ async function listPortalPosts(query) {
 }
 
 async function createPortalPost(portalUserId, data) {
-  const { category, title, content, isPinned, isImportant } = data;
+  const { category, title, content, isPinned, isImportant, attachments } = data;
   if (!title || !title.trim()) throw new ServiceError("제목을 입력해주세요", 400);
   if (!content || !content.trim()) throw new ServiceError("내용을 입력해주세요", 400);
 
@@ -1041,6 +1042,7 @@ async function createPortalPost(portalUserId, data) {
     content: content.trim(),
     isPinned: isPinned ? 1 : 0,
     isImportant: isImportant ? 1 : 0,
+    attachments: attachments ?? null,
   }).returning();
 
   return inserted;
@@ -1058,6 +1060,7 @@ async function getPortalPost(id) {
       viewCount: portalPosts.viewCount,
       isPinned: portalPosts.isPinned,
       isImportant: portalPosts.isImportant,
+      attachments: portalPosts.attachments,
       createdAt: portalPosts.createdAt,
       updatedAt: portalPosts.updatedAt,
       authorEmail: portalUsers.email,
@@ -1089,13 +1092,14 @@ async function updatePortalPost(id, portalUserId, isAdmin, data) {
     throw new ServiceError("수정 권한이 없습니다", 403);
   }
 
-  const { category, title, content, isPinned, isImportant } = data;
+  const { category, title, content, isPinned, isImportant, attachments } = data;
   const updates = { updatedAt: sql`(datetime('now'))` };
   if (category !== undefined) updates.category = category;
   if (title !== undefined) updates.title = (title || "").trim();
   if (content !== undefined) updates.content = content;
   if (isPinned !== undefined) updates.isPinned = isPinned ? 1 : 0;
   if (isImportant !== undefined) updates.isImportant = isImportant ? 1 : 0;
+  if (attachments !== undefined) updates.attachments = attachments ?? null;
 
   const [updated] = await db
     .update(portalPosts)
@@ -2116,4 +2120,25 @@ module.exports = {
   findEmailByPhone,
   createPortalResetToken,
   resetPortalPassword,
+  changePortalPassword,
 };
+
+async function changePortalPassword(userId, currentPassword, newPassword) {
+  if (!newPassword || newPassword.length < 8) {
+    throw new ServiceError("새 비밀번호는 8자 이상이어야 합니다", 400);
+  }
+  if (newPassword.length > 256) {
+    throw new ServiceError("비밀번호는 256자 이하로 입력해주세요", 400);
+  }
+
+  const [user] = await db.select().from(portalUsers).where(eq(portalUsers.id, userId));
+  if (!user) throw new ServiceError("사용자를 찾을 수 없습니다", 404);
+
+  if (!verifyPassword(currentPassword, user.passwordHash)) {
+    throw new ServiceError("현재 비밀번호가 올바르지 않습니다", 401);
+  }
+
+  const newHash = hashPassword(newPassword);
+  await db.update(portalUsers).set({ passwordHash: newHash }).where(eq(portalUsers.id, userId));
+  return { success: true };
+}

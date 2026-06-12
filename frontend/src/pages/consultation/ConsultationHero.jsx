@@ -7,26 +7,17 @@ import { PublicHero } from "../../components/public/PublicDesign";
 import { safeHttpUrl } from "../../utils/safeUrl";
 import { TELEGRAM_CONTACT_URL } from "../../utils/telegramContact";
 
-const CONSULTATIONS_DEFAULTS = {
-  hero: {
-    heading: "상담안내",
-    subheading: "CONSULTATION"
-  }
-};
-
 export default function ConsultationHero() {
   const lang = useLanguage();
   const { settings } = useSiteSettingsPage("layout", LAYOUT_DEFAULTS, lang);
-  const { settings: consSettings } = useSiteSettingsPage("consultations", CONSULTATIONS_DEFAULTS);
-  
   const contact = settings.contact || LAYOUT_DEFAULTS.contact;
   const telegramUrl = safeHttpUrl(contact.telegramUrl, TELEGRAM_CONTACT_URL);
   const showTelegram = (contact.telegramEnabled !== false || !contact.telegramUrl) && !!telegramUrl;
 
   return (
     <PublicHero
-      eyebrow={consSettings.hero?.subheading || "CONSULTATION"}
-      title={consSettings.hero?.heading || "상담안내"}
+      eyebrow="CONSULTATION"
+      title="상담안내"
       primaryAction={{
         href: KAKAO_CHANNEL_CHAT,
         target: "_blank",

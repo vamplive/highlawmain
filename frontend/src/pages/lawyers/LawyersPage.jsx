@@ -8,15 +8,6 @@ import ErrorState from "../../components/ui/ErrorState";
 import Seo from "../../components/Seo";
 import { buildAttorneyJsonLd, buildBreadcrumbJsonLd } from "../../lib/seo";
 import { PublicHero, SurfaceCard } from "../../components/public/PublicDesign";
-import { useSiteSettingsPage } from "../../hooks/useSiteSettings";
-
-const PARTNERS_DEFAULTS = {
-  hero: {
-    heading: "구성원",
-    subheading: "PEOPLE",
-    description: "각 분야 전문가들이 유기적으로 협력하여\n의뢰인에게 최선의 솔루션을 제공합니다"
-  }
-};
 
 /** JSON 문자열 → 배열 파싱 (education, career, specialties 필드) */
 function parseList(value) {
@@ -62,7 +53,6 @@ function useRevealOnChange(deps) {
 }
 
 export default function LawyersPage() {
-  const { settings: pageSettings } = useSiteSettingsPage("partners", PARTNERS_DEFAULTS);
   const [lawyers, setLawyers] = useState([]);
   const [activeTab, setActiveTab] = useState("lawyer"); // 'lawyer', 'advisor', 'staff'
   const [loading, setLoading] = useState(true);
@@ -127,9 +117,9 @@ export default function LawyersPage() {
         ]}
       />
       <PublicHero
-        eyebrow={pageSettings.hero?.subheading}
-        title={pageSettings.hero?.heading}
-        description={pageSettings.hero?.description}
+        eyebrow="PEOPLE"
+        title="구성원"
+        description={"각 분야 전문가들이 유기적으로 협력하여\n의뢰인에게 최선의 솔루션을 제공합니다"}
       />
 
       {/* ==================== 탭 컨트롤 ==================== */}

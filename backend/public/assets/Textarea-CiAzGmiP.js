@@ -1,1 +1,0 @@
-import{j as t}from"./vendor-react-B153i_ke.js";function a({className:r="",...e}){return t.jsx("textarea",{className:`flex min-h-[80px] w-full rounded-md border border-[var(--border-color)] bg-transparent px-3 py-2 text-sm transition-colors placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-gold)] ${r}`,...e})}export{a as T};

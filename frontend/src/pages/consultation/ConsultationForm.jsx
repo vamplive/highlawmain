@@ -18,60 +18,6 @@ export default function ConsultationForm({ invitationToken: _invitationToken, in
   const [submitResult, setSubmitResult] = useState(null);
   const [privacyOpen, setPrivacyOpen] = useState(false);
   const [signaturePayload, setSignaturePayload] = useState(null);
-  const [uploadingFile, setUploadingFile] = useState(false);
-
-  function parseAttachments(urlsString) {
-    if (!urlsString) return [];
-    try {
-      const parsed = JSON.parse(urlsString);
-      if (Array.isArray(parsed)) return parsed;
-    } catch (_) {}
-    return [];
-  }
-
-  async function handleFileUpload(e) {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    setUploadingFile(true);
-    try {
-      const currentAttachments = parseAttachments(form.attachmentUrls);
-      const newAttachments = [...currentAttachments];
-
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        
-        // 10MB 크기 제한
-        if (file.size > 10 * 1024 * 1024) {
-          alert(`파일 크기가 10MB를 초과할 수 없습니다: ${file.name}`);
-          continue;
-        }
-
-        const res = await api.upload("/consultations/upload-attachment", file);
-        if (res.data && res.data.url) {
-          newAttachments.push({ url: res.data.url, name: res.data.originalName || file.name });
-        } else {
-          alert(`업로드 실패: ${file.name}`);
-        }
-      }
-
-      setForm(prev => ({ ...prev, attachmentUrls: JSON.stringify(newAttachments) }));
-    } catch (err) {
-      alert("파일 업로드 중 오류가 발생했습니다: " + err.message);
-    } finally {
-      setUploadingFile(false);
-      e.target.value = "";
-    }
-  }
-
-  function handleRemoveAttachment(urlToRemove) {
-    const currentAttachments = parseAttachments(form.attachmentUrls);
-    const updated = currentAttachments.filter(item => item.url !== urlToRemove);
-    setForm(prev => ({
-      ...prev,
-      attachmentUrls: updated.length > 0 ? JSON.stringify(updated) : ""
-    }));
-  }
 
   /** 폼 필드 업데이트 핸들러 */
   function handleFormChange(e) {
@@ -96,6 +42,10 @@ export default function ConsultationForm({ invitationToken: _invitationToken, in
       setSubmitResult({ type: "error", msg: "개인정보 동의 서명이 확인되지 않았습니다. 동의서를 다시 확인해주세요." });
       return;
     }
+    if (form.scheduleMode === "slot" && !form.bookingSlotId) {
+      setSubmitResult({ type: "error", msg: "예약 가능 시간을 선택하시거나 '일정 협의 요청'으로 전환해 주세요." });
+      return;
+    }
     if (form.scheduleMode === "request" && !form.preferredSlots?.[0]?.date) {
       setSubmitResult({ type: "error", msg: "희망 일정을 최소 1개 이상 입력해주세요." });
       return;
@@ -113,9 +63,12 @@ export default function ConsultationForm({ invitationToken: _invitationToken, in
         agreed: form.agreed,
         meetingType: form.meetingType,
         scheduleMode: form.scheduleMode,
-        attachmentUrls: form.attachmentUrls || undefined,
       };
+      if (form.scheduleMode === "slot") {
+        payload.bookingSlotId = form.bookingSlotId;
+      } else {
         payload.preferredSlots = form.preferredSlots.filter((s) => s.date);
+      }
       const consent = await api.post("/privacy-consents", {
         policyVersion: PRIVACY_POLICY_VERSION,
         policyText: PRIVACY_POLICY_TEXT,
@@ -207,58 +160,6 @@ export default function ConsultationForm({ invitationToken: _invitationToken, in
               placeholder="상담받고자 하는 내용을 간략히 작성해 주세요 (10자 이상)"
               rows={5} required style={{ background: "#fff" }}
             />
-          </FormField>
-
-          {/* 첨부 파일 (다중 파일 업로드) */}
-          <FormField label="첨부 파일 (선택)">
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <label style={{
-                  display: "inline-flex", alignItems: "center", gap: 6,
-                  padding: "10px 18px", border: "1px solid var(--accent-gold)",
-                  color: "var(--accent-gold)", background: "#fff", cursor: "pointer",
-                  fontSize: 13, fontWeight: 500, transition: "all 0.2s"
-                }}>
-                  📎 파일 선택
-                  <input
-                    type="file"
-                    onChange={handleFileUpload}
-                    disabled={uploadingFile}
-                    style={{ display: "none" }}
-                    multiple
-                  />
-                </label>
-                {uploadingFile && <span style={{ fontSize: 13, color: "var(--text-muted)" }}>업로드 중...</span>}
-              </div>
-              <p style={{ fontSize: 11, color: "var(--text-muted)", margin: 0 }}>
-                * 최대 10MB 이하의 이미지(JPG, PNG, WebP, GIF), PDF, 문서(DOCX, HWP, TXT), ZIP 파일만 첨부할 수 있습니다.
-              </p>
-              
-              {parseAttachments(form.attachmentUrls).length > 0 && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 4 }}>
-                  {parseAttachments(form.attachmentUrls).map((file, idx) => (
-                    <div key={idx} style={{
-                      display: "flex", alignItems: "center", justifySpace: "between",
-                      padding: "8px 12px", background: "#f8f9fa", border: "1px solid #e9ecef", borderRadius: 4
-                    }}>
-                      <span style={{ fontSize: 13, color: "var(--text-primary)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        📄 {file.name}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveAttachment(file.url)}
-                        style={{
-                          background: "none", border: "none", color: "#dc3545", cursor: "pointer",
-                          fontSize: 12, padding: "2px 8px"
-                        }}
-                      >
-                        삭제
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
           </FormField>
 
           {/* 개인정보 동의 */}

@@ -1,266 +1,156 @@
+/** 포털 전자결재 API — /api/portal/approvals */
 const { Router } = require("express");
-const { db } = require("../db");
-const { portalApprovals, portalUsers, clients } = require("../db/schema");
-const { eq, and, desc, or } = require("drizzle-orm");
+const crypto = require("crypto");
 const { portalAuth } = require("../lib/auth");
-const { handleError } = require("../lib/route-handler");
-const approvalService = require("../services/approval-service");
-const { ServiceError } = require("../services/helpers");
+const { sqlite } = require("../db");
 
 const router = Router();
+router.use(portalAuth);
 
-// ─── 1. 연차 현황 조회 ───
-router.get("/leave-status", portalAuth, async (req, res) => {
+function userId(req) { return req.portalUser.userId; }
+
+function sendError(res, e, label) {
+  console.error(`[approvals ${label}]`, e.message);
+  res.status(500).json({ data: null, error: "서버 오류가 발생했습니다", meta: null });
+}
+
+function parseApproval(row) {
+  if (!row) return null;
+  return {
+    ...row,
+    approvalLine: row.approval_line ? JSON.parse(row.approval_line) : [],
+    leaveDuration: row.leave_duration,
+    expenseAmount: row.expense_amount,
+  };
+}
+
+// 연차 현황 — 올해 사용일수 집계
+router.get("/leave-status", (req, res) => {
   try {
-    const { userId } = req.portalUser;
-    const status = await approvalService.getUserLeaveStatus(userId);
-    res.json({ data: status, error: null, meta: null });
-  } catch (e) {
-    handleError(res, e);
-  }
-});
-
-// ─── 2. 기안 상신 ───
-router.post("/", portalAuth, async (req, res) => {
-  try {
-    const { userId } = req.portalUser;
-    const created = await approvalService.submitApproval(userId, req.body);
-    res.status(201).json({ data: created, error: null, meta: null });
-  } catch (e) {
-    handleError(res, e);
-  }
-});
-
-// ─── 3. 내가 상신한 기안 목록 (내 기안함) ───
-router.get("/my-requests", portalAuth, async (req, res) => {
-  try {
-    const { userId } = req.portalUser;
-
-    const rows = await db
-      .select({
-        id: portalApprovals.id,
-        requesterId: portalApprovals.requesterId,
-        requesterName: clients.name,
-        requesterPosition: portalUsers.position,
-        type: portalApprovals.type,
-        title: portalApprovals.title,
-        status: portalApprovals.status,
-        currentApproverId: portalApprovals.currentApproverId,
-        approvalLine: portalApprovals.approvalLine,
-        leaveType: portalApprovals.leaveType,
-        leaveStart: portalApprovals.leaveStart,
-        leaveEnd: portalApprovals.leaveEnd,
-        leaveDuration: portalApprovals.leaveDuration,
-        expenseAmount: portalApprovals.expenseAmount,
-        expenseCategory: portalApprovals.expenseCategory,
-        expenseReceiptUrl: portalApprovals.expenseReceiptUrl,
-        expenseDate: portalApprovals.expenseDate,
-        createdAt: portalApprovals.createdAt,
-        updatedAt: portalApprovals.updatedAt,
-      })
-      .from(portalApprovals)
-      .leftJoin(portalUsers, eq(portalApprovals.requesterId, portalUsers.id))
-      .leftJoin(clients, eq(portalUsers.clientId, clients.id))
-      .where(eq(portalApprovals.requesterId, userId))
-      .orderBy(desc(portalApprovals.createdAt));
-
-    // approvalLine 파싱
-    const formatted = rows.map(row => ({
-      ...row,
-      approvalLine: JSON.parse(row.approvalLine || "[]"),
-    }));
-
-    res.json({ data: formatted, error: null, meta: { total: formatted.length } });
-  } catch (e) {
-    handleError(res, e);
-  }
-});
-
-// ─── 4. 내가 승인해야 할 결재 목록 (결재 대기함) ───
-router.get("/pending-approvals", portalAuth, async (req, res) => {
-  try {
-    const { userId } = req.portalUser;
-
-    const rows = await db
-      .select({
-        id: portalApprovals.id,
-        requesterId: portalApprovals.requesterId,
-        requesterName: clients.name,
-        requesterPosition: portalUsers.position,
-        type: portalApprovals.type,
-        title: portalApprovals.title,
-        status: portalApprovals.status,
-        currentApproverId: portalApprovals.currentApproverId,
-        approvalLine: portalApprovals.approvalLine,
-        leaveType: portalApprovals.leaveType,
-        leaveStart: portalApprovals.leaveStart,
-        leaveEnd: portalApprovals.leaveEnd,
-        leaveDuration: portalApprovals.leaveDuration,
-        expenseAmount: portalApprovals.expenseAmount,
-        expenseCategory: portalApprovals.expenseCategory,
-        expenseReceiptUrl: portalApprovals.expenseReceiptUrl,
-        expenseDate: portalApprovals.expenseDate,
-        createdAt: portalApprovals.createdAt,
-        updatedAt: portalApprovals.updatedAt,
-      })
-      .from(portalApprovals)
-      .leftJoin(portalUsers, eq(portalApprovals.requesterId, portalUsers.id))
-      .leftJoin(clients, eq(portalUsers.clientId, clients.id))
-      .where(
-        and(
-          eq(portalApprovals.currentApproverId, userId),
-          eq(portalApprovals.status, "pending")
-        )
-      )
-      .orderBy(desc(portalApprovals.createdAt));
-
-    const formatted = rows.map(row => ({
-      ...row,
-      approvalLine: JSON.parse(row.approvalLine || "[]"),
-    }));
-
-    res.json({ data: formatted, error: null, meta: { total: formatted.length } });
-  } catch (e) {
-    handleError(res, e);
-  }
-});
-
-// ─── 5. 내가 참여한 결재 완료/진행 목록 (결재 수신/참조함) ───
-router.get("/my-history", portalAuth, async (req, res) => {
-  try {
-    const { userId } = req.portalUser;
-
-    // 기안자가 아니면서 결재선에 자신이 포함된 문서를 가져오기 위해 전체 문서를 로드 후 필터링하거나
-    // approvalLine LIKE '%userId%' 형태로 쿼리할 수 있습니다.
-    // SQLite에서는 LIKE 검색이 가능하므로 1차로 필터링한 후 JS 단에서 검증합니다.
-    const rows = await db
-      .select({
-        id: portalApprovals.id,
-        requesterId: portalApprovals.requesterId,
-        requesterName: clients.name,
-        requesterPosition: portalUsers.position,
-        type: portalApprovals.type,
-        title: portalApprovals.title,
-        status: portalApprovals.status,
-        currentApproverId: portalApprovals.currentApproverId,
-        approvalLine: portalApprovals.approvalLine,
-        leaveType: portalApprovals.leaveType,
-        leaveStart: portalApprovals.leaveStart,
-        leaveEnd: portalApprovals.leaveEnd,
-        leaveDuration: portalApprovals.leaveDuration,
-        expenseAmount: portalApprovals.expenseAmount,
-        expenseCategory: portalApprovals.expenseCategory,
-        expenseReceiptUrl: portalApprovals.expenseReceiptUrl,
-        expenseDate: portalApprovals.expenseDate,
-        createdAt: portalApprovals.createdAt,
-        updatedAt: portalApprovals.updatedAt,
-      })
-      .from(portalApprovals)
-      .leftJoin(portalUsers, eq(portalApprovals.requesterId, portalUsers.id))
-      .leftJoin(clients, eq(portalUsers.clientId, clients.id))
-      .orderBy(desc(portalApprovals.createdAt));
-
-    const formatted = rows
-      .map(row => ({
-        ...row,
-        approvalLine: JSON.parse(row.approvalLine || "[]"),
-      }))
-      .filter(row => {
-        // 기안자 본인이 아니고 결재선에 포함되어 있으며 본인의 승인 단계가 진행되었거나 pending이 아닌 경우
-        const inLine = row.approvalLine.some(item => item.userId === userId);
-        return inLine && row.requesterId !== userId;
-      });
-
-    res.json({ data: formatted, error: null, meta: { total: formatted.length } });
-  } catch (e) {
-    handleError(res, e);
-  }
-});
-
-// ─── 6. 단건 결재 상세 조회 ───
-router.get("/:id", portalAuth, async (req, res) => {
-  try {
-    const { userId } = req.portalUser;
-    const { id } = req.params;
-
-    const [row] = await db
-      .select({
-        id: portalApprovals.id,
-        requesterId: portalApprovals.requesterId,
-        requesterName: clients.name,
-        requesterPosition: portalUsers.position,
-        type: portalApprovals.type,
-        title: portalApprovals.title,
-        status: portalApprovals.status,
-        currentApproverId: portalApprovals.currentApproverId,
-        approvalLine: portalApprovals.approvalLine,
-        leaveType: portalApprovals.leaveType,
-        leaveStart: portalApprovals.leaveStart,
-        leaveEnd: portalApprovals.leaveEnd,
-        leaveDuration: portalApprovals.leaveDuration,
-        expenseAmount: portalApprovals.expenseAmount,
-        expenseCategory: portalApprovals.expenseCategory,
-        expenseReceiptUrl: portalApprovals.expenseReceiptUrl,
-        expenseDate: portalApprovals.expenseDate,
-        createdAt: portalApprovals.createdAt,
-        updatedAt: portalApprovals.updatedAt,
-      })
-      .from(portalApprovals)
-      .leftJoin(portalUsers, eq(portalApprovals.requesterId, portalUsers.id))
-      .leftJoin(clients, eq(portalUsers.clientId, clients.id))
-      .where(eq(portalApprovals.id, id));
-
-    if (!row) {
-      throw new ServiceError("결재 문서를 찾을 수 없습니다", 404);
-    }
-
-    const approvalLine = JSON.parse(row.approvalLine || "[]");
-    
-    // 기안자 또는 결재선 포함자만 조회 가능하도록 제한
-    const inLine = approvalLine.some(item => item.userId === userId);
-    if (row.requesterId !== userId && !inLine) {
-      throw new ServiceError("해당 문서를 볼 권한이 없습니다", 403);
-    }
-
+    const uid = userId(req);
+    const year = new Date().getFullYear();
+    const used = sqlite.prepare(`
+      SELECT COALESCE(SUM(leave_duration), 0) as used
+      FROM portal_approvals
+      WHERE requester_id = ? AND type = 'leave' AND status = 'approved'
+        AND leave_start LIKE ?
+    `).get(uid, `${year}%`);
+    const totalAnnual = 15; // 기본 연차 일수 (설정 없으면 15일)
     res.json({
       data: {
-        ...row,
-        approvalLine,
+        totalAnnual,
+        usedAnnual: used.used || 0,
+        remainAnnual: Math.max(0, totalAnnual - (used.used || 0)),
       },
-      error: null,
-      meta: null,
+      error: null, meta: null,
     });
-  } catch (e) {
-    handleError(res, e);
-  }
+  } catch (e) { sendError(res, e, "leave-status"); }
 });
 
-// ─── 7. 승인 처리 ───
-router.post("/:id/approve", portalAuth, async (req, res) => {
+// 내가 올린 결재 요청
+router.get("/my-requests", (req, res) => {
   try {
-    const { userId } = req.portalUser;
-    const { id } = req.params;
-    const { comment } = req.body;
-
-    const updated = await approvalService.approveApproval(id, userId, comment);
-    res.json({ data: updated, error: null, meta: null });
-  } catch (e) {
-    handleError(res, e);
-  }
+    const rows = sqlite.prepare(
+      "SELECT * FROM portal_approvals WHERE requester_id = ? ORDER BY created_at DESC LIMIT 50"
+    ).all(userId(req));
+    res.json({ data: rows.map(parseApproval), error: null, meta: null });
+  } catch (e) { sendError(res, e, "my-requests"); }
 });
 
-// ─── 8. 반려 처리 ───
-router.post("/:id/reject", portalAuth, async (req, res) => {
+// 내가 결재해야 하는 목록
+router.get("/pending-approvals", (req, res) => {
   try {
-    const { userId } = req.portalUser;
-    const { id } = req.params;
-    const { comment } = req.body;
+    const rows = sqlite.prepare(
+      "SELECT * FROM portal_approvals WHERE current_approver_id = ? AND status = 'pending' ORDER BY created_at ASC LIMIT 50"
+    ).all(userId(req));
+    res.json({ data: rows.map(parseApproval), error: null, meta: null });
+  } catch (e) { sendError(res, e, "pending-approvals"); }
+});
 
-    const updated = await approvalService.rejectApproval(id, userId, comment);
-    res.json({ data: updated, error: null, meta: null });
-  } catch (e) {
-    handleError(res, e);
-  }
+// 결재 처리 이력 (내가 결재자로 포함된 완료 건)
+router.get("/my-history", (req, res) => {
+  try {
+    const uid = userId(req);
+    const rows = sqlite.prepare(
+      "SELECT * FROM portal_approvals WHERE (requester_id = ? OR current_approver_id = ?) AND status != 'pending' ORDER BY updated_at DESC LIMIT 50"
+    ).all(uid, uid);
+    res.json({ data: rows.map(parseApproval), error: null, meta: null });
+  } catch (e) { sendError(res, e, "my-history"); }
+});
+
+// 결재 상세
+router.get("/:id", (req, res) => {
+  try {
+    const row = sqlite.prepare("SELECT * FROM portal_approvals WHERE id = ?").get(req.params.id);
+    if (!row) return res.status(404).json({ data: null, error: "결재를 찾을 수 없습니다", meta: null });
+    res.json({ data: parseApproval(row), error: null, meta: null });
+  } catch (e) { sendError(res, e, "/:id"); }
+});
+
+// 결재 기안
+router.post("/", (req, res) => {
+  const { type, title, leaveType, leaveStart, leaveEnd, leaveDuration, expenseAmount, expenseCategory, expenseReceiptUrl, expenseDate, reason } = req.body || {};
+  if (!type || !title) return res.status(400).json({ data: null, error: "type과 title은 필수입니다", meta: null });
+  try {
+    const uid = userId(req);
+    // 결재선: 조직 설정에서 관리자 결재자를 가져오거나, 없으면 자기 자신이 단독 결재
+    const approvalSettings = sqlite.prepare(
+      "SELECT content FROM site_settings WHERE page = 'system' AND section = 'approval_settings'"
+    ).get();
+    let approverId = null;
+    let approvalLine = [];
+    if (approvalSettings?.content) {
+      const s = JSON.parse(approvalSettings.content);
+      if (s.fixedLine?.length) {
+        approvalLine = s.fixedLine;
+        approverId = s.fixedLine[0];
+      }
+    }
+    const id = crypto.randomUUID();
+    sqlite.prepare(`
+      INSERT INTO portal_approvals
+        (id, requester_id, type, title, status, current_approver_id, approval_line,
+         leave_type, leave_start, leave_end, leave_duration,
+         expense_amount, expense_category, expense_receipt_url, expense_date,
+         created_at, updated_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,datetime('now'),datetime('now'))
+    `).run(
+      id, uid, type, title, approverId ? "pending" : "approved", approverId,
+      JSON.stringify(approvalLine),
+      leaveType || null, leaveStart || null, leaveEnd || null, leaveDuration || null,
+      expenseAmount || null, expenseCategory || null, expenseReceiptUrl || null, expenseDate || null
+    );
+    const row = sqlite.prepare("SELECT * FROM portal_approvals WHERE id = ?").get(id);
+    res.status(201).json({ data: parseApproval(row), error: null, meta: null });
+  } catch (e) { sendError(res, e, "POST /"); }
+});
+
+// 결재 승인/반려
+router.patch("/:id/approve", (req, res) => {
+  try {
+    const row = sqlite.prepare("SELECT * FROM portal_approvals WHERE id = ? AND current_approver_id = ?").get(req.params.id, userId(req));
+    if (!row) return res.status(404).json({ data: null, error: "결재를 찾을 수 없거나 권한이 없습니다", meta: null });
+    sqlite.prepare(
+      "UPDATE portal_approvals SET status = 'approved', updated_at = datetime('now') WHERE id = ?"
+    ).run(row.id);
+    res.json({ data: { id: row.id, status: "approved" }, error: null, meta: null });
+  } catch (e) { sendError(res, e, "approve"); }
+});
+
+router.patch("/:id/reject", (req, res) => {
+  try {
+    const row = sqlite.prepare("SELECT * FROM portal_approvals WHERE id = ? AND current_approver_id = ?").get(req.params.id, userId(req));
+    if (!row) return res.status(404).json({ data: null, error: "결재를 찾을 수 없거나 권한이 없습니다", meta: null });
+    sqlite.prepare(
+      "UPDATE portal_approvals SET status = 'rejected', updated_at = datetime('now') WHERE id = ?"
+    ).run(row.id);
+    res.json({ data: { id: row.id, status: "rejected" }, error: null, meta: null });
+  } catch (e) { sendError(res, e, "reject"); }
+});
+
+// 영수증 업로드 URL 반환 (media 라우트에 위임)
+router.post("/receipt-upload", (req, res) => {
+  res.json({ data: { uploadUrl: "/api/media/upload" }, error: null, meta: null });
 });
 
 module.exports = router;

@@ -18,12 +18,11 @@ import {
   Bold, Italic, Underline as UnderlineIcon, Strikethrough,
   AlignLeft, AlignCenter, AlignRight, AlignJustify,
   List, ListOrdered, Indent, Outdent, Superscript, Subscript,
-  X, ChevronRight, Bot,
+  X, ChevronRight,
 } from "lucide-react";
 import BlogCoverImagePicker from "./BlogCoverImagePicker";
 import BlogAutoIllustrateDialog from "./BlogAutoIllustrateDialog";
-import BlogAutoWriteDialog from "./BlogAutoWriteDialog";
-import { BLOG_CATEGORIES } from "./constants";
+import { BLOG_CATEGORIES, PRACTICE_AREAS } from "./constants";
 import { deriveBlogPublishMetadata, isValidFutureSchedule } from "./blogPublishingUtils";
 
 const FONT_FAMILIES = [
@@ -143,7 +142,6 @@ export default function BlogSimpleShell({
   const [textColorOpen, setTextColorOpen] = useState(false);
   const [highlightOpen, setHighlightOpen] = useState(false);
   const [autoIllustrateOpen, setAutoIllustrateOpen] = useState(false);
-  const [autoWriteOpen, setAutoWriteOpen] = useState(false);
   const fileInputRef = useRef(null);
 
   const isScheduled = doc.status === "scheduled";
@@ -332,11 +330,6 @@ export default function BlogSimpleShell({
         <InsertButton icon={<Link2 size={20} />} label="링크" onClick={insertLink} />
         <InsertButton icon={<TableIcon size={20} />} label="표" onClick={insertTable} />
         <InsertButton icon={<Code size={20} />} label="코드" onClick={insertCodeBlock} />
-        <InsertButton
-          icon={<Bot size={20} color="#6366f1" />}
-          label="AI 글쓰기"
-          onClick={() => setAutoWriteOpen(true)}
-        />
         <InsertButton
           icon={<Sparkles size={20} color="#1a3a6b" />}
           label="AI 일러스트"
@@ -573,6 +566,17 @@ export default function BlogSimpleShell({
             </label>
 
             <label style={{ display: "grid", gap: 6 }}>
+              <span style={{ fontSize: 12, color: "#475569", fontWeight: 500 }}>업무분야 (사건사례)</span>
+              <select
+                value={doc.practiceArea || ""}
+                onChange={(e) => update({ practiceArea: e.target.value || null })}
+                style={{ height: 36, padding: "0 10px", fontSize: 13, border: "1px solid #e5e7eb", borderRadius: 6, background: "#fff" }}
+              >
+                {PRACTICE_AREAS.map((a) => <option key={a.value} value={a.value}>{a.label}</option>)}
+              </select>
+            </label>
+
+            <label style={{ display: "grid", gap: 6 }}>
               <span style={{ fontSize: 12, color: "#475569", fontWeight: 500 }}>공개 상태</span>
               <select
                 value={doc.status || "draft"}
@@ -670,14 +674,6 @@ export default function BlogSimpleShell({
         onClose={() => setAutoIllustrateOpen(false)}
         editor={editor}
         doc={doc}
-      />
-
-      <BlogAutoWriteDialog
-        open={autoWriteOpen}
-        onClose={() => setAutoWriteOpen(false)}
-        editor={editor}
-        doc={doc}
-        setDoc={setDoc}
       />
 
       {/* 본문 placeholder · 링크 색 등 라이트한 스타일 */}

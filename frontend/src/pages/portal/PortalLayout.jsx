@@ -8,7 +8,7 @@ import {
   Search, Home, Calendar, FileText, User, LogOut, Menu, Plus, Star,
   Trash2, FolderClosed, Clock, BookOpen, MessageSquare, ChevronRight,
   FolderOpen, Mail, Bot, ArrowLeft, Users, CalendarCheck, Bell, Network,
-  Receipt, Globe, Image, Video,
+  Receipt, Globe, Image, Video, Settings,
 } from "lucide-react";
 
 const THEME = {
@@ -76,6 +76,7 @@ export default function PortalLayout() {
   const [isMobile, setIsMobile] = useState(false);
   const [boardCategories, setBoardCategories] = useState([]);
   const [isPortalAdmin, setIsPortalAdmin] = useState(false);
+  const [openGroups, setOpenGroups] = useState({ blog: false, system: false, client: false });
 
   // ─ 알림
   const [notifications, setNotifications] = useState([]);
@@ -144,6 +145,22 @@ export default function PortalLayout() {
     return () => document.removeEventListener("mousedown", close);
   }, [showNotifPanel]);
 
+  // ─ 현재 경로 기반 그룹 활성 여부 — 조건부 return 전에 계산해야 hooks 순서가 유지됨
+  const SYSTEM_PATHS_LOCAL = ["/portal/profile", "/portal/lectures", "/portal/approvals", "/portal/ai-settings"];
+  const CLIENT_PATHS_LOCAL = ["/portal/clients", "/portal/messages", "/portal/contract-admin", "/portal/receipts", "/portal/reviews", "/portal/bookings"];
+  const isBlogActiveEarly = location.pathname.startsWith("/portal/blog") || location.pathname.startsWith("/portal/editor");
+  const isSystemActiveEarly = SYSTEM_PATHS_LOCAL.some(p => location.pathname.startsWith(p));
+  const isClientActiveEarly = CLIENT_PATHS_LOCAL.some(p => location.pathname.startsWith(p));
+
+  // 현재 경로가 그룹 내 항목이면 자동으로 펼침 — 반드시 조건부 return 전에 위치해야 함
+  useEffect(() => {
+    setOpenGroups(prev => ({
+      blog: prev.blog || isBlogActiveEarly,
+      system: prev.system || isSystemActiveEarly,
+      client: prev.client || isClientActiveEarly,
+    }));
+  }, [isBlogActiveEarly, isSystemActiveEarly, isClientActiveEarly]);
+
   if (authState === "checking") return null;
   if (authState === "unauthed") return <Navigate to="/login" replace />;
 
@@ -189,6 +206,12 @@ export default function PortalLayout() {
   const activeCategory = queryParams.get("category") || "";
   const activeFilter = queryParams.get("filter") || "";
   const isBoardMode = location.pathname.startsWith("/portal/board");
+
+  const SYSTEM_PATHS = SYSTEM_PATHS_LOCAL;
+  const CLIENT_PATHS = CLIENT_PATHS_LOCAL;
+  const isBlogActive = isBlogActiveEarly;
+  const isSystemActive = isSystemActiveEarly;
+  const isClientActive = isClientActiveEarly;
 
   // 프로필 사진 — lawyerPhotoUrl(변호사 프로필) > photoUrl(직접 업로드) > 이니셜
   const effectivePhotoUrl = userProfile?.user?.lawyerPhotoUrl || userProfile?.user?.photoUrl || null;
@@ -410,32 +433,91 @@ export default function PortalLayout() {
             <>
               <div className="portal-sidebar-header">메뉴</div>
               {[
-                { to: "/portal/calendar",        icon: <Home size={16} />,           label: "일정 캘린더 (홈)" },
-                { to: "/portal/dashboard",       icon: <Calendar size={16} />,       label: "사건 목록" },
-                { to: "/portal/board",           icon: <FileText size={16} />,       label: "게시판" },
-                { to: "/portal/time-tracking",   icon: <Clock size={16} />,          label: "타임트래킹" },
-                { to: "/portal/profile",         icon: <User size={16} />,           label: "프로필 설정" },
-                { to: "/portal/contract-admin",  icon: <FileText size={16} />,       label: "계약서 관리" },
-                { to: "/portal/receipts",        icon: <Receipt size={16} />,        label: "영수증" },
-                { to: "/portal/blog",            icon: <BookOpen size={16} />,       label: "블로그 관리" },
-                { to: "/portal/qna",             icon: <MessageSquare size={16} />,  label: "법률 Q&A 관리" },
-                { to: "/portal/reviews",         icon: <Star size={16} />,           label: "후기 관리" },
-                { to: "/portal/lectures",        icon: <Video size={16} />,          label: "강의 관리" },
-                { to: "/portal/site-manager",    icon: <Globe size={16} />,          label: "홈 편집" },
-                { to: "/portal/media",           icon: <Image size={16} />,          label: "미디어" },
-                { to: "/portal/approvals",       icon: <FileText size={16} />,       label: "전자결재 시스템" },
-                { to: "/portal/ai-settings",     icon: <Bot size={16} />,            label: "AI 연동 설정" },
-                { to: "/portal/messages",        icon: <Mail size={16} />,           label: "메시지 발송" },
-                { to: "/portal/bookings",        icon: <CalendarCheck size={16} />,  label: "예약 관리" },
-                { to: "/portal/clients",         icon: <Users size={16} />,          label: "고객 관리" },
-              ].map(({ to, icon, label }) => (
+                { to: "/portal/calendar",      icon: <Home size={16} />,     label: "일정 캘린더 (홈)", exact: true },
+                { to: "/portal/dashboard",     icon: <Calendar size={16} />, label: "사건 목록" },
+                { to: "/portal/board",         icon: <FileText size={16} />, label: "게시판" },
+                { to: "/portal/time-tracking", icon: <Clock size={16} />,    label: "타임트래킹" },
+              ].map(({ to, icon, label, exact }) => (
                 <Link key={to} to={to}
-                  className={`portal-sidebar-link ${location.pathname.startsWith(to) && (to !== "/portal/calendar" || location.pathname === to) ? "portal-sidebar-link-active" : ""}`}
+                  className={`portal-sidebar-link ${location.pathname.startsWith(to) && (!exact || location.pathname === to) ? "portal-sidebar-link-active" : ""}`}
                   onClick={() => isMobile && setIsSidebarOpen(false)}
                 >
                   {icon}{label}
                 </Link>
               ))}
+
+              {/* ─ 블로그 그룹 */}
+              <SidebarGroup
+                label="블로그"
+                icon={<BookOpen size={16} />}
+                open={openGroups.blog}
+                active={isBlogActive}
+                onToggle={() => setOpenGroups(p => ({ ...p, blog: !p.blog }))}
+              >
+                {[
+                  { to: "/portal/blog",              icon: <FileText size={14} />, label: "블로그 목록" },
+                  { to: "/portal/editor?mode=blog", icon: <Plus size={14} />,     label: "새 글 쓰기" },
+                ].map(({ to, icon, label }) => (
+                  <Link key={to} to={to}
+                    className={`portal-sidebar-link ${location.pathname.startsWith(to) ? "portal-sidebar-link-active" : ""}`}
+                    onClick={() => isMobile && setIsSidebarOpen(false)}
+                    style={{ fontSize: 12, paddingLeft: 10 }}
+                  >
+                    {icon}{label}
+                  </Link>
+                ))}
+              </SidebarGroup>
+
+              {/* ─ 고객 그룹 */}
+              <SidebarGroup
+                label="고객"
+                icon={<Users size={16} />}
+                open={openGroups.client}
+                active={isClientActive}
+                onToggle={() => setOpenGroups(p => ({ ...p, client: !p.client }))}
+              >
+                {[
+                  { to: "/portal/clients",       icon: <Users size={14} />,        label: "고객 관리" },
+                  { to: "/portal/messages",      icon: <Mail size={14} />,          label: "메시지 발송" },
+                  { to: "/portal/contract-admin",icon: <FileText size={14} />,      label: "계약서 관리" },
+                  { to: "/portal/receipts",      icon: <Receipt size={14} />,       label: "영수증" },
+                  { to: "/portal/reviews",       icon: <Star size={14} />,          label: "후기 관리" },
+                  { to: "/portal/bookings",      icon: <CalendarCheck size={14} />, label: "예약 관리" },
+                ].map(({ to, icon, label }) => (
+                  <Link key={to} to={to}
+                    className={`portal-sidebar-link ${location.pathname.startsWith(to) ? "portal-sidebar-link-active" : ""}`}
+                    onClick={() => isMobile && setIsSidebarOpen(false)}
+                    style={{ fontSize: 12, paddingLeft: 10 }}
+                  >
+                    {icon}{label}
+                  </Link>
+                ))}
+              </SidebarGroup>
+
+              {/* ─ 시스템 그룹 */}
+              <SidebarGroup
+                label="시스템"
+                icon={<Settings size={16} />}
+                open={openGroups.system}
+                active={isSystemActive}
+                onToggle={() => setOpenGroups(p => ({ ...p, system: !p.system }))}
+              >
+                {[
+                  { to: "/portal/profile",     icon: <User size={14} />,     label: "프로필 설정" },
+                  { to: "/portal/lectures",    icon: <Video size={14} />,    label: "강의" },
+                  { to: "/portal/approvals",   icon: <FileText size={14} />, label: "전자결재 시스템" },
+                  { to: "/portal/ai-settings", icon: <Bot size={14} />,      label: "AI 연동 설정" },
+                ].map(({ to, icon, label }) => (
+                  <Link key={to} to={to}
+                    className={`portal-sidebar-link ${location.pathname.startsWith(to) ? "portal-sidebar-link-active" : ""}`}
+                    onClick={() => isMobile && setIsSidebarOpen(false)}
+                    style={{ fontSize: 12, paddingLeft: 10 }}
+                  >
+                    {icon}{label}
+                  </Link>
+                ))}
+              </SidebarGroup>
+
               <a href="/" className="portal-sidebar-link">
                 <BookOpen size={16} style={{ color: THEME.sidebarTextMuted }} />홈페이지 바로가기
               </a>
@@ -934,4 +1016,54 @@ function avatarColor(str) {
   let h = 0;
   for (let i = 0; i < (str || "").length; i++) h = (h + str.charCodeAt(i)) % AVATAR_COLORS.length;
   return AVATAR_COLORS[h];
+}
+
+// ─── 사이드바 아코디언 그룹 ──────────────────────────────────────────────
+function SidebarGroup({ label, icon, open, active, onToggle, children }) {
+  return (
+    <div style={{ marginBottom: 2 }}>
+      <button
+        type="button"
+        onClick={onToggle}
+        style={{
+          display: "flex", alignItems: "center", gap: 10,
+          width: "100%", padding: "8px 12px", borderRadius: 6,
+          background: "transparent", border: "none", cursor: "pointer",
+          fontSize: 13, fontWeight: active ? 600 : 500,
+          color: active ? THEME.accent : THEME.sidebarText,
+          borderLeft: active ? `2px solid ${THEME.accent}` : "2px solid transparent",
+          transition: "background-color 150ms ease, color 150ms ease",
+        }}
+        onMouseEnter={e => {
+          if (!active) {
+            e.currentTarget.style.background = THEME.sidebarHoverBg;
+            e.currentTarget.style.color = "#ffffff";
+          }
+        }}
+        onMouseLeave={e => {
+          if (!active) {
+            e.currentTarget.style.background = "transparent";
+            e.currentTarget.style.color = THEME.sidebarText;
+          }
+        }}
+      >
+        {icon}
+        <span style={{ flex: 1, textAlign: "left" }}>{label}</span>
+        <ChevronRight
+          size={13}
+          style={{
+            flexShrink: 0,
+            color: THEME.sidebarTextMuted,
+            transition: "transform 0.2s",
+            transform: open ? "rotate(90deg)" : "rotate(0deg)",
+          }}
+        />
+      </button>
+      {open && (
+        <div style={{ paddingLeft: 8, paddingBottom: 4 }}>
+          {children}
+        </div>
+      )}
+    </div>
+  );
 }

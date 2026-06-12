@@ -10,7 +10,7 @@
  * 운영자가 인서트 후 드래그&드롭으로 직접 위치 조정 가능.
  */
 import { useEffect, useState } from "react";
-import { Sparkles, Trash2, Plus, Loader2, Wand2, X, RotateCcw, Bot, ExternalLink } from "lucide-react";
+import { Sparkles, Trash2, Plus, Loader2, Wand2, X, RotateCcw } from "lucide-react";
 import {
   loadAiConfig,
   getStoredPromptModel,
@@ -94,11 +94,6 @@ export default function BlogAutoIllustrateDialog({ open, onClose, editor, doc })
   const [_aiConfig, setAiConfig] = useState(null);
   const [imageModel, setImageModel] = useState("");
   const [promptModel, setPromptModel] = useState("");
-  // 사용자 등록 AI 설정
-  const [userAiConfigs, setUserAiConfigs] = useState([]);
-  const [selectedPromptAiConfigId, setSelectedPromptAiConfigId] = useState("");
-  const [selectedImageAiConfigId, setSelectedImageAiConfigId] = useState("");
-
   useEffect(() => {
     if (!open) return;
     let alive = true;
@@ -108,16 +103,6 @@ export default function BlogAutoIllustrateDialog({ open, onClose, editor, doc })
       setAiConfig(cfg);
       setImageModel(getStoredImageModel() || cfg?.image?.defaultModel || "dall-e-3");
       setPromptModel(getStoredPromptModel() || cfg?.prompt?.defaultModel || "claude-haiku-4-5");
-      // 사용자 등록 AI 목록
-      const userCfgs = cfg?.userAiConfigs || [];
-      setUserAiConfigs(userCfgs);
-      // 이전 선택값 복원 (또는 기본 AI)
-      const storedPromptCfg = getStoredPromptAiConfigId();
-      const defaultPromptCfg = userCfgs.find((c) => c.isDefaultPrompt)?.id || "";
-      setSelectedPromptAiConfigId(storedPromptCfg && userCfgs.some((c) => c.id === storedPromptCfg) ? storedPromptCfg : defaultPromptCfg);
-      const storedImageCfg = getStoredImageAiConfigId();
-      const defaultImageCfg = userCfgs.find((c) => c.isDefaultImage)?.id || "";
-      setSelectedImageAiConfigId(storedImageCfg && userCfgs.some((c) => c.id === storedImageCfg) ? storedImageCfg : defaultImageCfg);
     })();
     return () => { alive = false; };
   }, [open]);
@@ -150,7 +135,6 @@ export default function BlogAutoIllustrateDialog({ open, onClose, editor, doc })
         count: 3,
         scope: "inline",
         model: promptModel,
-        ...(selectedPromptAiConfigId ? { userAiConfigId: selectedPromptAiConfigId } : {}),
       });
       const next = (json.data || []).map((p, i) => ({
         id: `sug_${Date.now()}_${i}`,
@@ -194,7 +178,6 @@ export default function BlogAutoIllustrateDialog({ open, onClose, editor, doc })
         size: "1792x1024",
         folder: "blog",
         model: imageModel,
-        ...(selectedImageAiConfigId ? { userAiConfigId: selectedImageAiConfigId } : {}),
       });
       const url = json.data?.url;
       if (!url) throw new Error("이미지 URL 없음");
@@ -241,7 +224,6 @@ export default function BlogAutoIllustrateDialog({ open, onClose, editor, doc })
           size: "1792x1024",
           folder: "blog",
           model: imageModel,
-          ...(selectedImageAiConfigId ? { userAiConfigId: selectedImageAiConfigId } : {}),
         });
         const url = json.data?.url;
         if (!url) throw new Error("이미지 URL 없음");
@@ -300,42 +282,34 @@ export default function BlogAutoIllustrateDialog({ open, onClose, editor, doc })
             </p>
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10 }}>
-              {/* 프롬프트 추천 AI 선택 */}
               <label style={{ display: "grid", gap: 4, fontSize: 12, color: "#475569" }}>
-                <span style={{ fontWeight: 600 }}>글쓰기 AI (프롬프트 추천)</span>
+                <span>프롬프트 추천 모델 (Claude)</span>
                 <select
-                  value={selectedPromptAiConfigId}
-                  onChange={(e) => handlePromptAiConfigChange(e.target.value)}
+                  value={promptModel}
+                  onChange={(e) => handlePromptModelChange(e.target.value)}
                   style={{ height: 36, padding: "0 10px", fontSize: 13, border: "1px solid #cbd5e1", borderRadius: 6, background: "#fff" }}
                 >
-                  <option value="" disabled>사용할 AI를 선택하세요</option>
-                  {userAiConfigs.filter((c) => ["anthropic", "openai", "google"].includes(c.provider) && !c.modelId.includes("dall-e") && !c.modelId.includes("imagen") && !c.modelId.includes("image")).map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.nickname} ({c.modelId}){c.isDefaultPrompt ? " · 기본" : ""}
+                  {(aiConfig?.prompt?.allowedModels || ["claude-haiku-4-5"]).map((m) => (
+                    <option key={m} value={m}>
+                      {PROMPT_MODEL_LABELS[m] || m}
+                      {m === aiConfig?.prompt?.defaultModel ? " · 기본" : ""}
                     </option>
                   ))}
-                  {userAiConfigs.filter((c) => !c.modelId.includes("dall-e") && !c.modelId.includes("imagen") && !c.modelId.includes("image")).length === 0 && (
-                    <option disabled value="">등록된 AI 없음 (AI 설정에서 추가)</option>
-                  )}
                 </select>
               </label>
-              {/* 이미지 생성 AI 선택 */}
               <label style={{ display: "grid", gap: 4, fontSize: 12, color: "#475569" }}>
-                <span style={{ fontWeight: 600 }}>이미지 생성 AI</span>
+                <span>이미지 생성 모델 (OpenAI)</span>
                 <select
-                  value={selectedImageAiConfigId}
-                  onChange={(e) => handleImageAiConfigChange(e.target.value)}
+                  value={imageModel}
+                  onChange={(e) => handleImageModelChange(e.target.value)}
                   style={{ height: 36, padding: "0 10px", fontSize: 13, border: "1px solid #cbd5e1", borderRadius: 6, background: "#fff" }}
                 >
-                  <option value="" disabled>사용할 이미지 AI를 선택하세요</option>
-                  {userAiConfigs.filter((c) => c.provider === "openai" && (c.modelId.includes("dall-e") || c.modelId.includes("image"))).map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.nickname} ({c.modelId}){c.isDefaultImage ? " · 기본" : ""}
+                  {(aiConfig?.image?.allowedModels || ["dall-e-3"]).map((m) => (
+                    <option key={m} value={m}>
+                      {IMAGE_MODEL_LABELS[m] || m}
+                      {m === aiConfig?.image?.defaultModel ? " · 기본" : ""}
                     </option>
                   ))}
-                  {userAiConfigs.filter((c) => c.provider === "openai" && (c.modelId.includes("dall-e") || c.modelId.includes("image"))).length === 0 && (
-                    <option disabled value="">등록된 이미지 AI 없음</option>
-                  )}
                 </select>
               </label>
             </div>

@@ -253,11 +253,11 @@ function CreateModal({ members, membersErr, onRetryMembers, myId, onClose, onCre
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
             <div>
               <label style={s.label}>시작 시간 *</label>
-              <input style={s.input} type="datetime-local" value={form.startsAt} onChange={e => setField("startsAt", e.target.value)} />
+              <input style={s.input} type="datetime-local" defaultValue="" onChange={e => setField("startsAt", e.target.value)} />
             </div>
             <div>
               <label style={s.label}>종료 시간</label>
-              <input style={s.input} type="datetime-local" value={form.endsAt} onChange={e => setField("endsAt", e.target.value)} />
+              <input style={s.input} type="datetime-local" defaultValue="" onChange={e => setField("endsAt", e.target.value)} />
             </div>
           </div>
 

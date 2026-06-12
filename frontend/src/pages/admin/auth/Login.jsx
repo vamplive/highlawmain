@@ -14,7 +14,6 @@ export default function AdminLogin({ onLogin }) {
   const [username, setUsername] = useState("");
   const [pw, setPw] = useState("");
   const [err, setErr] = useState("");
-  const [tab, setTab] = useState("admin");
   const [clock, setClock] = useState(new Date());
   const [attempts, setAttempts] = useState(0);
   const [locked, setLocked] = useState(false);
@@ -169,30 +168,8 @@ export default function AdminLogin({ onLogin }) {
           <div className="admin-login__label">ADMINISTRATION</div>
           <h1 className="admin-login__heading">관리자 인증</h1>
 
-          {/* 역할 전환 탭 */}
-          <div className="admin-login__tabs">
-            <button
-              type="button"
-              className={`admin-login__tab ${tab === "admin" ? "admin-login__tab--active" : "admin-login__tab--inactive"}`}
-              onClick={() => setTab("admin")}
-            >
-              관리자
-            </button>
-            <button
-              type="button"
-              className={`admin-login__tab ${tab === "staff" ? "admin-login__tab--active" : "admin-login__tab--inactive"}`}
-              onClick={() => setTab("staff")}
-            >
-              직원
-            </button>
-          </div>
-
           {/* 인증 폼 */}
-          <form onSubmit={submit} autoComplete="off">
-            {/* 브라우저(크롬 등) 자동완성 방지용 더미 필드 */}
-            <input type="text" name="username" style={{ display: "none" }} tabIndex={-1} />
-            <input type="password" name="password" style={{ display: "none" }} tabIndex={-1} />
-
+          <form onSubmit={submit}>
             <label htmlFor="admin-username" className="admin-login__pw-label">USERNAME</label>
             <input
               id="admin-username"
@@ -202,7 +179,7 @@ export default function AdminLogin({ onLogin }) {
               onChange={(e) => { setUsername(e.target.value); setErr(""); }}
               disabled={locked}
               autoFocus
-              placeholder="아이디를 입력하세요"
+              placeholder="admin"
               autoComplete="off"
             />
             <label htmlFor="admin-password" className="admin-login__pw-label" style={{ marginTop: 16 }}>PASSWORD</label>

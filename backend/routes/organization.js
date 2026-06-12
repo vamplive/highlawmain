@@ -1,215 +1,101 @@
+/** 조직/부서/결재설정 관리 API — /api/admin/organization */
 const { Router } = require("express");
-const { db } = require("../db");
-const { departments, portalUsers, clients, siteSettings, lawyers } = require("../db/schema");
-const { eq, and, sql } = require("drizzle-orm");
+const crypto = require("crypto");
 const { adminAuth } = require("../lib/auth");
-const { handleError } = require("../lib/route-handler");
-const { ServiceError, validateUUID, nowTimestamp } = require("../services/helpers");
+const { sqlite } = require("../db");
 
 const router = Router();
+router.use(adminAuth);
 
-// =========================================================================
-// 1. 부서 (Departments) CRUD
-// =========================================================================
+function sendError(res, e, label) {
+  console.error(`[organization ${label}]`, e.message);
+  res.status(500).json({ data: null, error: "서버 오류가 발생했습니다", meta: null });
+}
 
-// ─── 부서 목록 조회 ───
-router.get("/departments", adminAuth, async (req, res) => {
+// 부서 목록
+router.get("/departments", (req, res) => {
   try {
-    const rows = await db
-      .select({
-        id: departments.id,
-        name: departments.name,
-        parentId: departments.parentId,
-        managerUserId: departments.managerUserId,
-        managerName: clients.name,
-        managerPosition: portalUsers.position,
-        createdAt: departments.createdAt,
-        updatedAt: departments.updatedAt,
-      })
-      .from(departments)
-      .leftJoin(portalUsers, eq(departments.managerUserId, portalUsers.id))
-      .leftJoin(clients, eq(portalUsers.clientId, clients.id));
-
-    res.json({ data: rows, error: null, meta: { total: rows.length } });
-  } catch (e) {
-    handleError(res, e);
-  }
+    const rows = sqlite.prepare("SELECT * FROM departments ORDER BY created_at ASC").all();
+    res.json({ data: rows, error: null, meta: null });
+  } catch (e) { sendError(res, e, "GET departments"); }
 });
 
-// ─── 부서 등록 ───
-router.post("/departments", adminAuth, async (req, res) => {
+// 부서 생성
+router.post("/departments", (req, res) => {
+  const { name, parentId, managerUserId } = req.body || {};
+  if (!name) return res.status(400).json({ data: null, error: "name은 필수입니다", meta: null });
   try {
-    const { name, parentId, managerUserId } = req.body;
-    if (!name || !name.trim()) {
-      throw new ServiceError("부서명을 입력해주세요", 400);
-    }
-
-    const [created] = await db
-      .insert(departments)
-      .values({
-        name: name.trim(),
-        parentId: parentId || null,
-        managerUserId: managerUserId || null,
-      })
-      .returning();
-
-    res.status(201).json({ data: created, error: null, meta: null });
-  } catch (e) {
-    handleError(res, e);
-  }
+    const id = crypto.randomUUID();
+    sqlite.prepare(`
+      INSERT INTO departments (id, name, parent_id, manager_user_id, created_at, updated_at)
+      VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))
+    `).run(id, name, parentId || null, managerUserId || null);
+    const row = sqlite.prepare("SELECT * FROM departments WHERE id = ?").get(id);
+    res.status(201).json({ data: row, error: null, meta: null });
+  } catch (e) { sendError(res, e, "POST departments"); }
 });
 
-// ─── 부서 수정 ───
-router.put("/departments/:id", adminAuth, async (req, res) => {
+// 부서 수정
+router.put("/departments/:id", (req, res) => {
+  const { name, parentId, managerUserId } = req.body || {};
   try {
-    const { id } = req.params;
-    validateUUID(id);
-
-    const { name, parentId, managerUserId } = req.body;
-    if (!name || !name.trim()) {
-      throw new ServiceError("부서명을 입력해주세요", 400);
-    }
-
-    // 순환 참조 방지 검증 (부모 부서가 자신이나 하위 부서가 되지 않도록 검증)
-    if (parentId && parentId === id) {
-      throw new ServiceError("자기 자신을 상위 부서로 지정할 수 없습니다", 400);
-    }
-
-    const [existing] = await db.select().from(departments).where(eq(departments.id, id));
-    if (!existing) {
-      throw new ServiceError("부서를 찾을 수 없습니다", 404);
-    }
-
-    const [updated] = await db
-      .update(departments)
-      .set({
-        name: name.trim(),
-        parentId: parentId || null,
-        managerUserId: managerUserId || null,
-        updatedAt: nowTimestamp(),
-      })
-      .where(eq(departments.id, id))
-      .returning();
-
+    const row = sqlite.prepare("SELECT id FROM departments WHERE id = ?").get(req.params.id);
+    if (!row) return res.status(404).json({ data: null, error: "부서를 찾을 수 없습니다", meta: null });
+    sqlite.prepare(`
+      UPDATE departments SET name = ?, parent_id = ?, manager_user_id = ?, updated_at = datetime('now')
+      WHERE id = ?
+    `).run(name, parentId || null, managerUserId || null, row.id);
+    const updated = sqlite.prepare("SELECT * FROM departments WHERE id = ?").get(row.id);
     res.json({ data: updated, error: null, meta: null });
-  } catch (e) {
-    handleError(res, e);
-  }
+  } catch (e) { sendError(res, e, "PUT departments/:id"); }
 });
 
-// ─── 부서 삭제 ───
-router.delete("/departments/:id", adminAuth, async (req, res) => {
+// 부서 삭제
+router.delete("/departments/:id", (req, res) => {
   try {
-    const { id } = req.params;
-    validateUUID(id);
-
-    const [existing] = await db.select().from(departments).where(eq(departments.id, id));
-    if (!existing) {
-      throw new ServiceError("부서를 찾을 수 없습니다", 404);
-    }
-
-    // 하위 부서들의 상위 부서 지정을 삭제할 부서의 상위 부서로 업데이트하여 계층 구조 유지
-    await db
-      .update(departments)
-      .set({ parentId: existing.parentId || null })
-      .where(eq(departments.parentId, id));
-
-    // 이 부서에 속한 사용자들의 부서 아이디 비우기
-    await db
-      .update(portalUsers)
-      .set({ departmentId: null })
-      .where(eq(portalUsers.departmentId, id));
-
-    await db.delete(departments).where(eq(departments.id, id));
-
-    res.json({ data: { deleted: true, id }, error: null, meta: null });
-  } catch (e) {
-    handleError(res, e);
-  }
+    const row = sqlite.prepare("SELECT id FROM departments WHERE id = ?").get(req.params.id);
+    if (!row) return res.status(404).json({ data: null, error: "부서를 찾을 수 없습니다", meta: null });
+    sqlite.prepare("DELETE FROM departments WHERE id = ?").run(row.id);
+    res.json({ data: { id: row.id }, error: null, meta: null });
+  } catch (e) { sendError(res, e, "DELETE departments/:id"); }
 });
 
-
-// =========================================================================
-// 2. 사원 정보 관리 (인사부서 연동용)
-// =========================================================================
-
-// ─── 사원 목록 조회 ───
-router.get("/users", adminAuth, async (req, res) => {
+// 구성원(portal_users) 목록 — 조직 관리에서 사용
+router.get("/users", (req, res) => {
   try {
-    const rows = await db
-      .select({
-        id: portalUsers.id,
-        email: portalUsers.email,
-        name: clients.name,
-        phone: clients.phone,
-        role: portalUsers.role,
-        isActive: portalUsers.isActive,
-        position: portalUsers.position,
-        hireDate: portalUsers.hireDate,
-        departmentId: portalUsers.departmentId,
-        departmentName: departments.name,
-        createdAt: portalUsers.createdAt,
-      })
-      .from(portalUsers)
-      .leftJoin(clients, eq(portalUsers.clientId, clients.id))
-      .leftJoin(departments, eq(portalUsers.departmentId, departments.id))
-      .orderBy(portalUsers.createdAt);
-
-    res.json({ data: rows, error: null, meta: { total: rows.length } });
-  } catch (e) {
-    handleError(res, e);
-  }
+    const rows = sqlite.prepare(`
+      SELECT id, email, role, position, department_id, hire_date, is_active, created_at
+      FROM portal_users ORDER BY email ASC
+    `).all();
+    res.json({ data: rows, error: null, meta: null });
+  } catch (e) { sendError(res, e, "GET users"); }
 });
 
-// ─── 사원 부서/직급/입사일 수정 ───
-router.put("/users/:id", adminAuth, async (req, res) => {
+// 구성원 정보 수정 (부서/직급/입사일/역할)
+router.put("/users/:id", (req, res) => {
+  const { departmentId, position, hireDate, role } = req.body || {};
   try {
-    const { id } = req.params;
-    validateUUID(id);
-
-    const { departmentId, position, hireDate, role } = req.body;
-
-    const [existing] = await db.select().from(portalUsers).where(eq(portalUsers.id, id));
-    if (!existing) {
-      throw new ServiceError("사용자를 찾을 수 없습니다", 404);
-    }
-
-    const [updated] = await db
-      .update(portalUsers)
-      .set({
-        departmentId: departmentId || null,
-        position: position || null,
-        hireDate: hireDate || null,
-        role: role || existing.role,
-        updatedAt: nowTimestamp(),
-      })
-      .where(eq(portalUsers.id, id))
-      .returning();
-
+    const row = sqlite.prepare("SELECT id FROM portal_users WHERE id = ?").get(req.params.id);
+    if (!row) return res.status(404).json({ data: null, error: "사용자를 찾을 수 없습니다", meta: null });
+    const updates = [];
+    const params = [];
+    if (departmentId !== undefined) { updates.push("department_id = ?"); params.push(departmentId || null); }
+    if (position !== undefined) { updates.push("position = ?"); params.push(position || null); }
+    if (hireDate !== undefined) { updates.push("hire_date = ?"); params.push(hireDate || null); }
+    if (role !== undefined) { updates.push("role = ?"); params.push(role); }
+    if (updates.length === 0) return res.status(400).json({ data: null, error: "수정할 항목이 없습니다", meta: null });
+    params.push(row.id);
+    sqlite.prepare(`UPDATE portal_users SET ${updates.join(", ")} WHERE id = ?`).run(...params);
+    const updated = sqlite.prepare("SELECT id, email, role, position, department_id, hire_date, is_active FROM portal_users WHERE id = ?").get(row.id);
     res.json({ data: updated, error: null, meta: null });
-  } catch (e) {
-    handleError(res, e);
-  }
+  } catch (e) { sendError(res, e, "PUT users/:id"); }
 });
 
-// =========================================================================
-// 3. 결재 설정 (Approval Settings)
-// =========================================================================
-
-// ─── 결재 설정 조회 ───
-router.get("/approval-settings", adminAuth, async (req, res) => {
+// 결재 설정 조회
+router.get("/approval-settings", (req, res) => {
   try {
-    const [setting] = await db
-      .select()
-      .from(siteSettings)
-      .where(
-        and(
-          eq(siteSettings.page, "portal"),
-          eq(siteSettings.section, "approvals")
-        )
-      );
-
-    const defaultSettings = {
+    const row = sqlite.prepare("SELECT content FROM site_settings WHERE page = 'system' AND section = 'approval_settings'").get();
+    const defaults = {
       approvalLineType: "dept",
       fixedLine: [],
       leaveEnabled: true,
@@ -218,90 +104,37 @@ router.get("/approval-settings", adminAuth, async (req, res) => {
       expenseLimit: 5000000,
       reimbursementEnabled: true,
     };
-
-    let data = defaultSettings;
-    if (setting && setting.content) {
-      try {
-        data = { ...defaultSettings, ...JSON.parse(setting.content) };
-      } catch (e) {
-        // parsing error fallback
-      }
-    }
-
+    const data = row?.content ? { ...defaults, ...JSON.parse(row.content) } : defaults;
     res.json({ data, error: null, meta: null });
-  } catch (e) {
-    handleError(res, e);
-  }
+  } catch (e) { sendError(res, e, "GET approval-settings"); }
 });
 
-// ─── 결재 설정 저장 ───
-router.post("/approval-settings", adminAuth, async (req, res) => {
+// 결재 설정 저장
+router.post("/approval-settings", (req, res) => {
   try {
-    const content = JSON.stringify(req.body);
-
-    const [existing] = await db
-      .select()
-      .from(siteSettings)
-      .where(
-        and(
-          eq(siteSettings.page, "portal"),
-          eq(siteSettings.section, "approvals")
-        )
-      );
-
+    const content = JSON.stringify(req.body || {});
+    const existing = sqlite.prepare("SELECT id FROM site_settings WHERE page = 'system' AND section = 'approval_settings'").get();
     if (existing) {
-      await db
-        .update(siteSettings)
-        .set({
-          content,
-        })
-        .where(
-          and(
-            eq(siteSettings.page, "portal"),
-            eq(siteSettings.section, "approvals")
-          )
-        );
+      sqlite.prepare("UPDATE site_settings SET content = ?, updated_at = datetime('now') WHERE page = 'system' AND section = 'approval_settings'").run(content);
     } else {
-      await db
-        .insert(siteSettings)
-        .values({
-          page: "portal",
-          section: "approvals",
-          content,
-        });
+      sqlite.prepare("INSERT INTO site_settings (id, page, section, content, updated_at) VALUES (?, 'system', 'approval_settings', ?, datetime('now'))").run(crypto.randomUUID(), content);
     }
-
-    res.json({ data: { success: true }, error: null, meta: null });
-  } catch (e) {
-    handleError(res, e);
-  }
+    res.json({ data: req.body, error: null, meta: null });
+  } catch (e) { sendError(res, e, "POST approval-settings"); }
 });
 
-// =========================================================================
-// 4. 변호사 ↔ 포털 계정 연동 조회
-// =========================================================================
-
-// ─── 변호사 목록 조회 (이메일 기준 포털 연동 상태 포함) ───
-router.get("/lawyers-link", adminAuth, async (req, res) => {
+// 변호사-구성원 연결 목록
+router.get("/lawyers-link", (req, res) => {
   try {
-    const allLawyers = db.select().from(lawyers).all();
-    const allPortalUsers = await db.select({ id: portalUsers.id, email: portalUsers.email }).from(portalUsers);
-
-    const portalEmailMap = {};
-    for (const pu of allPortalUsers) {
-      if (pu.email) portalEmailMap[pu.email.toLowerCase()] = pu.id;
-    }
-
-    const result = allLawyers.map((lw) => ({
-      ...lw,
-      linkedPortalUserId: lw.email ? (portalEmailMap[lw.email.toLowerCase()] || null) : null,
-      isLinked: lw.email ? !!portalEmailMap[lw.email.toLowerCase()] : false,
-    }));
-
-    res.json({ data: result, error: null, meta: { total: result.length } });
-  } catch (e) {
-    handleError(res, e);
-  }
+    const rows = sqlite.prepare(`
+      SELECT l.id, l.name_ko, l.name_en, l.role, l.position,
+             pu.id as portal_user_id, pu.email as portal_user_email
+      FROM lawyers l
+      LEFT JOIN portal_users pu ON pu.email = l.email
+      ORDER BY l.name_ko ASC
+    `).all();
+    res.json({ data: rows, error: null, meta: null });
+  } catch (e) { sendError(res, e, "GET lawyers-link"); }
 });
 
 module.exports = router;

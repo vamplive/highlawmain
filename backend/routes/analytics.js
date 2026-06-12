@@ -6,7 +6,7 @@
 const { Router } = require("express");
 const { handleError } = require("../lib/route-handler");
 const { sqlite } = require("../db");
-const { adminAuth, adminOrPortalAuth } = require("../lib/auth");
+const { adminAuth } = require("../lib/auth");
 
 const router = Router();
 
@@ -157,7 +157,7 @@ router.get("/referrers", adminAuth, (req, res) => {
  * GET /blog-posts/:id?period=30d — 특정 블로그 게시글 독자/검색어 분석
  * - 실제 실명은 공개 방문만으로 식별할 수 없으므로 세션, 마스킹 IP, UA 기준으로 표시
  */
-router.get("/blog-posts/:id", adminOrPortalAuth, (req, res) => {
+router.get("/blog-posts/:id", adminAuth, (req, res) => {
   try {
     const modifier = getPeriodModifier(req.query.period || "30d");
     const post = sqlite.prepare("SELECT id, title, slug, view_count FROM blog_posts WHERE id = ?").get(req.params.id);
@@ -235,7 +235,7 @@ router.get("/blog-posts/:id", adminOrPortalAuth, (req, res) => {
 /**
  * GET /blog-overview?period=30d — 전체 블로그 조회 분석
  */
-router.get("/blog-overview", adminOrPortalAuth, (req, res) => {
+router.get("/blog-overview", adminAuth, (req, res) => {
   try {
     const modifier = getPeriodModifier(req.query.period || "30d");
     const posts = sqlite.prepare(`

@@ -71,6 +71,39 @@ const photoUpload = multer({
 });
 
 // =============================================
+// 게시판 첨부파일 업로드 multer 설정
+// =============================================
+const BOARD_ATTACH_DIR = path.join(STORAGE_PATH, "uploads", "board");
+
+const boardAttachStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    fs.mkdirSync(BOARD_ATTACH_DIR, { recursive: true });
+    cb(null, BOARD_ATTACH_DIR);
+  },
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const safeName = `board-${Date.now()}-${crypto.randomBytes(4).toString("hex")}${ext}`;
+    cb(null, safeName);
+  },
+});
+
+// 허용 확장자: 이미지 + 오피스 + PDF
+const ALLOWED_BOARD_MIME = /^(image\/(jpeg|png|webp|gif|svg\+xml)|application\/(pdf|msword|vnd\.openxmlformats-officedocument\.(wordprocessingml\.document|spreadsheetml\.sheet|presentationml\.presentation)|vnd\.ms-excel|vnd\.ms-powerpoint|zip|x-zip-compressed)|text\/(plain|csv)|application\/haansofthwp)$/;
+
+const boardAttachUpload = multer({
+  storage: boardAttachStorage,
+  limits: { fileSize: 30 * 1024 * 1024 }, // 30MB per file
+  fileFilter: (_req, file, cb) => {
+    // HWP, HWPX, DOCX, PDF 등 허용
+    if (ALLOWED_BOARD_MIME.test(file.mimetype) || /\.(hwp|hwpx|docx?|xlsx?|pptx?|pdf|txt|csv|zip)$/i.test(file.originalname)) {
+      cb(null, true);
+    } else {
+      cb(new Error("허용되지 않는 파일 형식입니다"), false);
+    }
+  },
+});
+
+// =============================================
 // 공개 엔드포인트
 // =============================================
 
@@ -126,6 +159,43 @@ router.post("/find-id", async (req, res) => {
   } catch (e) {
     handleError(res, e);
   }
+});
+
+/** POST /api/portal/change-password — 로그인 상태에서 비밀번호 변경 */
+router.post("/change-password", portalAuth, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body || {};
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ data: null, error: "현재 비밀번호와 새 비밀번호를 모두 입력해주세요", meta: null });
+    }
+    const result = await portalService.changePortalPassword(req.portalUser.id, currentPassword, newPassword);
+    res.json({ data: result, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+/** POST /api/portal/board/upload-image — 게시판 에디터 인라인 이미지 업로드 */
+router.post("/board/upload-image", portalAuth, (req, res) => {
+  boardAttachUpload.single("image")(req, res, (err) => {
+    if (err) return res.status(400).json({ data: null, error: err.message, meta: null });
+    if (!req.file) return res.status(400).json({ data: null, error: "파일이 없습니다", meta: null });
+    res.json({ data: { url: `/uploads/board/${req.file.filename}` }, error: null, meta: null });
+  });
+});
+
+/** POST /api/portal/board/upload-attachments — 게시판 첨부파일 (최대 10개) */
+router.post("/board/upload-attachments", portalAuth, (req, res) => {
+  boardAttachUpload.array("files", 10)(req, res, (err) => {
+    if (err) return res.status(400).json({ data: null, error: err.message, meta: null });
+    const files = (req.files || []).map((f) => ({
+      name: f.originalname,
+      url: `/uploads/board/${f.filename}`,
+      size: f.size,
+      mime: f.mimetype,
+    }));
+    res.json({ data: { files }, error: null, meta: null });
+  });
 });
 
 /** POST /api/portal/forgot-password — 비밀번호 재설정 링크 이메일 발송 */

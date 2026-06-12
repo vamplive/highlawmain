@@ -277,6 +277,7 @@ const blogPosts = sqliteTable("blog_posts", {
   geoFaq: text("geo_faq"),
   geoKeywords: text("geo_keywords"),
   footnotes: text("footnotes"),
+  practiceArea: text("practice_area"),
   isPublished: integer("is_published").notNull().default(0),
   viewCount: integer("view_count").notNull().default(0),
   publishedAt: text("published_at"),
@@ -1081,6 +1082,7 @@ const portalPosts = sqliteTable("portal_posts", {
   viewCount: integer("view_count").notNull().default(0),
   isPinned: integer("is_pinned").notNull().default(0), // 필독
   isImportant: integer("is_important").notNull().default(0), // 중요
+  attachments: text("attachments"), // JSON array of {name, url, size, mime}
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
   updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
 });

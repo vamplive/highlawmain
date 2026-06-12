@@ -57,24 +57,14 @@ export default function Header({ heroTop, isLawyerDetail, menuOpen, onToggleMenu
               zIndex: 2,
             }}
           >
-            <div className="hidden lg:block">
-              <LogoCanvas
-                size={34}
-                color={heroTop ? "rgb(241, 190, 90)" : "#111111"}
-                style={{ display: "block", transition: "color 0.5s ease" }}
-              />
-            </div>
-            <div className="block lg:hidden">
-              <LogoCanvas
-                size={45}
-                color={heroTop ? "rgb(241, 190, 90)" : "#111111"}
-                style={{ display: "block", transition: "color 0.5s ease" }}
-              />
-            </div>
+            <LogoCanvas
+              size={34}
+              color={heroTop ? "rgb(241, 190, 90)" : "#111111"}
+              style={{ display: "block", transition: "color 0.5s ease" }}
+            />
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", lineHeight: 1.25 }}>
-              {/* Desktop brand title */}
               <span
-                className="hidden lg:inline font-serif"
+                className="font-serif"
                 style={{
                   fontSize: 15,
                   letterSpacing: "0.18em",
@@ -85,21 +75,6 @@ export default function Header({ heroTop, isLawyerDetail, menuOpen, onToggleMenu
                 }}
               >
                 HIGHLAW LAW FIRM
-              </span>
-              <span
-                className="flex lg:hidden font-serif flex-col"
-                style={{
-                  fontSize: 15,
-                  letterSpacing: "0.18em",
-                  color: heroTop ? "#ffffff" : "var(--text-primary)",
-                  fontWeight: "600",
-                  textTransform: "uppercase",
-                  transition: "color 0.5s ease",
-                  lineHeight: 1.15,
-                }}
-              >
-                <span>HIGHLAW</span>
-                <span style={{ fontSize: 9.5, letterSpacing: "0.13em", marginTop: 2, fontWeight: "500" }}>LAWFIRM</span>
               </span>
               <span
                 className="font-serif"

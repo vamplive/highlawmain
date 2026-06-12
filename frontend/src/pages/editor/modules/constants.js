@@ -44,6 +44,25 @@ export const BLOG_CATEGORIES = [
   { value: "law_guide", label: "법률 가이드" },
 ];
 
+export const PRACTICE_AREAS = [
+  { value: "", label: "업무분야 없음 (일반 게시글)" },
+  { value: "illegal-dispatch", label: "불법파견" },
+  { value: "game-fraud", label: "게임사기" },
+  { value: "military", label: "군사건" },
+  { value: "civil", label: "민사" },
+  { value: "criminal", label: "형사" },
+  { value: "labor", label: "노동" },
+  { value: "serious-accident", label: "중대재해" },
+  { value: "corporate", label: "기업/법인" },
+  { value: "defense", label: "국방/방산" },
+  { value: "military-criminal", label: "군형사" },
+  { value: "entertainment", label: "엔터테인먼트" },
+  { value: "administrative", label: "행정" },
+  { value: "family", label: "가사" },
+  { value: "intellectual-property", label: "지식재산권" },
+  { value: "immigration", label: "출입국/외국인" },
+];
+
 /* ── 빈 문서 기본값 ── */
 export const EMPTY_DOC = {
   title: "",

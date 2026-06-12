@@ -15,8 +15,7 @@ const sharp = require("sharp");
 const { db } = require("../db");
 const { mediaFiles } = require("../db/schema");
 const { eq, desc, and, like, count } = require("drizzle-orm");
-const { adminAuth, adminOrPortalAuth } = require("../lib/auth");
-const { getDecryptedAiKey } = require("./ai-configs");
+const { adminAuth } = require("../lib/auth");
 
 // TODO: original_name 컬럼 PII 검토 — 의뢰인 이름·주소 등이 파일명에 포함되어 디스크/DB에 남을 수 있다.
 //       정책 결정 후 익명화 또는 마스킹된 표시명으로 교체 필요.
@@ -205,17 +204,13 @@ router.get("/:id", async (req, res) => {
 });
 
 // POST /api/media/upload — 단일 파일 업로드
-router.post("/upload", adminOrPortalAuth, upload.single("file"), async (req, res) => {
+router.post("/upload", adminAuth, upload.single("file"), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ data: null, error: "파일이 필요합니다", meta: null });
     }
 
-    // req.file.destination은 multer가 실제로 파일을 저장한 디렉토리 경로.
-    // req.body.folder는 multipart 필드 순서에 따라 destination 콜백에서 undefined일 수 있으므로
-    // 실제 저장 경로 기준으로 URL을 구성해 404를 방지한다.
-    const actualFolder = path.relative(MEDIA_DIR, req.file.destination) || "general";
-    const folder = sanitizeFolder(actualFolder);
+    const folder = sanitizeFolder(req.body.folder);
     const url = `/uploads/media/${folder}/${req.file.filename}`;
 
     // 이미지 EXIF/메타데이터 strip (GPS, 카메라 정보, 작성자 등 PII 제거).
@@ -249,7 +244,7 @@ router.post("/upload", adminOrPortalAuth, upload.single("file"), async (req, res
 });
 
 // POST /api/media/upload-multiple — 다중 파일 업로드 (최대 10개)
-router.post("/upload-multiple", adminOrPortalAuth, upload.array("files", 10), async (req, res) => {
+router.post("/upload-multiple", adminAuth, upload.array("files", 10), async (req, res) => {
   try {
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ data: null, error: "파일이 필요합니다", meta: null });
@@ -293,7 +288,7 @@ router.post("/upload-multiple", adminOrPortalAuth, upload.array("files", 10), as
 });
 
 // PATCH /api/media/:id — 메타데이터 수정 (alt, folder)
-router.patch("/:id", adminOrPortalAuth, async (req, res) => {
+router.patch("/:id", adminAuth, async (req, res) => {
   try {
     if (!validateId(req.params.id, res)) return;
 
@@ -350,7 +345,7 @@ router.patch("/:id", adminOrPortalAuth, async (req, res) => {
 //   DB가 단일 트랜잭션 단위이고 재시도가 안전하므로 먼저 처리한다.
 //   파일 삭제가 실패해도 DB 레코드가 사라진 후이므로 사용자 가시성에는 영향이 없고,
 //   고아 파일은 별도 청소 작업으로 회수 가능하다 (재시도 시 ENOENT로 무시됨).
-router.delete("/:id", adminOrPortalAuth, async (req, res) => {
+router.delete("/:id", adminAuth, async (req, res) => {
   try {
     if (!validateId(req.params.id, res)) return;
 
@@ -416,114 +411,49 @@ function pickImageModel(requested) {
   return DEFAULT_IMAGE_MODEL;
 }
 
-// GET /api/media/ai-config — UI 모델 드롭다운에서 표시할 메타데이터 + 사용자 등록 AI 목록
+// GET /api/media/ai-config — UI 모델 드롭다운에서 표시할 메타데이터
 //
-// 서버 기본 AI 설정과 함께, 현재 로그인 사용자의 등록된 AI 설정 목록도 반환한다.
-router.get("/ai-config", adminOrPortalAuth, async (req, res) => {
-  try {
-    // 사용자 등록 AI 목록 조회
-    const userId = req.portalUser?.userId || req.adminUser?.id;
-    let userAiList = [];
-    if (userId) {
-      try {
-        const { db: _db } = require("../db");
-        const { userAiConfigs } = require("../db/schema");
-        const { eq: _eq, and: _and } = require("drizzle-orm");
-        const rows = await _db.select().from(userAiConfigs).where(
-          _and(_eq(userAiConfigs.userId, userId), _eq(userAiConfigs.isActive, 1))
-        );
-        userAiList = rows.map((r) => ({
-          id: r.id,
-          provider: r.provider,
-          modelId: r.modelId,
-          nickname: r.nickname,
-          isDefaultPrompt: Boolean(r.isDefaultPrompt),
-          isDefaultImage: Boolean(r.isDefaultImage),
-        }));
-      } catch { /* 목록 조회 실패 무시 */ }
-    }
-
-    res.json({
-      data: {
-        prompt: {
-          defaultModel: DEFAULT_PROMPT_MODEL,
-          allowedModels: ALLOWED_PROMPT_MODELS,
-          keyConfigured: Boolean(process.env.ANTHROPIC_API_KEY),
-        },
-        image: {
-          defaultModel: DEFAULT_IMAGE_MODEL,
-          allowedModels: ALLOWED_IMAGE_MODELS,
-          keyConfigured: Boolean(process.env.OPENAI_API_KEY),
-        },
-        userAiConfigs: userAiList,
+// 키 미설정도 알리고, 어떤 모델이 기본인지/어떤 모델을 고를 수 있는지를 한 번에 내려준다.
+router.get("/ai-config", adminAuth, (req, res) => {
+  res.json({
+    data: {
+      prompt: {
+        defaultModel: DEFAULT_PROMPT_MODEL,
+        allowedModels: ALLOWED_PROMPT_MODELS,
+        keyConfigured: Boolean(process.env.ANTHROPIC_API_KEY),
       },
-      error: null,
-      meta: null,
-    });
-  } catch (err) {
-    handleError(res, err);
-  }
+      image: {
+        defaultModel: DEFAULT_IMAGE_MODEL,
+        allowedModels: ALLOWED_IMAGE_MODELS,
+        keyConfigured: Boolean(process.env.OPENAI_API_KEY),
+      },
+    },
+    error: null,
+    meta: null,
+  });
 });
 
-// POST /api/media/suggest-prompts — AI로 블로그 본문에 어울리는 DALL-E 프롬프트 제안
+// POST /api/media/suggest-prompts — Claude로 블로그 본문에 어울리는 DALL-E 프롬프트 제안
 //
-// 운영자가 블로그 글을 다 쓰고 나서 "AI 본문 이미지 자동 추가"를 누르면, AI가 본문을 읽고
+// 운영자가 블로그 글을 다 쓰고 나서 "AI 본문 이미지 자동 추가"를 누르면, Claude가 본문을 읽고
 // (1) 본문에 어울리는 영문 DALL-E 프롬프트와 (2) 한국어 사용자 설명을 N개 만들어 돌려준다.
 // 사용자는 이 결과를 그대로 쓰거나 편집·삭제한 뒤 /api/media/generate 로 실제 이미지를 만든다.
 //
-// 요청 body: { title?, body, count?, scope?: "cover"|"inline", userAiConfigId? }
+// 환경변수
+//   ANTHROPIC_API_KEY — 필수. 미설정 시 503.
+//
+// 요청 body: { title?, body, count?, scope?: "cover"|"inline" }
 // 응답: { data: [{ prompt, summary }], error, meta }
-router.post("/suggest-prompts", adminOrPortalAuth, async (req, res) => {
+router.post("/suggest-prompts", adminAuth, async (req, res) => {
   try {
-    const requestingUserId = req.portalUser?.userId || req.adminUser?.id;
-    let userAiConfigId = req.body?.userAiConfigId;
-
-    if (!requestingUserId) {
-      return res.status(401).json({ data: null, error: "인증이 필요합니다.", meta: null });
-    }
-
-    // userAiConfigId가 없고 사용자가 설정한 기본 AI가 있으면 조회하여 사용
-    if (!userAiConfigId) {
-      try {
-        const { db: _db } = require("../db");
-        const { userAiConfigs } = require("../db/schema");
-        const { eq: _eq, and: _and } = require("drizzle-orm");
-        const [defaultRow] = await _db
-          .select()
-          .from(userAiConfigs)
-          .where(
-            _and(
-              _eq(userAiConfigs.userId, requestingUserId),
-              _eq(userAiConfigs.isActive, 1),
-              _eq(userAiConfigs.isDefaultPrompt, 1)
-            )
-          );
-        if (defaultRow) {
-          userAiConfigId = defaultRow.id;
-        }
-      } catch (e) { /* ignore */ }
-    }
-
-    if (!userAiConfigId) {
-      return res.status(400).json({
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      return res.status(503).json({
         data: null,
-        error: "AI 설정을 찾을 수 없습니다. AI 연동 설정에서 API 키를 등록하고 기본값으로 지정해 주세요.",
+        error: "프롬프트 추천 기능이 비활성화되어 있습니다. 관리자에게 ANTHROPIC_API_KEY 설정을 요청하세요.",
         meta: null,
       });
     }
-
-    const userAi = await getDecryptedAiKey(requestingUserId, userAiConfigId);
-    if (!userAi) {
-      return res.status(400).json({
-        data: null,
-        error: "선택한 AI 설정을 찾을 수 없거나 유효하지 않습니다.",
-        meta: null,
-      });
-    }
-
-    const apiKey = userAi.apiKey;
-    const providerOverride = userAi.provider;
-    const modelOverride = userAi.modelId;
 
     const title = String(req.body?.title || "").slice(0, 200);
     const body = String(req.body?.body || "").slice(0, 8000);
@@ -537,6 +467,9 @@ router.post("/suggest-prompts", adminOrPortalAuth, async (req, res) => {
         meta: null,
       });
     }
+
+    const Anthropic = require("@anthropic-ai/sdk");
+    const client = new Anthropic.default({ apiKey });
 
     const scopeHint = scope === "cover"
       ? "이 글의 대표(썸네일) 이미지로 쓸 1장의 이미지 프롬프트를 작성하세요. 글 전체 분위기를 함축해야 합니다."
@@ -554,172 +487,46 @@ router.post("/suggest-prompts", adminOrPortalAuth, async (req, res) => {
 
 ${scopeHint}
 
-반드시 suggest_prompts 도구를 사용해 응답하세요.`;
+반드시 suggest_prompts 도구를 사용해 응답하세요. 자유 텍스트 응답 금지.`;
 
     const userMsg = `제목: ${title || "(없음)"}\n\n본문:\n${body || "(없음)"}\n\n위 글에 어울리는 ${count}장의 이미지 프롬프트를 만들어주세요.`;
 
-    let list = [];
-
-    if (providerOverride === "anthropic") {
-      const Anthropic = require("@anthropic-ai/sdk");
-      const client = new Anthropic.default({ apiKey });
-      const tool = {
-        name: "suggest_prompts",
-        description: "블로그 글에 어울리는 DALL-E 3 영문 프롬프트와 한국어 요약을 N개 제안",
-        input_schema: {
-          type: "object",
-          properties: {
-            prompts: {
-              type: "array",
-              minItems: 1,
-              maxItems: 5,
-              items: {
-                type: "object",
-                properties: {
-                  prompt: { type: "string", description: "DALL-E 3 영문 프롬프트 (60~250자)" },
-                  summary: { type: "string", description: "이 이미지가 무엇을 표현하는지 한국어 한 줄 설명 (40자 이내)" },
-                },
-                required: ["prompt", "summary"],
+    const tool = {
+      name: "suggest_prompts",
+      description: "블로그 글에 어울리는 DALL-E 3 영문 프롬프트와 한국어 요약을 N개 제안",
+      input_schema: {
+        type: "object",
+        properties: {
+          prompts: {
+            type: "array",
+            minItems: 1,
+            maxItems: 5,
+            items: {
+              type: "object",
+              properties: {
+                prompt: { type: "string", description: "DALL-E 3 영문 프롬프트 (60~250자)" },
+                summary: { type: "string", description: "이 이미지가 무엇을 표현하는지 한국어 한 줄 설명 (40자 이내)" },
               },
+              required: ["prompt", "summary"],
             },
           },
-          required: ["prompts"],
         },
-      };
+        required: ["prompts"],
+      },
+    };
 
-      const completion = await client.messages.create({
-        model: modelOverride,
-        max_tokens: 1500,
-        system: systemPrompt,
-        tools: [tool],
-        tool_choice: { type: "tool", name: "suggest_prompts" },
-        messages: [{ role: "user", content: userMsg }],
-      });
+    const promptModel = pickPromptModel(req.body?.model);
+    const completion = await client.messages.create({
+      model: promptModel,
+      max_tokens: 1500,
+      system: systemPrompt,
+      tools: [tool],
+      tool_choice: { type: "tool", name: "suggest_prompts" },
+      messages: [{ role: "user", content: userMsg }],
+    });
 
-      const toolUse = completion.content?.find((c) => c.type === "tool_use");
-      list = toolUse?.input?.prompts || [];
-
-    } else if (providerOverride === "openai") {
-      const openaiResp = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: modelOverride,
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userMsg }
-          ],
-          tools: [
-            {
-              type: "function",
-              function: {
-                name: "suggest_prompts",
-                description: "블로그 글에 어울리는 DALL-E 3 영문 프롬프트와 한국어 요약을 N개 제안",
-                parameters: {
-                  type: "object",
-                  properties: {
-                    prompts: {
-                      type: "array",
-                      minItems: 1,
-                      maxItems: 5,
-                      items: {
-                        type: "object",
-                        properties: {
-                          prompt: { type: "string", description: "DALL-E 3 영문 프롬프트 (60~250자)" },
-                          summary: { type: "string", description: "이 이미지가 무엇을 표현하는지 한국어 한 줄 설명 (40자 이내)" },
-                        },
-                        required: ["prompt", "summary"],
-                      },
-                    },
-                  },
-                  required: ["prompts"],
-                }
-              }
-            }
-          ],
-          tool_choice: { type: "function", function: { name: "suggest_prompts" } }
-        }),
-      });
-
-      if (!openaiResp.ok) {
-        const errText = await openaiResp.text().catch(() => "");
-        throw new Error(`OpenAI API 호출 실패: ${errText.slice(0, 300)}`);
-      }
-
-      const json = await openaiResp.json();
-      const toolCall = json.choices?.[0]?.message?.tool_calls?.[0];
-      if (toolCall?.function?.arguments) {
-        const parsed = JSON.parse(toolCall.function.arguments);
-        list = parsed.prompts || [];
-      }
-
-    } else if (providerOverride === "google") {
-      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelOverride}:generateContent?key=${apiKey}`;
-      const geminiResp = await fetch(geminiUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            {
-              role: "user",
-              parts: [{ text: userMsg }]
-            }
-          ],
-          systemInstruction: {
-            parts: [{ text: systemPrompt }]
-          },
-          tools: [
-            {
-              functionDeclarations: [
-                {
-                  name: "suggest_prompts",
-                  description: "블로그 글에 어울리는 DALL-E 3 영문 프롬프트와 한국어 요약을 N개 제안",
-                  parameters: {
-                    type: "OBJECT",
-                    properties: {
-                      prompts: {
-                        type: "ARRAY",
-                        description: "제안할 프롬프트 리스트",
-                        items: {
-                          type: "OBJECT",
-                          properties: {
-                            prompt: { type: "STRING", description: "DALL-E 3 영문 프롬프트 (60~250자)" },
-                            summary: { type: "STRING", description: "이 이미지가 무엇을 표현하는지 한국어 한 줄 설명 (40자 이내)" }
-                          },
-                          required: ["prompt", "summary"]
-                        }
-                      }
-                    },
-                    required: ["prompts"]
-                  }
-                }
-              ]
-            }
-          ],
-          toolConfig: {
-            functionCallingConfig: {
-              mode: "ANY",
-              allowedFunctionNames: ["suggest_prompts"]
-            }
-          }
-        }),
-      });
-
-      if (!geminiResp.ok) {
-        const errText = await geminiResp.text().catch(() => "");
-        throw new Error(`Google Gemini API 호출 실패: ${errText.slice(0, 300)}`);
-      }
-
-      const json = await geminiResp.json();
-      const args = json.candidates?.[0]?.content?.parts?.[0]?.functionCall?.args;
-      if (args?.prompts) {
-        list = args.prompts;
-      }
-    }
-
+    const toolUse = completion.content?.find((c) => c.type === "tool_use");
+    const list = toolUse?.input?.prompts || [];
     if (!Array.isArray(list) || list.length === 0) {
       return res.status(502).json({ data: null, error: "프롬프트 추천 결과가 비어 있습니다.", meta: null });
     }
@@ -727,7 +534,7 @@ ${scopeHint}
     res.json({
       data: list.slice(0, count),
       error: null,
-      meta: { scope, count: list.length, model: modelOverride },
+      meta: { scope, count: list.length, model: promptModel },
     });
   } catch (err) {
     handleError(res, err);
@@ -739,70 +546,18 @@ ${scopeHint}
 // 운영자가 입력한 한국어 프롬프트로 OpenAI DALL-E 3 호출 → 결과를 미디어 폴더에 저장하고
 // 일반 업로드와 동일한 mediaFiles 레코드로 반영. 응답은 일반 업로드와 동일 형태.
 //
-// 요청 body: { prompt: string, size?: "1024x1024"|"1792x1024"|"1024x1792", folder?: string, userAiConfigId? }
+// 환경변수
+//   OPENAI_API_KEY — 필수. 미설정 시 503 반환.
+//
+// 요청 body: { prompt: string, size?: "1024x1024"|"1792x1024"|"1024x1792", folder?: string }
 // 응답: { data: mediaFiles row, error, meta }
-router.post("/generate", adminOrPortalAuth, async (req, res) => {
+router.post("/generate", adminAuth, async (req, res) => {
   try {
-    const requestingUserIdG = req.portalUser?.userId || req.adminUser?.id;
-    let userAiConfigIdG = req.body?.userAiConfigId;
-
-    if (!requestingUserIdG) {
-      return res.status(401).json({ data: null, error: "인증이 필요합니다.", meta: null });
-    }
-
-    // userAiConfigIdG가 없고 사용자가 설정한 기본 AI가 있으면 조회하여 사용
-    if (!userAiConfigIdG) {
-      try {
-        const { db: _db } = require("../db");
-        const { userAiConfigs } = require("../db/schema");
-        const { eq: _eq, and: _and } = require("drizzle-orm");
-        const [defaultRow] = await _db
-          .select()
-          .from(userAiConfigs)
-          .where(
-            _and(
-              _eq(userAiConfigs.userId, requestingUserIdG),
-              _eq(userAiConfigs.isActive, 1),
-              _eq(userAiConfigs.isDefaultImage, 1)
-            )
-          );
-        if (defaultRow) {
-          userAiConfigIdG = defaultRow.id;
-        }
-      } catch (e) { /* ignore */ }
-    }
-
-    if (!userAiConfigIdG) {
-      return res.status(400).json({
-        data: null,
-        error: "AI 이미지 설정을 찾을 수 없습니다. AI 연동 설정에서 OpenAI API 키를 등록하고 이미지 기본값으로 지정해 주세요.",
-        meta: null,
-      });
-    }
-
-    const userAi = await getDecryptedAiKey(requestingUserIdG, userAiConfigIdG);
-    if (!userAi) {
-      return res.status(400).json({
-        data: null,
-        error: "선택한 AI 설정을 찾을 수 없거나 유효하지 않습니다.",
-        meta: null,
-      });
-    }
-
-    let apiKey = null;
-    let imageModelOverride = null;
-
-    if (userAi.provider === "openai") {
-      apiKey = userAi.apiKey;
-      imageModelOverride = userAi.modelId;
-    } else if (userAi.provider === "google" && userAi.modelId === "imagen-3") {
-      return res.status(400).json({ data: null, error: "Google Imagen 3 이미지 생성은 현재 지원 준비 중입니다.", meta: null });
-    }
-
+    const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      return res.status(400).json({
+      return res.status(503).json({
         data: null,
-        error: "해당 AI 설정의 API 키가 존재하지 않거나 지원하지 않는 공급사입니다. OpenAI 설정을 지정해 주세요.",
+        error: "AI 이미지 생성이 비활성화되어 있습니다. 관리자에게 OPENAI_API_KEY 설정을 요청하세요.",
         meta: null,
       });
     }
@@ -822,7 +577,10 @@ router.post("/generate", adminOrPortalAuth, async (req, res) => {
     const folder = sanitizeFolder(req.body?.folder || "blog");
 
     // OpenAI Images API 호출 — b64_json 으로 받아 외부 URL 만료 이슈 회피
-    const imageModel = imageModelOverride ? (ALLOWED_IMAGE_MODELS.includes(imageModelOverride) ? imageModelOverride : pickImageModel(req.body?.model)) : pickImageModel(req.body?.model);
+    const imageModel = pickImageModel(req.body?.model);
+    // gpt-image-1 / dall-e-2 는 dall-e-3 와 파라미터가 일부 다르다.
+    // dall-e-2: response_format 사용, quality 미지원, size 256/512/1024 만 허용
+    // gpt-image-1: response_format 대신 항상 b64 반환, quality 'low'|'medium'|'high'|'auto'
     const requestBody = {
       model: imageModel,
       prompt,
@@ -833,11 +591,13 @@ router.post("/generate", adminOrPortalAuth, async (req, res) => {
       requestBody.quality = "standard";
       requestBody.response_format = "b64_json";
     } else if (imageModel === "dall-e-2") {
-      requestBody.size = "1024x1024";
+      // dall-e-2 는 1792 미지원 — 1024 로 다운스케일
+      requestBody.size = size === "1024x1024" ? "1024x1024" : "1024x1024";
       requestBody.response_format = "b64_json";
     } else if (imageModel === "gpt-image-1") {
       requestBody.size = size;
       requestBody.quality = "auto";
+      // gpt-image-1 은 항상 b64_json 응답
     }
 
     const openaiResp = await fetch("https://api.openai.com/v1/images/generations", {
@@ -898,239 +658,6 @@ router.post("/generate", adminOrPortalAuth, async (req, res) => {
       .returning();
 
     res.status(201).json({ data: record, error: null, meta: { source: imageModel, prompt, size } });
-  } catch (err) {
-    handleError(res, err);
-  }
-});
-
-// POST /api/media/generate-blog-text — AI로 블로그 본문 및 제목 자동 작성
-//
-// 요청 body: { topic: string, tone: string, userAiConfigId?: string }
-// 응답: { data: { title: string, body: string }, error, meta }
-router.post("/generate-blog-text", adminOrPortalAuth, async (req, res) => {
-  try {
-    const requestingUserId = req.portalUser?.userId || req.adminUser?.id;
-    let userAiConfigId = req.body?.userAiConfigId;
-
-    if (!requestingUserId) {
-      return res.status(401).json({ data: null, error: "인증이 필요합니다.", meta: null });
-    }
-
-    // userAiConfigId가 없고 사용자가 설정한 기본 AI가 있으면 조회하여 사용
-    if (!userAiConfigId) {
-      try {
-        const { db: _db } = require("../db");
-        const { userAiConfigs } = require("../db/schema");
-        const { eq: _eq, and: _and } = require("drizzle-orm");
-        const [defaultRow] = await _db
-          .select()
-          .from(userAiConfigs)
-          .where(
-            _and(
-              _eq(userAiConfigs.userId, requestingUserId),
-              _eq(userAiConfigs.isActive, 1),
-              _eq(userAiConfigs.isDefaultPrompt, 1)
-            )
-          );
-        if (defaultRow) {
-          userAiConfigId = defaultRow.id;
-        }
-      } catch (e) { /* ignore */ }
-    }
-
-    if (!userAiConfigId) {
-      return res.status(400).json({
-        data: null,
-        error: "AI 설정을 찾을 수 없습니다. AI 연동 설정에서 API 키를 등록하고 기본값으로 지정해 주세요.",
-        meta: null,
-      });
-    }
-
-    const userAi = await getDecryptedAiKey(requestingUserId, userAiConfigId);
-    if (!userAi) {
-      return res.status(400).json({
-        data: null,
-        error: "선택한 AI 설정을 찾을 수 없거나 유효하지 않습니다.",
-        meta: null,
-      });
-    }
-
-    const { apiKey, provider, modelId } = userAi;
-    const topic = String(req.body?.topic || "").trim();
-    const tone = String(req.body?.tone || "전문적이고 신뢰감 있는").trim();
-
-    if (topic.length < 2) {
-      return res.status(400).json({
-        data: null,
-        error: "작성할 주제를 2자 이상 입력해주세요.",
-        meta: null,
-      });
-    }
-
-    const systemPrompt = `당신은 한국 법률사무소 Highlaw(하이로우)의 유능하고 친절한 블로그 작가입니다.
-사용자가 입력한 주제(topic)와 어조(tone)를 바탕으로, 풍부하고 유용한 법률 정보 블로그 글을 작성해야 합니다.
-블로그 글은 읽는 사람에게 높은 신뢰감과 유용한 가치를 전달해야 합니다.
-
-작성 규칙:
-1. 본문은 HTML 형식으로 작성합니다.
-   - 단락은 <p> 태그를 사용하세요.
-   - 대제목, 중제목은 각각 <h1>, <h2>, <h3> 태그를 사용하여 가독성 있게 구조화하세요.
-   - 중요한 구절이나 용어는 <strong> 태그를 사용하세요.
-   - 목록이 필요하면 <ul>, <ol>, <li> 태그를 활용해 정리하세요.
-   - 인용구는 <blockquote> 태그를 사용해 멋지게 꾸미세요.
-   - 가독성을 위해 불필요하게 복잡한 스타일 속성은 배제하고 순수한 HTML 태그 위주로 작성합니다.
-2. 제목(title)은 본문에 어울리도록 매력적이고 검색 최적화(SEO)를 고려해 작성합니다.
-3. 법률 지식은 정확해야 하며, 지정한 어조(${tone})를 충실히 반영합니다.
-
-반드시 write_blog_post 도구를 호출하여 제목과 본문을 응답하세요.`;
-
-    const userMsg = `주제: ${topic}\n원하는 어조: ${tone}\n\n이 주제로 블로그 글을 작성하고 write_blog_post 도구를 호출하세요.`;
-
-    let blogData = null;
-
-    if (provider === "anthropic") {
-      const Anthropic = require("@anthropic-ai/sdk");
-      const client = new Anthropic.default({ apiKey });
-      const tool = {
-        name: "write_blog_post",
-        description: "블로그 글의 제목과 본문을 생성합니다.",
-        input_schema: {
-          type: "object",
-          properties: {
-            title: { type: "string", description: "블로그 글 제목" },
-            body: { type: "string", description: "블로그 글 본문 (HTML 형식. p, h1, h2, h3, blockquote, ul, ol, li, strong, a 등의 태그를 적절히 사용)" }
-          },
-          required: ["title", "body"]
-        }
-      };
-
-      const completion = await client.messages.create({
-        model: modelId,
-        max_tokens: 4000,
-        system: systemPrompt,
-        tools: [tool],
-        tool_choice: { type: "tool", name: "write_blog_post" },
-        messages: [{ role: "user", content: userMsg }],
-      });
-
-      const toolUse = completion.content?.find((c) => c.type === "tool_use");
-      blogData = toolUse?.input;
-
-    } else if (provider === "openai") {
-      const openaiResp = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: modelId,
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userMsg }
-          ],
-          tools: [
-            {
-              type: "function",
-              function: {
-                name: "write_blog_post",
-                description: "블로그 글의 제목과 본문을 생성합니다.",
-                parameters: {
-                  type: "object",
-                  properties: {
-                    title: { type: "string", description: "블로그 글 제목" },
-                    body: { type: "string", description: "블로그 글 본문 (HTML 형식. p, h1, h2, h3, blockquote, ul, ol, li, strong, a 등의 태그를 적절히 사용)" }
-                  },
-                  required: ["title", "body"]
-                }
-              }
-            }
-          ],
-          tool_choice: { type: "function", function: { name: "write_blog_post" } }
-        }),
-      });
-
-      if (!openaiResp.ok) {
-        const errText = await openaiResp.text().catch(() => "");
-        throw new Error(`OpenAI API 호출 실패: ${errText.slice(0, 300)}`);
-      }
-
-      const json = await openaiResp.json();
-      const toolCall = json.choices?.[0]?.message?.tool_calls?.[0];
-      if (toolCall?.function?.arguments) {
-        blogData = JSON.parse(toolCall.function.arguments);
-      }
-
-    } else if (provider === "google") {
-      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
-      const geminiResp = await fetch(geminiUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            {
-              role: "user",
-              parts: [{ text: userMsg }]
-            }
-          ],
-          systemInstruction: {
-            parts: [{ text: systemPrompt }]
-          },
-          tools: [
-            {
-              functionDeclarations: [
-                {
-                  name: "write_blog_post",
-                  description: "블로그 글의 제목과 본문을 생성합니다.",
-                  parameters: {
-                    type: "OBJECT",
-                    properties: {
-                      title: { type: "STRING", description: "블로그 글 제목" },
-                      body: { type: "STRING", description: "블로그 글 본문 (HTML 형식. p, h1, h2, h3, blockquote, ul, ol, li, strong, a 등의 태그를 적절히 사용)" }
-                    },
-                    required: ["title", "body"]
-                  }
-                }
-              ]
-            }
-          ],
-          toolConfig: {
-            functionCallingConfig: {
-              mode: "ANY",
-              allowedFunctionNames: ["write_blog_post"]
-            }
-          }
-        }),
-      });
-
-      if (!geminiResp.ok) {
-        const errText = await geminiResp.text().catch(() => "");
-        throw new Error(`Google Gemini API 호출 실패: ${errText.slice(0, 300)}`);
-      }
-
-      const json = await geminiResp.json();
-      const args = json.candidates?.[0]?.content?.parts?.[0]?.functionCall?.args;
-      if (args) {
-        blogData = args;
-      }
-    }
-
-    if (!blogData || !blogData.title || !blogData.body) {
-      return res.status(502).json({
-        data: null,
-        error: "AI 글쓰기 결과가 올바르지 않거나 도구 호출 형식이 누락되었습니다.",
-        meta: null,
-      });
-    }
-
-    res.json({
-      data: {
-        title: blogData.title,
-        body: blogData.body,
-      },
-      error: null,
-      meta: { provider, model: modelId },
-    });
   } catch (err) {
     handleError(res, err);
   }

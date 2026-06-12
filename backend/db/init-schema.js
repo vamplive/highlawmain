@@ -565,6 +565,8 @@ module.exports = {
   try { sqlite.exec("ALTER TABLE blog_posts ADD COLUMN footnotes TEXT"); } catch (e) { warnMigrationSkip(e); }
   try { sqlite.exec("ALTER TABLE blog_posts ADD COLUMN tags TEXT"); } catch (e) { warnMigrationSkip(e); }
   try { sqlite.exec("ALTER TABLE blog_posts ADD COLUMN scheduled_publish_at TEXT"); } catch (e) { warnMigrationSkip(e); }
+  try { sqlite.exec("ALTER TABLE blog_posts ADD COLUMN practice_area TEXT"); } catch (e) { warnMigrationSkip(e); }
+  try { sqlite.exec("ALTER TABLE portal_posts ADD COLUMN attachments TEXT"); } catch (e) { warnMigrationSkip(e); }
   try {
     sqlite.exec(`
       CREATE TABLE IF NOT EXISTS blog_post_versions (
