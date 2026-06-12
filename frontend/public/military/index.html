@@ -439,10 +439,10 @@
     }
 
     /* ── Lawyer profile card with image ── */
-    .lawyer-card { overflow: hidden; border-radius: 14px; }
+    .lawyer-card { overflow: hidden; border-radius: 14px; cursor: pointer; }
     .lawyer-card .photo-wrap {
       height: 220px; overflow: hidden;
-      background: #0B1829;
+      background: #0B1829; position: relative;
     }
     .lawyer-card .photo-wrap img {
       width: 100%; height: 100%;
@@ -450,6 +450,18 @@
       transition: transform .5s ease;
     }
     .lawyer-card:hover .photo-wrap img { transform: scale(1.04); }
+    /* 카드 클릭 힌트 오버레이 */
+    .lawyer-card .photo-wrap::after {
+      content: '약력 보기';
+      position: absolute; inset: 0;
+      background: rgba(11,24,41,.55);
+      display: flex; align-items: center; justify-content: center;
+      font-size: .75rem; font-weight: 700; letter-spacing: .1em;
+      color: var(--gold); opacity: 0;
+      transition: opacity .25s ease;
+    }
+    .lawyer-card:hover .photo-wrap::after { opacity: 1; }
+    .lawyer-card:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 
     /* ── Photo atmosphere section ── */
     .atm-section {
@@ -643,18 +655,6 @@
       font-weight: 700; margin-top: 1px;
     }
 
-    /* 약력 보기 버튼 */
-    .profile-btn {
-      margin-top: 14px;
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 7px 16px; border-radius: 8px;
-      background: rgba(212,175,55,.08); border: 1px solid rgba(212,175,55,.3);
-      color: var(--gold); font-size: .75rem; font-weight: 600;
-      cursor: pointer; transition: background .18s, border-color .18s;
-      letter-spacing: .05em;
-    }
-    .profile-btn:hover { background: rgba(212,175,55,.16); border-color: rgba(212,175,55,.6); }
-    .profile-btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
   </style>
 </head>
 <body>
@@ -1578,7 +1578,10 @@
 
     <div class="grid md:grid-cols-3 gap-5">
       <!-- 강민구 -->
-      <div class="card lawyer-card fu d1">
+      <div class="card lawyer-card fu d1" role="button" tabindex="0"
+           onclick="openLawyerModal('강민구')"
+           onkeydown="if(event.key==='Enter'||event.key===' ')openLawyerModal('강민구')"
+           aria-label="강민구 변호사 약력 보기">
         <div class="photo-wrap">
           <img src="" alt="강민구 변호사 — 해군 군검사 출신"
                data-lawyer-name="강민구" data-fallback="/lawyers/kangmingu.png"
@@ -1609,17 +1612,14 @@
               <span style="color:#3B82F6; flex-shrink:0; font-weight:700;">▸</span> 방위사업청 군법무관
             </li>
           </ul>
-          <button class="profile-btn" onclick="openLawyerModal('강민구')" aria-label="강민구 변호사 약력 자세히 보기">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"/>
-            </svg>
-            약력 자세히 보기
-          </button>
         </div>
       </div>
 
       <!-- 조덕재 -->
-      <div class="card lawyer-card fu d2">
+      <div class="card lawyer-card fu d2" role="button" tabindex="0"
+           onclick="openLawyerModal('조덕재')"
+           onkeydown="if(event.key==='Enter'||event.key===' ')openLawyerModal('조덕재')"
+           aria-label="조덕재 변호사 약력 보기">
         <div class="photo-wrap">
           <img src="" alt="조덕재 변호사 — 육군 15사단 군검사 출신"
                data-lawyer-name="조덕재" data-fallback="/lawyers/jodeokjae.jpg"
@@ -1644,17 +1644,14 @@
               <span style="color:#22C55E; flex-shrink:0; font-weight:700;">▸</span> 국방시설본부 군법무관
             </li>
           </ul>
-          <button class="profile-btn" onclick="openLawyerModal('조덕재')" aria-label="조덕재 변호사 약력 자세히 보기">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"/>
-            </svg>
-            약력 자세히 보기
-          </button>
         </div>
       </div>
 
       <!-- 김범 -->
-      <div class="card lawyer-card fu d3">
+      <div class="card lawyer-card fu d3" role="button" tabindex="0"
+           onclick="openLawyerModal('김범')"
+           onkeydown="if(event.key==='Enter'||event.key===' ')openLawyerModal('김범')"
+           aria-label="김범 변호사 약력 보기">
         <div class="photo-wrap">
           <img src="" alt="김범 변호사 — 육군 23사단 군검사 출신"
                data-lawyer-name="김범" data-fallback="/lawyers/kimbeom.png"
@@ -1679,12 +1676,6 @@
               <span style="color:var(--gold); flex-shrink:0; font-weight:700;">▸</span> 국방부 송무팀 군법무관
             </li>
           </ul>
-          <button class="profile-btn" onclick="openLawyerModal('김범')" aria-label="김범 변호사 약력 자세히 보기">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"/>
-            </svg>
-            약력 자세히 보기
-          </button>
         </div>
       </div>
     </div>
@@ -2126,77 +2117,51 @@ var _lawyerApiData = {};  /* name → API 응답 객체 */
 })();
 
 /* ── 변호사 약력 모달 ── */
-/* JSON 문자열 또는 줄바꿈 텍스트 → 배열 파싱 */
-function _parseList(val) {
+
+/**
+ * DB 포맷: [{period:"...", title:"...", detail:"..."}] 또는 줄바꿈 문자열
+ * period/title 중 내용 있는 것만 합쳐 문자열 배열로 반환
+ */
+function _parseItems(val) {
   if (!val) return [];
   try {
     var p = JSON.parse(val);
-    return Array.isArray(p) ? p : [val];
+    if (!Array.isArray(p)) return [String(val)].filter(Boolean);
+    return p.map(function(item) {
+      if (typeof item === 'string') return item.trim();
+      if (typeof item === 'object' && item !== null) {
+        var parts = [item.period, item.title]
+          .map(function(s) { return (s || '').trim(); })
+          .filter(Boolean);
+        return parts.join(' ');
+      }
+      return '';
+    }).filter(Boolean);
   } catch (e) {
-    return val.split('\n').map(function(s){ return s.trim(); }).filter(Boolean);
+    return val.split('\n').map(function(s) { return s.trim(); }).filter(Boolean);
   }
 }
 
-/* 정적 fallback 약력 데이터 (API에 데이터 없을 때 사용) */
-var _lawyerFallback = {
-  '강민구': {
-    title: '대표변호사',
-    tagline: '해군 군검사 출신 · 징계·인권 전문',
-    education: ['한양대학교 법학과 졸업', '해군 법무관 임관'],
-    career: [
-      '해군 군검사',
-      '청해부대 법무참모',
-      '해군 작전사령부 징계담당관',
-      '해병대사령부 인권담당 법무관',
-      '방위사업청 군법무관',
-      '법무법인 하이로 대표변호사',
-    ],
-  },
-  '조덕재': {
-    title: '대표변호사',
-    tagline: '육군 군검사 출신 · 군 징계·형사 전문',
-    education: ['한국외국어대학교 법학과 졸업'],
-    career: [
-      '육군 15사단 군검사',
-      '징계장교',
-      '국방시설본부 군법무관',
-      '법무법인 하이로 대표변호사',
-    ],
-  },
-  '김범': {
-    title: '대표변호사',
-    tagline: '육군 군검사 출신 · 군 형사·송무 전문',
-    education: ['연세대학교 법학과 졸업'],
-    career: [
-      '육군 23사단 군검사',
-      '징계장교',
-      '국방부 송무팀 군법무관',
-      '법무법인 하이로 대표변호사',
-    ],
-  },
-};
-
 function openLawyerModal(name) {
   var overlay = document.getElementById('lawyer-modal-overlay');
-  var api = _lawyerApiData[name] || {};
-  var fb  = _lawyerFallback[name] || {};
+  var data = _lawyerApiData[name] || {};
 
-  /* 사진 */
+  /* 사진: API sync 스크립트가 이미 img.src를 올바르게 세팅해 두었으므로 그것을 사용 */
   var photoEl = document.getElementById('modal-photo');
-  var photoUrl = api.photoUrl
-    || (document.querySelector('img[data-fallback][data-lawyer-name="' + name + '"]') || {}).getAttribute
-    && document.querySelector('img[data-fallback][data-lawyer-name="' + name + '"]').getAttribute('data-fallback')
-    || '';
-  photoEl.src = photoUrl || '';
+  var imgEl   = document.querySelector('img[data-lawyer-name="' + name + '"]');
+  var photoUrl = (imgEl && imgEl.src && imgEl.src !== window.location.href)
+    ? imgEl.src
+    : (imgEl && imgEl.getAttribute('data-fallback')) || '';
+  photoEl.src = photoUrl;
+  photoEl.alt = name + ' 변호사';
   photoEl.style.display = photoUrl ? 'block' : 'none';
 
   /* 이름·직함 */
-  document.getElementById('modal-name').textContent = name + ' ' + (api.title || fb.title || '변호사');
-  document.getElementById('modal-tagline').textContent = api.tagline || fb.tagline || '';
+  document.getElementById('modal-name').textContent = name + ' ' + (data.title || '변호사');
+  document.getElementById('modal-tagline').textContent = data.tagline || '';
 
   /* 학력 */
-  var eduList = _parseList(api.education);
-  if (!eduList.length) eduList = fb.education || [];
+  var eduList = _parseItems(data.education);
   var eduSection = document.getElementById('modal-edu-section');
   var eduUl = document.getElementById('modal-edu-list');
   if (eduList.length) {
@@ -2207,8 +2172,7 @@ function openLawyerModal(name) {
   }
 
   /* 경력 */
-  var careerList = _parseList(api.career);
-  if (!careerList.length) careerList = fb.career || [];
+  var careerList = _parseItems(data.career);
   var careerSection = document.getElementById('modal-career-section');
   var careerUl = document.getElementById('modal-career-list');
   if (careerList.length) {
@@ -2218,25 +2182,28 @@ function openLawyerModal(name) {
     careerSection.style.display = 'none';
   }
 
-  /* 기타 섹션 (전문분야, 자격, 논문 등) */
-  var extraSections = [
-    { key: 'specialties', titleId: 'modal-spec-title', listId: 'modal-spec-list', sectionId: 'modal-spec-section', label: '전문 분야' },
-    { key: 'qualifications', titleId: 'modal-qual-title', listId: 'modal-qual-list', sectionId: 'modal-qual-section', label: '자격' },
-  ];
-  extraSections.forEach(function(s) {
-    var items = _parseList(api[s.key]);
-    var sec = document.getElementById(s.sectionId);
-    if (items.length && sec) {
-      document.getElementById(s.listId).innerHTML = items.map(function(i){ return '<li>' + i + '</li>'; }).join('');
-      sec.style.display = 'block';
-    } else if (sec) {
-      sec.style.display = 'none';
-    }
-  });
+  /* 전문 분야 */
+  var specList = _parseItems(data.specialties);
+  var specSec  = document.getElementById('modal-spec-section');
+  if (specList.length) {
+    document.getElementById('modal-spec-list').innerHTML = specList.map(function(i) { return '<li>' + i + '</li>'; }).join('');
+    specSec.style.display = 'block';
+  } else {
+    specSec.style.display = 'none';
+  }
+
+  /* 자격 */
+  var qualList = _parseItems(data.qualifications);
+  var qualSec  = document.getElementById('modal-qual-section');
+  if (qualList.length) {
+    document.getElementById('modal-qual-list').innerHTML = qualList.map(function(i) { return '<li>' + i + '</li>'; }).join('');
+    qualSec.style.display = 'block';
+  } else {
+    qualSec.style.display = 'none';
+  }
 
   overlay.classList.add('open');
   document.body.style.overflow = 'hidden';
-  /* 첫 번째 포커스 가능 요소로 이동 */
   document.getElementById('modal-close-btn').focus();
 }
 
