@@ -1,6 +1,6 @@
 /**
  * 관리자 — 포털 사용자 관리
- * 회원가입 승인/거절 + 타임트래킹 전체 조회
+ * 회원가입 승인/거절 + 역할/입사일/포지션 편집 + 타임트래킹 전체 조회
  */
 import { useState, useEffect } from "react";
 import { api } from "../../../utils/api";
@@ -12,6 +12,14 @@ const STATUS_BADGE = {
   1: { label: "활성", color: "#2e7d32", bg: "#e8f5e9" },
   "-1": { label: "거절", color: "#c62828", bg: "#ffebee" },
 };
+const ROLE_OPTIONS = [
+  { value: "", label: "— 역할 선택 —" },
+  { value: "대표변호사", label: "대표변호사" },
+  { value: "변호사", label: "변호사" },
+  { value: "전문위원", label: "전문위원" },
+  { value: "직원", label: "직원" },
+  { value: "인턴", label: "인턴" },
+];
 
 // ─── 타임트래킹 필터 컴포넌트 ───────────────────────────────────────────────
 function TimeEntriesPanel() {
@@ -23,12 +31,9 @@ function TimeEntriesPanel() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // 포털 사용자 목록 (직원별 필터용)
     api.get("/portal/admin/users?status=active&limit=100")
       .then((r) => setUsers(r.data ?? []))
       .catch(() => {});
-
-    // 전체 사건 목록 (사건별 필터용 - 다른 직원이 등록한 사건도 포함)
     api.get("/portal/admin/cases?limit=500")
       .then((r) => setCases(r.data ?? []))
       .catch(() => {});
@@ -44,7 +49,6 @@ function TimeEntriesPanel() {
       if (filters.portalUserId) params.set("portalUserId", filters.portalUserId);
       if (filters.description) params.set("description", filters.description);
       params.set("limit", "100");
-
       const res = await api.get(`/portal/admin/time-entries?${params}`);
       setEntries(res.data ?? []);
     } finally {
@@ -70,7 +74,6 @@ function TimeEntriesPanel() {
 
   return (
     <div>
-      {/* 필터 */}
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 16 }}>
         <div>
           <div style={{ fontSize: 11, fontWeight: 600, color: "#666", marginBottom: 4 }}>시작일</div>
@@ -92,7 +95,7 @@ function TimeEntriesPanel() {
         <div>
           <div style={{ fontSize: 11, fontWeight: 600, color: "#666", marginBottom: 4 }}>사건</div>
           <select style={{ ...fieldStyle, minWidth: 200, maxWidth: 300 }} value={filters.caseId} onChange={f("caseId")}>
-            <option value="">전체 사건 (다른 직원 사건 포함)</option>
+            <option value="">전체 사건</option>
             {cases.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.title} {c.caseNumber ? `(${c.caseNumber})` : ""}
@@ -102,13 +105,7 @@ function TimeEntriesPanel() {
         </div>
         <div>
           <div style={{ fontSize: 11, fontWeight: 600, color: "#666", marginBottom: 4 }}>유형/작업내용 검색</div>
-          <input
-            type="text"
-            style={fieldStyle}
-            value={filters.description}
-            onChange={f("description")}
-            placeholder="예: 미팅, 준비서면, 통화..."
-          />
+          <input type="text" style={fieldStyle} value={filters.description} onChange={f("description")} placeholder="예: 미팅, 준비서면, 통화..." />
         </div>
         <div style={{ display: "flex", alignItems: "flex-end" }}>
           <button
@@ -131,7 +128,6 @@ function TimeEntriesPanel() {
         </div>
       )}
 
-      {/* 테이블 */}
       <div style={{ background: "#fff", border: "1px solid #e0e0e0", borderRadius: 8, overflow: "hidden" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
           <thead>
@@ -180,6 +176,92 @@ function TimeEntriesPanel() {
   );
 }
 
+// ─── 사용자 편집 인라인 폼 ────────────────────────────────────────────────
+function UserEditRow({ user, onSave, onCancel }) {
+  const [form, setForm] = useState({
+    role: user.role || "",
+    position: user.position || "",
+    hireDate: user.hireDate || "",
+  });
+  const [saving, setSaving] = useState(false);
+
+  const f = (k) => (e) => setForm((prev) => ({ ...prev, [k]: e.target.value }));
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const payload = {};
+      if (form.role !== (user.role || "")) payload.role = form.role || null;
+      if (form.position !== (user.position || "")) payload.position = form.position || null;
+      if (form.hireDate !== (user.hireDate || "")) payload.hireDate = form.hireDate || null;
+      // 변경사항 없어도 저장 허용 (role 초기화 목적)
+      const updated = await api.patch(`/portal/admin/users/${user.id}`, {
+        role: form.role || null,
+        position: form.position || null,
+        hireDate: form.hireDate || null,
+      });
+      onSave(updated.data || { ...user, ...form });
+    } catch (err) {
+      alert("저장 실패: " + (err.message || "알 수 없는 오류"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const inputSt = {
+    padding: "5px 8px", fontSize: 12, border: "1px solid #d0d5dd",
+    borderRadius: 4, background: "#fff", width: "100%",
+  };
+
+  return (
+    <tr style={{ background: "#f0f7ff" }}>
+      <td colSpan={6} style={{ padding: "12px 16px" }}>
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end" }}>
+          <div style={{ minWidth: 140 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: "#555", marginBottom: 4 }}>역할</div>
+            <select style={inputSt} value={form.role} onChange={f("role")}>
+              {ROLE_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
+          <div style={{ minWidth: 140 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: "#555", marginBottom: 4 }}>직위 (표시명)</div>
+            <input type="text" style={inputSt} value={form.position} onChange={f("position")} placeholder="예: 대표변호사, 팀장 등" />
+          </div>
+          <div style={{ minWidth: 140 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: "#555", marginBottom: 4 }}>입사일</div>
+            <input type="date" style={inputSt} value={form.hireDate} onChange={f("hireDate")} />
+          </div>
+          <div style={{ display: "flex", gap: 6 }}>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              style={{
+                padding: "6px 16px", fontSize: 12, fontWeight: 600,
+                color: "#fff", background: "#0b1f3a",
+                border: "none", borderRadius: 4, cursor: "pointer",
+              }}
+            >
+              {saving ? "저장 중..." : "저장"}
+            </button>
+            <button
+              onClick={onCancel}
+              style={{
+                padding: "6px 12px", fontSize: 12,
+                color: "#555", background: "#fff",
+                border: "1px solid #d0d5dd", borderRadius: 4, cursor: "pointer",
+              }}
+            >
+              취소
+            </button>
+          </div>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
 // ─── 메인 컴포넌트 ─────────────────────────────────────────────────────────
 export default function AdminPortalUsers() {
   const [tab, setTab] = useState("pending");
@@ -187,6 +269,7 @@ export default function AdminPortalUsers() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null);
+  const [editingId, setEditingId] = useState(null);
 
   const loadUsers = async () => {
     setLoading(true);
@@ -232,6 +315,11 @@ export default function AdminPortalUsers() {
     }
   };
 
+  const handleEditSave = (updatedUser) => {
+    setUsers((prev) => prev.map((u) => (u.id === updatedUser.id ? { ...u, ...updatedUser } : u)));
+    setEditingId(null);
+  };
+
   const S = {
     pageBg: "#f5f7fa",
     card: "#fff",
@@ -254,7 +342,7 @@ export default function AdminPortalUsers() {
     <div>
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, color: S.text, marginBottom: 4 }}>포털 사용자 관리</h1>
-        <p style={{ fontSize: 14, color: S.textSec }}>회원가입 승인/거절 및 타임트래킹 전체 조회</p>
+        <p style={{ fontSize: 14, color: S.textSec }}>회원가입 승인/거절 및 역할·입사일·포지션 편집, 타임트래킹 전체 조회</p>
       </div>
 
       {/* 메인 탭 */}
@@ -266,7 +354,6 @@ export default function AdminPortalUsers() {
       {/* 회원 관리 탭 */}
       {mainTab === "users" && (
         <>
-          {/* 상태 탭 */}
           <div style={{ display: "flex", gap: 2, marginBottom: 20, background: "#f0f0f0", borderRadius: 8, padding: 4, width: "fit-content" }}>
             {TABS.map((t) => (
               <button
@@ -295,7 +382,7 @@ export default function AdminPortalUsers() {
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                 <thead>
                   <tr style={{ background: "#f8f8f8" }}>
-                    {["이름", "이메일", "연락처", "가입일", "상태", ""].map((h) => (
+                    {["이름", "이메일", "연락처", "역할 / 입사일", "가입일", "상태", ""].map((h) => (
                       <th key={h} style={{ padding: "10px 16px", textAlign: "left", fontWeight: 600, color: S.textSec, borderBottom: `1px solid ${S.border}` }}>
                         {h}
                       </th>
@@ -305,11 +392,29 @@ export default function AdminPortalUsers() {
                 <tbody>
                   {users.map((u, i) => {
                     const badge = STATUS_BADGE[String(u.isActive)] || STATUS_BADGE[0];
-                    return (
-                      <tr key={u.id} style={{ borderBottom: i < users.length - 1 ? `1px solid ${S.border}` : "none" }}>
+                    const isEditing = editingId === u.id;
+                    return [
+                      <tr key={u.id} style={{ borderBottom: (isEditing || i < users.length - 1) ? `1px solid ${S.border}` : "none", background: isEditing ? "#f7f9ff" : undefined }}>
                         <td style={{ padding: "12px 16px", fontWeight: 500 }}>{u.clientName || "-"}</td>
                         <td style={{ padding: "12px 16px", color: S.textSec }}>{u.email}</td>
                         <td style={{ padding: "12px 16px", color: S.textSec }}>{u.clientPhone || "-"}</td>
+                        <td style={{ padding: "12px 16px" }}>
+                          {u.role || u.position ? (
+                            <div>
+                              {u.role && <span style={{ fontSize: 12, fontWeight: 600, color: "#0b1f3a" }}>{u.role}</span>}
+                              {u.position && u.position !== u.role && (
+                                <span style={{ fontSize: 11, color: S.textMuted, marginLeft: 6 }}>({u.position})</span>
+                              )}
+                              {u.hireDate && (
+                                <div style={{ fontSize: 11, color: S.textMuted, marginTop: 2 }}>
+                                  입사 {u.hireDate}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span style={{ color: S.textMuted, fontSize: 12 }}>미설정</span>
+                          )}
+                        </td>
                         <td style={{ padding: "12px 16px", color: S.textMuted }}>
                           {u.createdAt ? new Date(u.createdAt).toLocaleDateString("ko-KR") : "-"}
                         </td>
@@ -319,28 +424,31 @@ export default function AdminPortalUsers() {
                           </span>
                         </td>
                         <td style={{ padding: "12px 16px" }}>
-                          <div style={{ display: "flex", gap: 6 }}>
+                          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                            <button
+                              onClick={() => setEditingId(isEditing ? null : u.id)}
+                              style={{
+                                padding: "5px 10px", fontSize: 12, fontWeight: 600,
+                                color: isEditing ? "#555" : "#0b1f3a",
+                                background: isEditing ? "#f0f0f0" : "#e8edf5",
+                                border: "1px solid #c4d0e0", borderRadius: 4, cursor: "pointer",
+                              }}
+                            >
+                              {isEditing ? "접기" : "편집"}
+                            </button>
                             {u.isActive === 0 && (
                               <>
                                 <button
                                   onClick={() => handleApprove(u.id)}
                                   disabled={actionLoading === u.id + "_approve"}
-                                  style={{
-                                    padding: "5px 12px", fontSize: 12, fontWeight: 600,
-                                    color: "#fff", background: "#2e7d32",
-                                    border: "none", borderRadius: 4, cursor: "pointer",
-                                  }}
+                                  style={{ padding: "5px 12px", fontSize: 12, fontWeight: 600, color: "#fff", background: "#2e7d32", border: "none", borderRadius: 4, cursor: "pointer" }}
                                 >
                                   승인
                                 </button>
                                 <button
                                   onClick={() => handleReject(u.id)}
                                   disabled={actionLoading === u.id + "_reject"}
-                                  style={{
-                                    padding: "5px 12px", fontSize: 12, fontWeight: 600,
-                                    color: "#fff", background: "#c62828",
-                                    border: "none", borderRadius: 4, cursor: "pointer",
-                                  }}
+                                  style={{ padding: "5px 12px", fontSize: 12, fontWeight: 600, color: "#fff", background: "#c62828", border: "none", borderRadius: 4, cursor: "pointer" }}
                                 >
                                   거절
                                 </button>
@@ -349,11 +457,7 @@ export default function AdminPortalUsers() {
                             {u.isActive === -1 && (
                               <button
                                 onClick={() => handleApprove(u.id)}
-                                style={{
-                                  padding: "5px 12px", fontSize: 12, fontWeight: 600,
-                                  color: "#2e7d32", background: "#e8f5e9",
-                                  border: "1px solid #a5d6a7", borderRadius: 4, cursor: "pointer",
-                                }}
+                                style={{ padding: "5px 12px", fontSize: 12, fontWeight: 600, color: "#2e7d32", background: "#e8f5e9", border: "1px solid #a5d6a7", borderRadius: 4, cursor: "pointer" }}
                               >
                                 승인으로 변경
                               </button>
@@ -361,29 +465,29 @@ export default function AdminPortalUsers() {
                             {u.isActive === 1 && (
                               <button
                                 onClick={() => handleReject(u.id)}
-                                style={{
-                                  padding: "5px 12px", fontSize: 12,
-                                  color: "#c62828", background: "transparent",
-                                  border: "1px solid #ffcdd2", borderRadius: 4, cursor: "pointer",
-                                }}
+                                style={{ padding: "5px 12px", fontSize: 12, color: "#c62828", background: "transparent", border: "1px solid #ffcdd2", borderRadius: 4, cursor: "pointer" }}
                               >
                                 비활성화
                               </button>
                             )}
                             <button
                               onClick={() => handleDelete(u.id)}
-                              style={{
-                                padding: "5px 8px", fontSize: 12,
-                                color: S.textMuted, background: "transparent",
-                                border: `1px solid ${S.border}`, borderRadius: 4, cursor: "pointer",
-                              }}
+                              style={{ padding: "5px 8px", fontSize: 12, color: S.textMuted, background: "transparent", border: `1px solid ${S.border}`, borderRadius: 4, cursor: "pointer" }}
                             >
                               삭제
                             </button>
                           </div>
                         </td>
-                      </tr>
-                    );
+                      </tr>,
+                      isEditing && (
+                        <UserEditRow
+                          key={u.id + "_edit"}
+                          user={u}
+                          onSave={handleEditSave}
+                          onCancel={() => setEditingId(null)}
+                        />
+                      ),
+                    ];
                   })}
                 </tbody>
               </table>

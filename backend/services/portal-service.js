@@ -310,7 +310,7 @@ async function updatePortalUser(id, data) {
   const [existing] = await db.select().from(portalUsers).where(eq(portalUsers.id, id));
   if (!existing) throw new ServiceError("사용자를 찾을 수 없습니다", 404);
 
-  const allowed = ["role", "position", "departmentId"];
+  const allowed = ["role", "position", "departmentId", "hireDate"];
   const updates = {};
   for (const key of allowed) {
     if (key in data) updates[key] = data[key] ?? null;
