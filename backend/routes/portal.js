@@ -256,6 +256,48 @@ router.post("/upload-photo", portalAuth, (req, res) => {
   });
 });
 
+// =============================================
+// 결재 영수증 업로드 multer 설정 (이미지 + PDF, 최대 10MB)
+// =============================================
+const RECEIPT_DIR = path.join(STORAGE_PATH, "uploads", "receipts");
+
+const receiptStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    fs.mkdirSync(RECEIPT_DIR, { recursive: true });
+    cb(null, RECEIPT_DIR);
+  },
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase() || ".jpg";
+    cb(null, `receipt-${Date.now()}-${crypto.randomBytes(4).toString("hex")}${ext}`);
+  },
+});
+
+const receiptUpload = multer({
+  storage: receiptStorage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  fileFilter: (_req, file, cb) => {
+    if (/^(image\/(jpeg|png|webp|gif)|application\/pdf)$/.test(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error("이미지(JPG·PNG·WebP·GIF) 또는 PDF 파일만 업로드 가능합니다"), false);
+    }
+  },
+});
+
+/** POST /api/portal/upload-receipt — 결재 영수증 파일 업로드 (단일) */
+router.post("/upload-receipt", portalAuth, (req, res) => {
+  receiptUpload.single("file")(req, res, (err) => {
+    if (err) {
+      return res.status(400).json({ data: null, error: err.message, meta: null });
+    }
+    if (!req.file) {
+      return res.status(400).json({ data: null, error: "파일이 없습니다", meta: null });
+    }
+    const url = `/uploads/receipts/${req.file.filename}`;
+    res.json({ data: { url }, error: null, meta: null });
+  });
+});
+
 /** GET /api/portal/cases — 내 사건 목록 */
 router.get("/cases", portalAuth, async (req, res) => {
   try {
