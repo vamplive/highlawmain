@@ -254,7 +254,7 @@ export default function AboutPage() {
               <SurfaceCard style={{ padding: 0, overflow: "hidden", marginBottom: 36, border: "1px solid var(--border-subtle)" }}>
                 <div style={{ width: "100%", position: "relative" }}>
                   <img 
-                    src="/directions-map.svg" 
+                    src="/map.png"
                     alt="법무법인 하이로 오시는 길 지도 (역삼역 4번 출구 도보 1분)" 
                     style={{
                       width: "100%",

@@ -124,7 +124,7 @@ export default function ConsultationMap() {
           </div>
           <div className="reveal" style={{ maxWidth: 700, margin: "0 auto" }}>
             <img
-              src="/directions-map.svg"
+              src="/map.png"
               alt="법무법인 하이로 오시는 길 약도"
               loading="lazy" decoding="async"
               style={{ width: "100%", height: "auto", border: "1px solid var(--border-subtle)" }}

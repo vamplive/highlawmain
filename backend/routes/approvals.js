@@ -24,23 +24,46 @@ function parseApproval(row) {
   };
 }
 
-// 연차 현황 — 올해 사용일수 집계
+// 연차 현황 — 올해 사용일수 집계 + 입사일 기반 발생 연차 계산
 router.get("/leave-status", (req, res) => {
   try {
     const uid = userId(req);
     const year = new Date().getFullYear();
+
+    // 입사일 조회
+    const userRow = sqlite.prepare("SELECT hire_date FROM portal_users WHERE id = ?").get(uid);
+    const hireDate = userRow?.hire_date;
+
+    // 근로기준법 제60조 기준 연차 계산
+    let totalAnnual = 15;
+    if (hireDate) {
+      const hire = new Date(hireDate);
+      const today = new Date();
+      const daysWorked = (today - hire) / (1000 * 60 * 60 * 24);
+      const yearsWorked = daysWorked / 365.25;
+
+      if (yearsWorked < 1) {
+        // 1년 미만: 만 1개월 당 1일 (최대 11일)
+        totalAnnual = Math.min(Math.floor(daysWorked / 30.44), 11);
+      } else {
+        // 1년 이상: 15일 + 2년마다 1일 추가 (최대 25일)
+        totalAnnual = Math.min(15 + Math.floor((yearsWorked - 1) / 2), 25);
+      }
+    }
+
     const used = sqlite.prepare(`
       SELECT COALESCE(SUM(leave_duration), 0) as used
       FROM portal_approvals
       WHERE requester_id = ? AND type = 'leave' AND status = 'approved'
         AND leave_start LIKE ?
     `).get(uid, `${year}%`);
-    const totalAnnual = 15; // 기본 연차 일수 (설정 없으면 15일)
+
     res.json({
       data: {
         totalAnnual,
         usedAnnual: used.used || 0,
         remainAnnual: Math.max(0, totalAnnual - (used.used || 0)),
+        hireDate: hireDate || null,
       },
       error: null, meta: null,
     });
