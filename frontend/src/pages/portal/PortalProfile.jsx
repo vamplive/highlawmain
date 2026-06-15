@@ -6,7 +6,7 @@
  */
 import { useState, useEffect, useRef } from "react";
 import { portalApi } from "../../utils/api";
-import { T, fieldStyle, labelStyle } from "./portalStyles";
+import { T, fieldStyle, labelStyle, pageHeaderStyle, pageHeaderIconStyle } from "./portalStyles";
 import {
   User,
   GraduationCap,
@@ -210,19 +210,20 @@ export default function PortalProfile() {
 
   return (
     <div>
-      {/* 헤더 */}
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 20, fontWeight: 700, color: T.text, marginBottom: 6 }}>
-          내 프로필 설정
-        </h1>
-        <p style={{ fontSize: 13, color: T.textSec }}>
-          홈페이지에 소개되는 본인 변호사 프로필을 편집합니다.
-          다른 변호사 프로필 편집·순서 변경은{" "}
-          <a href="/admin/lawyers" style={{ color: T.accent }} target="_blank" rel="noreferrer">
-            관리자 페이지
-          </a>
-          에서 가능합니다.
-        </p>
+      {/* 페이지 헤더 배너 */}
+      <div style={pageHeaderStyle}>
+        <div style={pageHeaderIconStyle}>
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+          </svg>
+        </div>
+        <div>
+          <h1 style={{ fontSize: 22, fontWeight: 800, margin: "0 0 4px 0", letterSpacing: -0.3 }}>내 프로필 설정</h1>
+          <p style={{ fontSize: 13, margin: 0, opacity: 0.85 }}>
+            홈페이지에 소개되는 본인 변호사 프로필을 편집합니다.{" "}
+            <a href="/admin/lawyers" style={{ color: "rgba(255,255,255,0.8)", textDecoration: "underline" }} target="_blank" rel="noreferrer">관리자 페이지</a>에서 다른 변호사 프로필도 편집 가능합니다.
+          </p>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit}>

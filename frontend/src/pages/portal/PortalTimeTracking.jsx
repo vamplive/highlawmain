@@ -3,7 +3,7 @@
  */
 import { useState, useEffect } from "react";
 import { portalApi } from "../../utils/api";
-import { T, fieldStyle, labelStyle } from "./portalStyles";
+import { T, fieldStyle, labelStyle, pageHeaderStyle, pageHeaderIconStyle } from "./portalStyles";
 import { showToast } from "../../utils/showToast";
 
 function formatDuration(minutes) {
@@ -312,11 +312,16 @@ export default function PortalTimeTracking() {
 
   return (
     <div>
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: T.text, fontFamily: "'Noto Serif KR', serif", marginBottom: 6 }}>
-          타임트래킹
-        </h1>
-        <p style={{ fontSize: 14, color: T.textSec }}>사건별 작업 시간을 기록하고 관리합니다</p>
+      <div style={pageHeaderStyle}>
+        <div style={pageHeaderIconStyle}>
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+          </svg>
+        </div>
+        <div>
+          <h1 style={{ fontSize: 22, fontWeight: 800, margin: "0 0 4px 0", letterSpacing: -0.3 }}>타임트래킹</h1>
+          <p style={{ fontSize: 13, margin: 0, opacity: 0.85 }}>사건별 작업 시간을 기록하고 관리합니다</p>
+        </div>
       </div>
 
       {/* 진행 중 타이머 */}

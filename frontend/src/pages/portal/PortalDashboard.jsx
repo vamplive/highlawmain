@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { portalApi } from "../../utils/api";
-import { T } from "./portalStyles";
+import { T, pageHeaderStyle, pageHeaderIconStyle } from "./portalStyles";
 import { STATUS_MAP } from "./portalConstants";
 import { showToast } from "../../utils/showToast";
 
@@ -88,15 +88,20 @@ export default function PortalDashboard() {
 
   return (
     <div>
-      {/* ==================== 헤더 영역 ==================== */}
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 32, gap: 16, flexWrap: "wrap" }}>
-        <div>
-          <h1 style={{ fontSize: 22, fontWeight: 600, color: T.text, marginBottom: 8, fontFamily: "'Noto Serif KR', serif" }}>
-            {userName ? `${userName}님, 안녕하세요` : "안녕하세요"}
-          </h1>
-          <p style={{ fontSize: 14, color: T.textSec }}>
-            진행 중인 사건과 관련 문서를 확인하실 수 있습니다
-          </p>
+      {/* ==================== 페이지 헤더 배너 ==================== */}
+      <div style={{ ...pageHeaderStyle, justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
+          <div style={pageHeaderIconStyle}>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+            </svg>
+          </div>
+          <div>
+            <h1 style={{ fontSize: 22, fontWeight: 800, margin: "0 0 4px 0", letterSpacing: -0.3 }}>
+              {userName ? `${userName}님, 안녕하세요` : "사건 목록"}
+            </h1>
+            <p style={{ fontSize: 13, margin: 0, opacity: 0.85 }}>진행 중인 사건과 관련 문서를 확인하실 수 있습니다</p>
+          </div>
         </div>
 
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -129,10 +134,10 @@ export default function PortalDashboard() {
           <Link
             to="/portal/cases/register"
             style={{
-              display: "inline-block",
-              padding: "8px 20px", fontSize: 13, fontWeight: 600,
-              color: "#fff", background: T.accent,
-              border: "none", borderRadius: 6, cursor: "pointer",
+              display: "inline-flex", alignItems: "center", gap: 6,
+              padding: "8px 18px", fontSize: 13, fontWeight: 700,
+              color: "#fff", background: "rgba(255,255,255,0.22)",
+              border: "1px solid rgba(255,255,255,0.35)", borderRadius: 10, cursor: "pointer",
               textDecoration: "none",
             }}
           >

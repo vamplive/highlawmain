@@ -12,23 +12,25 @@ import {
 } from "lucide-react";
 
 const THEME = {
-  sidebarBg: "#0b1f3a",
-  sidebarBorder: "rgba(255,255,255,0.08)",
-  accent: "#c9a84c",
-  accentLight: "#b8923e",
-  accentDim: "rgba(201,168,76,0.14)",
-  accentText: "#c9a84c",
-  sidebarText: "rgba(255,255,255,0.82)",
-  sidebarTextMuted: "rgba(255,255,255,0.40)",
-  sidebarActiveText: "#c9a84c",
-  sidebarActiveBg: "rgba(201,168,76,0.12)",
-  sidebarHoverBg: "rgba(255,255,255,0.06)",
-  pageBg: "#f5f7fa",
+  sidebarBg: "linear-gradient(180deg, #1e1b4b 0%, #312e81 45%, #4c1d95 100%)",
+  sidebarBorder: "rgba(255,255,255,0.10)",
+  accent: "#a5b4fc",             // indigo-300 (사이드바 내 밝은 액센트)
+  accentLight: "#818cf8",        // indigo-400
+  accentDim: "rgba(165,180,252,0.16)",
+  accentText: "#a5b4fc",
+  sidebarText: "rgba(255,255,255,0.85)",
+  sidebarTextMuted: "rgba(255,255,255,0.42)",
+  sidebarActiveText: "#ffffff",
+  sidebarActiveBg: "rgba(255,255,255,0.14)",
+  sidebarHoverBg: "rgba(255,255,255,0.08)",
+  pageBg: "#f5f6ff",             // 연보라 배경
   white: "#ffffff",
-  border: "rgba(11,31,58,0.12)",
-  text: "#0b1f3a",
-  textSec: "#4a5568",
-  textMuted: "#8a97a8",
+  border: "#e2e8f0",
+  text: "#0f172a",
+  textSec: "#475569",
+  textMuted: "#94a3b8",
+  topbarAccent: "#6366f1",       // 탑바 인디고 액센트
+  topbarAccentDim: "rgba(99,102,241,0.08)",
 };
 
 // ─── 직급 정렬 순서 (부서 내 카드 정렬용) ──────────────────────────────
@@ -290,8 +292,8 @@ export default function PortalLayout() {
           background: #f1f5f9; outline: none; transition: all 0.2s; box-sizing: border-box;
         }
         .portal-search-input:focus {
-          background: #fff !important; border-color: ${THEME.accent} !important;
-          box-shadow: 0 0 0 2px ${THEME.accent}25;
+          background: #fff !important; border-color: #6366f1 !important;
+          box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
         }
         .portal-board-filter-input {
           width: 100%; padding: 6px 10px 6px 28px; font-size: 12px;
@@ -324,7 +326,7 @@ export default function PortalLayout() {
         {/* 브랜드 */}
         <div style={{ padding: "20px 24px", display: "flex", alignItems: "center", gap: 12, borderBottom: `1px solid ${THEME.sidebarBorder}`, minHeight: 80, boxSizing: "border-box" }}>
           <Link to="/portal/calendar" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 8, background: THEME.accentDim, border: `1px solid rgba(201,168,76,0.25)`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, padding: 5 }}>
+            <div style={{ width: 36, height: 36, borderRadius: 8, background: THEME.accentDim, border: `1px solid rgba(99,102,241,0.25)`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, padding: 5 }}>
               <LogoCanvas size={22} color={THEME.accent} />
             </div>
             <div style={{ lineHeight: 1.3, overflow: "hidden" }}>
@@ -589,11 +591,11 @@ export default function PortalLayout() {
                       <Link key={to} to={to} style={{
                         display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
                         padding: "5px 10px", borderRadius: 8, textDecoration: "none", minWidth: 54, height: 48,
-                        color: isActive ? THEME.accent : "#64748b",
-                        background: isActive ? THEME.accentDim : "transparent",
+                        color: isActive ? THEME.topbarAccent : "#64748b",
+                        background: isActive ? THEME.topbarAccentDim : "transparent",
                         transition: "background 0.15s, color 0.15s", gap: 2,
                       }}
-                        onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.background = "rgba(201,168,76,0.06)"; e.currentTarget.style.color = THEME.accent; } }}
+                        onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.background = "rgba(99,102,241,0.08)"; e.currentTarget.style.color = THEME.topbarAccent; } }}
                         onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#64748b"; } }}
                       >
                         {icon}
@@ -609,11 +611,11 @@ export default function PortalLayout() {
                       style={{
                         display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
                         padding: "5px 10px", borderRadius: 8, border: "none", cursor: "pointer",
-                        minWidth: 54, height: 48, background: showNotifPanel ? THEME.accentDim : "transparent",
-                        color: showNotifPanel ? THEME.accent : "#64748b", gap: 2, position: "relative",
+                        minWidth: 54, height: 48, background: showNotifPanel ? THEME.topbarAccentDim : "transparent",
+                        color: showNotifPanel ? THEME.topbarAccent : "#64748b", gap: 2, position: "relative",
                         transition: "background 0.15s, color 0.15s",
                       }}
-                      onMouseEnter={(e) => { if (!showNotifPanel) { e.currentTarget.style.background = "rgba(201,168,76,0.06)"; e.currentTarget.style.color = THEME.accent; } }}
+                      onMouseEnter={(e) => { if (!showNotifPanel) { e.currentTarget.style.background = "rgba(99,102,241,0.08)"; e.currentTarget.style.color = THEME.topbarAccent; } }}
                       onMouseLeave={(e) => { if (!showNotifPanel) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#64748b"; } }}
                       title="알림"
                     >
@@ -694,7 +696,7 @@ export default function PortalLayout() {
                       minWidth: 54, height: 48, background: "transparent", color: "#64748b",
                       gap: 2, transition: "background 0.15s, color 0.15s",
                     }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(201,168,76,0.06)"; e.currentTarget.style.color = THEME.accent; }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(99,102,241,0.08)"; e.currentTarget.style.color = THEME.topbarAccent; }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#64748b"; }}
                     title="조직도"
                   >
@@ -727,14 +729,14 @@ export default function PortalLayout() {
                     <div style={{
                       width: 32, height: 32, borderRadius: "50%",
                       background: THEME.accentDim, color: THEME.accent,
-                      border: `1px solid rgba(201,168,76,0.25)`,
+                      border: `1px solid rgba(99,102,241,0.25)`,
                       display: "flex", alignItems: "center", justifyContent: "center",
                       fontSize: 13, fontWeight: 600,
-                      boxShadow: "0 2px 4px rgba(201,168,76,0.1)", cursor: "pointer",
+                      boxShadow: "0 2px 4px rgba(99,102,241,0.15)", cursor: "pointer",
                       transition: "border-color 0.15s",
                     }}
                       onMouseEnter={e => e.currentTarget.style.borderColor = THEME.accent}
-                      onMouseLeave={e => e.currentTarget.style.borderColor = "rgba(201,168,76,0.25)"}
+                      onMouseLeave={e => e.currentTarget.style.borderColor = "rgba(99,102,241,0.25)"}
                     >
                       {userInitial}
                     </div>

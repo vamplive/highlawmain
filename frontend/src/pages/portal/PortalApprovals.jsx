@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { portalApi } from "../../utils/api";
-import { T, fieldStyle, labelStyle } from "./portalStyles";
+import { T, fieldStyle, labelStyle, pageHeaderStyle, pageHeaderIconStyle, primaryBtnStyle } from "./portalStyles";
 import { showToast } from "../../utils/showToast";
 import useMediaQuery from "../../hooks/useMediaQuery";
 
@@ -344,34 +344,30 @@ export default function PortalApprovals() {
 
   return (
     <div style={{ fontFamily: "system-ui, sans-serif" }}>
-      {/* ==================== 헤더 영역 ==================== */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-        <div>
-          <h1 style={{ fontSize: 22, fontWeight: 600, color: T.text, margin: "0 0 4px 0", fontFamily: "'Noto Serif KR', serif" }}>
-            전자결재 시스템
-          </h1>
-          <p style={{ fontSize: 13, color: T.textSec, margin: 0 }}>
-            휴가 신청 및 지출, 경비 결재를 진행할 수 있습니다.
-          </p>
+      {/* ==================== 페이지 헤더 배너 ==================== */}
+      <div style={{ ...pageHeaderStyle, justifyContent: "space-between" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
+          <div style={pageHeaderIconStyle}>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10,9 9,9 8,9"/>
+            </svg>
+          </div>
+          <div>
+            <h1 style={{ fontSize: 22, fontWeight: 800, margin: "0 0 4px 0", letterSpacing: -0.3 }}>전자결재 시스템</h1>
+            <p style={{ fontSize: 13, margin: 0, opacity: 0.85 }}>휴가 신청 및 지출, 경비 결재를 진행할 수 있습니다.</p>
+          </div>
         </div>
-        <button
-          onClick={() => setIsDraftOpen(true)}
-          style={{
-            padding: "10px 20px", fontSize: 13, fontWeight: 600,
-            color: "#fff", background: T.accent, border: "none",
-            borderRadius: 6, cursor: "pointer", boxShadow: "0 2px 8px rgba(176,141,87,0.3)"
-          }}
-        >
+        <button onClick={() => setIsDraftOpen(true)} style={{ ...primaryBtnStyle, background: "rgba(255,255,255,0.22)", boxShadow: "none", border: "1px solid rgba(255,255,255,0.35)" }}>
           + 새 기안 작성
         </button>
       </div>
 
-      {/* ==================== 연가 대시보드 카드 (연가 탭 선택 혹은 대시보드에 항상 노출) ==================== */}
+      {/* ==================== 연가 대시보드 카드 ==================== */}
       {leaveStatus && (
         <div style={{
-          background: "linear-gradient(135deg, #fbfaf8 0%, #f7f4ef 100%)",
+          background: "#fff",
           border: `1px solid ${T.border}`,
-          borderRadius: 12,
+          borderRadius: 14,
           padding: 24,
           marginBottom: 30,
           boxShadow: "0 2px 12px rgba(0,0,0,0.02)"
