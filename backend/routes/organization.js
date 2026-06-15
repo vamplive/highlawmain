@@ -159,7 +159,7 @@ router.post("/approval-settings", (req, res) => {
 router.get("/lawyers-link", (req, res) => {
   try {
     const rows = sqlite.prepare(`
-      SELECT l.id, l.name, l.name_en, l.role, l.position, l.photo_url,
+      SELECT l.id, l.name, l.name_en, l.position, l.photo_url,
              pu.id as portal_user_id, pu.email as portal_user_email
       FROM lawyers l
       LEFT JOIN portal_users pu ON pu.email = l.email
@@ -169,7 +169,6 @@ router.get("/lawyers-link", (req, res) => {
       id: r.id,
       name: r.name,
       nameEn: r.name_en,
-      role: r.role,
       position: r.position,
       photoUrl: r.photo_url,
       portalUserId: r.portal_user_id,
