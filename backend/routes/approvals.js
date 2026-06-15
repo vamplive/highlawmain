@@ -317,4 +317,77 @@ router.post("/:id/approve", handleApprovalAction("approved"));
 router.patch("/:id/reject", handleApprovalAction("rejected"));
 router.post("/:id/reject", handleApprovalAction("rejected"));
 
+// 수정/삭제 권한 확인:
+//   기안자 + pending 상태 → 허용
+//   결재선에 포함된 결재자 → 항상 허용
+//   admin 역할 → 항상 허용
+function canModify(row, uid) {
+  if (row.requester_id === uid && row.status === "pending") return true;
+  const line = parseApprovalLine(row.approval_line);
+  if (line.some((item) => item.userId === uid)) return true;
+  const pu = sqlite.prepare("SELECT role FROM portal_users WHERE id = ?").get(uid);
+  if (pu?.role === "admin") return true;
+  return false;
+}
+
+// 결재 수정 (PUT /:id)
+router.put("/:id", (req, res) => {
+  try {
+    const uid = userId(req);
+    const row = sqlite.prepare("SELECT * FROM portal_approvals WHERE id = ?").get(req.params.id);
+    if (!row) return res.status(404).json({ data: null, error: "결재를 찾을 수 없습니다", meta: null });
+    if (!canModify(row, uid)) return res.status(403).json({ data: null, error: "수정 권한이 없습니다", meta: null });
+
+    const {
+      title, detail,
+      leaveType, leaveStart, leaveEnd, leaveDuration,
+      expenseAmount, expenseCategory, expenseReceiptUrl, expenseDate,
+    } = req.body || {};
+
+    sqlite.prepare(`
+      UPDATE portal_approvals SET
+        title = COALESCE(?, title),
+        detail = ?,
+        leave_type = COALESCE(?, leave_type),
+        leave_start = COALESCE(?, leave_start),
+        leave_end = COALESCE(?, leave_end),
+        leave_duration = COALESCE(?, leave_duration),
+        expense_amount = COALESCE(?, expense_amount),
+        expense_category = COALESCE(?, expense_category),
+        expense_receipt_url = COALESCE(?, expense_receipt_url),
+        expense_date = COALESCE(?, expense_date),
+        updated_at = datetime('now')
+      WHERE id = ?
+    `).run(
+      title || null,
+      detail !== undefined ? detail : row.detail,
+      leaveType || null,
+      leaveStart || null,
+      leaveEnd || null,
+      leaveDuration != null ? leaveDuration : null,
+      expenseAmount != null ? expenseAmount : null,
+      expenseCategory || null,
+      expenseReceiptUrl !== undefined ? expenseReceiptUrl : null,
+      expenseDate || null,
+      row.id,
+    );
+
+    const updated = sqlite.prepare("SELECT * FROM portal_approvals WHERE id = ?").get(row.id);
+    res.json({ data: formatApproval(updated), error: null, meta: null });
+  } catch (e) { sendError(res, e, "PUT /:id"); }
+});
+
+// 결재 삭제 (DELETE /:id)
+router.delete("/:id", (req, res) => {
+  try {
+    const uid = userId(req);
+    const row = sqlite.prepare("SELECT * FROM portal_approvals WHERE id = ?").get(req.params.id);
+    if (!row) return res.status(404).json({ data: null, error: "결재를 찾을 수 없습니다", meta: null });
+    if (!canModify(row, uid)) return res.status(403).json({ data: null, error: "삭제 권한이 없습니다", meta: null });
+
+    sqlite.prepare("DELETE FROM portal_approvals WHERE id = ?").run(row.id);
+    res.json({ data: { id: row.id }, error: null, meta: null });
+  } catch (e) { sendError(res, e, "DELETE /:id"); }
+});
+
 module.exports = router;

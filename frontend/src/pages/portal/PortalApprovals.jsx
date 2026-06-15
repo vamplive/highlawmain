@@ -26,12 +26,14 @@ export default function PortalApprovals() {
   const [pendingApprovals, setPendingApprovals] = useState([]);
   const [historyApprovals, setHistoryApprovals] = useState([]);
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [currentUserRole, setCurrentUserRole] = useState(null);
   const [loading, setLoading] = useState(true);
 
   // 모달 상태
   const [isDraftOpen, setIsDraftOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [selectedApproval, setSelectedApproval] = useState(null);
+  const [editingApproval, setEditingApproval] = useState(null); // null이면 새 기안, 설정되면 수정 모드
 
   // 기안 폼 상태
   const [form, setForm] = useState({
@@ -70,6 +72,7 @@ export default function PortalApprovals() {
       setPendingApprovals(pendingRes.data || []);
       setHistoryApprovals(historyRes.data || []);
       setCurrentUserId(meRes.data?.user?.id || null);
+      setCurrentUserRole(meRes.data?.user?.role || null);
     } catch (err) {
       showToast(err.message || "결재 데이터를 가져오는데 실패했습니다", "error");
     } finally {
@@ -186,9 +189,17 @@ export default function PortalApprovals() {
         detail: form.reason.trim(), // 상세 사유
       };
 
-      await portalApi.post("/approvals", payload);
-      showToast("결재 기안이 상신되었습니다", "success");
+      if (editingApproval) {
+        // 수정 모드: PUT
+        await portalApi.put(`/approvals/${editingApproval.id}`, payload);
+        showToast("결재 문서가 수정되었습니다", "success");
+      } else {
+        // 신규 기안: POST
+        await portalApi.post("/approvals", payload);
+        showToast("결재 기안이 상신되었습니다", "success");
+      }
       setIsDraftOpen(false);
+      setEditingApproval(null);
       // 폼 초기화
       setForm({
         type: "leave",
@@ -205,9 +216,42 @@ export default function PortalApprovals() {
       });
       loadData();
     } catch (err) {
-      showToast(err.message || "기안 등록에 실패했습니다", "error");
+      showToast(err.message || "기안 저장에 실패했습니다", "error");
     } finally {
       setProcessing(false);
+    }
+  };
+
+  // 수정 모드 진입: 폼을 기존 결재 데이터로 채우고 드래프트 모달 열기
+  const handleEditClick = (approval) => {
+    setEditingApproval(approval);
+    setForm({
+      type: approval.type || "leave",
+      title: approval.title || "",
+      leaveType: approval.leaveType || "annual",
+      leaveStart: approval.leaveStart || "",
+      leaveEnd: approval.leaveEnd || "",
+      leaveDuration: approval.leaveDuration || 8,
+      expenseAmount: approval.expenseAmount || "",
+      expenseCategory: approval.expenseCategory || "meals",
+      expenseReceiptUrl: approval.expenseReceiptUrl || "",
+      expenseDate: approval.expenseDate || "",
+      reason: approval.detail || "",
+    });
+    setIsDetailOpen(false);
+    setIsDraftOpen(true);
+  };
+
+  // 결재 삭제
+  const handleDeleteClick = async (approval) => {
+    if (!window.confirm(`"${approval.title}" 결재를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`)) return;
+    try {
+      await portalApi.delete(`/approvals/${approval.id}`);
+      showToast("결재 문서가 삭제되었습니다", "success");
+      setIsDetailOpen(false);
+      loadData();
+    } catch (err) {
+      showToast(err.message || "삭제에 실패했습니다", "error");
     }
   };
 
@@ -611,9 +655,11 @@ export default function PortalApprovals() {
             padding: 24, display: "flex", flexDirection: "column", maxHeight: "90vh", overflowY: "auto"
           }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>새 기안서 상신</h2>
+              <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>
+                {editingApproval ? "결재 문서 수정" : "새 기안서 상신"}
+              </h2>
               <button
-                onClick={() => setIsDraftOpen(false)}
+                onClick={() => { setIsDraftOpen(false); setEditingApproval(null); }}
                 style={{ fontSize: 20, border: "none", background: "none", cursor: "pointer" }}
               >
                 &times;
@@ -919,7 +965,7 @@ export default function PortalApprovals() {
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
                 <button
                   type="button"
-                  onClick={() => setIsDraftOpen(false)}
+                  onClick={() => { setIsDraftOpen(false); setEditingApproval(null); }}
                   style={{
                     padding: "10px 16px", fontSize: 13, border: "1px solid #ccc",
                     borderRadius: 6, cursor: "pointer", background: "#fff"
@@ -936,7 +982,7 @@ export default function PortalApprovals() {
                     borderRadius: 6, cursor: "pointer", opacity: processing ? 0.6 : 1
                   }}
                 >
-                  {processing ? "상신 중..." : "기안 상신"}
+                  {processing ? "처리 중..." : editingApproval ? "수정 저장" : "기안 상신"}
                 </button>
               </div>
             </form>
@@ -1174,6 +1220,44 @@ export default function PortalApprovals() {
                 </div>
               </div>
             )}
+
+            {/* 수정 / 삭제 버튼 영역 */}
+            {(() => {
+              const isRequester = selectedApproval.requesterId === currentUserId;
+              const isPending = selectedApproval.status === "pending";
+              const isInApprovalLine = selectedApproval.approvalLine?.some((a) => a.userId === currentUserId);
+              const isAdmin = currentUserRole === "admin";
+              // 기안자는 pending 상태일 때만, 결재자/admin은 항상 수정·삭제 가능
+              const canEdit = (isRequester && isPending) || isInApprovalLine || isAdmin;
+              if (!canEdit) return null;
+              return (
+                <div style={{
+                  display: "flex", gap: 8, justifyContent: "flex-start",
+                  borderTop: "1px solid #f0f0f0", paddingTop: 16, marginBottom: 8
+                }}>
+                  <button
+                    onClick={() => handleEditClick(selectedApproval)}
+                    style={{
+                      padding: "8px 16px", fontSize: 13, fontWeight: 600,
+                      color: "#1d4ed8", backgroundColor: "#dbeafe", border: "1px solid #93c5fd",
+                      borderRadius: 6, cursor: "pointer"
+                    }}
+                  >
+                    수정
+                  </button>
+                  <button
+                    onClick={() => handleDeleteClick(selectedApproval)}
+                    style={{
+                      padding: "8px 16px", fontSize: 13, fontWeight: 600,
+                      color: "#b91c1c", backgroundColor: "#fee2e2", border: "1px solid #fca5a5",
+                      borderRadius: 6, cursor: "pointer"
+                    }}
+                  >
+                    삭제
+                  </button>
+                </div>
+              );
+            })()}
 
             {/* 닫기 버튼 */}
             <div style={{ display: "flex", justifyContent: "flex-end" }}>

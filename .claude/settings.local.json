@@ -11,11 +11,26 @@
       "Bash(git diff*)",
       "Bash(git log*)",
       "Bash(git add *)",
-      "Bash(git commit*)"
+      "Bash(git commit*)",
+      "Bash(git push*)",
+      "Bash(ssh -i *highlaw_deploy.pem*)"
     ],
     "additionalDirectories": [
       "c:\\Users\\mingu\\OneDrive\\문서\\Highlaw Homepage\\highlawmain\\highlaw\\frontend\\frontend\\src",
       "c:\\Users\\mingu\\OneDrive\\문서\\Highlaw Homepage\\highlawmain\\highlaw\\frontend\\frontend\\public"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node C:/Users/mingu/.claude/deploy-hook.js"
+          }
+        ]
+      }
     ]
   }
 }
