@@ -245,6 +245,7 @@ async function listPortalUsers(query) {
       clientId: portalUsers.clientId,
       clientName: clients.name,
       clientPhone: clients.phone,
+      googleConnected: sql`CASE WHEN ${portalUsers.googleAccessToken} IS NOT NULL THEN 1 ELSE 0 END`,
     })
     .from(portalUsers)
     .leftJoin(clients, eq(portalUsers.clientId, clients.id))

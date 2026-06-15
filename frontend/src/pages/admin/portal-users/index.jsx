@@ -215,7 +215,7 @@ function UserEditRow({ user, onSave, onCancel }) {
 
   return (
     <tr style={{ background: "#f0f7ff" }}>
-      <td colSpan={6} style={{ padding: "12px 16px" }}>
+      <td colSpan={7} style={{ padding: "12px 16px" }}>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end" }}>
           <div style={{ minWidth: 140 }}>
             <div style={{ fontSize: 11, fontWeight: 600, color: "#555", marginBottom: 4 }}>역할</div>
@@ -382,7 +382,7 @@ export default function AdminPortalUsers() {
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                 <thead>
                   <tr style={{ background: "#f8f8f8" }}>
-                    {["이름", "이메일", "연락처", "역할 / 입사일", "가입일", "상태", ""].map((h) => (
+                    {["이름", "이메일", "연락처", "역할 / 입사일", "가입일", "상태", "연동", ""].map((h) => (
                       <th key={h} style={{ padding: "10px 16px", textAlign: "left", fontWeight: 600, color: S.textSec, borderBottom: `1px solid ${S.border}` }}>
                         {h}
                       </th>
@@ -422,6 +422,26 @@ export default function AdminPortalUsers() {
                           <span style={{ padding: "3px 10px", borderRadius: 10, fontSize: 11, fontWeight: 600, background: badge.bg, color: badge.color }}>
                             {badge.label}
                           </span>
+                        </td>
+                        <td style={{ padding: "12px 16px" }}>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                            <span style={{
+                              display: "inline-flex", alignItems: "center", gap: 4,
+                              padding: "2px 8px", borderRadius: 8, fontSize: 11, fontWeight: 600,
+                              background: u.clientId ? "#e8f5e9" : "#f5f5f5",
+                              color: u.clientId ? "#2e7d32" : "#9e9e9e",
+                            }}>
+                              {u.clientId ? "✓" : "—"} 클라이언트
+                            </span>
+                            <span style={{
+                              display: "inline-flex", alignItems: "center", gap: 4,
+                              padding: "2px 8px", borderRadius: 8, fontSize: 11, fontWeight: 600,
+                              background: u.googleConnected ? "#e3f2fd" : "#f5f5f5",
+                              color: u.googleConnected ? "#1565c0" : "#9e9e9e",
+                            }}>
+                              {u.googleConnected ? "✓" : "—"} 구글캘린더
+                            </span>
+                          </div>
                         </td>
                         <td style={{ padding: "12px 16px" }}>
                           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
