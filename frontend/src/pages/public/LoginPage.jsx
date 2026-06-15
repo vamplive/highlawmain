@@ -116,19 +116,20 @@ function ForgotPasswordModal({ onClose }) {
         {!sent ? (
           <>
             <p className="portal-modal__desc">
-              가입 시 등록한 이메일 또는 휴대폰 번호를 입력하시면<br />
-              비밀번호 재설정 링크를 이메일로 발송해 드립니다.
+              가입 시 등록한 휴대폰 번호를 입력하시면<br />
+              문자 메시지로 재설정 링크를 발송해 드립니다.
             </p>
             <form onSubmit={submit}>
               <div className="portal-login__field">
-                <label className="portal-login__field-label">이메일 또는 휴대폰 번호</label>
+                <label className="portal-login__field-label">휴대폰 번호</label>
                 <input
-                  type="text"
+                  type="tel"
                   className={`portal-login__input${error ? " portal-login__input--error" : ""}`}
                   value={input}
                   onChange={(e) => { setInput(e.target.value); setError(""); }}
-                  placeholder="이메일 또는 010-0000-0000"
+                  placeholder="010-0000-0000"
                   autoFocus
+                  inputMode="numeric"
                 />
               </div>
               {error && <div className="portal-login__error portal-login__error--danger">{error}</div>}
@@ -139,9 +140,9 @@ function ForgotPasswordModal({ onClose }) {
           </>
         ) : (
           <div className="portal-modal__result portal-modal__result--ok">
-            입력하신 이메일 주소로 비밀번호 재설정 링크를 발송했습니다.<br />
+            입력하신 번호로 재설정 링크를 문자 발송했습니다.<br />
             <span style={{ color: "#888", fontSize: "13px", marginTop: "8px", display: "block" }}>
-              메일이 도착하지 않으면 스팸함을 확인해주세요. 링크는 30분간 유효합니다.
+              카카오톡 메시지함에서도 확인 가능합니다. 링크는 30분간 유효합니다.
             </span>
           </div>
         )}
@@ -154,7 +155,7 @@ function ForgotPasswordModal({ onClose }) {
 // 로그인 폼
 // ──────────────────────────────────────────────────
 function LoginForm({ onSuccess }) {
-  const [form, setForm] = useState({ email: "", password: "" });
+  const [form, setForm] = useState({ identifier: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [modal, setModal] = useState(null); // "findId" | "forgotPassword" | null
@@ -163,11 +164,11 @@ function LoginForm({ onSuccess }) {
 
   const submit = async (e) => {
     e.preventDefault();
-    if (!form.email.trim() || !form.password) return setError("이메일과 비밀번호를 입력해주세요");
+    if (!form.identifier.trim() || !form.password) return setError("이메일(또는 전화번호)과 비밀번호를 입력해주세요");
     setLoading(true);
     setError("");
     try {
-      await portalApi.post("/login", form);
+      await portalApi.post("/login", { identifier: form.identifier.trim(), password: form.password });
       onSuccess();
     } catch (err) {
       setError(err.message || "로그인에 실패했습니다");
@@ -181,14 +182,14 @@ function LoginForm({ onSuccess }) {
   return (
     <form onSubmit={submit} className="portal-login__form-inner">
       <div className="portal-login__field">
-        <label className="portal-login__field-label">이메일</label>
+        <label className="portal-login__field-label">이메일 또는 전화번호</label>
         <input
-          type="email"
+          type="text"
           className={`portal-login__input${error && !isPending ? " portal-login__input--error" : ""}`}
-          value={form.email}
-          onChange={f("email")}
-          placeholder="example@email.com"
-          autoComplete="email"
+          value={form.identifier}
+          onChange={f("identifier")}
+          placeholder="example@email.com 또는 010-1234-5678"
+          autoComplete="username"
           autoFocus
         />
       </div>

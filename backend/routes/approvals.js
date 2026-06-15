@@ -51,6 +51,7 @@ router.get("/leave-status", (req, res) => {
       }
     }
 
+    // leave_duration은 시간(hour) 단위: 하루=8, 반차=4, 시간단위=1
     const used = sqlite.prepare(`
       SELECT COALESCE(SUM(leave_duration), 0) as used
       FROM portal_approvals
@@ -58,12 +59,20 @@ router.get("/leave-status", (req, res) => {
         AND leave_start LIKE ?
     `).get(uid, `${year}%`);
 
+    const totalAccruedHours = totalAnnual * 8;
+    const usedHours = used.used || 0;
+    const availableHours = Math.max(0, totalAccruedHours - usedHours);
+
     res.json({
       data: {
-        totalAnnual,
-        usedAnnual: used.used || 0,
-        remainAnnual: Math.max(0, totalAnnual - (used.used || 0)),
         hireDate: hireDate || null,
+        totalAccruedDays: totalAnnual,
+        totalAccruedHours: totalAccruedHours,
+        totalUsedDays: +(usedHours / 8).toFixed(2),
+        totalUsedHours: usedHours,
+        availableDays: +(availableHours / 8).toFixed(2),
+        availableHours: availableHours,
+        details: hireDate ? '입사일 기준 자동 계산' : '입사일 미설정 — 기본 15일 적용',
       },
       error: null, meta: null,
     });

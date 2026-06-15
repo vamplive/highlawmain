@@ -93,6 +93,7 @@ const AdminChatbot = lazy(() => import("./pages/admin/chatbot"));
 /* ── 로그인/포털 진입 청크: 지연 로딩 ── */
 const LoginPage = lazy(() => import("./pages/public/LoginPage"));
 const PortalResetPassword = lazy(() => import("./pages/public/PortalResetPassword"));
+const PortalForgotPassword = lazy(() => import("./pages/portal/PortalForgotPassword"));
 
 /* ── 공개 초대/서명 청크: 지연 로딩 ── */
 const InviteEntryPage = lazy(() => import("./pages/public/InviteEntryPage"));
@@ -315,6 +316,9 @@ export default function App() {
 
         {/* /reset-password?token=xxx — 포털 비밀번호 재설정 (인증 없이 접근, 토큰 검증으로 보호) */}
         <Route path="/reset-password" element={<ErrorBoundary><LazyRoute><PortalResetPassword /></LazyRoute></ErrorBoundary>} />
+
+        {/* /forgot-password — 포털 비밀번호 찾기 (전화번호 입력 → 문자 발송) */}
+        <Route path="/forgot-password" element={<ErrorBoundary><LazyRoute><PortalForgotPassword /></LazyRoute></ErrorBoundary>} />
 
         {/* 포털 — 지연 로딩 */}
         <Route path="/portal" element={<ErrorBoundary><LazyRoute><PortalLayout /></LazyRoute></ErrorBoundary>}>

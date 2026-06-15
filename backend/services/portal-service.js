@@ -1904,16 +1904,18 @@ async function findEmailByPhone(phone) {
 
 /**
  * 비밀번호 재설정 링크 발송
- * - 이메일 또는 전화번호로 포털 사용자 조회
- * - 일회용 토큰 생성 → DB 저장(해시) + 이메일 발송
+ * - 이메일 입력 시 → 이메일 발송
+ * - 전화번호 입력 시 → SMS 발송 (카카오톡 앱에서 열 수 있는 링크 포함)
  * - 사용자 존재 여부를 응답에서 노출하지 않음
  */
 async function createPortalResetToken(input) {
   const { sendEmail } = require("../lib/email-service");
+  const { sendSMS } = require("../lib/sms-service");
 
   if (!input) throw new ServiceError("이메일 또는 휴대폰 번호를 입력해주세요", 400);
 
   let user = null;
+  let phoneForSMS = null;
 
   const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.trim());
   if (isEmail) {
@@ -1924,6 +1926,7 @@ async function createPortalResetToken(input) {
     if (!KOREAN_PHONE_REGEX.test(normalizedPhone)) {
       throw new ServiceError("올바른 이메일 또는 휴대폰 번호를 입력해주세요", 400);
     }
+    phoneForSMS = normalizedPhone;
     const [client] = await db.select().from(clients).where(eq(clients.phone, normalizedPhone));
     if (client) {
       [user] = await db.select().from(portalUsers)
@@ -1947,39 +1950,44 @@ async function createPortalResetToken(input) {
     updatedAt: sql`(datetime('now'))`,
   }).where(eq(portalUsers.id, user.id));
 
-  const appUrl = process.env.APP_URL || "http://localhost:5173";
+  const appUrl = process.env.APP_URL || "https://highlaw.co.kr";
   const resetUrl = `${appUrl.replace(/\/+$/, "")}/reset-password?token=${encodeURIComponent(rawToken)}`;
 
-  const html = `
-    <div style="font-family: -apple-system, 'Apple SD Gothic Neo', sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
-      <h2 style="color: #1a1a1a; margin: 0 0 16px;">비밀번호 재설정</h2>
-      <p style="color: #4a4a4a; line-height: 1.6;">
-        아래 버튼을 클릭하여 새 비밀번호를 설정해주세요.<br />
-        링크는 <strong>30분간</strong> 유효합니다.
-      </p>
-      <div style="margin: 24px 0; text-align: center;">
-        <a href="${resetUrl}"
-           style="display: inline-block; padding: 12px 28px; background: #1a1a1a; color: #fff;
-                  text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 15px;">
-          비밀번호 재설정
-        </a>
+  if (phoneForSMS) {
+    // 전화번호로 요청 → SMS 발송 (카카오톡에서도 링크 열림)
+    const smsText = `[법무법인 하이로] 포털 비밀번호 재설정 링크입니다.\n아래 링크를 클릭해 30분 내에 비밀번호를 변경해주세요.\n${resetUrl}\n\n본인 요청이 아니면 무시하세요.`;
+    await sendSMS(phoneForSMS, smsText, { title: "포털 비밀번호 재설정" });
+  } else {
+    // 이메일로 요청 → 이메일 발송
+    const html = `
+      <div style="font-family: -apple-system, 'Apple SD Gothic Neo', sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
+        <h2 style="color: #1a1a1a; margin: 0 0 16px;">비밀번호 재설정</h2>
+        <p style="color: #4a4a4a; line-height: 1.6;">
+          아래 버튼을 클릭하여 새 비밀번호를 설정해주세요.<br />
+          링크는 <strong>30분간</strong> 유효합니다.
+        </p>
+        <div style="margin: 24px 0; text-align: center;">
+          <a href="${resetUrl}"
+             style="display: inline-block; padding: 12px 28px; background: #1a1a1a; color: #fff;
+                    text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 15px;">
+            비밀번호 재설정
+          </a>
+        </div>
+        <p style="color: #8a8a8a; font-size: 12px; line-height: 1.5; word-break: break-all;">
+          버튼이 작동하지 않으면 아래 주소를 복사해 브라우저에 붙여넣으세요:<br />
+          ${resetUrl}
+        </p>
+        <p style="color: #8a8a8a; font-size: 12px; line-height: 1.5; margin-top: 24px;">
+          본인이 요청하지 않은 경우 이 메일을 무시하셔도 됩니다.
+        </p>
+        <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
+        <p style="color: #bbb; font-size: 11px;">법무법인 하이로 CLIENT PORTAL</p>
       </div>
-      <p style="color: #8a8a8a; font-size: 12px; line-height: 1.5; word-break: break-all;">
-        버튼이 작동하지 않으면 아래 주소를 복사해 브라우저에 붙여넣으세요:<br />
-        ${resetUrl}
-      </p>
-      <p style="color: #8a8a8a; font-size: 12px; line-height: 1.5; margin-top: 24px;">
-        본인이 요청하지 않은 경우 이 메일을 무시하셔도 됩니다.<br />
-        비밀번호와 세션은 변경되지 않습니다.
-      </p>
-      <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
-      <p style="color: #bbb; font-size: 11px;">법무법인 하이로 CLIENT PORTAL</p>
-    </div>
-  `;
+    `;
+    await sendEmail(user.email, "[법무법인 하이로] 포털 비밀번호 재설정 안내", html);
+  }
 
-  await sendEmail(user.email, "[법무법인 하이로] 포털 비밀번호 재설정 안내", html);
-
-  return { sent: true };
+  return { sent: true, via: phoneForSMS ? "sms" : "email" };
 }
 
 /**
