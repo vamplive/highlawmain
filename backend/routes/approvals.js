@@ -326,7 +326,7 @@ function canModify(row, uid) {
   const line = parseApprovalLine(row.approval_line);
   if (line.some((item) => item.userId === uid)) return true;
   const pu = sqlite.prepare("SELECT role FROM portal_users WHERE id = ?").get(uid);
-  if (pu?.role === "admin") return true;
+  if (pu?.role === "관리자" || pu?.role === "대표") return true;
   return false;
 }
 

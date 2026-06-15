@@ -1226,8 +1226,8 @@ export default function PortalApprovals() {
               const isRequester = selectedApproval.requesterId === currentUserId;
               const isPending = selectedApproval.status === "pending";
               const isInApprovalLine = selectedApproval.approvalLine?.some((a) => a.userId === currentUserId);
-              const isAdmin = currentUserRole === "admin";
-              // 기안자는 pending 상태일 때만, 결재자/admin은 항상 수정·삭제 가능
+              const isAdmin = currentUserRole === "관리자" || currentUserRole === "대표";
+              // 기안자는 pending 상태일 때만, 결재선 결재자/관리자는 항상 수정·삭제 가능
               const canEdit = (isRequester && isPending) || isInApprovalLine || isAdmin;
               if (!canEdit) return null;
               return (
