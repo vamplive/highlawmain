@@ -117,17 +117,18 @@ router.post("/register", async (req, res) => {
   }
 });
 
-/** POST /api/portal/login */
+/** POST /api/portal/login — 이메일 또는 전화번호 + 비밀번호 */
 router.post("/login", async (req, res) => {
   try {
-    const { email, password } = req.body;
-    const result = await portalService.loginUser(email, password);
+    const { email, identifier, password } = req.body;
+    const loginId = identifier || email; // 신규: identifier, 하위호환: email
+    const result = await portalService.loginUser(loginId, password);
     setPortalSessionCookie(res, result.token);
     res.json({ data: result, error: null, meta: null });
   } catch (e) {
     if (e?.name === "ServiceError" && (e.status === 401 || e.status === 403)) {
       const subtype = e.status === 403 ? "inactive" : "invalid";
-      logSecurityEvent(req, `portal_login_fail.${subtype}`, { attemptedEmail: req.body?.email });
+      logSecurityEvent(req, `portal_login_fail.${subtype}`, { attemptedEmail: req.body?.identifier || req.body?.email });
     }
     handleError(res, e);
   }

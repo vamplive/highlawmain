@@ -1,4 +1,4 @@
-/** 포털 로그인 -- 의뢰인 이메일/비밀번호 로그인 */
+/** 포털 로그인 -- 이메일 또는 전화번호 + 비밀번호 */
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { portalApi } from "../../utils/api";
@@ -6,20 +6,19 @@ import { T, fieldStyle } from "./portalStyles";
 
 export default function PortalLogin() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ email: "", password: "" });
+  const [form, setForm] = useState({ identifier: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.email.trim() || !form.password) return setError("이메일과 비밀번호를 입력해주세요");
+    if (!form.identifier.trim() || !form.password) return setError("이메일(또는 전화번호)과 비밀번호를 입력해주세요");
 
     setError("");
     setLoading(true);
 
     try {
-      // 서버가 HttpOnly 쿠키 portal_session을 발급한다 — 응답 body의 token은 쓰지 않는다
-      await portalApi.post("/login", form);
+      await portalApi.post("/login", { identifier: form.identifier.trim(), password: form.password });
       navigate("/portal", { replace: true });
     } catch (err) {
       setError(err.message || "로그인에 실패했습니다");
@@ -50,14 +49,17 @@ export default function PortalLogin() {
         {/* 폼 */}
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: 16 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, color: T.textSec, display: "block", marginBottom: 6 }}>이메일</label>
+            <label style={{ fontSize: 12, fontWeight: 600, color: T.textSec, display: "block", marginBottom: 6 }}>
+              이메일 또는 전화번호
+            </label>
             <input
-              type="email"
+              type="text"
               style={fieldStyle}
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              placeholder="example@email.com"
-              autoComplete="email"
+              value={form.identifier}
+              onChange={(e) => setForm({ ...form, identifier: e.target.value })}
+              placeholder="example@email.com 또는 010-1234-5678"
+              autoComplete="username"
+              inputMode="email"
             />
           </div>
 
@@ -99,10 +101,14 @@ export default function PortalLogin() {
           </button>
         </form>
 
-        {/* 회원가입 링크 */}
-        <div style={{ textAlign: "center", marginTop: 20 }}>
+        {/* 하단 링크 */}
+        <div style={{ textAlign: "center", marginTop: 20, display: "flex", justifyContent: "center", gap: 16 }}>
           <Link to="/portal/register" style={{ fontSize: 13, color: T.accent, textDecoration: "none" }}>
             회원가입
+          </Link>
+          <span style={{ fontSize: 13, color: T.textSec }}>|</span>
+          <Link to="/portal/reset-password" style={{ fontSize: 13, color: T.textSec, textDecoration: "none" }}>
+            비밀번호 찾기
           </Link>
         </div>
       </div>

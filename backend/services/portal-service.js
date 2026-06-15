@@ -109,18 +109,32 @@ async function registerUser(data) {
 }
 
 /**
- * 포털 로그인 — isActive 상태에 따라 오류 메시지 분기
+ * 포털 로그인 — 이메일 또는 전화번호 + 비밀번호
+ * isActive 상태에 따라 오류 메시지 분기
  */
-async function loginUser(email, password) {
-  if (!email || !password) {
-    throw new ServiceError("이메일과 비밀번호를 입력해주세요", 400);
+async function loginUser(emailOrPhone, password) {
+  if (!emailOrPhone || !password) {
+    throw new ServiceError("이메일(또는 전화번호)과 비밀번호를 입력해주세요", 400);
   }
 
-  const normalizedEmail = email.trim().toLowerCase();
-  const [user] = await db
-    .select()
-    .from(portalUsers)
-    .where(eq(portalUsers.email, normalizedEmail));
+  let user;
+  const isEmail = EMAIL_REGEX.test(emailOrPhone.trim());
+
+  if (isEmail) {
+    const normalizedEmail = emailOrPhone.trim().toLowerCase();
+    [user] = await db.select().from(portalUsers).where(eq(portalUsers.email, normalizedEmail));
+  } else {
+    // 전화번호로 clients 테이블 조회 후 연결된 portal_user 찾기
+    const normalizedPhone = cleanPhone(emailOrPhone);
+    if (!KOREAN_PHONE_REGEX.test(normalizedPhone)) {
+      dummyVerifyPassword();
+      throw new ServiceError("이메일 또는 비밀번호가 올바르지 않습니다", 401);
+    }
+    const [client] = await db.select().from(clients).where(eq(clients.phone, normalizedPhone));
+    if (client) {
+      [user] = await db.select().from(portalUsers).where(eq(portalUsers.clientId, client.id));
+    }
+  }
 
   if (!user) {
     dummyVerifyPassword();
