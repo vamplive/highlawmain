@@ -16,22 +16,13 @@ const {
   extractAdminToken, getSession,
 } = require("../lib/auth");
 const { handleError } = require("../lib/route-handler");
+const { decodeMultipartFilename } = require("../lib/decode-filename");
 
 const router = Router();
 
 // ─── 파일 업로드 설정 ───────────────────────────────────────────────
 const STORAGE_PATH = process.env.STORAGE_PATH || path.join(__dirname, "..", "data");
 const CHAT_UPLOAD_DIR = path.join(STORAGE_PATH, "uploads", "chat");
-
-// busboy 1.x는 Content-Disposition 파일명을 latin1로 읽음.
-// UTF-8 한글 파일명을 올바르게 복원한다.
-function decodeMultipartFilename(raw) {
-  try {
-    return Buffer.from(raw, "latin1").toString("utf8");
-  } catch {
-    return raw;
-  }
-}
 
 const chatStorage = multer.diskStorage({
   destination: (_req, _file, cb) => {

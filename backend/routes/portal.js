@@ -15,6 +15,7 @@ const crypto = require("crypto");
 const path = require("path");
 const fs = require("fs");
 const multer = require("multer");
+const { decodeMultipartFilename } = require("../lib/decode-filename");
 const {
   portalAuth,
   adminAuth,
@@ -190,7 +191,7 @@ router.post("/board/upload-attachments", portalAuth, (req, res) => {
   boardAttachUpload.array("files", 10)(req, res, (err) => {
     if (err) return res.status(400).json({ data: null, error: err.message, meta: null });
     const files = (req.files || []).map((f) => ({
-      name: f.originalname,
+      name: decodeMultipartFilename(f.originalname),
       url: `/uploads/board/${f.filename}`,
       size: f.size,
       mime: f.mimetype,
