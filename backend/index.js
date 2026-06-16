@@ -243,6 +243,32 @@ app.use(require("./lib/csrf"));
 // 브라우저에서 인라인 실행될 수 있는 확장자는 강제 다운로드로 전환하여
 // 사용자 업로드 파일을 통한 Stored XSS / 임의 코드 실행을 차단한다.
 const STORAGE_PATH = process.env.STORAGE_PATH || path.join(__dirname, "data");
+
+// 서버 시작 시 필수 업로드 디렉토리를 반드시 생성한다.
+// git pull 등으로 data/ 하위 디렉토리가 사라지더라도 재기동 시 자동 복구된다.
+(function ensureUploadDirs() {
+  const { mkdirSync } = require("fs");
+  const dirs = [
+    "uploads/board",       // 포털 게시판 첨부파일 + 인라인 이미지
+    "uploads/chat",        // 채팅 첨부파일
+    "uploads/lawyers",     // 변호사 프로필 사진
+    "uploads/lectures",    // 강의 자료
+    "uploads/media",       // 미디어 라이브러리
+    "uploads/messenger",   // 메신저 파일
+    "uploads/receipts",    // 영수증
+    "uploads/recruit",     // 채용 첨부파일
+    "uploads/signatures",  // 서명 이미지
+    "uploads/videos",      // 영상
+    "files",               // 기타 파일
+  ];
+  for (const dir of dirs) {
+    try {
+      mkdirSync(path.join(STORAGE_PATH, dir), { recursive: true });
+    } catch (_) {
+      // 이미 존재하거나 권한 오류 시 무시 — 정적 서빙은 영향받지 않음
+    }
+  }
+}());
 const FORCE_DOWNLOAD_EXTS = new Set([
   ".html", ".htm", ".xhtml",        // 인라인 HTML
   ".svg", ".xml",                    // SVG/XML 안의 <script>
