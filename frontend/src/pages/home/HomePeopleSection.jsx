@@ -1,8 +1,8 @@
-/** 홈 구성원 소개 섹션 — 변호사 카드 그리드 */
+/** 홈 구성원 소개 섹션 — 변호사 카드 (모바일: 좌우 스와이프 캐러셀) */
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../../utils/api";
-import { C, FALLBACK_LAWYERS, parseSpecialtyList } from "./homeTokens";
+import { FALLBACK_LAWYERS, parseSpecialtyList } from "./homeTokens";
 
 export default function HomePeopleSection({ copy, settings }) {
   const [lawyerList, setLawyerList] = useState(FALLBACK_LAWYERS);
@@ -26,27 +26,23 @@ export default function HomePeopleSection({ copy, settings }) {
   }, []);
 
   return (
-    <section className="hp-section" style={{ background: "#ffffff", padding: "60px 48px" }}>
+    // 수평 padding은 CSS 반응형(.hp-section)이 제어하고, 수직은 인라인으로 고정
+    <section className="hp-section" style={{ background: "#ffffff", paddingTop: "60px", paddingBottom: "60px" }}>
       <div className="hp-section-inner">
         <div className="hp-section-centered">
           <p className="hp-kicker">{settings?.peopleHeader?.kicker || copy.peopleKicker}</p>
           <h2 className="hp-title">{settings?.peopleHeader?.title || copy.peopleTitle}</h2>
         </div>
 
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            justifyContent: "center",
-            gap: "30px",
-            marginTop: "48px",
-            width: "100%",
-          }}
-        >
-          {lawyerList.map((lawyer) => (
-            <LawyerCard key={lawyer.id} lawyer={lawyer} />
-          ))}
+        {/* 데스크톱: flex wrap 그리드 / 모바일: 좌우 스와이프 캐러셀 */}
+        <div className="hp-people-carousel-wrap">
+          <div className="hp-people-carousel">
+            {lawyerList.map((lawyer) => (
+              <LawyerCard key={lawyer.id} lawyer={lawyer} />
+            ))}
+          </div>
         </div>
+
         {usingFallback && (
           <p className="hp-data-note" role="status" style={{ textAlign: "center", marginTop: 24 }}>
             현재 기본 프로필 정보를 표시하고 있습니다.
@@ -78,10 +74,10 @@ function LawyerCard({ lawyer }) {
   const specialties = parseSpecialtyList(lawyer.specialties);
 
   return (
+    // width는 home.css의 .hp-lawyer-card에서 관리 (모바일 캐러셀에서 CSS가 오버라이드)
     <Link
       to={`/partners/${lawyer.slug || lawyer.id}`}
       className="hp-lawyer-card"
-      style={{ width: "min(280px, 100%)" }}
     >
       {lawyer.photoUrl ? (
         <img

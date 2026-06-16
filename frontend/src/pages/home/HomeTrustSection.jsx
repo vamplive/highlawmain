@@ -1,4 +1,4 @@
-/** 홈 신뢰 지표 섹션 — 누적 상담건수·재방문률 등 4개 수치 */
+/** 홈 신뢰 지표 섹션 — 누적 상담건수·재방문률 등 4개 수치 (모바일: 2열) */
 
 const TRUST_STATS = [
   { value: "2,000+", unit: "건", label: "누적 상담건수",  sub: "Total Consultations" },
@@ -10,6 +10,7 @@ const TRUST_STATS = [
 export default function HomeTrustSection() {
   return (
     <section
+      className="hp-trust-section"
       style={{
         background: "linear-gradient(135deg, #0a1628 0%, #0f2444 50%, #0a1628 100%)",
         padding: "72px 48px",
@@ -31,14 +32,13 @@ export default function HomeTrustSection() {
           TRUSTED BY CLIENTS — 하이로를 선택한 이유
         </p>
 
-        {/* 수치 그리드 */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 0 }}>
+        {/* 수치 그리드 — 모바일에서 2열로 전환 (hp-trust-grid) */}
+        <div className="hp-trust-grid">
           {TRUST_STATS.map((stat, i) => (
             <div
               key={i}
+              className="hp-trust-grid-item"
               style={{
-                textAlign: "center",
-                padding: "0 32px 8px",
                 borderRight: i < 3 ? "1px solid rgba(201,168,76,0.12)" : "none",
               }}
             >

@@ -245,6 +245,7 @@
   border: 1px solid #e5e8ed;
   border-radius: 8px;
   background: #fff;
+  width: min(280px, 100%);
   transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -390,5 +391,121 @@
   .hp-hero-content-shifted {
     transform: translateY(24vh);
     transition: transform 0.5s ease;
+  }
+}
+
+/* ========= 변호사 캐러셀 (구성원 섹션) ========= */
+
+.hp-people-carousel-wrap {
+  position: relative;
+  width: 100%;
+  margin-top: 48px;
+}
+
+.hp-people-carousel {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 30px;
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  /* 오른쪽 페이드로 더 많은 카드가 있음을 암시 */
+  .hp-people-carousel-wrap::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 12px;
+    width: 56px;
+    background: linear-gradient(to right, transparent, #ffffff);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .hp-people-carousel {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: 14px;
+    padding-bottom: 12px;
+    /* 마지막 카드 뒤 여백으로 끝 도달 표시 */
+    padding-right: 48px;
+  }
+
+  .hp-people-carousel::-webkit-scrollbar {
+    display: none;
+  }
+
+  .hp-people-carousel .hp-lawyer-card {
+    flex: 0 0 220px;
+    width: 220px;
+    min-width: 220px;
+    scroll-snap-align: start;
+  }
+}
+
+@media (max-width: 480px) {
+  .hp-people-carousel .hp-lawyer-card {
+    flex: 0 0 200px;
+    width: 200px;
+    min-width: 200px;
+  }
+}
+
+/* ========= 신뢰 지표 섹션 모바일 ========= */
+
+.hp-trust-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+}
+
+.hp-trust-grid-item {
+  text-align: center;
+  padding: 0 32px 8px;
+}
+
+@media (max-width: 768px) {
+  .hp-trust-section {
+    padding: 60px 20px !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .hp-trust-section {
+    padding: 56px 16px !important;
+  }
+
+  .hp-trust-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 32px 0;
+  }
+
+  /* 모든 인라인 borderRight를 제거하고 CSS로 재설정 */
+  .hp-trust-grid-item {
+    border-right: none !important;
+    padding: 0 16px 0;
+  }
+
+  /* 왼쪽 열(홀수 번째)에만 오른쪽 경계선 */
+  .hp-trust-grid-item:nth-child(odd) {
+    border-right: 1px solid rgba(201,168,76,0.12) !important;
+  }
+
+  /* 위쪽 행(1~2번째)에 아래쪽 경계선 */
+  .hp-trust-grid-item:nth-child(1),
+  .hp-trust-grid-item:nth-child(2) {
+    border-bottom: 1px solid rgba(201,168,76,0.12);
+    padding-bottom: 28px;
+  }
+
+  .hp-trust-grid-item:nth-child(3),
+  .hp-trust-grid-item:nth-child(4) {
+    padding-top: 28px;
   }
 }
