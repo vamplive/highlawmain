@@ -132,7 +132,7 @@ export default function PortalBoardWriter() {
             disabled={saving}
             style={{
               padding: "8px 22px", fontSize: 13, fontWeight: 700,
-              background: saving ? "#a78bfa" : "#8b5cf6", color: "#fff",
+              background: saving ? "#38bdf8" : "#0ea5e9", color: "#fff",
               border: "none", borderRadius: 6, cursor: saving ? "not-allowed" : "pointer",
               display: "flex", alignItems: "center", gap: 6,
             }}

@@ -170,7 +170,7 @@ export default function PortalBoard() {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
         <div>
           <h2 style={{ fontSize: 20, fontWeight: 700, color: "#0f172a", margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
-            <FileText size={22} style={{ color: "#8b5cf6" }} />
+            <FileText size={22} style={{ color: "#0ea5e9" }} />
             {activeCategory ? getCategoryLabel(activeCategory) : "전체 게시글"}
             {activeFilter === "pinned" && " (필독)"}
             {activeFilter === "important" && " (중요)"}
@@ -198,13 +198,13 @@ export default function PortalBoard() {
           <button
             onClick={openCreateForm}
             style={{
-              background: "#8b5cf6", color: "#fff", border: "none", borderRadius: 8,
+              background: "#0ea5e9", color: "#fff", border: "none", borderRadius: 8,
               padding: "10px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer",
               display: "flex", alignItems: "center", gap: 8, boxShadow: "0 2px 4px rgba(139,92,246,0.2)",
               transition: "background 0.2s"
             }}
-            onMouseEnter={(e) => e.currentTarget.style.background = "#7c3aed"}
-            onMouseLeave={(e) => e.currentTarget.style.background = "#8b5cf6"}
+            onMouseEnter={(e) => e.currentTarget.style.background = "#0284c7"}
+            onMouseLeave={(e) => e.currentTarget.style.background = "#0ea5e9"}
           >
             <Plus size={16} />
             글쓰기
@@ -545,7 +545,7 @@ export default function PortalBoard() {
               </button>
               <button
                 type="submit"
-                style={{ background: "#8b5cf6", color: "#fff", border: "none", borderRadius: 6, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+                style={{ background: "#0ea5e9", color: "#fff", border: "none", borderRadius: 6, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
               >
                 추가
               </button>

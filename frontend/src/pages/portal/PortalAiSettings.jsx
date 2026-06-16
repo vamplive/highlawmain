@@ -310,8 +310,8 @@ export default function PortalAiSettings() {
                       <span style={{ fontWeight: 700, fontSize: 15, color: "#111827" }}>{cfg.nickname}</span>
                       <Badge text={meta.badge} color={meta.color} bg={meta.bg} border={meta.border} />
                       {cfg.isDefaultPrompt && (
-                        <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 11, color: "#7c3aed", fontWeight: 700 }}>
-                          <Star size={10} fill="#7c3aed" /> 글쓰기 기본
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 11, color: "#0ea5e9", fontWeight: 700 }}>
+                          <Star size={10} fill="#0ea5e9" /> 글쓰기 기본
                         </span>
                       )}
                       {cfg.isDefaultImage && (
@@ -335,7 +335,7 @@ export default function PortalAiSettings() {
                       <button
                         onClick={() => handleSetDefault(cfg.id, "prompt")}
                         title="기본 글쓰기 AI로 설정"
-                        style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #e9d5ff", background: "#faf5ff", color: "#7c3aed", cursor: "pointer", fontSize: 11, fontWeight: 600, fontFamily: "inherit" }}
+                        style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #bae6fd", background: "#f0f9ff", color: "#0ea5e9", cursor: "pointer", fontSize: 11, fontWeight: 600, fontFamily: "inherit" }}
                       >
                         <Sparkles size={12} /> 글쓰기 기본
                       </button>
@@ -542,7 +542,7 @@ export default function PortalAiSettings() {
           </h3>
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
             {[
-              { icon: <Sparkles size={20} color="#7c3aed" />, title: "글쓰기 보조", desc: "블로그 에디터에서 ✨ AI 도우미 아이콘을 클릭하면 등록한 AI 중 선택할 수 있습니다." },
+              { icon: <Sparkles size={20} color="#0ea5e9" />, title: "글쓰기 보조", desc: "블로그 에디터에서 ✨ AI 도우미 아이콘을 클릭하면 등록한 AI 중 선택할 수 있습니다." },
               { icon: <ImageIcon size={20} color="#0891b2" />, title: "이미지 생성", desc: "커버 이미지 선택 또는 본문 이미지 삽입 시 AI 생성 탭에서 이미지 AI를 선택하세요." },
             ].map((item) => (
               <div key={item.title} style={{

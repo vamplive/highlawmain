@@ -12,25 +12,25 @@ import {
 } from "lucide-react";
 
 const THEME = {
-  sidebarBg: "linear-gradient(180deg, #1e1b4b 0%, #312e81 45%, #4c1d95 100%)",
+  sidebarBg: "linear-gradient(180deg, #0c2340 0%, #0f3460 45%, #0a4a80 100%)",  // 딥 네이비 블루
   sidebarBorder: "rgba(255,255,255,0.10)",
-  accent: "#a5b4fc",             // indigo-300 (사이드바 내 밝은 액센트)
-  accentLight: "#818cf8",        // indigo-400
-  accentDim: "rgba(165,180,252,0.16)",
-  accentText: "#a5b4fc",
+  accent: "#7dd3fc",             // sky-300 (사이드바 내 밝은 액센트)
+  accentLight: "#38bdf8",        // sky-400
+  accentDim: "rgba(125,211,252,0.16)",
+  accentText: "#7dd3fc",
   sidebarText: "rgba(255,255,255,0.85)",
   sidebarTextMuted: "rgba(255,255,255,0.42)",
   sidebarActiveText: "#ffffff",
   sidebarActiveBg: "rgba(255,255,255,0.14)",
   sidebarHoverBg: "rgba(255,255,255,0.08)",
-  pageBg: "#f5f6ff",             // 연보라 배경
+  pageBg: "#f0f9ff",             // sky-50 (매우 연한 하늘색 배경)
   white: "#ffffff",
   border: "#e2e8f0",
   text: "#0f172a",
   textSec: "#475569",
   textMuted: "#94a3b8",
-  topbarAccent: "#6366f1",       // 탑바 인디고 액센트
-  topbarAccentDim: "rgba(99,102,241,0.08)",
+  topbarAccent: "#0ea5e9",       // sky-500 탑바 액센트
+  topbarAccentDim: "rgba(14,165,233,0.08)",
 };
 
 // ─── 직급 정렬 순서 (부서 내 카드 정렬용) ──────────────────────────────
@@ -292,8 +292,8 @@ export default function PortalLayout() {
           background: #f1f5f9; outline: none; transition: all 0.2s; box-sizing: border-box;
         }
         .portal-search-input:focus {
-          background: #fff !important; border-color: #6366f1 !important;
-          box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+          background: #fff !important; border-color: #0ea5e9 !important;
+          box-shadow: 0 0 0 3px rgba(14,165,233,0.12);
         }
         .portal-board-filter-input {
           width: 100%; padding: 6px 10px 6px 28px; font-size: 12px;
@@ -1013,7 +1013,7 @@ function OrgCard({ person, accent, accentDim, text, textSec, textMuted, border, 
   );
 }
 
-const AVATAR_COLORS = ["#7c3aed", "#0891b2", "#059669", "#d97706", "#dc2626", "#2563eb", "#0b1f3a"];
+const AVATAR_COLORS = ["#0ea5e9", "#0891b2", "#059669", "#d97706", "#dc2626", "#2563eb", "#0b1f3a"];
 function avatarColor(str) {
   let h = 0;
   for (let i = 0; i < (str || "").length; i++) h = (h + str.charCodeAt(i)) % AVATAR_COLORS.length;

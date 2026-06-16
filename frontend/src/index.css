@@ -437,10 +437,13 @@ main > .section:first-child {
 }
 
 @media (max-width: 768px) {
+  /* flex row 모드에서 align-items: flex-start = 수직 상단 정렬
+     → 콘텐츠가 항상 padding-top 위치에서 시작, 헤더(108px)와 겹치지 않음
+     !important 로 Tailwind items-center 클래스 오버라이드 */
   .public-hero,
   .practice-hero {
-    /* 고정 헤더(108px)에 콘텐츠가 가려지지 않도록 상단 여백 확보 */
-    padding-top: 108px;
+    align-items: flex-start !important;
+    padding-top: 120px;
   }
 
   .public-hero {

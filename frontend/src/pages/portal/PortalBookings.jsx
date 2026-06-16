@@ -13,7 +13,7 @@ function Avatar({ name, photoUrl, size = 32 }) {
       />
     );
   }
-  const colors = ["#6366f1", "#0ea5e9", "#f59e0b", "#10b981", "#ef4444", "#8b5cf6"];
+  const colors = ["#0ea5e9", "#06b6d4", "#f59e0b", "#10b981", "#ef4444", "#0284c7"];
   const bg = colors[(name?.charCodeAt(0) || 0) % colors.length];
   return (
     <span style={{

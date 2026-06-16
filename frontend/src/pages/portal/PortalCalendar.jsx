@@ -31,12 +31,12 @@ export default function PortalCalendar() {
   const [formStartsAt, setFormStartsAt] = useState("");
   const [formEndsAt, setFormEndsAt] = useState("");
   const [formIsAllDay, setFormIsAllDay] = useState(false);
-  const [formColor, setFormColor] = useState("#6366f1");
+  const [formColor, setFormColor] = useState("#0ea5e9");
 
   // 프리미엄 파스텔 톤 색상 리스트
   const colorPalette = [
-    { value: "#6366f1", label: "인디고" },
-    { value: "#8b5cf6", label: "퍼플" },
+    { value: "#0ea5e9", label: "스카이" },
+    { value: "#06b6d4", label: "시안" },
     { value: "#3b82f6", label: "블루" },
     { value: "#10b981", label: "에메랄드" },
     { value: "#f59e0b", label: "엠버" },
@@ -144,7 +144,7 @@ export default function PortalCalendar() {
     setFormStartsAt(formatDateForInput(date, "09:00"));
     setFormEndsAt(formatDateForInput(date, "18:00"));
     setFormIsAllDay(false);
-    setFormColor("#6366f1");
+    setFormColor("#0ea5e9");
     setShowModal(true);
   };
 
@@ -165,7 +165,7 @@ export default function PortalCalendar() {
     setFormStartsAt(formatInputDateTime(event.startsAt));
     setFormEndsAt(formatInputDateTime(event.endsAt || event.startsAt));
     setFormIsAllDay(event.isAllDay === 1);
-    setFormColor(event.color || "#6366f1");
+    setFormColor(event.color || "#0ea5e9");
     setShowModal(true);
   };
 
@@ -222,7 +222,7 @@ export default function PortalCalendar() {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
         <div>
           <h2 style={{ fontSize: 20, fontWeight: 700, color: "#0f172a", margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
-            <CalendarIcon size={22} style={{ color: "#8b5cf6" }} />
+            <CalendarIcon size={22} style={{ color: "#0ea5e9" }} />
             사내 일정 캘린더
           </h2>
           <p style={{ fontSize: 13, color: "#64748b", margin: "6px 0 0" }}>
@@ -264,7 +264,7 @@ export default function PortalCalendar() {
           <button
             onClick={() => handleOpenCreateModal(new Date())}
             style={{
-              background: "#8b5cf6", color: "#fff", border: "none", borderRadius: 8,
+              background: "#0ea5e9", color: "#fff", border: "none", borderRadius: 8,
               padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer",
               display: "flex", alignItems: "center", gap: 6, boxShadow: "0 2px 4px rgba(139,92,246,0.15)"
             }}
@@ -327,13 +327,13 @@ export default function PortalCalendar() {
                     <span style={{
                       width: 22, height: 22, display: "flex", alignItems: "center", justifyContent: "center",
                       borderRadius: "50%", fontSize: 12, fontWeight: 700,
-                      background: isToday ? "#8b5cf6" : "transparent",
+                      background: isToday ? "#0ea5e9" : "transparent",
                       color: isToday ? "#ffffff" : (!cell.isCurrentMonth ? "#cbd5e1" : (dayOfWeek === 0 ? "#ef4444" : dayOfWeek === 6 ? "#3b82f6" : "#334155"))
                     }}>
                       {cell.date.getDate()}
                     </span>
                     {dayEvents.length > 0 && cell.isCurrentMonth && (
-                      <span style={{ fontSize: 10, color: "#8b5cf6", fontWeight: 600 }}>
+                      <span style={{ fontSize: 10, color: "#0ea5e9", fontWeight: 600 }}>
                         {dayEvents.length}개 일정
                       </span>
                     )}
@@ -523,7 +523,7 @@ export default function PortalCalendar() {
                   <button
                     type="submit"
                     style={{
-                      background: "#8b5cf6", color: "#fff", border: "none", borderRadius: 6,
+                      background: "#0ea5e9", color: "#fff", border: "none", borderRadius: 6,
                       padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer",
                       boxShadow: "0 2px 4px rgba(139,92,246,0.15)"
                     }}

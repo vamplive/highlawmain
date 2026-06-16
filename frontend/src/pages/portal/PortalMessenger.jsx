@@ -21,9 +21,9 @@ const C = {
   sidebar: "#ffffff",
   sidebarBorder: "#e8eaed",
   header: "#ffffff",
-  accent: "#7c3aed",
-  accentLight: "#f5f3ff",
-  msgBubbleSelf: "#7c3aed",
+  accent: "#0ea5e9",
+  accentLight: "#f0f9ff",
+  msgBubbleSelf: "#0ea5e9",
   msgBubbleOther: "#ffffff",
   text: "#1e293b",
   textSec: "#64748b",
@@ -137,7 +137,7 @@ function fmtDateSep(iso) {
 }
 
 // ─── 아바타 ──────────────────────────────────────────────────────────
-function Avatar({ name = "?", photoUrl = null, size = 36, color = "#7c3aed" }) {
+function Avatar({ name = "?", photoUrl = null, size = 36, color = "#0ea5e9" }) {
   const [objPos, setObjPos] = useState("center 15%");
   const imgRef = useRef(null);
 
@@ -186,7 +186,7 @@ function Avatar({ name = "?", photoUrl = null, size = 36, color = "#7c3aed" }) {
 }
 
 // 사용자별 고정 색상
-const AVATAR_COLORS = ["#7c3aed", "#0891b2", "#059669", "#d97706", "#dc2626", "#7c3aed", "#2563eb"];
+const AVATAR_COLORS = ["#0ea5e9", "#0891b2", "#059669", "#d97706", "#dc2626", "#06b6d4", "#2563eb"];
 function avatarColor(str) {
   let h = 0;
   for (let i = 0; i < (str || "").length; i++) h = (h + str.charCodeAt(i)) % AVATAR_COLORS.length;
@@ -647,7 +647,7 @@ export default function PortalMessenger() {
               >
                 <div style={{ position: "relative", flexShrink: 0 }}>
                   {room.type === "group"
-                    ? <div style={{ width: 40, height: 40, borderRadius: 12, background: "#e0e7ff", display: "flex", alignItems: "center", justifyContent: "center" }}><Users size={18} color="#4f46e5" /></div>
+                    ? <div style={{ width: 40, height: 40, borderRadius: 12, background: "#e0f2fe", display: "flex", alignItems: "center", justifyContent: "center" }}><Users size={18} color="#0284c7" /></div>
                     : <Avatar name={room.displayName} photoUrl={otherMember?.photoUrl} size={40} color={avatarColor(room.displayName || "")} />
                   }
                   {otherOnline && (
@@ -710,7 +710,7 @@ export default function PortalMessenger() {
             {/* 채팅 헤더 */}
             <div style={{ padding: "0 20px", height: 56, display: "flex", alignItems: "center", background: C.header, borderBottom: `1px solid ${C.border}`, gap: 12, flexShrink: 0 }}>
               {activeRoom.type === "group"
-                ? <div style={{ width: 32, height: 32, borderRadius: 8, background: "#e0e7ff", display: "flex", alignItems: "center", justifyContent: "center" }}><Users size={15} color="#4f46e5" /></div>
+                ? <div style={{ width: 32, height: 32, borderRadius: 8, background: "#e0f2fe", display: "flex", alignItems: "center", justifyContent: "center" }}><Users size={15} color="#0284c7" /></div>
                 : <Avatar name={activeRoom.displayName} photoUrl={activeRoomOther?.photoUrl} size={32} color={avatarColor(activeRoom.displayName || "")} />
               }
               <div>
@@ -788,14 +788,14 @@ export default function PortalMessenger() {
                 <div style={{
                   position: "absolute", inset: 0, zIndex: 50,
                   background: "rgba(124,58,237,0.12)",
-                  border: "2px dashed #7c3aed",
+                  border: "2px dashed #0ea5e9",
                   borderRadius: 8,
                   display: "flex", flexDirection: "column",
                   alignItems: "center", justifyContent: "center",
                   pointerEvents: "none",
                 }}>
-                  <Paperclip size={32} color="#7c3aed" style={{ marginBottom: 8 }} />
-                  <span style={{ fontSize: 14, fontWeight: 600, color: "#7c3aed" }}>파일을 여기에 놓으세요</span>
+                  <Paperclip size={32} color="#0ea5e9" style={{ marginBottom: 8 }} />
+                  <span style={{ fontSize: 14, fontWeight: 600, color: "#0ea5e9" }}>파일을 여기에 놓으세요</span>
                 </div>
               )}
 
