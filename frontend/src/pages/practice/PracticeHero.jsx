@@ -16,7 +16,7 @@ export default function PracticeHero({
   stats,
 }) {
   return (
-    <section className="relative flex items-center justify-center overflow-hidden" style={{ height: "70vh", minHeight: 500 }}>
+    <section className="practice-hero relative flex items-center justify-center overflow-hidden" style={{ height: "70vh", minHeight: 500 }}>
       <div className="absolute inset-0" style={{ backgroundImage: `url(${backgroundImage})`, backgroundSize: "cover", backgroundPosition, backgroundRepeat: "no-repeat" }} />
       <div className="absolute inset-0" style={{ background: "linear-gradient(160deg, rgba(10,15,20,0.87) 0%, rgba(17,29,42,0.76) 40%, rgba(22,36,51,0.80) 70%, rgba(13,21,32,0.90) 100%)" }} />
       <div className="absolute bottom-0 left-0 right-0" style={{ height: 150, background: "linear-gradient(to top, #fff, transparent)" }} />

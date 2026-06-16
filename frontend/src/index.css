@@ -437,6 +437,12 @@ main > .section:first-child {
 }
 
 @media (max-width: 768px) {
+  .public-hero,
+  .practice-hero {
+    /* 고정 헤더(108px)에 콘텐츠가 가려지지 않도록 상단 여백 확보 */
+    padding-top: 108px;
+  }
+
   .public-hero {
     height: 62vh;
     min-height: 460px;
