@@ -28,10 +28,24 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d(?:\s*(?:~|-|–|—)\s*([01]\d|2[0-3]):[0-5]\d)?$/;
 
-/** 상담 분야 한국어 라벨 */
+/** 상담 분야 한국어 라벨 — 프론트엔드 consultationConstants.js 와 동기화 필요 */
 const CATEGORY_LABELS = {
-  civil: "민사", criminal: "형사", family: "가사", admin: "행정",
-  tax: "조세", realestate: "부동산", corporate: "기업법무", other: "기타",
+  civil: "민사",
+  criminal: "형사",
+  family: "가사 및 상속",
+  admin: "행정",          // 레거시 키 (admin → administrative 로 전환 중)
+  administrative: "행정",
+  tax: "조세",
+  realestate: "부동산",
+  corporate: "기업",
+  labor: "인사노무",
+  "serious-accident": "중대재해",
+  defense: "방산",
+  "military-criminal": "군형사",
+  entertainment: "엔터테인먼트",
+  "intellectual-property": "지적재산권",
+  immigration: "이민",
+  other: "기타",
 };
 const VALID_CATEGORIES = new Set(["general", ...Object.keys(CATEGORY_LABELS)]);
 

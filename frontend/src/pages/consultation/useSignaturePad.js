@@ -182,6 +182,11 @@ export default function useSignaturePad() {
     },
   }), [clear, finishStroke, handlePointerDown, handlePointerMove, undo]);
 
+  /* 부모 컴포넌트가 캔버스 가시성 변경 후 명시적으로 호출할 수 있는 resize 트리거 */
+  const forceResize = useCallback(() => {
+    engineRef.current?.resize();
+  }, []);
+
   return {
     signatureData,
     canvasProps,
@@ -192,5 +197,6 @@ export default function useSignaturePad() {
     hasInk,
     isDrawing,
     canUndo: strokeCount > 0,
+    forceResize,
   };
 }

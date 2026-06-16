@@ -4,7 +4,7 @@
  * 확보한다. 손가락 서명 도중 페이지 스크롤·핀치줌·iOS pull-to-refresh 가
  * 발생하지 않도록 body 의 overflow/touch-action 을 잠근다.
  */
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useLayoutEffect } from "react";
 import useSignaturePad from "./useSignaturePad";
 import useFocusTrap from "../../hooks/useFocusTrap";
 import PrivacyContent from "./PrivacyContent";
@@ -38,7 +38,17 @@ export default function PrivacyModal({ onClose, onAgreed }) {
     hasInk,
     isDrawing,
     canUndo,
+    forceResize,
   } = useSignaturePad();
+
+  /* scrolledToBottom 전환 시 캔버스가 display:none → 가시 상태로 바뀌므로
+     레이아웃 확정 후 명시적으로 resize 호출해 픽셀 버퍼를 초기화한다.
+     (ResizeObserver 만으로도 동작하지만, rAF 호출로 확실하게 보장) */
+  useLayoutEffect(() => {
+    if (!scrolledToBottom) return;
+    const raf = requestAnimationFrame(() => forceResize());
+    return () => cancelAnimationFrame(raf);
+  }, [scrolledToBottom, forceResize]);
   const dialogRef = useFocusTrap(true, { onEscape: onClose });
 
   /* 모달 활성 동안 배경 스크롤·바운스·핀치줌 잠금
@@ -133,15 +143,17 @@ export default function PrivacyModal({ onClose, onAgreed }) {
         <div
           ref={privacyRef}
           onScroll={handleScroll}
-          style={{ flex: 1, overflowY: "auto", padding: "24px 28px", fontSize: 13, color: "#444", lineHeight: 1.9 }}
+          style={{ flex: 1, overflowY: "auto", padding: "24px 28px", fontSize: 13, color: "#444", lineHeight: 1.9, touchAction: "pan-y" }}
         >
           <PrivacyContent />
         </div>
 
         {/* 서명 + 버튼 */}
         <div style={{ padding: "16px 28px 24px", borderTop: "1px solid var(--border-color)" }}>
-          {scrolledToBottom && (
-            <div style={{ marginBottom: 16 }}>
+          {/* 캔버스는 항상 DOM에 유지 — display:none 방식으로 숨겨야 useSignaturePad useEffect가
+               마운트 시점에 canvas ref를 올바르게 얻어 SignatureEngine을 초기화한다.
+               scrolledToBottom 전환 시 forceResize()로 픽셀 버퍼를 재초기화한다. */}
+          <div style={{ marginBottom: 16, display: scrolledToBottom ? undefined : "none" }}>
               <p style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 8, fontWeight: 500 }}>
                 본인 이름을 서명해주세요
               </p>
@@ -200,7 +212,6 @@ export default function PrivacyModal({ onClose, onAgreed }) {
                 트랙패드는 손가락을 너무 빠르게 움직이지 말고, 클릭한 상태로 이름을 이어서 써주세요.
               </p>
             </div>
-          )}
 
           <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", flexWrap: "wrap" }}>
             <button

@@ -89,7 +89,7 @@ export const INITIAL_FORM = {
   category: "civil",
   message: "",
   meetingType: "in_person",
-  scheduleMode: "slot",
+  scheduleMode: "request", // 슬롯이 없는 경우 기본값이 빈 그리드를 보이지 않도록 협의 요청으로 설정
   bookingSlotId: "",
   preferredSlots: [
     { date: "", time: "" },
