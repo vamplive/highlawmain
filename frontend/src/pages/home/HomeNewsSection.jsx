@@ -88,15 +88,8 @@ export default function HomeNewsSection() {
           </p>
         </div>
 
-        {/* ── 2컬럼 본문 ── */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1.8fr",
-            gap: 24,
-            alignItems: "stretch",
-          }}
-        >
+        {/* ── 2컬럼 본문 (모바일: 1컬럼) ── */}
+        <div className="hp-news-grid">
           {/* 좌측: CTA 카드 2개 */}
           <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
             {/* 카카오톡 상담 */}
@@ -104,6 +97,7 @@ export default function HomeNewsSection() {
               href={KAKAO_CHANNEL_CHAT}
               target="_blank"
               rel="noopener noreferrer"
+              className="hp-news-cta-card"
               style={{
                 flex: 1,
                 display: "flex",
@@ -143,6 +137,7 @@ export default function HomeNewsSection() {
             {/* 상담 신청 */}
             <Link
               to="/consultation"
+              className="hp-news-cta-card"
               style={{
                 flex: 1,
                 display: "flex",
@@ -182,6 +177,7 @@ export default function HomeNewsSection() {
 
           {/* 우측: 소식과 자료 패널 */}
           <div
+            className="hp-news-panel"
             style={{
               background: "#fff",
               borderRadius: 12,
@@ -202,7 +198,7 @@ export default function HomeNewsSection() {
                   소식과 자료
                 </h3>
               </div>
-              <div style={{ display: "flex", gap: 8 }}>
+              <div className="hp-news-tab-bar" style={{ display: "flex", gap: 8 }}>
                 {TABS.map((tab) => {
                   const isActive = activeTab === tab.id;
                   return (
@@ -246,6 +242,7 @@ export default function HomeNewsSection() {
                   <Link
                     key={post.id}
                     to={`/blog/${post.slug}`}
+                    className="hp-news-post-item"
                     style={{
                       display: "flex",
                       alignItems: "center",
@@ -267,6 +264,7 @@ export default function HomeNewsSection() {
                     <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--accent-gold)", flexShrink: 0, opacity: 0.7 }} />
                     {/* 제목 */}
                     <span
+                      className="hp-news-post-title"
                       style={{
                         fontSize: 16,
                         color: "#1a1a2e",

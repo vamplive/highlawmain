@@ -509,3 +509,62 @@
     padding-top: 28px;
   }
 }
+
+/* ========= News & Insight 섹션 ========= */
+
+/* 데스크톱: 좌측 CTA(1fr) + 우측 기사 패널(1.8fr) */
+.hp-news-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.8fr;
+  gap: 24px;
+  align-items: stretch;
+}
+
+@media (max-width: 768px) {
+  /* 단일 컬럼으로 전환 */
+  .hp-news-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* CTA 카드 패딩 축소 */
+  .hp-news-cta-card {
+    padding: 28px 24px !important;
+  }
+
+  /* 우측 패널 패딩 축소 */
+  .hp-news-panel {
+    padding: 24px 20px 20px !important;
+  }
+
+  /* 탭 버튼이 좁은 화면에서 줄바꿈 */
+  .hp-news-tab-bar {
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+
+  /* 기사 제목 말줄임 해제 — 줄바꿈 허용 */
+  .hp-news-post-title {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: unset !important;
+    font-size: 14px !important;
+  }
+
+  /* 기사 행 레이아웃 — 날짜·제목 줄바꿈 */
+  .hp-news-post-item {
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    padding: 14px 8px !important;
+    align-items: flex-start !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .hp-news-cta-card {
+    padding: 24px 20px !important;
+  }
+
+  .hp-news-panel {
+    padding: 20px 16px 16px !important;
+  }
+}
