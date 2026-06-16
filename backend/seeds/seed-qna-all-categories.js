@@ -189,7 +189,7 @@ for (const q of QUESTIONS) {
   const id = crypto.randomUUID();
   const slug = slugify(q.title);
   const nick = pickNick(q.top);
-  const answer = "안녕하세요, 법무법인 하이로 윤세환 변호사입니다.\n\n" + q.answer +
+  const answer = "안녕하세요, 법무법인 하이로입니다.\n\n" + q.answer +
     "\n\n답변이 도움이 되셨기를 바랍니다. 추가로 궁금한 점이 있으시면 언제든 상담 신청해 주세요.";
   const views = Math.floor(Math.random() * 500) + 80;
   insert.run(id, slug, catId, q.title, q.body, nick, answer, views);

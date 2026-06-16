@@ -5,17 +5,6 @@ const db = new Database(require("path").join(__dirname,"..","data","db","highlaw
 
 const lawyers = [
   {
-    name: "윤세환",
-    nameEn: "Yoon Se-Hwan",
-    position: "대표변호사",
-    photoUrl: "/lawyers/younsehwan/younsehwan_profile.png",
-    education: JSON.stringify(["서울대학교 법학전문대학원 졸업", "서울대학교 졸업"]),
-    career: JSON.stringify(["대한변호사협회 등록", "법무법인 하이로 대표"]),
-    specialties: JSON.stringify(["건설", "부동산", "민사", "형사", "행정"]),
-    introduction: "의뢰인의 사건을 비즈니스처럼 정교하게 관리합니다. 건설·부동산 분쟁에서 축적한 실무 경험을 바탕으로, 리스크를 줄이고 최선의 결론을 이끌어냅니다.",
-    sortOrder: 1,
-  },
-  {
     name: "한샘이",
     nameEn: "Han Saem-I",
     position: "변호사",

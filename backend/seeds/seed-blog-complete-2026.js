@@ -5,7 +5,7 @@ const Database = require("better-sqlite3");
 const VERSION = "blog-complete-2026-05-03-v3";
 const MARKER_PAGE = "system";
 const MARKER_SECTION = "blog_content_version";
-const AUTHOR = "윤세환 변호사";
+const AUTHOR = "법무법인 하이로";
 const MIN_CONTENT_LENGTH = 20000;
 
 const CATEGORY_META = {

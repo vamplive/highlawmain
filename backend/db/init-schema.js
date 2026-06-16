@@ -751,63 +751,6 @@ module.exports = {
     }
   } catch (e) { warnMigrationSkip(e); }
 
-  // 윤세환 변호사 강의 보충 (분리 항목 + 신규 강의, 없는 것만 추가)
-  try {
-    const yoonRow = sqlite.prepare("SELECT id, career FROM lawyers WHERE name = '윤세환'").get();
-    if (yoonRow) {
-      const extraLectures = [
-        {
-          title: "법무법인(유) 로고스 법률 AI 강의",
-          description: "법무법인(유) 로고스 소속 변호사들을 대상으로 법률 AI 실무 활용 강의를 진행하였습니다.\n\n로펌 업무 환경에 최적화된 AI 도구 활용법을 중심으로, 소송 전략 수립 시 AI 기반 판례 검색과 분석 기법, 계약서 리뷰 자동화 워크플로우를 실습하였습니다. 대형 로펌에서의 AI 도입 사례와 업무 효율화 성과를 공유하고, 향후 리걸테크 발전 방향에 대해 논의하였습니다.",
-          organizer: "법무법인(유) 로고스",
-          thumbnailUrl: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&q=80",
-          sortOrder: 6,
-        },
-        {
-          title: "(주) 엘박스 법률 AI 강의",
-          description: "리걸테크 기업 (주) 엘박스와 협력하여 법률 AI 솔루션의 실무 적용 방안에 대한 강의를 진행하였습니다.\n\n엘박스 플랫폼을 활용한 판례 데이터 분석, 법률 문서 자동 분류 시스템, AI 기반 법률 리서치 효율화 기법을 소개하였습니다. 리걸테크 스타트업과 법률 전문가의 협업 모델, 데이터 기반 법률 서비스 혁신 전략에 대해서도 다루었습니다.",
-          organizer: "(주) 엘박스",
-          thumbnailUrl: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80",
-          sortOrder: 7,
-        },
-        {
-          title: "서울지방변호사회 기업법무연수원 법률 AI 강의",
-          description: "서울지방변호사회 기업법무연수원에서 기업 사내변호사와 법무팀 실무자를 대상으로 법률 AI 활용 연수를 진행하였습니다.\n\n기업법무 실무에서의 AI 활용 사례를 중심으로, 계약 관리 자동화, 컴플라이언스 모니터링, 리스크 조기 경보 시스템 구축 방안을 소개하였습니다. 사내변호사가 AI 도구를 활용해 업무 생산성을 높이는 구체적 전략과 도입 시 고려사항을 실습과 함께 다루었습니다.",
-          organizer: "서울지방변호사회 기업법무연수원",
-          thumbnailUrl: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&q=80",
-          sortOrder: 8,
-        },
-        {
-          title: "2026 여성변호사회 법률 AI 강의",
-          description: "대한변호사협회 여성변호사회에서 여성 법조인을 대상으로 법률 AI 활용 특강을 진행하였습니다.\n\n법률 실무에서의 AI 도구 활용법, 생성형 AI를 활용한 법률 리서치와 문서 작성 효율화 방안을 소개하였습니다. 여성 법조인의 커리어 개발에 AI가 기여할 수 있는 방안과 리걸테크 분야의 다양성 확대에 대해서도 논의하였습니다.",
-          date: "2026",
-          organizer: "대한변호사협회 여성변호사회",
-          thumbnailUrl: "https://images.unsplash.com/photo-1573164713714-d95e436ab8d6?w=800&q=80",
-          sortOrder: 9,
-        },
-        {
-          title: "2026 서울지방변호사회 의무연수 법률 AI 강의",
-          description: "서울지방변호사회 의무연수 프로그램에서 전체 회원 변호사를 대상으로 법률 AI 활용 강의를 진행하였습니다.\n\n변호사 업무에서의 AI 활용 현황과 윤리적 고려사항을 체계적으로 다루고, ChatGPT·Claude 등 생성형 AI의 법률 리서치 활용 실습을 진행하였습니다. AI 활용 시 변호사의 주의의무와 비밀유지의무 등 윤리 규정 준수 방안에 대해 심도 있게 논의하였습니다.",
-          date: "2026",
-          organizer: "서울지방변호사회",
-          thumbnailUrl: "https://images.unsplash.com/photo-1505664194779-8beaceb93744?w=800&q=80",
-          sortOrder: 10,
-        },
-      ];
-      const chkLec = sqlite.prepare("SELECT count(*) as c FROM lectures WHERE lawyer_id = ? AND title = ?");
-      const addLec = sqlite.prepare(
-        "INSERT INTO lectures (id, lawyer_id, title, description, date, organizer, thumbnail_url, is_published, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, datetime('now'), datetime('now'))"
-      );
-      let added = 0;
-      for (const nl of extraLectures) {
-        if (chkLec.get(yoonRow.id, nl.title).c > 0) continue;
-        addLec.run(crypto.randomUUID(), yoonRow.id, nl.title, nl.description, nl.date || null, nl.organizer, nl.thumbnailUrl, nl.sortOrder);
-        added++;
-      }
-      if (added > 0) console.log(`[db] 강의 보충: ${added}건 추가`);
-    }
-  } catch (e) { console.warn("[db] 강의 보충 실패:", e.message); }
-
   // 기존 행에 unsubscribe_token 백필 (NULL인 행만 UUID 생성)
   try {
     const rowsWithoutToken = sqlite.prepare("SELECT id FROM clients WHERE unsubscribe_token IS NULL").all();

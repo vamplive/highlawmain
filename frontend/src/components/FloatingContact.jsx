@@ -271,23 +271,25 @@ export default function FloatingContact() {
             <span className="quick-menu-item-label">카카오톡</span>
           </a>
 
-          {/* Item 3: 텔레그램 (카카오톡 바로 밑에 배치) */}
-          <a
-            href={telegramUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="quick-menu-item"
-            aria-label="텔레그램 문의 — 새 창으로 열림"
-          >
-            <div className="quick-menu-item-icon">
-              {/* Telegram Paper Airplane Icon */}
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <line x1="22" y1="2" x2="11" y2="13" />
-                <polygon points="22 2 15 22 11 13 2 9 22 2" />
-              </svg>
-            </div>
-            <span className="quick-menu-item-label">텔레그램</span>
-          </a>
+          {/* Item 3: 텔레그램 — telegramEnabled이 true이고 URL이 있을 때만 노출 */}
+          {contact.telegramEnabled && telegramUrl && (
+            <a
+              href={telegramUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="quick-menu-item"
+              aria-label="텔레그램 문의 — 새 창으로 열림"
+            >
+              <div className="quick-menu-item-icon">
+                {/* Telegram Paper Airplane Icon */}
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <line x1="22" y1="2" x2="11" y2="13" />
+                  <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                </svg>
+              </div>
+              <span className="quick-menu-item-label">텔레그램</span>
+            </a>
+          )}
 
           {/* Item 4: 빠른 상담 */}
           <Link to="/consultation" className="quick-menu-item" aria-label="빠른 상담 신청">
