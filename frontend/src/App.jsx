@@ -99,6 +99,7 @@ const PortalForgotPassword = lazy(() => import("./pages/portal/PortalForgotPassw
 const InviteEntryPage = lazy(() => import("./pages/public/InviteEntryPage"));
 const InvitedConsultationPage = lazy(() => import("./pages/public/InvitedConsultationPage"));
 const ExternalSignPage = lazy(() => import("./pages/public/ExternalSignPage"));
+const MilitaryLandingPage = lazy(() => import("./pages/military"));
 
 /* ── 포털 청크: 지연 로딩 ── */
 const PortalLayout = lazy(() => import("./pages/portal/PortalLayout"));
@@ -310,6 +311,9 @@ export default function App() {
           {/* 404 — 공개 레이아웃 내부에서 처리, lazy */}
           <Route path="*" element={<LazyRoute><NotFoundPage /></LazyRoute>} />
         </Route>
+
+        {/* /military — 군형사·징계 전문 독립 랜딩 페이지 (Layout 없이 풀스크린) */}
+        <Route path="/military" element={<ErrorBoundary><LazyRoute><MilitaryLandingPage /></LazyRoute></ErrorBoundary>} />
 
         {/* /login — 통합 로그인/회원가입 페이지 (Layout 없이 풀스크린) */}
         <Route path="/login" element={<ErrorBoundary><LazyRoute><LoginPage /></LazyRoute></ErrorBoundary>} />
