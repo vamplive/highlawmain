@@ -132,17 +132,23 @@ export default function useSignaturePad() {
     const canvas = canvasRef.current;
     const engine = engineRef.current;
     if (!canvas || !engine || engine.isEmpty()) return null;
-    const imageData = engine.toDataURL("image/png");
-    const rect = canvas.getBoundingClientRect();
-    const payload = {
-      imageData,
-      strokes: engine.toData(),
-      pointerType: lastPointerType,
-      widthPx: Math.round(rect.width),
-      heightPx: Math.round(rect.height),
-    };
-    setSignatureData(imageData);
-    return payload;
+    try {
+      const imageData = engine.toDataURL("image/png");
+      if (!imageData || !imageData.startsWith("data:image/")) return null;
+      const rect = canvas.getBoundingClientRect();
+      const payload = {
+        imageData,
+        strokes: engine.toData(),
+        pointerType: lastPointerType,
+        widthPx: Math.round(rect.width),
+        heightPx: Math.round(rect.height),
+      };
+      setSignatureData(imageData);
+      return payload;
+    } catch (e) {
+      console.error("[signature] 서명 데이터 추출 실패:", e);
+      return null;
+    }
   }, [lastPointerType]);
 
   const confirm = useCallback(() => buildPayload(), [buildPayload]);

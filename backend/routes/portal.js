@@ -29,6 +29,7 @@ const googleCalendarOAuth = require("../lib/google-calendar-oauth");
 const { logSecurityEvent } = require("../lib/audit-log");
 const { handleError } = require("../lib/route-handler");
 const notif = require("../lib/notifications");
+const { sqlite } = require("../db");
 
 const router = Router();
 
@@ -297,6 +298,82 @@ router.post("/upload-receipt", portalAuth, (req, res) => {
     const url = `/uploads/receipts/${req.file.filename}`;
     res.json({ data: { url }, error: null, meta: null });
   });
+});
+
+/** GET /api/portal/receipts — 내 의뢰인 영수증 목록 */
+router.get("/receipts", portalAuth, (req, res) => {
+  try {
+    const { clientId } = req.portalUser;
+    const rows = sqlite.prepare(
+      `SELECT id, vendor, amount, paid_at, notes, file_name, ocr_status,
+              created_at, updated_at, portal_user_id
+       FROM receipts
+       WHERE client_id = ? AND portal_user_id IS NOT NULL
+       ORDER BY created_at DESC`
+    ).all(clientId);
+    res.json({ data: rows, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+/** POST /api/portal/receipts — 영수증 등록 (파일 업로드 + DB 저장) */
+router.post("/receipts", portalAuth, (req, res) => {
+  receiptUpload.single("file")(req, res, (err) => {
+    if (err) {
+      return res.status(400).json({ data: null, error: err.message, meta: null });
+    }
+    if (!req.file) {
+      return res.status(400).json({ data: null, error: "파일이 없습니다", meta: null });
+    }
+    try {
+      const { clientId, userId } = req.portalUser;
+      const { vendor = "", amount, paid_at = "", notes = "" } = req.body;
+      const id = crypto.randomUUID();
+      const filePath = req.file.path;
+      const fileName = decodeMultipartFilename(req.file.originalname);
+      const now = new Date().toISOString();
+      sqlite.prepare(
+        `INSERT INTO receipts
+           (id, file_path, file_name, mime_type, file_size, vendor, amount,
+            paid_at, notes, ocr_status, portal_user_id, client_id, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?)`
+      ).run(
+        id, filePath, fileName,
+        req.file.mimetype, req.file.size,
+        vendor || null,
+        amount ? Number(amount) : null,
+        paid_at || null,
+        notes || null,
+        userId, clientId,
+        now, now
+      );
+      const row = sqlite.prepare("SELECT * FROM receipts WHERE id = ?").get(id);
+      res.status(201).json({ data: row, error: null, meta: null });
+    } catch (e) {
+      handleError(res, e);
+    }
+  });
+});
+
+/** DELETE /api/portal/receipts/:id — 내 영수증 삭제 (본인 업로드만) */
+router.delete("/receipts/:id", portalAuth, (req, res) => {
+  try {
+    const { clientId, userId } = req.portalUser;
+    const row = sqlite.prepare(
+      "SELECT * FROM receipts WHERE id = ? AND client_id = ? AND portal_user_id = ?"
+    ).get(req.params.id, clientId, userId);
+    if (!row) {
+      return res.status(404).json({ data: null, error: "영수증을 찾을 수 없습니다", meta: null });
+    }
+    sqlite.prepare("DELETE FROM receipts WHERE id = ?").run(req.params.id);
+    if (row.file_path) {
+      fs.unlink(row.file_path, () => {});
+    }
+    res.json({ data: { id: req.params.id }, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
 });
 
 /** GET /api/portal/cases — 내 사건 목록 */

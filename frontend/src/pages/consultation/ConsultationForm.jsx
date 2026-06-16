@@ -98,7 +98,7 @@ export default function ConsultationForm({ invitationToken: _invitationToken, in
    */
   function handlePrivacyAgreed(payload) {
     if (!payload?.imageData) {
-      alert("서명이 완료되지 않았습니다. 다시 시도해주세요.");
+      setSubmitResult({ type: "error", msg: "서명이 확인되지 않았습니다. 동의서를 다시 열어 서명해주세요." });
       return;
     }
     setSignaturePayload(payload);

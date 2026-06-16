@@ -27,6 +27,7 @@ export default function PrivacyModal({ onClose, onAgreed }) {
   const [isMobile, setIsMobile] = useState(() =>
     typeof window !== "undefined" && window.innerWidth < MOBILE_BREAKPOINT,
   );
+  const [signError, setSignError] = useState("");
   const privacyRef = useRef(null);
   const {
     signatureData,
@@ -80,6 +81,15 @@ export default function PrivacyModal({ onClose, onAgreed }) {
       if (viewport && originalViewport) viewport.setAttribute("content", originalViewport);
       window.removeEventListener("resize", onResize);
     };
+  }, []);
+
+  /* 모달이 처음 열릴 때 콘텐츠가 이미 화면에 다 보이면 스크롤 불필요 → 바로 통과 */
+  useEffect(() => {
+    const el = privacyRef.current;
+    if (!el) return;
+    if (el.scrollHeight <= el.clientHeight + SCROLL_BOTTOM_THRESHOLD) {
+      setScrolledToBottom(true);
+    }
   }, []);
 
   /** 스크롤 감지 — 끝까지 읽어야 동의 버튼 활성화 */
@@ -213,6 +223,11 @@ export default function PrivacyModal({ onClose, onAgreed }) {
               </p>
             </div>
 
+          {signError && (
+            <p role="alert" style={{ margin: "0 0 10px", fontSize: 13, color: "#dc2626", textAlign: "right" }}>
+              {signError}
+            </p>
+          )}
           <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", flexWrap: "wrap" }}>
             <button
               type="button"
@@ -226,13 +241,25 @@ export default function PrivacyModal({ onClose, onAgreed }) {
             </button>
             <button
               type="button"
-              disabled={!canAgree}
-              onClick={() => onAgreed?.(getSignaturePayload())}
+              disabled={!scrolledToBottom}
+              onClick={() => {
+                if (!hasInk) {
+                  setSignError("서명란에 이름을 서명해주세요.");
+                  return;
+                }
+                const payload = getSignaturePayload();
+                if (!payload?.imageData) {
+                  setSignError("서명 저장에 실패했습니다. 다시 서명해주세요.");
+                  return;
+                }
+                setSignError("");
+                onAgreed?.(payload);
+              }}
               style={{
                 padding: "12px 24px", minHeight: 44, fontSize: 13, fontWeight: 600,
-                background: canAgree ? "var(--accent-gold)" : "#ddd",
-                color: canAgree ? "#fff" : "var(--text-muted)",
-                border: "none", cursor: canAgree ? "pointer" : "not-allowed", borderRadius: 4,
+                background: scrolledToBottom ? "var(--accent-gold)" : "#ddd",
+                color: scrolledToBottom ? "#fff" : "var(--text-muted)",
+                border: "none", cursor: scrolledToBottom ? "pointer" : "not-allowed", borderRadius: 4,
               }}
             >
               {!scrolledToBottom ? "끝까지 읽어주세요 ↓" : !hasInk ? "서명을 입력해주세요" : "네, 확인했습니다"}

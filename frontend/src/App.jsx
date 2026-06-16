@@ -76,6 +76,7 @@ const AdminSettlementNew = lazy(() => import("./pages/admin/contracts/Settlement
 const AdminEngagementNew = lazy(() => import("./pages/admin/contracts/EngagementNew"));
 const AdminContractDetail = lazy(() => import("./pages/admin/contracts/ContractDetail"));
 const AdminReceipts = lazy(() => import("./pages/admin/receipts"));
+const PortalReceipts = lazy(() => import("./pages/portal/PortalReceipts"));
 const AdminAuditLogs = lazy(() => import("./pages/admin/audit-logs"));
 const AdminTimeEntries = lazy(() => import("./pages/admin/time-entries"));
 const AdminTasks = lazy(() => import("./pages/admin/tasks"));
@@ -359,8 +360,8 @@ export default function App() {
           <Route path="contract-admin/new-settlement" element={<LazyRoute><AdminSettlementNew /></LazyRoute>} />
           <Route path="contract-admin/new-engagement" element={<LazyRoute><AdminEngagementNew /></LazyRoute>} />
           <Route path="contract-admin/:id" element={<LazyRoute><AdminContractDetail /></LazyRoute>} />
-          {/* 영수증 관리 — 포털로 이전 */}
-          <Route path="receipts" element={<LazyRoute><AdminReceipts /></LazyRoute>} />
+          {/* 영수증 관리 — 의뢰인 포털 전용 페이지 */}
+          <Route path="receipts" element={<LazyRoute><PortalReceipts /></LazyRoute>} />
           {/* 홍보·콘텐츠 — admin 전용 */}
           <Route path="lectures" element={<LazyRoute><AdminLectures /></LazyRoute>} />
           <Route path="site-manager" element={<Navigate to="/admin/site-manager" replace />} />

@@ -1369,6 +1369,12 @@ module.exports = {
   // lawyers — ERP 시간 청구 기본 시급 (KRW). 0 이면 청구 불가/미설정.
   try { sqlite.exec("ALTER TABLE lawyers ADD COLUMN default_hourly_rate_krw INTEGER NOT NULL DEFAULT 0"); } catch (e) { warnMigrationSkip(e); }
 
+  // receipts — 포털 사용자 직접 업로드 추적 + 의뢰인 연결
+  try { sqlite.exec("ALTER TABLE receipts ADD COLUMN portal_user_id TEXT"); } catch (e) { warnMigrationSkip(e); }
+  try { sqlite.exec("ALTER TABLE receipts ADD COLUMN client_id TEXT"); } catch (e) { warnMigrationSkip(e); }
+  try { sqlite.exec("CREATE INDEX IF NOT EXISTS idx_receipts_portal_user ON receipts(portal_user_id)"); } catch (e) { warnMigrationSkip(e); }
+  try { sqlite.exec("CREATE INDEX IF NOT EXISTS idx_receipts_client_id ON receipts(client_id)"); } catch (e) { warnMigrationSkip(e); }
+
   // case_files — 전자소송 호환 메타데이터 (사건번호/원고/피고/재판부 등)
   try { sqlite.exec("ALTER TABLE case_files ADD COLUMN case_number TEXT"); } catch (e) { warnMigrationSkip(e); }
   try { sqlite.exec("ALTER TABLE case_files ADD COLUMN court TEXT"); } catch (e) { warnMigrationSkip(e); }
