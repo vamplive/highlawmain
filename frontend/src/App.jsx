@@ -101,6 +101,7 @@ const InviteEntryPage = lazy(() => import("./pages/public/InviteEntryPage"));
 const InvitedConsultationPage = lazy(() => import("./pages/public/InvitedConsultationPage"));
 const ExternalSignPage = lazy(() => import("./pages/public/ExternalSignPage"));
 const MilitaryLandingPage = lazy(() => import("./pages/military"));
+const Military2LandingPage = lazy(() => import("./pages/military2"));
 
 /* ── 포털 청크: 지연 로딩 ── */
 const PortalLayout = lazy(() => import("./pages/portal/PortalLayout"));
@@ -315,6 +316,8 @@ export default function App() {
 
         {/* /military — 군형사·징계 전문 독립 랜딩 페이지 (Layout 없이 풀스크린) */}
         <Route path="/military" element={<ErrorBoundary><LazyRoute><MilitaryLandingPage /></LazyRoute></ErrorBoundary>} />
+        {/* /military2 — 군 징계사건 비대면 케어 39만원 특화 랜딩 */}
+        <Route path="/military2" element={<ErrorBoundary><LazyRoute><Military2LandingPage /></LazyRoute></ErrorBoundary>} />
 
         {/* /login — 통합 로그인/회원가입 페이지 (Layout 없이 풀스크린) */}
         <Route path="/login" element={<ErrorBoundary><LazyRoute><LoginPage /></LazyRoute></ErrorBoundary>} />
