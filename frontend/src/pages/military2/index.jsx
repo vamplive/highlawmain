@@ -2,11 +2,12 @@
  * military/index.jsx 팔레트 · 로고 · 푸터 통일.
  * 시네마틱 히어로 패럴랙스 · 플로팅 CTA 바 · 880→39만 카운트다운.
  */
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { MessageCircle, AlertTriangle, ChevronRight, X } from "lucide-react";
 import useReveal from "../../hooks/useReveal";
 import Seo from "../../components/Seo";
+import FloatingContact from "../../components/FloatingContact";
 import { KAKAO_CHANNEL_CHAT } from "../../utils/kakaoChannel";
 
 /* ── 색상 토큰 — military/index.jsx 와 동일 ── */
@@ -170,6 +171,19 @@ export default function Military2LandingPage() {
   const bgRef        = useRef(null);
   const [showFloat, setShowFloat]   = useState(false);
   const [floatDism, setFloatDism]   = useState(false);
+  const [lawyers, setLawyers]       = useState([]);
+
+  /* 변호사 프로필: 포털 API 연동 */
+  useEffect(() => {
+    fetch("/api/lawyers")
+      .then(r => r.json())
+      .then(data => {
+        const active = (data?.data || [])
+          .filter(l => l.isActive && l.photoUrl && l.position !== "직원" && l.position !== "");
+        setLawyers(active.slice(0, 3));
+      })
+      .catch(() => {});
+  }, []);
 
   /* 히어로 진입 애니메이션 */
   useEffect(() => {
@@ -180,11 +194,11 @@ export default function Military2LandingPage() {
   /* 스크롤: 패럴랙스 + 플로팅 바 */
   useEffect(() => {
     const onScroll = () => {
-      const y = window.scrollY;
+      const y = window.scrollY || document.documentElement.scrollTop || 0;
       if (bgRef.current) {
         bgRef.current.style.transform = `translateY(${y * 0.38}px)`;
       }
-      setShowFloat(y > 560);
+      setShowFloat(y > 300);
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
@@ -628,41 +642,39 @@ export default function Military2LandingPage() {
             }} />
           </div>
 
-          {/* 변호사 카드 3개 — 포털과 동일 프로필 사진 */}
+          {/* 변호사 카드 3개 — /api/lawyers 포털 API 연동 */}
           <div className="m2-3col" style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:20, marginBottom:40 }}>
-            {[
-              {
-                img: P.kang, name: "강민구 변호사",
-                career: ["해병대 시험부 군검사", "해군전인사정보부 군검사", "방위사업청 군법무관"],
-              },
-              {
-                img: P.jo, name: "조덕재 변호사",
-                career: ["육군 13년간 군검사 및 징계항고부", "국방부 법무관리관실 군법무관"],
-              },
-              {
-                img: P.kim, name: "김범 변호사",
-                career: ["육군 23년간 군검사 및 징계항고", "국군부 송무팀 군법무관"],
-              },
-            ].map((l) => (
-              <div key={l.name} className="reveal m2-card" style={{
-                background:C.dark, border:`1px solid ${C.goldBorder}`,
-                borderRadius:8, overflow:"hidden",
-              }}>
-                <div style={{ height:220, overflow:"hidden" }}>
-                  <img
-                    src={l.img} alt={l.name}
-                    style={{ width:"100%", height:"100%", objectFit:"cover", objectPosition:"center top", display:"block" }}
-                    loading="lazy"
-                  />
+            {(lawyers.length > 0 ? lawyers : [
+              { id:"k", photoUrl: P.kang, name: "강민구 변호사", career: "[]" },
+              { id:"j", photoUrl: P.jo,   name: "조덕재 변호사", career: "[]" },
+              { id:"b", photoUrl: P.kim,  name: "김범 변호사",   career: "[]" },
+            ]).map((l) => {
+              let careerList = [];
+              try { careerList = JSON.parse(l.career || "[]").slice(0, 3); } catch {}
+              const displayName = l.name?.includes("변호사") ? l.name : `${l.name} ${l.position || "변호사"}`;
+              return (
+                <div key={l.id} className="reveal m2-card" style={{
+                  background:C.dark, border:`1px solid ${C.goldBorder}`,
+                  borderRadius:8, overflow:"hidden",
+                }}>
+                  <div style={{ height:220, overflow:"hidden" }}>
+                    <img
+                      src={l.photoUrl} alt={displayName}
+                      style={{ width:"100%", height:"100%", objectFit:"cover", objectPosition:"center top", display:"block" }}
+                      loading="lazy"
+                    />
+                  </div>
+                  <div style={{ padding:"20px 22px" }}>
+                    <p style={{ fontFamily:"var(--font-serif)", fontSize:17, color:"#fff", fontWeight:600, marginBottom:10 }}>{displayName}</p>
+                    {careerList.map((c, i) => (
+                      <p key={i} style={{ fontSize:12, color:C.textMuted, marginBottom:4, lineHeight:1.55 }}>
+                        · {c.title || c.period || ""}
+                      </p>
+                    ))}
+                  </div>
                 </div>
-                <div style={{ padding:"20px 22px" }}>
-                  <p style={{ fontFamily:"var(--font-serif)", fontSize:17, color:"#fff", fontWeight:600, marginBottom:10 }}>{l.name}</p>
-                  {l.career.map((c) => (
-                    <p key={c} style={{ fontSize:12, color:C.textMuted, marginBottom:4, lineHeight:1.55 }}>· {c}</p>
-                  ))}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* 강점 3개 */}
@@ -879,8 +891,8 @@ export default function Military2LandingPage() {
       ════════════════════════════════════════════ */}
       {showFloat && !floatDism && (
         <div className="m2-float" style={{
-          position:"fixed", bottom:0, left:0, right:0, zIndex:300,
-          background:"rgba(7,12,23,0.96)", backdropFilter:"blur(16px)",
+          position:"fixed", bottom:0, left:0, right:0, zIndex:400,
+          background:"rgba(7,12,23,0.97)", backdropFilter:"blur(16px)",
           borderTop:`1px solid ${C.goldBorder}`,
           padding:"16px clamp(20px,5vw,64px)",
         }}>
@@ -906,6 +918,9 @@ export default function Military2LandingPage() {
           </div>
         </div>
       )}
+
+      {/* 사이트 전역 플로팅 퀵메뉴 (전화·카카오·위치 등) */}
+      <FloatingContact />
     </>
   );
 }
