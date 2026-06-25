@@ -1077,9 +1077,14 @@
 
     /* 모바일: 작게 */
     .cert-slideshow-wrap {
-      max-width: 300px;
+      max-width: calc(100vw - 80px);
       aspect-ratio: auto !important;
       height: auto !important;
+    }
+    .cert-slide img {
+      width: 100%;
+      height: auto;
+      display: block;
     }
 
     /* PC (768px 이상): 조금 크게 */
@@ -3046,6 +3051,13 @@ var _lawyerApiData = {};  /* name → API 응답 객체 */
     });
   }
 
+  /* 변호사 프로필 사진 정확한 경로 (DB 구버전 경로 대체용) */
+  var LAWYER_CORRECT_PHOTOS = {
+    '강민구': 'https://highlaw.co.kr/lawyers/kang-min-gu/kang-min-gu_profile.jpg',
+    '조덕재': 'https://highlaw.co.kr/lawyers/jo-deok-jae/jo-deok-jae_profile.jpg',
+    '김범':   'https://highlaw.co.kr/lawyers/kim-beom/kim-beom_profile.jpg'
+  };
+
   fetch('/api/lawyers')
     .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
     .then(function (body) {
@@ -3057,8 +3069,16 @@ var _lawyerApiData = {};  /* name → API 응답 객체 */
         _lawyerApiData[lawyer.name] = lawyer;
         var imgs = document.querySelectorAll('img[data-lawyer-name="' + lawyer.name + '"]');
         imgs.forEach(function (img) {
-          var url = lawyer.photoUrl || img.getAttribute('data-fallback');
-          if (url) { img.src = url; found[lawyer.name] = true; }
+          /* 정확한 프로필 경로 우선, 없으면 API photoUrl, 없으면 data-fallback */
+          var url = LAWYER_CORRECT_PHOTOS[lawyer.name] || lawyer.photoUrl || img.getAttribute('data-fallback');
+          if (url) {
+            img.src = url;
+            img.onerror = function () {
+              var fb = img.getAttribute('data-fallback');
+              if (fb && img.src !== fb) { img.src = fb; img.onerror = null; }
+            };
+            found[lawyer.name] = true;
+          }
         });
       });
       /* API에 없는 항목은 fallback 적용 */
