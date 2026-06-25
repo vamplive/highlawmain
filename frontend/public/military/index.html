@@ -607,6 +607,12 @@
     }
 
     /* 극소형 화면 (375px 미만) */
+    /* 모바일: 변호사 카드 hover 오버레이 비활성화 (iOS 터치 sticky hover 방지) */
+    @media (hover: none) {
+      .lawyer-card .photo-wrap::after { display: none !important; }
+      .lawyer-card:hover .photo-wrap img { transform: none !important; }
+    }
+
     @media (max-width: 374px) {
       .sec { padding: 56px 0; }
       body { padding-bottom: 72px; }
@@ -675,7 +681,7 @@
     .lawyer-card { overflow: hidden; border-radius: 14px; cursor: pointer; }
     .lawyer-card .photo-wrap {
       height: 220px; overflow: hidden;
-      background: #0F1A0A; position: relative;
+      background: linear-gradient(180deg, #1a2e15, #0F1A0A); position: relative;
     }
     .lawyer-card .photo-wrap img {
       width: 100%; height: 100%;
@@ -2369,7 +2375,8 @@
         <div class="photo-wrap">
           <img src="https://highlaw.co.kr/lawyers/kangmingu.png" alt="강민구 변호사 — 해군 군검사 출신"
                data-lawyer-name="강민구" data-fallback="https://highlaw.co.kr/lawyers/kangmingu.png"
-               style="background:var(--navy-mid);">
+               loading="eager" decoding="async"
+               style="background:var(--navy-mid); display:block;">
         </div>
         <div class="p-5 text-center">
           <div style="display:inline-flex; align-items:center; gap:6px; margin-bottom:8px;
@@ -2408,7 +2415,8 @@
         <div class="photo-wrap">
           <img src="https://highlaw.co.kr/lawyers/jodeokjae.jpg" alt="조덕재 변호사 — 육군 15사단 군검사 출신"
                data-lawyer-name="조덕재" data-fallback="https://highlaw.co.kr/lawyers/jodeokjae.jpg"
-               style="background:var(--navy-mid);">
+               loading="eager" decoding="async"
+               style="background:var(--navy-mid); display:block;">
         </div>
         <div class="p-5 text-center">
           <div style="display:inline-flex; align-items:center; gap:6px; margin-bottom:8px;
@@ -2441,7 +2449,8 @@
         <div class="photo-wrap">
           <img src="https://highlaw.co.kr/lawyers/kimbeom.png" alt="김범 변호사 — 육군 23사단 군검사 출신"
                data-lawyer-name="김범" data-fallback="https://highlaw.co.kr/lawyers/kimbeom.png"
-               style="background:var(--navy-mid);">
+               loading="eager" decoding="async"
+               style="background:var(--navy-mid); display:block;">
         </div>
         <div class="p-5 text-center">
           <div style="display:inline-flex; align-items:center; gap:6px; margin-bottom:8px;
@@ -3300,9 +3309,4 @@ document.addEventListener('keydown', function(e) {
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
       <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.338c0 8.765 7.097 15.863 15.863 15.863h1.125c.621 0 1.125-.504 1.125-1.125v-2.572a1.125 1.125 0 0 0-.824-1.086l-3.163-.79a1.125 1.125 0 0 0-1.197.428l-.956 1.193a14.12 14.12 0 0 1-6.415-6.415l1.194-.957a1.125 1.125 0 0 0 .428-1.197l-.79-3.163A1.125 1.125 0 0 0 7.46 3H4.887C4.267 3 3.75 3.517 3.75 4.137c0 .12-.003.239-.01.358l-.123 1.842"/>
     </svg>
-    <span>전화 상담</span>
-  </a>
-</div>
-
-</body>
-</html>
+    <span
