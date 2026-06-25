@@ -1079,12 +1079,6 @@
     .cert-slideshow-wrap {
       max-width: min(340px, calc(100vw - 40px));
     }
-    .cert-slide img {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      display: block;
-    }
 
     /* PC (768px 이상): 조금 크게 */
     @media (min-width: 768px) {
@@ -2509,7 +2503,7 @@
     </div>
 
     <!-- 임명장 슬라이드쇼 -->
-    <div class="fu cert-reveal mt-10" style="width:100%; max-width:320px; margin:0 auto; margin-top:40px;">
+    <div class="fu cert-reveal mt-10" style="width:100%; max-width:min(340px, calc(100vw - 40px)); margin:0 auto; margin-top:40px;">
 
       <!-- CERTIFICATE 타이틀 (카드 바로 위) -->
       <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px; justify-content:center;">
