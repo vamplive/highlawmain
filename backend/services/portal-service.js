@@ -1357,21 +1357,38 @@ async function listAllLawyers() {
 }
 
 async function listLawyersForOrgChart() {
-  return db
-    .select({
-      id: lawyers.id,
-      name: lawyers.name,
-      nameEn: lawyers.nameEn,
-      position: lawyers.position,
-      team: lawyers.team,
-      photoUrl: lawyers.photoUrl,
-      tagline: lawyers.tagline,
-      email: lawyers.email,
-      phone: lawyers.phone,
-      sortOrder: lawyers.sortOrder,
-    })
-    .from(lawyers)
-    .orderBy(asc(lawyers.sortOrder));
+  // portal_users(직원/변호사 계정) + departments 기반으로 조직도 구성.
+  // photo_url 우선순위: lawyers 프로필 사진 > portal_users 업로드 사진
+  // portal_users + departments 조인. 변호사 계정이면 lawyers 테이블 사진도 fallback으로 사용
+  const rows = sqlite.prepare(`
+    SELECT
+      pu.id,
+      COALESCE(c.name, pu.email) AS name,
+      pu.position,
+      d.name AS team,
+      COALESCE(lw.photo_url, pu.photo_url) AS photo_url,
+      pu.email,
+      c.phone
+    FROM portal_users pu
+    LEFT JOIN clients c ON c.id = pu.client_id
+    LEFT JOIN departments d ON d.id = pu.department_id
+    LEFT JOIN lawyers lw ON LOWER(lw.email) = LOWER(pu.email)
+    WHERE pu.is_active = 1
+    ORDER BY d.name ASC, c.name ASC
+  `).all();
+
+  return rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    nameEn: null,
+    position: r.position,
+    team: r.team,
+    photoUrl: r.photo_url,
+    tagline: null,
+    email: r.email,
+    phone: r.phone,
+    sortOrder: 0,
+  }));
 }
 
 async function updateLawyerProfile(id, data) {
