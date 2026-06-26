@@ -467,6 +467,140 @@ router.post("/sms/send", portalAuth, internalOnly, async (req, res) => {
   }
 });
 
+
+/** GET /api/portal/sms/templates */
+router.get("/sms/templates", portalAuth, internalOnly, (req, res) => {
+  try {
+    const rows = sqlite.prepare(
+      "SELECT id, name, channel, subject, content, is_active, sort_order FROM message_templates WHERE is_active=1 ORDER BY sort_order ASC, name ASC"
+    ).all();
+    res.json({ data: rows, error: null, meta: null });
+  } catch (e) { handleError(res, e); }
+});
+
+/** POST /api/portal/sms/send */
+router.post("/sms/send", portalAuth, internalOnly, async (req, res) => {
+  try {
+    const { sendSMS } = require("../lib/sms-service");
+    const { recipients, content } = req.body;
+    if (!recipients || !Array.isArray(recipients) || recipients.length === 0)
+      return res.status(400).json({ data: null, error: "수신자를 1명 이상 지정해주세요", meta: null });
+    if (!content || !content.trim())
+      return res.status(400).json({ data: null, error: "메시지 내용을 입력해주세요", meta: null });
+    const trimmed = content.trim();
+    const crypto2 = require("crypto");
+    const results = [];
+    for (const r of recipients) {
+      const result = await sendSMS(r.contact, trimmed);
+      const logId = crypto2.randomUUID();
+      const now = new Date().toISOString().replace("T", " ").slice(0, 19);
+      sqlite.prepare(
+        "INSERT INTO message_logs (id,channel,recipient_name,recipient_contact,content,status,error_message,sent_at,created_at) VALUES (?,?,?,?,?,?,?,?,?)"
+      ).run(logId, "sms", r.name || null, r.contact, trimmed,
+        result.success ? "sent" : "failed", result.error || null,
+        result.success ? now : null, now);
+      results.push({ name: r.name, contact: r.contact, success: result.success, error: result.error || null });
+    }
+    const sent = results.filter(r => r.success).length;
+    res.json({ data: { total: results.length, sent, failed: results.length - sent, results }, error: null, meta: null });
+  } catch (e) { handleError(res, e); }
+});
+
+/** POST /api/portal/sms/schedule */
+router.post("/sms/schedule", portalAuth, internalOnly, (req, res) => {
+  try {
+    const { recipients, content, scheduledAt } = req.body;
+    if (!recipients || !Array.isArray(recipients) || recipients.length === 0)
+      return res.status(400).json({ data: null, error: "수신자를 1명 이상 지정해주세요", meta: null });
+    if (!content || !content.trim())
+      return res.status(400).json({ data: null, error: "메시지 내용을 입력해주세요", meta: null });
+    if (!scheduledAt)
+      return res.status(400).json({ data: null, error: "예약 시각을 입력해주세요", meta: null });
+    const when = new Date(scheduledAt);
+    if (isNaN(when.getTime()) || when.getTime() < Date.now() + 30000)
+      return res.status(400).json({ data: null, error: "예약 시각은 현재 이후여야 합니다", meta: null });
+    const crypto2 = require("crypto");
+    const id = crypto2.randomUUID();
+    const normalizedAt = when.toISOString().replace("T", " ").slice(0, 19);
+    const now = new Date().toISOString().replace("T", " ").slice(0, 19);
+    sqlite.prepare(
+      "INSERT INTO scheduled_messages (id,channel,recipients,content,scheduled_at,status,source,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
+    ).run(id, "sms", JSON.stringify(recipients), content.trim(), normalizedAt, "pending", "portal", now, now);
+    const row = sqlite.prepare("SELECT * FROM scheduled_messages WHERE id=?").get(id);
+    res.json({ data: row, error: null, meta: null });
+  } catch (e) { handleError(res, e); }
+});
+
+/** GET /api/portal/sms/scheduled */
+router.get("/sms/scheduled", portalAuth, internalOnly, (req, res) => {
+  try {
+    const { status = "", page = 1, limit = 20 } = req.query;
+    const p = Math.max(1, parseInt(page));
+    const l = Math.min(100, Math.max(1, parseInt(limit)));
+    const offset = (p - 1) * l;
+    let where = "WHERE 1=1";
+    const params = [];
+    if (status) { where += " AND status=?"; params.push(status); }
+    const total = sqlite.prepare("SELECT count(*) as n FROM scheduled_messages " + where).get(...params).n;
+    const rows = sqlite.prepare("SELECT * FROM scheduled_messages " + where + " ORDER BY scheduled_at ASC LIMIT ? OFFSET ?").all(...params, l, offset);
+    res.json({ data: rows, error: null, meta: { page: p, limit: l, total, totalPages: Math.ceil(total / l) } });
+  } catch (e) { handleError(res, e); }
+});
+
+/** DELETE /api/portal/sms/scheduled/:id */
+router.delete("/sms/scheduled/:id", portalAuth, internalOnly, (req, res) => {
+  try {
+    const { id } = req.params;
+    const row = sqlite.prepare("SELECT status FROM scheduled_messages WHERE id=?").get(id);
+    if (!row) return res.status(404).json({ data: null, error: "예약을 찾을 수 없습니다", meta: null });
+    if (row.status !== "pending") return res.status(400).json({ data: null, error: "대기 중인 예약만 취소할 수 있습니다", meta: null });
+    sqlite.prepare("UPDATE scheduled_messages SET status='cancelled', updated_at=datetime('now') WHERE id=?").run(id);
+    res.json({ data: { cancelled: true }, error: null, meta: null });
+  } catch (e) { handleError(res, e); }
+});
+
+/** GET /api/portal/sms/logs */
+router.get("/sms/logs", portalAuth, internalOnly, (req, res) => {
+  try {
+    const { status = "", page = 1, limit = 20 } = req.query;
+    const p = Math.max(1, parseInt(page));
+    const l = Math.min(100, Math.max(1, parseInt(limit)));
+    const offset = (p - 1) * l;
+    let where = "WHERE channel='sms'";
+    const params = [];
+    if (status) { where += " AND status=?"; params.push(status); }
+    const total = sqlite.prepare("SELECT count(*) as n FROM message_logs " + where).get(...params).n;
+    const rows = sqlite.prepare("SELECT * FROM message_logs " + where + " ORDER BY created_at DESC LIMIT ? OFFSET ?").all(...params, l, offset);
+    res.json({ data: rows, error: null, meta: { page: p, limit: l, total, totalPages: Math.ceil(total / l) } });
+  } catch (e) { handleError(res, e); }
+});
+
+/** GET /api/portal/sms/stats */
+router.get("/sms/stats", portalAuth, internalOnly, (req, res) => {
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    const defaultFrom = new Date(Date.now() - 29 * 86400000).toISOString().slice(0, 10);
+    const from = /^\d{4}-\d{2}-\d{2}$/.test(req.query.from) ? req.query.from : defaultFrom;
+    const to = /^\d{4}-\d{2}-\d{2}$/.test(req.query.to) ? req.query.to : today;
+    const summary = sqlite.prepare(
+      "SELECT count(*) as total, sum(case when status='sent' then 1 else 0 end) as sent, sum(case when status='failed' then 1 else 0 end) as failed FROM message_logs WHERE channel='sms' AND date(created_at) BETWEEN ? AND ?"
+    ).get(from, to);
+    const daily = sqlite.prepare(
+      "SELECT date(created_at) as day, sum(case when status='sent' then 1 else 0 end) as sent, sum(case when status='failed' then 1 else 0 end) as failed FROM message_logs WHERE channel='sms' AND date(created_at) BETWEEN ? AND ? GROUP BY day ORDER BY day ASC"
+    ).all(from, to);
+    res.json({
+      data: {
+        range: { from, to },
+        total: Number(summary.total || 0),
+        sent: Number(summary.sent || 0),
+        failed: Number(summary.failed || 0),
+        daily: daily.map(r => ({ day: r.day, sent: Number(r.sent || 0), failed: Number(r.failed || 0) })),
+      },
+      error: null, meta: null,
+    });
+  } catch (e) { handleError(res, e); }
+});
+
 router.get("/time-entries", portalAuth, async (req, res) => {
   try {
     const { data, meta } = await portalService.listPortalTimeEntries(req.portalUser.userId, req.query);
