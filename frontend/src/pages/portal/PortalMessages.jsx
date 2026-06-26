@@ -311,28 +311,58 @@ export default function PortalMessages() {
                 )}
               </div>
 
-              {/* 선택된 수신자 태그 */}
+              {/* 선택된 수신자 목록 */}
               {recipients.length > 0 && (
-                <div style={{ marginTop: 10, display: "flex", flexWrap: "wrap", gap: 6 }}>
-                  {recipients.map((r) => (
+                <div style={{
+                  marginTop: 10, border: `1px solid ${T.border}`, borderRadius: 8,
+                  overflow: "hidden",
+                }}>
+                  <div style={{
+                    padding: "8px 14px", background: "#f8f8f8",
+                    borderBottom: `1px solid ${T.border}`,
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                  }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: T.textSec }}>
+                      수신자 목록 ({recipients.length}명)
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setRecipients([])}
+                      style={{ fontSize: 11, color: T.textMuted, background: "none", border: "none", cursor: "pointer" }}
+                    >
+                      전체 삭제
+                    </button>
+                  </div>
+                  {recipients.map((r, i) => (
                     <div
                       key={r.contact}
                       style={{
-                        display: "inline-flex", alignItems: "center", gap: 6,
-                        padding: "4px 10px 4px 12px", borderRadius: 20,
-                        background: "rgba(201,168,76,0.1)", border: `1px solid rgba(201,168,76,0.3)`,
-                        fontSize: 12, color: T.text,
+                        display: "flex", alignItems: "center", justifyContent: "space-between",
+                        padding: "9px 14px",
+                        borderBottom: i < recipients.length - 1 ? `1px solid ${T.border}` : "none",
+                        background: "#fff",
                       }}
                     >
-                      {r.name && <span style={{ fontWeight: 600 }}>{r.name}</span>}
-                      <span style={{ color: T.textSec }}>{r.contact}</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <div style={{
+                          width: 28, height: 28, borderRadius: "50%", flexShrink: 0,
+                          background: "rgba(201,168,76,0.15)", display: "flex",
+                          alignItems: "center", justifyContent: "center",
+                          fontSize: 12, fontWeight: 700, color: T.accent,
+                        }}>
+                          {r.name ? r.name.charAt(0) : "#"}
+                        </div>
+                        <div>
+                          {r.name && <div style={{ fontSize: 13, fontWeight: 600, color: T.text, lineHeight: 1.3 }}>{r.name}</div>}
+                          <div style={{ fontSize: 12, color: T.textSec }}>{r.contact}</div>
+                        </div>
+                      </div>
                       <button
                         type="button"
                         onClick={() => removeRecipient(r.contact)}
                         style={{
                           background: "none", border: "none", cursor: "pointer",
-                          color: T.textMuted, fontSize: 14, padding: 0, lineHeight: 1,
-                          display: "flex", alignItems: "center",
+                          color: T.textMuted, fontSize: 18, padding: "0 4px", lineHeight: 1,
                         }}
                         title="제거"
                       >
@@ -340,9 +370,6 @@ export default function PortalMessages() {
                       </button>
                     </div>
                   ))}
-                  <span style={{ fontSize: 11, color: T.textMuted, alignSelf: "center" }}>
-                    총 {recipients.length}명
-                  </span>
                 </div>
               )}
             </div>
