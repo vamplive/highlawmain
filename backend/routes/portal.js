@@ -469,12 +469,64 @@ router.post("/sms/send", portalAuth, internalOnly, async (req, res) => {
 
 
 /** GET /api/portal/sms/templates */
-router.get("/sms/templates", portalAuth, internalOnly, (req, res) => {
+router.get("/sms/templates", portalAuth, (req, res) => {
   try {
     const rows = sqlite.prepare(
       "SELECT id, name, channel, subject, content, is_active, sort_order FROM message_templates WHERE is_active=1 ORDER BY sort_order ASC, name ASC"
     ).all();
     res.json({ data: rows, error: null, meta: null });
+  } catch (e) { handleError(res, e); }
+});
+
+
+/** POST /api/portal/sms/templates — 템플릿 생성 */
+router.post("/sms/templates", portalAuth, internalOnly, (req, res) => {
+  try {
+    const { name, content, subject } = req.body;
+    if (!name || !name.trim()) return res.status(400).json({ data: null, error: "이름을 입력해주세요", meta: null });
+    if (!content || !content.trim()) return res.status(400).json({ data: null, error: "내용을 입력해주세요", meta: null });
+    const crypto2 = require("crypto");
+    const id = crypto2.randomUUID();
+    const now = new Date().toISOString().replace("T", " ").slice(0, 19);
+    const maxOrder = sqlite.prepare("SELECT coalesce(max(sort_order),0) as m FROM message_templates").get().m;
+    sqlite.prepare(
+      "INSERT INTO message_templates (id,name,channel,subject,content,is_active,sort_order,created_at,updated_at) VALUES (?,?,?,?,?,1,?,?,?)"
+    ).run(id, name.trim(), "sms", subject ? subject.trim() : null, content.trim(), Number(maxOrder) + 1, now, now);
+    const row = sqlite.prepare("SELECT * FROM message_templates WHERE id=?").get(id);
+    res.status(201).json({ data: row, error: null, meta: null });
+  } catch (e) { handleError(res, e); }
+});
+
+/** PATCH /api/portal/sms/templates/:id — 템플릿 수정 */
+router.patch("/sms/templates/:id", portalAuth, internalOnly, (req, res) => {
+  try {
+    const { id } = req.params;
+    const row = sqlite.prepare("SELECT id FROM message_templates WHERE id=?").get(id);
+    if (!row) return res.status(404).json({ data: null, error: "템플릿을 찾을 수 없습니다", meta: null });
+    const { name, content, subject } = req.body;
+    if (name !== undefined && !name.trim()) return res.status(400).json({ data: null, error: "이름을 입력해주세요", meta: null });
+    if (content !== undefined && !content.trim()) return res.status(400).json({ data: null, error: "내용을 입력해주세요", meta: null });
+    const now = new Date().toISOString().replace("T", " ").slice(0, 19);
+    const fields = []; const vals = [];
+    if (name !== undefined) { fields.push("name=?"); vals.push(name.trim()); }
+    if (content !== undefined) { fields.push("content=?"); vals.push(content.trim()); }
+    if (subject !== undefined) { fields.push("subject=?"); vals.push(subject ? subject.trim() : null); }
+    fields.push("updated_at=?"); vals.push(now);
+    vals.push(id);
+    sqlite.prepare("UPDATE message_templates SET " + fields.join(",") + " WHERE id=?").run(...vals);
+    const updated = sqlite.prepare("SELECT * FROM message_templates WHERE id=?").get(id);
+    res.json({ data: updated, error: null, meta: null });
+  } catch (e) { handleError(res, e); }
+});
+
+/** DELETE /api/portal/sms/templates/:id — 템플릿 삭제 */
+router.delete("/sms/templates/:id", portalAuth, internalOnly, (req, res) => {
+  try {
+    const { id } = req.params;
+    const row = sqlite.prepare("SELECT id FROM message_templates WHERE id=?").get(id);
+    if (!row) return res.status(404).json({ data: null, error: "템플릿을 찾을 수 없습니다", meta: null });
+    sqlite.prepare("DELETE FROM message_templates WHERE id=?").run(id);
+    res.json({ data: { deleted: true }, error: null, meta: null });
   } catch (e) { handleError(res, e); }
 });
 

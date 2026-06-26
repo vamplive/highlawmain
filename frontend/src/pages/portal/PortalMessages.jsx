@@ -1,6 +1,7 @@
 /**
  * 포털 문자 발송 — 발송 · 템플릿 · 예약 · 이력 · 리포트
- * 내부 구성원 전용 (internalOnly)
+ * - 내부 구성원: 발송·예약·템플릿 CRUD 가능
+ * - 모든 포털 사용자: 템플릿 열람 가능
  */
 import { useState, useEffect, useRef, useCallback } from "react";
 import { api } from "../../utils/api";
@@ -14,15 +15,20 @@ const panel = { background: "#fff", border: "1px solid #e2e8f0", borderRadius: 1
 const inp = { width: "100%", boxSizing: "border-box", border: "1px solid #e2e8f0", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "#0f172a", outline: "none", fontFamily: "inherit" };
 const ghostBtn = { background: "none", border: "1px solid #e2e8f0", borderRadius: 6, padding: "6px 12px", fontSize: 13, color: "#475569", cursor: "pointer", fontFamily: "inherit" };
 const primaryBtn = { background: "#2563eb", border: "none", borderRadius: 6, padding: "6px 14px", fontSize: 13, color: "#fff", cursor: "pointer", fontWeight: 600, fontFamily: "inherit" };
+const dangerBtn = { background: "none", border: "1px solid #fca5a5", borderRadius: 6, padding: "6px 12px", fontSize: 13, color: "#dc2626", cursor: "pointer", fontFamily: "inherit" };
 
-function Tab({ label, active, onClick }) {
+function TabBar({ tabs, active, onChange }) {
   return (
-    <button onClick={onClick} style={{
-      padding: "10px 20px", fontSize: 14, fontWeight: active ? 700 : 400,
-      color: active ? "#2563eb" : "#64748b", background: "none", border: "none",
-      borderBottom: active ? "2px solid #2563eb" : "2px solid transparent",
-      cursor: "pointer", transition: "all .15s", whiteSpace: "nowrap",
-    }}>{label}</button>
+    <div style={{ display: "flex", borderBottom: "1px solid #e2e8f0", marginBottom: 24, overflowX: "auto" }}>
+      {tabs.map(t => (
+        <button key={t.key} onClick={() => onChange(t.key)} style={{
+          padding: "10px 20px", fontSize: 14, fontWeight: active === t.key ? 700 : 400,
+          color: active === t.key ? "#2563eb" : "#64748b", background: "none", border: "none",
+          borderBottom: active === t.key ? "2px solid #2563eb" : "2px solid transparent",
+          cursor: "pointer", transition: "all .15s", whiteSpace: "nowrap",
+        }}>{t.label}</button>
+      ))}
+    </div>
   );
 }
 
@@ -40,7 +46,7 @@ function Badge({ text, color = "#64748b", bg = "#f1f5f9" }) {
 }
 
 function StatusBadge({ status }) {
-  const map = { sent: ["성공","#16a34a","#f0fdf4"], failed: ["실패","#dc2626","#fef2f2"], pending: ["대기","#d97706","#fffbeb"], processing: ["처리중","#2563eb","#eff6ff"], cancelled: ["취소","#64748b","#f1f5f9"] };
+  const map = { sent:["성공","#16a34a","#f0fdf4"], failed:["실패","#dc2626","#fef2f2"], pending:["대기","#d97706","#fffbeb"], processing:["처리중","#2563eb","#eff6ff"], cancelled:["취소","#64748b","#f1f5f9"] };
   const [label, color, bg] = map[status] || ["알 수 없음","#64748b","#f1f5f9"];
   return <Badge text={label} color={color} bg={bg} />;
 }
@@ -62,7 +68,7 @@ function fmtDate(s) {
 }
 
 /* ── 발송 탭 ─────────────────────────────────── */
-function SendTab({ templates }) {
+function SendTab({ templates, applyTpl, clearApply }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [showDrop, setShowDrop] = useState(false);
@@ -79,6 +85,14 @@ function SendTab({ templates }) {
   const debRef = useRef(null);
   const bytes = getByteLength(content);
   const msgType = bytes > SMS_MAX ? "LMS" : "SMS";
+
+  // 템플릿 탭에서 "이 템플릿 사용" 클릭 시 자동 적용
+  useEffect(() => {
+    if (!applyTpl) return;
+    setSelectedTpl(String(applyTpl.id));
+    setContent(applyTpl.content);
+    clearApply();
+  }, [applyTpl, clearApply]);
 
   const search = (q) => {
     clearTimeout(debRef.current);
@@ -154,15 +168,14 @@ function SendTab({ templates }) {
                 ? <div style={{ padding: "12px 14px", color: "#94a3b8", fontSize: 13 }}>결과 없음</div>
                 : results.map(item => (
                   <button key={item.id} onMouseDown={() => addFromDB(item)} style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "8px 14px", border: "none", background: "transparent", cursor: "pointer", textAlign: "left" }}
-                    onMouseEnter={e => e.currentTarget.style.background = "#f8fafc"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                    onMouseEnter={e => e.currentTarget.style.background="#f8fafc"} onMouseLeave={e => e.currentTarget.style.background="transparent"}>
                     <Avatar name={item.name} size={28} />
-                    <div><div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>{item.name}</div><div style={{ fontSize: 12, color: "#64748b" }}>{item.phone || "번호 없음"}</div></div>
+                    <div><div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>{item.name}</div><div style={{ fontSize: 12, color: "#64748b" }}>{item.phone||"번호 없음"}</div></div>
                   </button>
                 ))}
             </div>
           )}
         </div>
-
         <button onClick={() => setShowDirect(v => !v)} style={{ ...ghostBtn, marginTop: 8, width: "100%" }}>+ 직접 추가</button>
         {showDirect && (
           <div style={{ marginTop: 10, padding: 12, background: "#f8fafc", borderRadius: 8, border: "1px solid #e2e8f0" }}>
@@ -174,7 +187,6 @@ function SendTab({ templates }) {
             </div>
           </div>
         )}
-
         {recipients.length > 0 && (
           <div style={{ marginTop: 14 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
@@ -200,7 +212,6 @@ function SendTab({ templates }) {
       {/* 작성 패널 */}
       <section style={panel}>
         <div style={{ fontWeight: 600, fontSize: 14, color: "#334155", marginBottom: 12 }}>메시지 작성</div>
-
         {templates.length > 0 && (
           <div style={{ marginBottom: 12 }}>
             <label style={{ fontSize: 12, color: "#64748b", display: "block", marginBottom: 4 }}>템플릿 불러오기</label>
@@ -210,17 +221,13 @@ function SendTab({ templates }) {
             </select>
           </div>
         )}
-
-        <textarea value={content} onChange={e => setContent(e.target.value)} placeholder="발송할 메시지를 입력하세요..." rows={9}
-          style={{ ...inp, resize: "vertical", lineHeight: 1.6 }} />
-
+        <textarea value={content} onChange={e => setContent(e.target.value)} placeholder="발송할 메시지를 입력하세요..." rows={9} style={{ ...inp, resize: "vertical", lineHeight: 1.6 }} />
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6, marginBottom: 16 }}>
           <div style={{ fontSize: 12, color: bytes > 2000 ? "#ef4444" : bytes > SMS_MAX ? "#f59e0b" : "#64748b" }}>
             {bytes}B · <strong>{msgType}</strong>
           </div>
           <div style={{ fontSize: 11, color: "#94a3b8" }}>SMS ≤90B / LMS ≤2000B</div>
         </div>
-
         <div style={{ display: "flex", gap: 10, marginBottom: 14, alignItems: "center" }}>
           <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#475569", cursor: "pointer" }}>
             <input type="checkbox" checked={scheduleMode} onChange={e => setScheduleMode(e.target.checked)} /> 예약 발송
@@ -229,19 +236,17 @@ function SendTab({ templates }) {
             <input type="datetime-local" value={scheduledAt} onChange={e => setScheduledAt(e.target.value)} style={{ ...inp, width: "auto", flex: 1 }} />
           )}
         </div>
-
         <button onClick={handleSend} disabled={sending || !recipients.length || !content.trim() || bytes > 2000}
           style={{ width: "100%", padding: "12px 0", background: (sending || !recipients.length || !content.trim() || bytes > 2000) ? "#cbd5e1" : "#2563eb", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 15, cursor: sending ? "wait" : "pointer" }}>
           {sending ? "처리 중..." : scheduleMode ? `${recipients.length}명에게 예약` : `${recipients.length}명에게 발송`}
         </button>
-
         {result && (
-          <div style={{ marginTop: 14, padding: 14, background: result.failed === 0 ? "#f0fdf4" : "#fff7ed", border: `1px solid ${result.failed === 0 ? "#86efac" : "#fed7aa"}`, borderRadius: 8, fontSize: 13 }}>
-            <div style={{ fontWeight: 700, color: result.failed === 0 ? "#16a34a" : "#c2410c", marginBottom: 4 }}>
-              {result.failed === 0 ? "발송 완료" : "일부 실패"}
+          <div style={{ marginTop: 14, padding: 14, background: result.failed===0 ? "#f0fdf4" : "#fff7ed", border: `1px solid ${result.failed===0?"#86efac":"#fed7aa"}`, borderRadius: 8, fontSize: 13 }}>
+            <div style={{ fontWeight: 700, color: result.failed===0?"#16a34a":"#c2410c", marginBottom: 4 }}>
+              {result.failed===0 ? "발송 완료" : "일부 실패"}
             </div>
             <div style={{ color: "#475569" }}>총 {result.total}명 · 성공 {result.sent}명 · 실패 {result.failed}명</div>
-            {result.results?.filter(r => !r.success).map((r, i) => (
+            {result.results?.filter(r => !r.success).map((r,i) => (
               <div key={i} style={{ marginTop: 4, color: "#ef4444", fontSize: 12 }}>✕ {r.name} ({r.contact}): {r.error}</div>
             ))}
           </div>
@@ -252,23 +257,101 @@ function SendTab({ templates }) {
 }
 
 /* ── 템플릿 탭 ───────────────────────────────── */
-function TemplatesTab({ templates, onUseTemplate }) {
-  if (templates.length === 0) return <div style={{ color: "#94a3b8", textAlign: "center", padding: 40, fontSize: 14 }}>등록된 템플릿이 없습니다.</div>;
+const EMPTY_FORM = { name: "", content: "" };
+
+function TemplatesTab({ templates, onTemplatesChange, onUseTemplate }) {
+  const [editing, setEditing] = useState(null); // null | "new" | template object
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [saving, setSaving] = useState(false);
+
+  const openNew = () => { setEditing("new"); setForm(EMPTY_FORM); };
+  const openEdit = (t) => { setEditing(t); setForm({ name: t.name, content: t.content }); };
+  const cancelEdit = () => { setEditing(null); setForm(EMPTY_FORM); };
+
+  const save = async () => {
+    if (!form.name.trim()) return showToast("이름을 입력해주세요");
+    if (!form.content.trim()) return showToast("내용을 입력해주세요");
+    setSaving(true);
+    try {
+      if (editing === "new") {
+        const res = await api.post("/portal/sms/templates", { name: form.name, content: form.content });
+        onTemplatesChange([...templates, res.data]);
+        showToast("템플릿이 추가되었습니다");
+      } else {
+        const res = await api.patch(`/portal/sms/templates/${editing.id}`, { name: form.name, content: form.content });
+        onTemplatesChange(templates.map(t => t.id === editing.id ? res.data : t));
+        showToast("템플릿이 수정되었습니다");
+      }
+      setEditing(null); setForm(EMPTY_FORM);
+    } catch (e) { showToast("저장 실패: " + e.message); }
+    finally { setSaving(false); }
+  };
+
+  const remove = async (t) => {
+    if (!window.confirm(`'${t.name}' 템플릿을 삭제하시겠습니까?`)) return;
+    try {
+      await api.delete(`/portal/sms/templates/${t.id}`);
+      onTemplatesChange(templates.filter(x => x.id !== t.id));
+      showToast("삭제되었습니다");
+    } catch (e) { showToast("삭제 실패: " + e.message); }
+  };
+
+  const bytes = (s) => getByteLength(s || "");
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      {templates.map(t => (
-        <div key={t.id} style={{ ...panel, display: "flex", alignItems: "flex-start", gap: 14 }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-              <span style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>{t.name}</span>
-              <Badge text={t.channel?.toUpperCase() || "SMS"} color="#2563eb" bg="#eff6ff" />
-              <span style={{ fontSize: 11, color: "#94a3b8" }}>{getByteLength(t.content)}B</span>
-            </div>
-            <div style={{ fontSize: 13, color: "#475569", whiteSpace: "pre-wrap", lineHeight: 1.6, maxHeight: 80, overflow: "hidden" }}>{t.content}</div>
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <span style={{ fontSize: 14, color: "#64748b" }}>SMS 템플릿 {templates.length}개 · 모든 포털 사용자에게 공유됩니다</span>
+        <button onClick={openNew} style={primaryBtn}>+ 새 템플릿</button>
+      </div>
+
+      {/* 편집 폼 */}
+      {editing && (
+        <div style={{ ...panel, marginBottom: 16, border: "1px solid #bfdbfe", background: "#f8fbff" }}>
+          <div style={{ fontWeight: 600, fontSize: 14, color: "#1d4ed8", marginBottom: 14 }}>
+            {editing === "new" ? "새 템플릿" : "템플릿 수정"}
           </div>
-          <button onClick={() => onUseTemplate(t)} style={primaryBtn}>이 템플릿 사용</button>
+          <div style={{ marginBottom: 10 }}>
+            <label style={{ fontSize: 12, color: "#64748b", display: "block", marginBottom: 4 }}>템플릿 이름 *</label>
+            <input type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="예: 상담 일정 확인 안내" style={inp} />
+          </div>
+          <div style={{ marginBottom: 14 }}>
+            <label style={{ fontSize: 12, color: "#64748b", display: "block", marginBottom: 4 }}>내용 * <span style={{ color: bytes(form.content) > 2000 ? "#ef4444" : bytes(form.content) > SMS_MAX ? "#f59e0b" : "#94a3b8" }}>({bytes(form.content)}B · {bytes(form.content) > SMS_MAX ? "LMS" : "SMS"})</span></label>
+            <textarea value={form.content} onChange={e => setForm(f => ({ ...f, content: e.target.value }))} placeholder="메시지 내용을 입력하세요..." rows={6} style={{ ...inp, resize: "vertical", lineHeight: 1.6 }} />
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={save} disabled={saving} style={{ ...primaryBtn, opacity: saving ? .6 : 1 }}>{saving ? "저장 중..." : "저장"}</button>
+            <button onClick={cancelEdit} style={ghostBtn}>취소</button>
+          </div>
         </div>
-      ))}
+      )}
+
+      {/* 템플릿 목록 */}
+      {templates.length === 0 && !editing ? (
+        <div style={{ color: "#94a3b8", textAlign: "center", padding: 40, fontSize: 14 }}>
+          등록된 템플릿이 없습니다. 새 템플릿을 추가해 보세요.
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {templates.map(t => (
+            <div key={t.id} style={{ ...panel, display: "flex", alignItems: "flex-start", gap: 14 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>{t.name}</span>
+                  <Badge text={(t.channel||"sms").toUpperCase()} color="#2563eb" bg="#eff6ff" />
+                  <span style={{ fontSize: 11, color: "#94a3b8" }}>{bytes(t.content)}B</span>
+                </div>
+                <div style={{ fontSize: 13, color: "#475569", whiteSpace: "pre-wrap", lineHeight: 1.6, maxHeight: 72, overflow: "hidden" }}>{t.content}</div>
+              </div>
+              <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                <button onClick={() => onUseTemplate(t)} style={primaryBtn}>발송에 사용</button>
+                <button onClick={() => openEdit(t)} style={ghostBtn}>수정</button>
+                <button onClick={() => remove(t)} style={dangerBtn}>삭제</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -313,35 +396,30 @@ function ScheduledTab() {
         <span style={{ fontSize: 13, color: "#64748b" }}>총 {meta.total}건</span>
         <button onClick={load} style={{ ...ghostBtn, marginLeft: "auto" }}>새로고침</button>
       </div>
-
-      {loading ? <div style={{ color: "#94a3b8", textAlign: "center", padding: 40 }}>불러오는 중...</div>
-        : items.length === 0 ? <div style={{ color: "#94a3b8", textAlign: "center", padding: 40 }}>예약된 메시지가 없습니다.</div>
-        : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {items.map(item => {
-              const rcpts = (() => { try { return JSON.parse(item.recipients); } catch { return []; } })();
-              return (
-                <div key={item.id} style={{ ...panel, display: "flex", alignItems: "flex-start", gap: 14 }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 4 }}>
-                      <StatusBadge status={item.status} />
-                      <span style={{ fontSize: 12, color: "#64748b" }}>예약: {fmtDate(item.scheduled_at)}</span>
-                      <span style={{ fontSize: 12, color: "#64748b" }}>수신자 {rcpts.length}명</span>
-                    </div>
-                    <div style={{ fontSize: 13, color: "#334155", whiteSpace: "pre-wrap", maxHeight: 60, overflow: "hidden", lineHeight: 1.5 }}>{item.content}</div>
-                    {rcpts.length > 0 && (
-                      <div style={{ marginTop: 4, fontSize: 11, color: "#94a3b8" }}>{rcpts.map(r => r.name || r.contact).join(", ")}</div>
-                    )}
+      {loading ? <div style={{ color:"#94a3b8", textAlign:"center", padding:40 }}>불러오는 중...</div>
+       : items.length===0 ? <div style={{ color:"#94a3b8", textAlign:"center", padding:40 }}>예약된 메시지가 없습니다.</div>
+       : (
+        <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+          {items.map(item => {
+            const rcpts = (() => { try { return JSON.parse(item.recipients); } catch { return []; } })();
+            return (
+              <div key={item.id} style={{ ...panel, display:"flex", alignItems:"flex-start", gap:14 }}>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ display:"flex", gap:8, alignItems:"center", marginBottom:4 }}>
+                    <StatusBadge status={item.status} />
+                    <span style={{ fontSize:12, color:"#64748b" }}>예약: {fmtDate(item.scheduled_at)}</span>
+                    <span style={{ fontSize:12, color:"#64748b" }}>수신자 {rcpts.length}명</span>
                   </div>
-                  {item.status === "pending" && (
-                    <button onClick={() => cancel(item.id)} style={{ ...ghostBtn, color: "#ef4444", flexShrink: 0 }}>취소</button>
-                  )}
+                  <div style={{ fontSize:13, color:"#334155", whiteSpace:"pre-wrap", maxHeight:60, overflow:"hidden", lineHeight:1.5 }}>{item.content}</div>
+                  {rcpts.length>0 && <div style={{ marginTop:4, fontSize:11, color:"#94a3b8" }}>{rcpts.map(r=>r.name||r.contact).join(", ")}</div>}
                 </div>
-              );
-            })}
-          </div>
-        )}
-      <Pagination page={page} totalPages={meta.totalPages || 0} onPage={setPage} />
+                {item.status==="pending" && <button onClick={() => cancel(item.id)} style={{ ...ghostBtn, color:"#ef4444", flexShrink:0 }}>취소</button>}
+              </div>
+            );
+          })}
+        </div>
+       )}
+      <Pagination page={page} totalPages={meta.totalPages||0} onPage={setPage} />
     </div>
   );
 }
@@ -351,7 +429,7 @@ function LogsTab() {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
-  const [meta, setMeta] = useState({ total: 0, totalPages: 0 });
+  const [meta, setMeta] = useState({ total:0, totalPages:0 });
   const [filterStatus, setFilterStatus] = useState("");
   const [expanded, setExpanded] = useState(null);
 
@@ -360,7 +438,7 @@ function LogsTab() {
     const params = new URLSearchParams({ page, limit: 20 });
     if (filterStatus) params.set("status", filterStatus);
     api.get(`/portal/sms/logs?${params}`)
-      .then(j => { setLogs(j.data ?? []); setMeta(j.meta ?? { total: 0, totalPages: 0 }); })
+      .then(j => { setLogs(j.data??[]); setMeta(j.meta??{total:0,totalPages:0}); })
       .catch(() => setLogs([]))
       .finally(() => setLoading(false));
   }, [page, filterStatus]);
@@ -369,49 +447,48 @@ function LogsTab() {
 
   return (
     <div>
-      <div style={{ display: "flex", gap: 10, marginBottom: 14, alignItems: "center" }}>
-        <select value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(1); }} style={{ ...inp, width: 140 }}>
+      <div style={{ display:"flex", gap:10, marginBottom:14, alignItems:"center" }}>
+        <select value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(1); }} style={{ ...inp, width:140 }}>
           <option value="">전체 상태</option>
           <option value="sent">성공</option>
           <option value="failed">실패</option>
         </select>
-        <span style={{ fontSize: 13, color: "#64748b" }}>총 {meta.total}건</span>
-        <button onClick={load} style={{ ...ghostBtn, marginLeft: "auto" }}>새로고침</button>
+        <span style={{ fontSize:13, color:"#64748b" }}>총 {meta.total}건</span>
+        <button onClick={load} style={{ ...ghostBtn, marginLeft:"auto" }}>새로고침</button>
       </div>
-
-      {loading ? <div style={{ color: "#94a3b8", textAlign: "center", padding: 40 }}>불러오는 중...</div>
-        : logs.length === 0 ? <div style={{ color: "#94a3b8", textAlign: "center", padding: 40 }}>발송 이력이 없습니다.</div>
-        : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {logs.map(log => (
-              <div key={log.id} style={{ ...panel, cursor: "pointer" }} onClick={() => setExpanded(expanded === log.id ? null : log.id)}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <StatusBadge status={log.status} />
-                  <Avatar name={log.recipient_name || log.recipientName || "?"} size={28} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>{log.recipient_name || log.recipientName || "-"}</div>
-                    <div style={{ fontSize: 12, color: "#64748b" }}>{log.recipient_contact || log.recipientContact}</div>
-                  </div>
-                  <div style={{ fontSize: 11, color: "#94a3b8", whiteSpace: "nowrap" }}>{fmtDate(log.created_at || log.createdAt)}</div>
+      {loading ? <div style={{ color:"#94a3b8", textAlign:"center", padding:40 }}>불러오는 중...</div>
+       : logs.length===0 ? <div style={{ color:"#94a3b8", textAlign:"center", padding:40 }}>발송 이력이 없습니다.</div>
+       : (
+        <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+          {logs.map(log => (
+            <div key={log.id} style={{ ...panel, cursor:"pointer" }} onClick={() => setExpanded(expanded===log.id?null:log.id)}>
+              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                <StatusBadge status={log.status} />
+                <Avatar name={log.recipient_name||log.recipientName||"?"} size={28} />
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:13, fontWeight:600, color:"#0f172a" }}>{log.recipient_name||log.recipientName||"-"}</div>
+                  <div style={{ fontSize:12, color:"#64748b" }}>{log.recipient_contact||log.recipientContact}</div>
                 </div>
-                {expanded === log.id && (
-                  <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid #f1f5f9" }}>
-                    <div style={{ fontSize: 13, color: "#334155", whiteSpace: "pre-wrap", lineHeight: 1.6 }}>{log.content}</div>
-                    {log.error_message && <div style={{ marginTop: 6, fontSize: 12, color: "#ef4444" }}>오류: {log.error_message}</div>}
-                  </div>
-                )}
+                <div style={{ fontSize:11, color:"#94a3b8", whiteSpace:"nowrap" }}>{fmtDate(log.created_at||log.createdAt)}</div>
               </div>
-            ))}
-          </div>
-        )}
-      <Pagination page={page} totalPages={meta.totalPages || 0} onPage={setPage} />
+              {expanded===log.id && (
+                <div style={{ marginTop:10, paddingTop:10, borderTop:"1px solid #f1f5f9" }}>
+                  <div style={{ fontSize:13, color:"#334155", whiteSpace:"pre-wrap", lineHeight:1.6 }}>{log.content}</div>
+                  {log.error_message && <div style={{ marginTop:6, fontSize:12, color:"#ef4444" }}>오류: {log.error_message}</div>}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+       )}
+      <Pagination page={page} totalPages={meta.totalPages||0} onPage={setPage} />
     </div>
   );
 }
 
 /* ── 리포트 탭 ───────────────────────────────── */
 function ReportTab() {
-  const daysAgo = n => new Date(Date.now() - n * 86400000).toISOString().slice(0, 10);
+  const daysAgo = n => new Date(Date.now()-n*86400000).toISOString().slice(0,10);
   const [from, setFrom] = useState(daysAgo(29));
   const [to, setTo] = useState(daysAgo(0));
   const [data, setData] = useState(null);
@@ -427,71 +504,78 @@ function ReportTab() {
 
   useEffect(() => { load(); }, [load]);
 
-  const preset = days => { setFrom(daysAgo(days - 1)); setTo(daysAgo(0)); };
-
-  const rate = data && data.total > 0 ? Math.round((data.sent / data.total) * 1000) / 10 : 0;
+  const preset = days => { setFrom(daysAgo(days-1)); setTo(daysAgo(0)); };
+  const rate = data && data.total>0 ? Math.round((data.sent/data.total)*1000)/10 : 0;
 
   return (
     <div>
-      <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", padding: 14, background: "#f8fafc", borderRadius: 8, marginBottom: 20 }}>
-        <label style={{ fontSize: 13 }}>시작 <input type="date" value={from} onChange={e => setFrom(e.target.value)} style={{ ...inp, width: 160, display: "inline", marginLeft: 6 }} /></label>
-        <label style={{ fontSize: 13 }}>종료 <input type="date" value={to} onChange={e => setTo(e.target.value)} style={{ ...inp, width: 160, display: "inline", marginLeft: 6 }} /></label>
-        <div style={{ display: "flex", gap: 6, marginLeft: "auto" }}>
-          {[[7,"7일"],[30,"30일"],[90,"90일"]].map(([d, l]) => (
-            <button key={d} onClick={() => preset(d)} style={{ ...ghostBtn, fontSize: 12, padding: "5px 10px" }}>{l}</button>
+      <div style={{ display:"flex", gap:10, alignItems:"center", flexWrap:"wrap", padding:14, background:"#f8fafc", borderRadius:8, marginBottom:20 }}>
+        <label style={{ fontSize:13 }}>시작 <input type="date" value={from} onChange={e=>setFrom(e.target.value)} style={{ ...inp, width:160, display:"inline", marginLeft:6 }} /></label>
+        <label style={{ fontSize:13 }}>종료 <input type="date" value={to} onChange={e=>setTo(e.target.value)} style={{ ...inp, width:160, display:"inline", marginLeft:6 }} /></label>
+        <div style={{ display:"flex", gap:6, marginLeft:"auto" }}>
+          {[[7,"7일"],[30,"30일"],[90,"90일"]].map(([d,l]) => (
+            <button key={d} onClick={() => preset(d)} style={{ ...ghostBtn, fontSize:12, padding:"5px 10px" }}>{l}</button>
           ))}
         </div>
       </div>
-
-      {loading ? <div style={{ color: "#94a3b8", textAlign: "center", padding: 40 }}>불러오는 중...</div>
-        : !data ? <div style={{ color: "#94a3b8", textAlign: "center", padding: 40 }}>데이터를 불러올 수 없습니다.</div>
-        : (
-          <>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 24 }}>
-              {[["총 발송",data.total,"#0f172a","#fff"],["성공",data.sent,"#16a34a","#f0fdf4"],["실패",data.failed,"#dc2626","#fef2f2"],["성공률",`${rate}%`,"#2563eb","#eff6ff"]].map(([l,v,c,bg]) => (
-                <div key={l} style={{ background: bg, border: "1px solid #e2e8f0", borderRadius: 8, padding: "14px 16px" }}>
-                  <div style={{ fontSize: 11, color: "#64748b", marginBottom: 4 }}>{l}</div>
-                  <div style={{ fontSize: 22, fontWeight: 700, color: c }}>{v}</div>
-                </div>
-              ))}
-            </div>
-
-            {data.daily && data.daily.length > 0 && (
-              <div style={panel}>
-                <div style={{ fontWeight: 600, fontSize: 14, color: "#334155", marginBottom: 12 }}>일별 발송 현황</div>
-                <div style={{ overflowX: "auto" }}>
-                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                    <thead>
-                      <tr style={{ background: "#f8fafc" }}>
-                        {["날짜","성공","실패","합계"].map(h => (
-                          <th key={h} style={{ textAlign: h === "날짜" ? "left" : "right", padding: "8px 12px", color: "#64748b", fontWeight: 600, borderBottom: "1px solid #e2e8f0" }}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {data.daily.map(row => (
-                        <tr key={row.day} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                          <td style={{ padding: "8px 12px", color: "#334155" }}>{row.day}</td>
-                          <td style={{ padding: "8px 12px", textAlign: "right", color: "#16a34a", fontWeight: 600 }}>{row.sent}</td>
-                          <td style={{ padding: "8px 12px", textAlign: "right", color: "#dc2626" }}>{row.failed}</td>
-                          <td style={{ padding: "8px 12px", textAlign: "right", color: "#334155" }}>{row.sent + row.failed}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+      {loading ? <div style={{ color:"#94a3b8", textAlign:"center", padding:40 }}>불러오는 중...</div>
+       : !data ? <div style={{ color:"#94a3b8", textAlign:"center", padding:40 }}>데이터를 불러올 수 없습니다.</div>
+       : (
+        <>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(4, 1fr)", gap:12, marginBottom:24 }}>
+            {[["총 발송",data.total,"#0f172a","#fff"],["성공",data.sent,"#16a34a","#f0fdf4"],["실패",data.failed,"#dc2626","#fef2f2"],["성공률",`${rate}%`,"#2563eb","#eff6ff"]].map(([l,v,c,bg]) => (
+              <div key={l} style={{ background:bg, border:"1px solid #e2e8f0", borderRadius:8, padding:"14px 16px" }}>
+                <div style={{ fontSize:11, color:"#64748b", marginBottom:4 }}>{l}</div>
+                <div style={{ fontSize:22, fontWeight:700, color:c }}>{v}</div>
               </div>
-            )}
-          </>
-        )}
+            ))}
+          </div>
+          {data.daily && data.daily.length>0 && (
+            <div style={panel}>
+              <div style={{ fontWeight:600, fontSize:14, color:"#334155", marginBottom:12 }}>일별 발송 현황</div>
+              <div style={{ overflowX:"auto" }}>
+                <table style={{ width:"100%", borderCollapse:"collapse", fontSize:13 }}>
+                  <thead>
+                    <tr style={{ background:"#f8fafc" }}>
+                      {["날짜","성공","실패","합계"].map(h => (
+                        <th key={h} style={{ textAlign:h==="날짜"?"left":"right", padding:"8px 12px", color:"#64748b", fontWeight:600, borderBottom:"1px solid #e2e8f0" }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.daily.map(row => (
+                      <tr key={row.day} style={{ borderBottom:"1px solid #f1f5f9" }}>
+                        <td style={{ padding:"8px 12px", color:"#334155" }}>{row.day}</td>
+                        <td style={{ padding:"8px 12px", textAlign:"right", color:"#16a34a", fontWeight:600 }}>{row.sent}</td>
+                        <td style={{ padding:"8px 12px", textAlign:"right", color:"#dc2626" }}>{row.failed}</td>
+                        <td style={{ padding:"8px 12px", textAlign:"right", color:"#334155" }}>{row.sent+row.failed}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </>
+       )}
     </div>
   );
 }
 
 /* ── 메인 컴포넌트 ────────────────────────────── */
+const TABS = [
+  { key: "send", label: "발송" },
+  { key: "templates", label: "템플릿" },
+  { key: "scheduled", label: "예약" },
+  { key: "logs", label: "이력" },
+  { key: "report", label: "리포트" },
+];
+
 export default function PortalMessages() {
   const [tab, setTab] = useState("send");
   const [templates, setTemplates] = useState([]);
+  // 템플릿 탭 → 발송 탭으로 템플릿 전달
+  const [applyTpl, setApplyTpl] = useState(null);
 
   useEffect(() => {
     api.get("/portal/sms/templates")
@@ -500,31 +584,31 @@ export default function PortalMessages() {
   }, []);
 
   const handleUseTemplate = (tpl) => {
+    setApplyTpl(tpl);
     setTab("send");
-    // SendTab은 자체 상태를 가지므로 이벤트로 전달하는 대신 ref 접근은 복잡하므로
-    // 간단히 탭 전환 후 사용자가 드롭다운에서 선택하도록 안내
-    showToast(`'${tpl.name}' 템플릿 — 발송 탭의 드롭다운에서 선택하세요`);
   };
-
-  const TABS = [
-    { key: "send", label: "발송" },
-    { key: "templates", label: "템플릿" },
-    { key: "scheduled", label: "예약" },
-    { key: "logs", label: "이력" },
-    { key: "report", label: "리포트" },
-  ];
 
   return (
     <div style={{ padding: "24px 20px", maxWidth: 1000, margin: "0 auto" }}>
       <h2 style={{ fontSize: 20, fontWeight: 700, color: "#0f172a", marginBottom: 4 }}>문자 발송</h2>
       <p style={{ fontSize: 13, color: "#64748b", marginBottom: 20 }}>SMS/LMS 발송, 예약, 이력 조회 — 내부 구성원 전용</p>
 
-      <div style={{ display: "flex", borderBottom: "1px solid #e2e8f0", marginBottom: 24, overflowX: "auto" }}>
-        {TABS.map(t => <Tab key={t.key} label={t.label} active={tab === t.key} onClick={() => setTab(t.key)} />)}
-      </div>
+      <TabBar tabs={TABS} active={tab} onChange={setTab} />
 
-      {tab === "send" && <SendTab templates={templates} />}
-      {tab === "templates" && <TemplatesTab templates={templates} onUseTemplate={handleUseTemplate} />}
+      {tab === "send" && (
+        <SendTab
+          templates={templates}
+          applyTpl={applyTpl}
+          clearApply={() => setApplyTpl(null)}
+        />
+      )}
+      {tab === "templates" && (
+        <TemplatesTab
+          templates={templates}
+          onTemplatesChange={setTemplates}
+          onUseTemplate={handleUseTemplate}
+        />
+      )}
       {tab === "scheduled" && <ScheduledTab />}
       {tab === "logs" && <LogsTab />}
       {tab === "report" && <ReportTab />}
