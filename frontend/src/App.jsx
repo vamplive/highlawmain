@@ -60,6 +60,7 @@ const AdminLawyers = lazy(() => import("./pages/admin/lawyers"));
 const AdminClients = lazy(() => import("./pages/admin/clients"));
 const AdminClientDetail = lazy(() => import("./pages/admin/clients/ClientDetail"));
 const AdminMessages = lazy(() => import("./pages/admin/messages"));
+const PortalMessages = lazy(() => import("./pages/portal/PortalMessages"));
 const AdminSiteManager = lazy(() => import("./pages/admin/site-manager"));
 const AdminMedia = lazy(() => import("./pages/admin/media"));
 const AdminAnalytics = lazy(() => import("./pages/admin/analytics"));
@@ -125,7 +126,6 @@ const PortalAiSettings = lazy(() => import("./pages/portal/PortalAiSettings"));
 const PortalBookings = lazy(() => import("./pages/portal/PortalBookings"));
 const PortalClients = lazy(() => import("./pages/portal/PortalClients"));
 const PortalBlog = lazy(() => import("./pages/portal/PortalBlog"));
-const PortalMessages = lazy(() => import("./pages/portal/PortalMessages"));
 const AdminOrganization = lazy(() => import("./pages/admin/organization/AdminOrganization"));
 
 /** 지연 로딩 컴포넌트를 Suspense로 감싸는 헬퍼 */
@@ -316,7 +316,7 @@ export default function App() {
         </Route>
 
         {/* /military — 군형사·징계 전문 독립 랜딩 페이지 (Layout 없이 풀스크린) */}
-        <Route path="/military" element={<ErrorBoundary><LazyRoute><MilitaryLandingPage /></LazyRoute></ErrorBoundary>} />
+        <Route path="/military" element={<ErrorBoundary><LazyRoute><Military2LandingPage /></LazyRoute></ErrorBoundary>} />
         {/* /military2 — 군 징계사건 비대면 케어 39만원 특화 랜딩 */}
         <Route path="/military2" element={<ErrorBoundary><LazyRoute><Military2LandingPage /></LazyRoute></ErrorBoundary>} />
 

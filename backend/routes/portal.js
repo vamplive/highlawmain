@@ -442,6 +442,31 @@ router.post("/cases/:id/messages", portalAuth, async (req, res) => {
 // =============================================
 
 /** GET /api/portal/time-entries — 내 타임엔트리 목록 */
+
+/** POST /api/portal/sms/send — 내부 구성원 전용 SMS 발송 */
+router.post("/sms/send", portalAuth, internalOnly, async (req, res) => {
+  try {
+    const { recipients, content } = req.body;
+    if (!recipients || !Array.isArray(recipients) || recipients.length === 0) {
+      return res.status(400).json({ data: null, error: "수신자를 1명 이상 지정해주세요", meta: null });
+    }
+    if (!content || !content.trim()) {
+      return res.status(400).json({ data: null, error: "메시지 내용을 입력해주세요", meta: null });
+    }
+    const { sendSMS } = require("../lib/sms-service");
+    const results = [];
+    for (const r of recipients) {
+      const result = await sendSMS(r.contact, content.trim());
+      results.push({ name: r.name, contact: r.contact, success: result.success, error: result.error || null });
+    }
+    const sent = results.filter(r => r.success).length;
+    const failed = results.length - sent;
+    res.json({ data: { total: results.length, sent, failed, results }, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
 router.get("/time-entries", portalAuth, async (req, res) => {
   try {
     const { data, meta } = await portalService.listPortalTimeEntries(req.portalUser.userId, req.query);

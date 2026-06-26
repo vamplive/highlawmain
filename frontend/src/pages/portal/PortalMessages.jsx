@@ -1,496 +1,345 @@
 /**
- * 포털 메시지 — 의뢰인 SMS/이메일 발송
- * 포털에 로그인한 변호사/직원이 담당 의뢰인에게 메시지를 직접 발송
+ * 포털 문자 발송 페이지 — 내부 구성원 전용
+ * 수신자 검색(DB) 또는 직접 추가 → SMS 발송 (Aligo)
  */
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useRef, useCallback } from "react";
 import { api } from "../../utils/api";
-import { T, fieldStyle, labelStyle } from "./portalStyles";
 import { showToast } from "../../utils/showToast";
+import { getByteLength } from "../../utils/formatters";
 
-const CHANNEL_OPTIONS = [
-  { value: "sms", label: "SMS" },
-  { value: "email", label: "이메일" },
-];
+const SMS_MAX_BYTES = 90;
 
-function useDebounce(value, delay = 300) {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const t = setTimeout(() => setDebounced(value), delay);
-    return () => clearTimeout(t);
-  }, [value, delay]);
-  return debounced;
+function getInitials(name) {
+  if (!name) return "?";
+  const trimmed = name.trim();
+  return trimmed.charAt(0).toUpperCase();
+}
+
+function Avatar({ name, size = 36 }) {
+  const colors = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#06b6d4"];
+  const code = name ? name.charCodeAt(0) % colors.length : 0;
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: "50%",
+      background: colors[code],
+      display: "flex", alignItems: "center", justifyContent: "center",
+      color: "#fff", fontWeight: 700, fontSize: size * 0.42,
+      flexShrink: 0,
+    }}>
+      {getInitials(name)}
+    </div>
+  );
 }
 
 export default function PortalMessages() {
-  const [channel, setChannel] = useState("sms");
-  const [subject, setSubject] = useState("");
+  const [query, setQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  const [recipients, setRecipients] = useState([]);
+  const [directPhone, setDirectPhone] = useState("");
+  const [directName, setDirectName] = useState("");
+  const [showDirectAdd, setShowDirectAdd] = useState(false);
+
   const [content, setContent] = useState("");
   const [sending, setSending] = useState(false);
+  const [result, setResult] = useState(null);
 
-  // 수신자 목록
-  const [recipients, setRecipients] = useState([]);
+  const debounceRef = useRef(null);
+  const dropdownRef = useRef(null);
 
-  // 고객 검색
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState([]);
-  const [searching, setSearching] = useState(false);
-  const [showDropdown, setShowDropdown] = useState(false);
-  const debouncedQuery = useDebounce(searchQuery, 300);
-  const searchRef = useRef(null);
+  const byteLen = getByteLength(content);
+  const msgType = byteLen > SMS_MAX_BYTES ? "LMS" : "SMS";
 
-
-  // 최근 발송 이력
-  const [logs, setLogs] = useState([]);
-  const [logsLoading, setLogsLoading] = useState(true);
-
-  // 메시지 템플릿
-  const [templates, setTemplates] = useState([]);
-
-  useEffect(() => {
-    loadLogs();
-    loadTemplates();
-  }, []);
-
-  // 고객 검색 (이름·전화번호)
-  useEffect(() => {
-    if (!debouncedQuery.trim()) {
-      setSearchResults([]);
-      setShowDropdown(false);
-      return;
-    }
-    let cancelled = false;
-    setSearching(true);
-    api.get(`/clients?q=${encodeURIComponent(debouncedQuery)}&limit=10`)
-      .then((res) => {
-        if (!cancelled) {
-          setSearchResults(res.data ?? []);
-          setShowDropdown(true);
-        }
-      })
-      .catch(() => { if (!cancelled) setSearchResults([]); })
-      .finally(() => { if (!cancelled) setSearching(false); });
-    return () => { cancelled = true; };
-  }, [debouncedQuery]);
-
-  // 드롭다운 외부 클릭 시 닫기
-  useEffect(() => {
-    const handler = (e) => {
-      if (searchRef.current && !searchRef.current.contains(e.target)) {
-        setShowDropdown(false);
+  const searchClients = useCallback((q) => {
+    clearTimeout(debounceRef.current);
+    if (!q.trim()) { setSearchResults([]); setShowDropdown(false); return; }
+    debounceRef.current = setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        const res = await api.get(`/portal/clients?q=${encodeURIComponent(q)}&limit=10`);
+        const items = res.data?.data ?? res.data ?? [];
+        setSearchResults(Array.isArray(items) ? items : []);
+        setShowDropdown(true);
+      } catch {
+        setSearchResults([]);
+      } finally {
+        setSearchLoading(false);
       }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    }, 280);
   }, []);
 
-  const loadLogs = async () => {
-    setLogsLoading(true);
-    try {
-      const res = await api.get("/messages/logs?limit=20");
-      setLogs(res.data ?? []);
-    } catch {
-      setLogs([]);
-    } finally {
-      setLogsLoading(false);
-    }
+  const handleQueryChange = (e) => {
+    const v = e.target.value;
+    setQuery(v);
+    searchClients(v);
   };
 
-  const loadTemplates = async () => {
-    try {
-      const res = await api.get("/messages/templates");
-      setTemplates(res.data ?? []);
-    } catch {
-      setTemplates([]);
+  const addRecipient = (item) => {
+    if (!item.phone) { showToast("전화번호가 없는 의뢰인입니다"); return; }
+    if (recipients.some((r) => r.contact === item.phone)) {
+      showToast("이미 추가된 수신자입니다"); return;
     }
-  };
-
-  const applyTemplate = (tpl) => {
-    setChannel(tpl.channel || "sms");
-    setSubject(tpl.subject || "");
-    setContent(tpl.content || "");
-  };
-
-  // 검색 결과에서 고객 선택
-  const selectClient = (client) => {
-    const contact = channel === "email" ? (client.email || "") : (client.phone || "");
-    if (!contact) {
-      showToast(
-        channel === "email"
-          ? `${client.name}님의 이메일이 등록되어 있지 않습니다`
-          : `${client.name}님의 전화번호가 등록되어 있지 않습니다`,
-        "error"
-      );
-      return;
-    }
-    addRecipient({ name: client.name, contact, clientId: client.id });
-    setSearchQuery("");
+    setRecipients((prev) => [...prev, { id: item.id, name: item.name, contact: item.phone }]);
+    setQuery("");
+    setSearchResults([]);
     setShowDropdown(false);
   };
 
-  // 검색창에서 직접 추가 (Enter 또는 "직접 추가" 클릭)
-  const addSearchQueryAsRecipient = () => {
-    const contact = searchQuery.trim();
-    if (!contact) return;
-    addRecipient({ name: "", contact });
-    setSearchQuery("");
-    setShowDropdown(false);
+  const addDirect = () => {
+    const phone = directPhone.replace(/\D/g, "");
+    if (!/^0\d{7,14}$/.test(phone)) { showToast("올바른 전화번호를 입력하세요 (예: 01012345678)"); return; }
+    const name = directName.trim() || phone;
+    if (recipients.some((r) => r.contact === phone)) { showToast("이미 추가된 번호입니다"); return; }
+    setRecipients((prev) => [...prev, { id: `direct-${phone}`, name, contact: phone }]);
+    setDirectPhone(""); setDirectName(""); setShowDirectAdd(false);
   };
-
-  const addRecipient = useCallback(({ name, contact, clientId }) => {
-    const normalized = contact.trim();
-    setRecipients((prev) => {
-      if (prev.some((r) => r.contact === normalized)) {
-        showToast("이미 추가된 수신자입니다", "error");
-        return prev;
-      }
-      return [...prev, { name, contact: normalized, clientId }];
-    });
-  }, []);
 
   const removeRecipient = (contact) => {
     setRecipients((prev) => prev.filter((r) => r.contact !== contact));
   };
 
-  const handleSend = async (e) => {
-    e.preventDefault();
-    if (recipients.length === 0) return showToast("수신자를 1명 이상 추가하세요", "error");
-    if (!content.trim()) return showToast("내용을 입력하세요", "error");
-    if (channel === "email" && !subject.trim()) return showToast("이메일 제목을 입력하세요", "error");
+  const clearAll = () => {
+    if (!window.confirm("수신자 목록을 모두 삭제하시겠습니까?")) return;
+    setRecipients([]);
+  };
 
-    setSending(true);
+  const handleSend = async () => {
+    if (recipients.length === 0) { showToast("수신자를 추가해주세요"); return; }
+    if (!content.trim()) { showToast("메시지 내용을 입력해주세요"); return; }
+    if (byteLen > 2000) { showToast("메시지가 너무 깁니다 (최대 2000바이트)"); return; }
+    if (!window.confirm(`${recipients.length}명에게 ${msgType}를 발송하시겠습니까?`)) return;
+
+    setSending(true); setResult(null);
     try {
-      const res = await api.post("/messages/send", {
-        channel,
+      const res = await api.post("/portal/sms/send", {
         recipients: recipients.map((r) => ({ name: r.name, contact: r.contact })),
-        subject: channel === "email" ? subject : undefined,
-        content,
+        content: content.trim(),
       });
-      const { sent, failed, blocked } = res.data ?? {};
-      if (failed > 0 || (blocked && blocked.length > 0)) {
-        showToast(`발송 완료: ${sent}명 성공, ${failed}명 실패${blocked?.length ? `, ${blocked.length}명 수신거부` : ""}`, "error");
-      } else {
-        showToast(`${sent}명에게 발송 완료`, "success");
-      }
-      setRecipients([]);
-      setSubject("");
-      setContent("");
-      loadLogs();
+      const data = res.data;
+      setResult(data);
+      if (data.sent > 0) showToast(`${data.sent}명에게 발송 완료`);
+      if (data.failed > 0) showToast(`${data.failed}명 발송 실패`);
+      if (data.sent > 0) { setRecipients([]); setContent(""); }
     } catch (err) {
-      showToast(err.message || "발송에 실패했습니다", "error");
+      showToast("발송 실패: " + (err.message || "오류가 발생했습니다"));
     } finally {
       setSending(false);
     }
   };
 
-  const statusColor = { sent: "#2e7d32", failed: "#c62828", pending: "#e65100" };
-  const statusLabel = { sent: "발송완료", failed: "실패", pending: "대기" };
-
-  const contactPlaceholder = channel === "sms" ? "010-0000-0000" : "example@email.com";
-
   return (
-    <div>
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 20, fontWeight: 700, color: T.text, marginBottom: 6 }}>메시지 발송</h1>
-        <p style={{ fontSize: 13, color: T.textSec }}>의뢰인에게 SMS 또는 이메일을 직접 발송합니다.</p>
-      </div>
+    <div style={{ padding: "24px 20px", maxWidth: 900, margin: "0 auto" }}>
+      <h2 style={{ fontSize: 20, fontWeight: 700, color: "#0f172a", marginBottom: 4 }}>문자 발송</h2>
+      <p style={{ fontSize: 13, color: "#64748b", marginBottom: 24 }}>의뢰인에게 SMS/LMS를 발송합니다. 내부 구성원 전용 기능입니다.</p>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 24 }}>
-        {/* 발송 폼 */}
-        <div>
-          <form onSubmit={handleSend} style={{ background: "#fff", borderRadius: 12, border: `1px solid ${T.border}`, padding: 24, marginBottom: 24 }}>
-            <h3 style={{ fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 18 }}>새 메시지 작성</h3>
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(280px,360px) minmax(0,1fr)", gap: 20, alignItems: "start" }}>
 
-            {/* 채널 선택 */}
-            <div style={{ marginBottom: 20 }}>
-              <label style={labelStyle}>발송 채널</label>
-              <div style={{ display: "flex", gap: 8 }}>
-                {CHANNEL_OPTIONS.map(opt => (
+        {/* 수신자 패널 */}
+        <section style={panelStyle}>
+          <div style={{ fontWeight: 600, fontSize: 14, color: "#334155", marginBottom: 12 }}>수신자</div>
+
+          {/* 검색 */}
+          <div style={{ position: "relative" }} ref={dropdownRef}>
+            <input
+              type="text"
+              value={query}
+              onChange={handleQueryChange}
+              onFocus={() => query && setShowDropdown(true)}
+              onBlur={() => setTimeout(() => setShowDropdown(false), 180)}
+              placeholder="의뢰인 이름 또는 전화번호 검색..."
+              style={inputStyle}
+            />
+            {showDropdown && (
+              <div style={{
+                position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0,
+                background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8,
+                boxShadow: "0 4px 16px rgba(15,23,42,0.10)", zIndex: 200,
+                maxHeight: 260, overflowY: "auto",
+              }}>
+                {searchLoading ? (
+                  <div style={{ padding: "12px 14px", color: "#94a3b8", fontSize: 13 }}>검색 중...</div>
+                ) : searchResults.length === 0 ? (
+                  <div style={{ padding: "12px 14px", color: "#94a3b8", fontSize: 13 }}>검색 결과 없음</div>
+                ) : searchResults.map((item) => (
                   <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => { setChannel(opt.value); setRecipients([]); }}
+                    key={item.id}
+                    onMouseDown={() => addRecipient(item)}
                     style={{
-                      padding: "8px 20px", fontSize: 13, fontWeight: 600, borderRadius: 6, cursor: "pointer",
-                      border: `1px solid ${channel === opt.value ? T.accent : T.border}`,
-                      background: channel === opt.value ? "rgba(201,168,76,0.08)" : "transparent",
-                      color: channel === opt.value ? T.accent : T.textSec,
+                      display: "flex", alignItems: "center", gap: 10,
+                      width: "100%", padding: "9px 14px", border: "none",
+                      background: "transparent", cursor: "pointer", textAlign: "left",
                     }}
+                    onMouseEnter={e => e.currentTarget.style.background = "#f8fafc"}
+                    onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                   >
-                    {opt.label}
+                    <Avatar name={item.name} size={30} />
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>{item.name}</div>
+                      <div style={{ fontSize: 12, color: "#64748b" }}>{item.phone || "번호 없음"}</div>
+                    </div>
                   </button>
                 ))}
               </div>
-            </div>
-
-            {/* 수신자 추가 */}
-            <div style={{ marginBottom: 20 }}>
-              <label style={labelStyle}>수신자 추가 *</label>
-
-              {/* 고객 검색 */}
-              <div ref={searchRef} style={{ position: "relative", marginBottom: 8 }}>
-                <div style={{ position: "relative" }}>
-                  <input
-                    style={{ ...fieldStyle, paddingRight: 36 }}
-                    value={searchQuery}
-                    onChange={(e) => { setSearchQuery(e.target.value); setShowDropdown(true); }}
-                    onFocus={() => setShowDropdown(true)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        if (searchResults.length > 0) {
-                          selectClient(searchResults[0]);
-                        } else if (searchQuery.trim()) {
-                          addSearchQueryAsRecipient();
-                        }
-                      }
-                    }}
-                    placeholder="이름·전화번호 검색 또는 직접 입력 후 Enter"
-                  />
-                  {searching && (
-                    <span style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", fontSize: 12, color: T.textMuted }}>
-                      검색 중...
-                    </span>
-                  )}
-                </div>
-
-                {/* 검색 결과 드롭다운 */}
-                {showDropdown && !searching && debouncedQuery.trim() && (
-                  <div style={{
-                    position: "absolute", top: "100%", left: 0, right: 0, zIndex: 100,
-                    background: "#fff", border: `1px solid ${T.border}`, borderRadius: 8,
-                    boxShadow: "0 4px 16px rgba(0,0,0,0.1)", maxHeight: 280, overflowY: "auto",
-                    marginTop: 4,
-                  }}>
-                    {/* DB 검색 결과 */}
-                    {searchResults.map((client) => {
-                      const contact = channel === "email" ? client.email : client.phone;
-                      return (
-                        <button
-                          key={client.id}
-                          type="button"
-                          onClick={() => selectClient(client)}
-                          style={{
-                            width: "100%", padding: "10px 14px", textAlign: "left",
-                            background: "transparent", border: "none", cursor: "pointer",
-                            borderBottom: `1px solid ${T.border}`, display: "flex",
-                            alignItems: "center", justifyContent: "space-between", gap: 8,
-                          }}
-                          onMouseEnter={(e) => e.currentTarget.style.background = "#f9f7f2"}
-                          onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
-                        >
-                          <div>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{client.name}</div>
-                            <div style={{ fontSize: 11, color: T.textSec }}>
-                              {contact || <span style={{ color: "#c62828" }}>{channel === "email" ? "이메일 없음" : "전화번호 없음"}</span>}
-                              {client.category && <span style={{ marginLeft: 6, color: T.textMuted }}>· {client.category}</span>}
-                            </div>
-                          </div>
-                          <span style={{ fontSize: 11, color: T.accent, flexShrink: 0 }}>+ 추가</span>
-                        </button>
-                      );
-                    })}
-                    {/* 항상 표시: 입력값 그대로 직접 추가 */}
-                    <button
-                      type="button"
-                      onClick={addSearchQueryAsRecipient}
-                      style={{
-                        width: "100%", padding: "10px 14px", textAlign: "left",
-                        background: "transparent", border: "none", cursor: "pointer",
-                        display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8,
-                        borderTop: searchResults.length > 0 ? `1px solid ${T.border}` : "none",
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = "#f0f9ff"}
-                      onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
-                    >
-                      <span style={{ fontSize: 13, color: T.textSec }}>
-                        <span style={{ fontWeight: 600, color: T.text }}>{debouncedQuery}</span> 번호로 직접 추가
-                      </span>
-                      <span style={{ fontSize: 11, color: T.accent, flexShrink: 0 }}>+ 추가</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* 선택된 수신자 목록 */}
-              {recipients.length > 0 && (
-                <div style={{
-                  marginTop: 10, border: `1px solid ${T.border}`, borderRadius: 8,
-                  overflow: "hidden",
-                }}>
-                  <div style={{
-                    padding: "8px 14px", background: "#f8f8f8",
-                    borderBottom: `1px solid ${T.border}`,
-                    display: "flex", alignItems: "center", justifyContent: "space-between",
-                  }}>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: T.textSec }}>
-                      수신자 목록 ({recipients.length}명)
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setRecipients([])}
-                      style={{ fontSize: 11, color: T.textMuted, background: "none", border: "none", cursor: "pointer" }}
-                    >
-                      전체 삭제
-                    </button>
-                  </div>
-                  {recipients.map((r, i) => (
-                    <div
-                      key={r.contact}
-                      style={{
-                        display: "flex", alignItems: "center", justifyContent: "space-between",
-                        padding: "9px 14px",
-                        borderBottom: i < recipients.length - 1 ? `1px solid ${T.border}` : "none",
-                        background: "#fff",
-                      }}
-                    >
-                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <div style={{
-                          width: 28, height: 28, borderRadius: "50%", flexShrink: 0,
-                          background: "rgba(201,168,76,0.15)", display: "flex",
-                          alignItems: "center", justifyContent: "center",
-                          fontSize: 12, fontWeight: 700, color: T.accent,
-                        }}>
-                          {r.name ? r.name.charAt(0) : "#"}
-                        </div>
-                        <div>
-                          {r.name && <div style={{ fontSize: 13, fontWeight: 600, color: T.text, lineHeight: 1.3 }}>{r.name}</div>}
-                          <div style={{ fontSize: 12, color: T.textSec }}>{r.contact}</div>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => removeRecipient(r.contact)}
-                        style={{
-                          background: "none", border: "none", cursor: "pointer",
-                          color: T.textMuted, fontSize: 18, padding: "0 4px", lineHeight: 1,
-                        }}
-                        title="제거"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* 이메일 제목 */}
-            {channel === "email" && (
-              <div style={{ marginBottom: 16 }}>
-                <label style={labelStyle}>제목 *</label>
-                <input style={fieldStyle} value={subject} onChange={e => setSubject(e.target.value)} placeholder="이메일 제목" />
-              </div>
             )}
+          </div>
 
-            {/* 내용 */}
-            <div style={{ marginBottom: 20 }}>
-              <label style={labelStyle}>내용 *</label>
-              <textarea
-                style={{ ...fieldStyle, height: 140, resize: "vertical" }}
-                value={content}
-                onChange={e => setContent(e.target.value)}
-                placeholder="메시지 내용을 입력하세요"
+          {/* 직접 추가 */}
+          <button
+            onClick={() => setShowDirectAdd((v) => !v)}
+            style={{ ...ghostBtnStyle, marginTop: 8, width: "100%" }}
+          >
+            + 직접 추가
+          </button>
+
+          {showDirectAdd && (
+            <div style={{ marginTop: 10, padding: 12, background: "#f8fafc", borderRadius: 8, border: "1px solid #e2e8f0" }}>
+              <input
+                type="text"
+                placeholder="이름 (선택)"
+                value={directName}
+                onChange={(e) => setDirectName(e.target.value)}
+                style={{ ...inputStyle, marginBottom: 6 }}
               />
-              {channel === "sms" && (
-                <div style={{ fontSize: 11, color: T.textMuted, marginTop: 4, textAlign: "right" }}>
-                  {content.length}자 (90바이트 초과 시 LMS로 발송)
-                </div>
-              )}
-            </div>
-
-            <button
-              type="submit"
-              disabled={sending || recipients.length === 0}
-              style={{
-                width: "100%", padding: "12px 0", fontSize: 14, fontWeight: 700,
-                color: "#fff", background: T.accent, border: "none", borderRadius: 6,
-                cursor: (sending || recipients.length === 0) ? "default" : "pointer",
-                opacity: (sending || recipients.length === 0) ? 0.5 : 1,
-              }}
-            >
-              {sending ? "발송 중..." : `${recipients.length > 0 ? `${recipients.length}명에게 ` : ""}발송`}
-            </button>
-          </form>
-
-          {/* 최근 발송 이력 */}
-          <div style={{ background: "#fff", borderRadius: 12, border: `1px solid ${T.border}`, padding: 24 }}>
-            <h3 style={{ fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 16 }}>최근 발송 이력</h3>
-            {logsLoading ? (
-              <p style={{ color: T.textMuted, textAlign: "center", padding: 24 }}>로딩 중...</p>
-            ) : logs.length === 0 ? (
-              <p style={{ color: T.textMuted, textAlign: "center", padding: 24 }}>발송 이력이 없습니다</p>
-            ) : (
-              <div>
-                {logs.map((log, i) => (
-                  <div key={log.id} style={{
-                    padding: "12px 0", borderBottom: i < logs.length - 1 ? `1px solid ${T.border}` : "none",
-                    display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12,
-                  }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 13, fontWeight: 500, color: T.text, marginBottom: 2 }}>
-                        <span style={{ fontSize: 11, padding: "2px 6px", borderRadius: 4, background: "#f0f0f0", color: T.textSec, marginRight: 6 }}>
-                          {log.channel === "sms" ? "SMS" : "이메일"}
-                        </span>
-                        {log.recipientContact}
-                        {log.recipientName && <span style={{ fontSize: 12, color: T.textSec, marginLeft: 6 }}>{log.recipientName}</span>}
-                      </div>
-                      <div style={{ fontSize: 12, color: T.textSec, marginBottom: 2 }}>{log.content?.slice(0, 60)}{(log.content?.length > 60) ? "..." : ""}</div>
-                      <div style={{ fontSize: 11, color: T.textMuted }}>{log.sentAt ? new Date(log.sentAt).toLocaleString("ko-KR") : log.createdAt ? new Date(log.createdAt).toLocaleString("ko-KR") : ""}</div>
-                    </div>
-                    <div>
-                      <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 8, background: "#f5f5f5", color: statusColor[log.status] || T.textMuted }}>
-                        {statusLabel[log.status] || log.status}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+              <input
+                type="tel"
+                placeholder="전화번호 (예: 01012345678)"
+                value={directPhone}
+                onChange={(e) => setDirectPhone(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && addDirect()}
+                style={{ ...inputStyle, marginBottom: 8 }}
+              />
+              <div style={{ display: "flex", gap: 6 }}>
+                <button onClick={addDirect} style={primarySmBtnStyle}>추가</button>
+                <button onClick={() => { setShowDirectAdd(false); setDirectPhone(""); setDirectName(""); }} style={ghostBtnStyle}>취소</button>
               </div>
-            )}
-          </div>
-        </div>
-
-        {/* 템플릿 사이드바 */}
-        <div>
-          <div style={{ background: "#fff", borderRadius: 12, border: `1px solid ${T.border}`, padding: 20 }}>
-            <h3 style={{ fontSize: 14, fontWeight: 700, color: T.text, marginBottom: 14 }}>메시지 템플릿</h3>
-            {templates.length === 0 ? (
-              <p style={{ fontSize: 12, color: T.textMuted }}>
-                등록된 템플릿이 없습니다.
-                <br /><a href="/admin/messages" target="_blank" rel="noreferrer" style={{ color: T.accent }}>관리자 페이지</a>에서 추가하세요.
-              </p>
-            ) : templates.map(tpl => (
-              <button
-                key={tpl.id}
-                onClick={() => applyTemplate(tpl)}
-                style={{
-                  width: "100%", padding: "10px 12px", marginBottom: 8, fontSize: 12,
-                  textAlign: "left", border: `1px solid ${T.border}`, borderRadius: 6,
-                  background: "transparent", cursor: "pointer", color: T.text,
-                }}
-              >
-                <div style={{ fontWeight: 600, marginBottom: 2 }}>{tpl.name}</div>
-                <div style={{ color: T.textSec, fontSize: 11 }}>{tpl.content?.slice(0, 50)}...</div>
-              </button>
-            ))}
-          </div>
-
-          {/* 알리고 설정 안내 */}
-          <div style={{ background: "#fffdf5", borderRadius: 12, border: `1px solid rgba(201,168,76,0.3)`, padding: 20, marginTop: 16 }}>
-            <h3 style={{ fontSize: 14, fontWeight: 700, color: T.text, marginBottom: 10 }}>📱 SMS 발송 설정</h3>
-            <p style={{ fontSize: 12, color: T.textSec, lineHeight: 1.6, marginBottom: 0 }}>
-              SMS 발송은 <strong>알리고(Aligo)</strong> 서비스를 통해 이루어집니다.
-              서버의 <code style={{ background: "#f5f5f5", padding: "1px 4px", borderRadius: 3 }}>.env</code> 파일에
-              아래 항목이 설정되어야 합니다:
-            </p>
-            <div style={{ marginTop: 10, fontSize: 11, fontFamily: "monospace", background: "#f5f5f5", padding: 10, borderRadius: 6, color: "#333", lineHeight: 1.8 }}>
-              ALIGO_API_KEY=발급받은키<br />
-              ALIGO_USER_ID=알리고아이디<br />
-              ALIGO_SENDER=발신번호<br />
-              ALIGO_TEST_MODE=N
             </div>
+          )}
+
+          {/* 수신자 목록 */}
+          {recipients.length > 0 && (
+            <div style={{ marginTop: 14 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                <span style={{ fontSize: 12, color: "#64748b" }}>{recipients.length}명 선택됨</span>
+                <button onClick={clearAll} style={{ ...ghostBtnStyle, color: "#ef4444", fontSize: 12, padding: "3px 8px" }}>전체 삭제</button>
+              </div>
+              <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 6 }}>
+                {recipients.map((r) => (
+                  <li key={r.contact} style={{
+                    display: "flex", alignItems: "center", gap: 10,
+                    padding: "8px 10px", borderRadius: 8,
+                    background: "#f1f5f9", border: "1px solid #e2e8f0",
+                  }}>
+                    <Avatar name={r.name} size={32} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name}</div>
+                      <div style={{ fontSize: 12, color: "#64748b" }}>{r.contact}</div>
+                    </div>
+                    <button
+                      onClick={() => removeRecipient(r.contact)}
+                      title="삭제"
+                      style={{
+                        background: "none", border: "none", cursor: "pointer",
+                        color: "#94a3b8", fontSize: 16, padding: "2px 4px", lineHeight: 1,
+                        flexShrink: 0,
+                      }}
+                    >✕</button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </section>
+
+        {/* 메시지 작성 패널 */}
+        <section style={panelStyle}>
+          <div style={{ fontWeight: 600, fontSize: 14, color: "#334155", marginBottom: 12 }}>메시지 내용</div>
+
+          <textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="발송할 메시지를 입력하세요..."
+            rows={10}
+            style={{
+              width: "100%", boxSizing: "border-box",
+              border: "1px solid #e2e8f0", borderRadius: 8,
+              padding: "10px 12px", fontSize: 14, color: "#0f172a",
+              resize: "vertical", lineHeight: 1.6, outline: "none",
+              fontFamily: "inherit",
+            }}
+          />
+
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8, marginBottom: 20 }}>
+            <div style={{ fontSize: 12, color: byteLen > 2000 ? "#ef4444" : byteLen > SMS_MAX_BYTES ? "#f59e0b" : "#64748b" }}>
+              {byteLen}B · <strong>{msgType}</strong>
+              {byteLen > SMS_MAX_BYTES && byteLen <= 2000 && <span style={{ color: "#f59e0b", marginLeft: 4 }}>※ 장문(LMS) 발송</span>}
+              {byteLen > 2000 && <span style={{ color: "#ef4444", marginLeft: 4 }}>최대 초과</span>}
+            </div>
+            <div style={{ fontSize: 12, color: "#94a3b8" }}>SMS: 90B 이하 / LMS: 2000B 이하</div>
           </div>
-        </div>
+
+          <button
+            onClick={handleSend}
+            disabled={sending || recipients.length === 0 || !content.trim() || byteLen > 2000}
+            style={{
+              width: "100%", padding: "12px 0",
+              background: sending || recipients.length === 0 || !content.trim() || byteLen > 2000 ? "#cbd5e1" : "#2563eb",
+              color: "#fff", border: "none", borderRadius: 8,
+              fontWeight: 700, fontSize: 15, cursor: sending ? "wait" : "pointer",
+              transition: "background .15s",
+            }}
+          >
+            {sending ? "발송 중..." : `${recipients.length}명에게 발송`}
+          </button>
+
+          {result && (
+            <div style={{
+              marginTop: 16, padding: 14,
+              background: result.failed === 0 ? "#f0fdf4" : "#fff7ed",
+              border: `1px solid ${result.failed === 0 ? "#86efac" : "#fed7aa"}`,
+              borderRadius: 8, fontSize: 13,
+            }}>
+              <div style={{ fontWeight: 700, color: result.failed === 0 ? "#16a34a" : "#c2410c", marginBottom: 6 }}>
+                {result.failed === 0 ? "발송 완료" : "일부 발송 실패"}
+              </div>
+              <div style={{ color: "#475569" }}>총 {result.total}명 · 성공 {result.sent}명 · 실패 {result.failed}명</div>
+              {result.results?.filter(r => !r.success).map((r, i) => (
+                <div key={i} style={{ marginTop: 4, color: "#ef4444", fontSize: 12 }}>
+                  ✕ {r.name} ({r.contact}): {r.error}
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
       </div>
     </div>
   );
 }
+
+const panelStyle = {
+  background: "#fff",
+  border: "1px solid #e2e8f0",
+  borderRadius: 10,
+  padding: 18,
+  boxShadow: "0 1px 3px rgba(15,23,42,0.06)",
+};
+
+const inputStyle = {
+  width: "100%", boxSizing: "border-box",
+  border: "1px solid #e2e8f0", borderRadius: 8,
+  padding: "9px 12px", fontSize: 13, color: "#0f172a",
+  outline: "none", fontFamily: "inherit",
+};
+
+const ghostBtnStyle = {
+  background: "none", border: "1px solid #e2e8f0", borderRadius: 6,
+  padding: "6px 12px", fontSize: 13, color: "#475569",
+  cursor: "pointer", fontFamily: "inherit",
+};
+
+const primarySmBtnStyle = {
+  background: "#2563eb", border: "none", borderRadius: 6,
+  padding: "6px 14px", fontSize: 13, color: "#fff",
+  cursor: "pointer", fontWeight: 600, fontFamily: "inherit",
+};
