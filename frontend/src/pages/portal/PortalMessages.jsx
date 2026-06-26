@@ -254,13 +254,14 @@ export default function PortalMessages() {
                 </div>
 
                 {/* 검색 결과 드롭다운 */}
-                {showDropdown && searchResults.length > 0 && (
+                {showDropdown && !searching && debouncedQuery.trim() && (
                   <div style={{
                     position: "absolute", top: "100%", left: 0, right: 0, zIndex: 100,
                     background: "#fff", border: `1px solid ${T.border}`, borderRadius: 8,
-                    boxShadow: "0 4px 16px rgba(0,0,0,0.1)", maxHeight: 240, overflowY: "auto",
+                    boxShadow: "0 4px 16px rgba(0,0,0,0.1)", maxHeight: 280, overflowY: "auto",
                     marginTop: 4,
                   }}>
+                    {/* DB 검색 결과 */}
                     {searchResults.map((client) => {
                       const contact = channel === "email" ? client.email : client.phone;
                       return (
@@ -288,32 +289,23 @@ export default function PortalMessages() {
                         </button>
                       );
                     })}
-                  </div>
-                )}
-                {showDropdown && searchResults.length === 0 && !searching && debouncedQuery.trim() && (
-                  <div style={{
-                    position: "absolute", top: "100%", left: 0, right: 0, zIndex: 100,
-                    background: "#fff", border: `1px solid ${T.border}`, borderRadius: 8,
-                    boxShadow: "0 4px 16px rgba(0,0,0,0.1)", marginTop: 4,
-                  }}>
-                    <div style={{ padding: "10px 14px", fontSize: 12, color: T.textMuted, borderBottom: `1px solid ${T.border}` }}>
-                      등록된 고객 없음
-                    </div>
+                    {/* 항상 표시: 입력값 그대로 직접 추가 */}
                     <button
                       type="button"
                       onClick={addSearchQueryAsRecipient}
                       style={{
                         width: "100%", padding: "10px 14px", textAlign: "left",
                         background: "transparent", border: "none", cursor: "pointer",
-                        display: "flex", alignItems: "center", justifyContent: "space-between",
+                        display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8,
+                        borderTop: searchResults.length > 0 ? `1px solid ${T.border}` : "none",
                       }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = "#f9f7f2"}
+                      onMouseEnter={(e) => e.currentTarget.style.background = "#f0f9ff"}
                       onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
                     >
-                      <span style={{ fontSize: 13, color: T.text }}>
-                        <strong>{debouncedQuery}</strong> 직접 추가
+                      <span style={{ fontSize: 13, color: T.textSec }}>
+                        <span style={{ fontWeight: 600, color: T.text }}>{debouncedQuery}</span> 번호로 직접 추가
                       </span>
-                      <span style={{ fontSize: 11, color: T.accent }}>+ 추가</span>
+                      <span style={{ fontSize: 11, color: T.accent, flexShrink: 0 }}>+ 추가</span>
                     </button>
                   </div>
                 )}
