@@ -38,8 +38,6 @@ export default function PortalMessages() {
   const debouncedQuery = useDebounce(searchQuery, 300);
   const searchRef = useRef(null);
 
-  // 직접 입력 (DB에 없는 번호)
-  const [manualContact, setManualContact] = useState("");
 
   // 최근 발송 이력
   const [logs, setLogs] = useState([]);
@@ -129,12 +127,13 @@ export default function PortalMessages() {
     setShowDropdown(false);
   };
 
-  // 직접 입력으로 수신자 추가
-  const addManualContact = () => {
-    const contact = manualContact.trim();
+  // 검색창에서 직접 추가 (Enter 또는 "직접 추가" 클릭)
+  const addSearchQueryAsRecipient = () => {
+    const contact = searchQuery.trim();
     if (!contact) return;
     addRecipient({ name: "", contact });
-    setManualContact("");
+    setSearchQuery("");
+    setShowDropdown(false);
   };
 
   const addRecipient = useCallback(({ name, contact, clientId }) => {
@@ -233,9 +232,19 @@ export default function PortalMessages() {
                   <input
                     style={{ ...fieldStyle, paddingRight: 36 }}
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onFocus={() => searchResults.length > 0 && setShowDropdown(true)}
-                    placeholder="이름 또는 전화번호로 고객 검색..."
+                    onChange={(e) => { setSearchQuery(e.target.value); setShowDropdown(true); }}
+                    onFocus={() => setShowDropdown(true)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        if (searchResults.length > 0) {
+                          selectClient(searchResults[0]);
+                        } else if (searchQuery.trim()) {
+                          addSearchQueryAsRecipient();
+                        }
+                      }
+                    }}
+                    placeholder="이름·전화번호 검색 또는 직접 입력 후 Enter"
                   />
                   {searching && (
                     <span style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", fontSize: 12, color: T.textMuted }}>
@@ -285,34 +294,29 @@ export default function PortalMessages() {
                   <div style={{
                     position: "absolute", top: "100%", left: 0, right: 0, zIndex: 100,
                     background: "#fff", border: `1px solid ${T.border}`, borderRadius: 8,
-                    boxShadow: "0 4px 16px rgba(0,0,0,0.1)", padding: "12px 14px",
-                    marginTop: 4, fontSize: 13, color: T.textMuted,
+                    boxShadow: "0 4px 16px rgba(0,0,0,0.1)", marginTop: 4,
                   }}>
-                    검색 결과가 없습니다
+                    <div style={{ padding: "10px 14px", fontSize: 12, color: T.textMuted, borderBottom: `1px solid ${T.border}` }}>
+                      등록된 고객 없음
+                    </div>
+                    <button
+                      type="button"
+                      onClick={addSearchQueryAsRecipient}
+                      style={{
+                        width: "100%", padding: "10px 14px", textAlign: "left",
+                        background: "transparent", border: "none", cursor: "pointer",
+                        display: "flex", alignItems: "center", justifyContent: "space-between",
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = "#f9f7f2"}
+                      onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                    >
+                      <span style={{ fontSize: 13, color: T.text }}>
+                        <strong>{debouncedQuery}</strong> 직접 추가
+                      </span>
+                      <span style={{ fontSize: 11, color: T.accent }}>+ 추가</span>
+                    </button>
                   </div>
                 )}
-              </div>
-
-              {/* 직접 입력 */}
-              <div style={{ display: "flex", gap: 8 }}>
-                <input
-                  style={{ ...fieldStyle, flex: 1, marginBottom: 0 }}
-                  value={manualContact}
-                  onChange={(e) => setManualContact(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addManualContact())}
-                  placeholder={`직접 입력: ${contactPlaceholder}`}
-                />
-                <button
-                  type="button"
-                  onClick={addManualContact}
-                  style={{
-                    padding: "0 16px", fontSize: 13, fontWeight: 600, borderRadius: 6, cursor: "pointer",
-                    border: `1px solid ${T.accent}`, background: "rgba(201,168,76,0.08)", color: T.accent,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  추가
-                </button>
               </div>
 
               {/* 선택된 수신자 태그 */}
