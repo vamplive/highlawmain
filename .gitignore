@@ -54,3 +54,14 @@ npm-debug.log*
 
 # Claude Code 설정
 .claude/
+
+# 환경변수 백업 (민감정보)
+backend/.env.save
+
+# 운영 DB (깃에서 완전히 제외 — 별도 백업 관리)
+backend/highlaw.db
+backend/*.db
+
+# 중첩 frontend 구조 잔재 (배포 자동화로 생성된 임시 폴더)
+frontend/frontend/
+frontend/FETCH_HEAD
