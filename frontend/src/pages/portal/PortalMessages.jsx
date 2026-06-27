@@ -1,7 +1,6 @@
 /**
  * 포털 문자 발송 — 발송 · 템플릿 · 예약 · 이력 · 리포트
- * - 내부 구성원: 발송·예약·템플릿 CRUD 가능
- * - 모든 포털 사용자: 템플릿 열람 가능
+ * 채널: SMS/LMS (알리고) | 카카오 알림톡 (알리고 카카오)
  */
 import { useState, useEffect, useRef, useCallback } from "react";
 import { api } from "../../utils/api";
@@ -16,6 +15,8 @@ const inp = { width: "100%", boxSizing: "border-box", border: "1px solid #e2e8f0
 const ghostBtn = { background: "none", border: "1px solid #e2e8f0", borderRadius: 6, padding: "6px 12px", fontSize: 13, color: "#475569", cursor: "pointer", fontFamily: "inherit" };
 const primaryBtn = { background: "#2563eb", border: "none", borderRadius: 6, padding: "6px 14px", fontSize: 13, color: "#fff", cursor: "pointer", fontWeight: 600, fontFamily: "inherit" };
 const dangerBtn = { background: "none", border: "1px solid #fca5a5", borderRadius: 6, padding: "6px 12px", fontSize: 13, color: "#dc2626", cursor: "pointer", fontFamily: "inherit" };
+const kakaoColor = "#FEE500";
+const kakaoTextColor = "#3C1E1E";
 
 function TabBar({ tabs, active, onChange }) {
   return (
@@ -25,9 +26,28 @@ function TabBar({ tabs, active, onChange }) {
           padding: "10px 20px", fontSize: 14, fontWeight: active === t.key ? 700 : 400,
           color: active === t.key ? "#2563eb" : "#64748b", background: "none", border: "none",
           borderBottom: active === t.key ? "2px solid #2563eb" : "2px solid transparent",
-          cursor: "pointer", transition: "all .15s", whiteSpace: "nowrap",
+          cursor: "pointer", whiteSpace: "nowrap",
         }}>{t.label}</button>
       ))}
+    </div>
+  );
+}
+
+function ChannelToggle({ channel, onChange }) {
+  const btn = (key, label, emoji) => (
+    <button onClick={() => onChange(key)} style={{
+      flex: 1, padding: "10px 0", fontSize: 13, fontWeight: channel === key ? 700 : 400,
+      color: channel === key ? (key === "kakao" ? kakaoTextColor : "#fff") : "#64748b",
+      background: channel === key ? (key === "kakao" ? kakaoColor : "#2563eb") : "#f8fafc",
+      border: "1px solid " + (channel === key ? (key === "kakao" ? "#d4c000" : "#1d4ed8") : "#e2e8f0"),
+      borderRadius: key === "sms" ? "8px 0 0 8px" : "0 8px 8px 0",
+      cursor: "pointer", transition: "all .15s",
+    }}>{emoji} {label}</button>
+  );
+  return (
+    <div style={{ display: "flex", marginBottom: 16 }}>
+      {btn("sms", "SMS / LMS", "💬")}
+      {btn("kakao", "카카오 알림톡", "🟡")}
     </div>
   );
 }
@@ -51,6 +71,11 @@ function StatusBadge({ status }) {
   return <Badge text={label} color={color} bg={bg} />;
 }
 
+function ChannelBadge({ channel }) {
+  if (channel === "kakao") return <Badge text="카카오" color={kakaoTextColor} bg={kakaoColor} />;
+  return <Badge text="SMS" color="#2563eb" bg="#eff6ff" />;
+}
+
 function Pagination({ page, totalPages, onPage }) {
   if (totalPages <= 1) return null;
   return (
@@ -67,32 +92,15 @@ function fmtDate(s) {
   return new Date(s.replace(" ", "T")).toLocaleString("ko-KR", { year: "2-digit", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
 }
 
-/* ── 발송 탭 ─────────────────────────────────── */
-function SendTab({ templates, applyTpl, clearApply }) {
+/* ── 수신자 패널 (공통) ───────────────────────── */
+function RecipientPanel({ recipients, onAdd, onRemove, onClear }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [showDrop, setShowDrop] = useState(false);
-  const [recipients, setRecipients] = useState([]);
   const [directPhone, setDirectPhone] = useState("");
   const [directName, setDirectName] = useState("");
   const [showDirect, setShowDirect] = useState(false);
-  const [selectedTpl, setSelectedTpl] = useState("");
-  const [content, setContent] = useState("");
-  const [scheduleMode, setScheduleMode] = useState(false);
-  const [scheduledAt, setScheduledAt] = useState("");
-  const [sending, setSending] = useState(false);
-  const [result, setResult] = useState(null);
   const debRef = useRef(null);
-  const bytes = getByteLength(content);
-  const msgType = bytes > SMS_MAX ? "LMS" : "SMS";
-
-  // 템플릿 탭에서 "이 템플릿 사용" 클릭 시 자동 적용
-  useEffect(() => {
-    if (!applyTpl) return;
-    setSelectedTpl(String(applyTpl.id));
-    setContent(applyTpl.content);
-    clearApply();
-  }, [applyTpl, clearApply]);
 
   const search = (q) => {
     clearTimeout(debRef.current);
@@ -109,18 +117,88 @@ function SendTab({ templates, applyTpl, clearApply }) {
 
   const addFromDB = (item) => {
     if (!item.phone) { showToast("전화번호가 없는 의뢰인입니다"); return; }
-    if (recipients.some(r => r.contact === item.phone)) { showToast("이미 추가됨"); return; }
-    setRecipients(p => [...p, { id: item.id, name: item.name, contact: item.phone }]);
+    onAdd({ id: item.id, name: item.name, contact: item.phone });
     setQuery(""); setResults([]); setShowDrop(false);
   };
 
   const addDirect = () => {
     const phone = directPhone.replace(/\D/g, "");
     if (!/^0\d{7,14}$/.test(phone)) { showToast("올바른 전화번호를 입력하세요"); return; }
-    if (recipients.some(r => r.contact === phone)) { showToast("이미 추가됨"); return; }
-    setRecipients(p => [...p, { id: `d-${phone}`, name: directName.trim() || phone, contact: phone }]);
+    onAdd({ id: `d-${phone}`, name: directName.trim() || phone, contact: phone });
     setDirectPhone(""); setDirectName(""); setShowDirect(false);
   };
+
+  return (
+    <section style={panel}>
+      <div style={{ fontWeight: 600, fontSize: 14, color: "#334155", marginBottom: 12 }}>수신자</div>
+      <div style={{ position: "relative" }}>
+        <input type="text" value={query} onChange={e => { setQuery(e.target.value); search(e.target.value); }} onFocus={() => query && setShowDrop(true)} onBlur={() => setTimeout(() => setShowDrop(false), 180)} placeholder="이름 또는 전화번호 검색..." style={inp} />
+        {showDrop && (
+          <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8, boxShadow: "0 4px 16px rgba(15,23,42,.10)", zIndex: 200, maxHeight: 240, overflowY: "auto" }}>
+            {results.length === 0
+              ? <div style={{ padding: "12px 14px", color: "#94a3b8", fontSize: 13 }}>결과 없음</div>
+              : results.map(item => (
+                <button key={item.id} onMouseDown={() => addFromDB(item)} style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "8px 14px", border: "none", background: "transparent", cursor: "pointer", textAlign: "left" }}
+                  onMouseEnter={e => e.currentTarget.style.background="#f8fafc"} onMouseLeave={e => e.currentTarget.style.background="transparent"}>
+                  <Avatar name={item.name} size={28} />
+                  <div><div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>{item.name}</div><div style={{ fontSize: 12, color: "#64748b" }}>{item.phone||"번호 없음"}</div></div>
+                </button>
+              ))}
+          </div>
+        )}
+      </div>
+      <button onClick={() => setShowDirect(v => !v)} style={{ ...ghostBtn, marginTop: 8, width: "100%" }}>+ 직접 추가</button>
+      {showDirect && (
+        <div style={{ marginTop: 10, padding: 12, background: "#f8fafc", borderRadius: 8, border: "1px solid #e2e8f0" }}>
+          <input type="text" placeholder="이름 (선택)" value={directName} onChange={e => setDirectName(e.target.value)} style={{ ...inp, marginBottom: 6 }} />
+          <input type="tel" placeholder="전화번호 (예: 01012345678)" value={directPhone} onChange={e => setDirectPhone(e.target.value)} onKeyDown={e => e.key === "Enter" && addDirect()} style={{ ...inp, marginBottom: 8 }} />
+          <div style={{ display: "flex", gap: 6 }}>
+            <button onClick={addDirect} style={primaryBtn}>추가</button>
+            <button onClick={() => { setShowDirect(false); setDirectPhone(""); setDirectName(""); }} style={ghostBtn}>취소</button>
+          </div>
+        </div>
+      )}
+      {recipients.length > 0 && (
+        <div style={{ marginTop: 14 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+            <span style={{ fontSize: 12, color: "#64748b" }}>{recipients.length}명</span>
+            <button onClick={() => { if (window.confirm("전체 삭제?")) onClear(); }} style={{ ...ghostBtn, color: "#ef4444", fontSize: 12, padding: "3px 8px" }}>전체 삭제</button>
+          </div>
+          <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 6 }}>
+            {recipients.map(r => (
+              <li key={r.contact} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 10px", borderRadius: 8, background: "#f1f5f9", border: "1px solid #e2e8f0" }}>
+                <Avatar name={r.name} size={30} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name}</div>
+                  <div style={{ fontSize: 12, color: "#64748b" }}>{r.contact}</div>
+                </div>
+                <button onClick={() => onRemove(r.contact)} style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8", fontSize: 15, padding: "2px 4px", lineHeight: 1, flexShrink: 0 }}>✕</button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </section>
+  );
+}
+
+/* ── SMS 작성 패널 ────────────────────────────── */
+function SmsComposePanel({ templates, applyTpl, clearApply, recipients }) {
+  const [selectedTpl, setSelectedTpl] = useState("");
+  const [content, setContent] = useState("");
+  const [scheduleMode, setScheduleMode] = useState(false);
+  const [scheduledAt, setScheduledAt] = useState("");
+  const [sending, setSending] = useState(false);
+  const [result, setResult] = useState(null);
+  const bytes = getByteLength(content);
+  const msgType = bytes > SMS_MAX ? "LMS" : "SMS";
+
+  useEffect(() => {
+    if (!applyTpl) return;
+    setSelectedTpl(String(applyTpl.id));
+    setContent(applyTpl.content);
+    clearApply();
+  }, [applyTpl, clearApply]);
 
   const applyTemplate = (id) => {
     setSelectedTpl(id);
@@ -139,7 +217,7 @@ function SendTab({ templates, applyTpl, clearApply }) {
       setSending(true);
       try {
         await api.post("/portal/sms/schedule", { recipients: recipients.map(r => ({ name: r.name, contact: r.contact })), content: content.trim(), scheduledAt });
-        showToast("예약 등록 완료"); setRecipients([]); setContent(""); setScheduledAt("");
+        showToast("예약 등록 완료");
       } catch (e) { showToast("예약 실패: " + e.message); }
       finally { setSending(false); }
       return;
@@ -149,109 +227,219 @@ function SendTab({ templates, applyTpl, clearApply }) {
     try {
       const res = await api.post("/portal/sms/send", { recipients: recipients.map(r => ({ name: r.name, contact: r.contact })), content: content.trim() });
       setResult(res.data);
-      if (res.data.sent > 0) { showToast(`${res.data.sent}명 발송 완료`); setRecipients([]); setContent(""); }
+      if (res.data.sent > 0) showToast(`${res.data.sent}명 발송 완료`);
       if (res.data.failed > 0) showToast(`${res.data.failed}명 실패`);
     } catch (e) { showToast("발송 실패: " + e.message); }
     finally { setSending(false); }
   };
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "minmax(280px,360px) minmax(0,1fr)", gap: 20, alignItems: "start" }}>
-      {/* 수신자 패널 */}
-      <section style={panel}>
-        <div style={{ fontWeight: 600, fontSize: 14, color: "#334155", marginBottom: 12 }}>수신자</div>
-        <div style={{ position: "relative" }}>
-          <input type="text" value={query} onChange={e => { setQuery(e.target.value); search(e.target.value); }} onFocus={() => query && setShowDrop(true)} onBlur={() => setTimeout(() => setShowDrop(false), 180)} placeholder="이름 또는 전화번호 검색..." style={inp} />
-          {showDrop && (
-            <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8, boxShadow: "0 4px 16px rgba(15,23,42,.10)", zIndex: 200, maxHeight: 240, overflowY: "auto" }}>
-              {results.length === 0
-                ? <div style={{ padding: "12px 14px", color: "#94a3b8", fontSize: 13 }}>결과 없음</div>
-                : results.map(item => (
-                  <button key={item.id} onMouseDown={() => addFromDB(item)} style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "8px 14px", border: "none", background: "transparent", cursor: "pointer", textAlign: "left" }}
-                    onMouseEnter={e => e.currentTarget.style.background="#f8fafc"} onMouseLeave={e => e.currentTarget.style.background="transparent"}>
-                    <Avatar name={item.name} size={28} />
-                    <div><div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>{item.name}</div><div style={{ fontSize: 12, color: "#64748b" }}>{item.phone||"번호 없음"}</div></div>
-                  </button>
-                ))}
-            </div>
-          )}
+    <section style={panel}>
+      <div style={{ fontWeight: 600, fontSize: 14, color: "#334155", marginBottom: 12 }}>메시지 작성</div>
+      {templates.length > 0 && (
+        <div style={{ marginBottom: 12 }}>
+          <label style={{ fontSize: 12, color: "#64748b", display: "block", marginBottom: 4 }}>템플릿 불러오기</label>
+          <select value={selectedTpl} onChange={e => applyTemplate(e.target.value)} style={{ ...inp }}>
+            <option value="">-- 템플릿 선택 --</option>
+            {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+          </select>
         </div>
-        <button onClick={() => setShowDirect(v => !v)} style={{ ...ghostBtn, marginTop: 8, width: "100%" }}>+ 직접 추가</button>
-        {showDirect && (
-          <div style={{ marginTop: 10, padding: 12, background: "#f8fafc", borderRadius: 8, border: "1px solid #e2e8f0" }}>
-            <input type="text" placeholder="이름 (선택)" value={directName} onChange={e => setDirectName(e.target.value)} style={{ ...inp, marginBottom: 6 }} />
-            <input type="tel" placeholder="전화번호 (예: 01012345678)" value={directPhone} onChange={e => setDirectPhone(e.target.value)} onKeyDown={e => e.key === "Enter" && addDirect()} style={{ ...inp, marginBottom: 8 }} />
-            <div style={{ display: "flex", gap: 6 }}>
-              <button onClick={addDirect} style={primaryBtn}>추가</button>
-              <button onClick={() => { setShowDirect(false); setDirectPhone(""); setDirectName(""); }} style={ghostBtn}>취소</button>
-            </div>
-          </div>
-        )}
-        {recipients.length > 0 && (
-          <div style={{ marginTop: 14 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-              <span style={{ fontSize: 12, color: "#64748b" }}>{recipients.length}명</span>
-              <button onClick={() => { if (window.confirm("전체 삭제?")) setRecipients([]); }} style={{ ...ghostBtn, color: "#ef4444", fontSize: 12, padding: "3px 8px" }}>전체 삭제</button>
-            </div>
-            <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 6 }}>
-              {recipients.map(r => (
-                <li key={r.contact} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 10px", borderRadius: 8, background: "#f1f5f9", border: "1px solid #e2e8f0" }}>
-                  <Avatar name={r.name} size={30} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name}</div>
-                    <div style={{ fontSize: 12, color: "#64748b" }}>{r.contact}</div>
-                  </div>
-                  <button onClick={() => setRecipients(p => p.filter(x => x.contact !== r.contact))} style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8", fontSize: 15, padding: "2px 4px", lineHeight: 1, flexShrink: 0 }}>✕</button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </section>
+      )}
+      <textarea value={content} onChange={e => setContent(e.target.value)} placeholder="발송할 메시지를 입력하세요..." rows={9} style={{ ...inp, resize: "vertical", lineHeight: 1.6 }} />
+      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, marginBottom: 14, fontSize: 12 }}>
+        <span style={{ color: bytes > 2000 ? "#ef4444" : bytes > SMS_MAX ? "#f59e0b" : "#64748b" }}>{bytes}B · <strong>{msgType}</strong></span>
+        <span style={{ color: "#94a3b8" }}>SMS ≤90B / LMS ≤2000B</span>
+      </div>
+      <div style={{ display: "flex", gap: 10, marginBottom: 14, alignItems: "center" }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#475569", cursor: "pointer" }}>
+          <input type="checkbox" checked={scheduleMode} onChange={e => setScheduleMode(e.target.checked)} /> 예약 발송
+        </label>
+        {scheduleMode && <input type="datetime-local" value={scheduledAt} onChange={e => setScheduledAt(e.target.value)} style={{ ...inp, width: "auto", flex: 1 }} />}
+      </div>
+      <button onClick={handleSend} disabled={sending || !recipients.length || !content.trim() || bytes > 2000}
+        style={{ width: "100%", padding: "12px 0", background: (sending || !recipients.length || !content.trim() || bytes > 2000) ? "#cbd5e1" : "#2563eb", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 15, cursor: sending ? "wait" : "pointer" }}>
+        {sending ? "처리 중..." : scheduleMode ? `${recipients.length}명에게 예약` : `${recipients.length}명에게 발송`}
+      </button>
+      <Result data={result} />
+    </section>
+  );
+}
 
-      {/* 작성 패널 */}
-      <section style={panel}>
-        <div style={{ fontWeight: 600, fontSize: 14, color: "#334155", marginBottom: 12 }}>메시지 작성</div>
-        {templates.length > 0 && (
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ fontSize: 12, color: "#64748b", display: "block", marginBottom: 4 }}>템플릿 불러오기</label>
-            <select value={selectedTpl} onChange={e => applyTemplate(e.target.value)} style={{ ...inp, color: selectedTpl ? "#0f172a" : "#94a3b8" }}>
+/* ── 카카오 알림톡 작성 패널 ──────────────────── */
+function KakaoComposePanel({ recipients }) {
+  const [kakaoTemplates, setKakaoTemplates] = useState([]);
+  const [loadingTpl, setLoadingTpl] = useState(true);
+  const [tplError, setTplError] = useState(null);
+  const [selectedTpl, setSelectedTpl] = useState(null); // template object
+  const [messages, setMessages] = useState({}); // { contact: message }
+  const [sending, setSending] = useState(false);
+  const [result, setResult] = useState(null);
+
+  useEffect(() => {
+    setLoadingTpl(true);
+    api.get("/portal/kakao/templates")
+      .then(j => { setKakaoTemplates(j.data ?? []); setTplError(null); })
+      .catch(e => setTplError(e.message || "템플릿 조회 실패"))
+      .finally(() => setLoadingTpl(false));
+  }, []);
+
+  const selectTemplate = (code) => {
+    const t = kakaoTemplates.find(t => t.code === code);
+    setSelectedTpl(t || null);
+    // 템플릿 내용을 기본 메시지로 설정 (변수 치환 전)
+    if (t) {
+      const defaultMsgs = {};
+      recipients.forEach(r => { defaultMsgs[r.contact] = t.content.replace(/#{이름}/g, r.name); });
+      setMessages(defaultMsgs);
+    }
+  };
+
+  // 수신자 추가/변경 시 메시지 동기화
+  useEffect(() => {
+    if (!selectedTpl) return;
+    setMessages(prev => {
+      const next = {};
+      recipients.forEach(r => {
+        next[r.contact] = prev[r.contact] ?? selectedTpl.content.replace(/#{이름}/g, r.name);
+      });
+      return next;
+    });
+  }, [recipients, selectedTpl]);
+
+  const handleSend = async () => {
+    if (!recipients.length) return showToast("수신자를 추가해주세요");
+    if (!selectedTpl) return showToast("알림톡 템플릿을 선택해주세요");
+    if (!window.confirm(`${recipients.length}명에게 카카오 알림톡을 발송하시겠습니까?`)) return;
+    setSending(true); setResult(null);
+    try {
+      const recipientsPayload = recipients.map(r => ({
+        name: r.name,
+        contact: r.contact,
+        message: messages[r.contact] || selectedTpl.content,
+      }));
+      const res = await api.post("/portal/kakao/send", { recipients: recipientsPayload, templateCode: selectedTpl.code });
+      setResult(res.data);
+      if (res.data.sent > 0) showToast(`${res.data.sent}명 알림톡 발송 완료`);
+      if (res.data.failed > 0) showToast(`${res.data.failed}명 실패`);
+    } catch (e) { showToast("발송 실패: " + e.message); }
+    finally { setSending(false); }
+  };
+
+  return (
+    <section style={{ ...panel, borderColor: "#d4c000", background: "#fffef0" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+        <span style={{ fontSize: 18 }}>🟡</span>
+        <div style={{ fontWeight: 700, fontSize: 14, color: kakaoTextColor }}>카카오 알림톡</div>
+        <span style={{ fontSize: 11, color: "#64748b", marginLeft: 4 }}>사전 승인 템플릿만 발송 가능</span>
+      </div>
+
+      {loadingTpl ? (
+        <div style={{ color: "#94a3b8", fontSize: 13, padding: "12px 0" }}>템플릿 불러오는 중...</div>
+      ) : tplError ? (
+        <div style={{ color: "#dc2626", fontSize: 13, padding: "12px 0", background: "#fef2f2", borderRadius: 8, padding: 12 }}>
+          ⚠ {tplError}
+          <div style={{ marginTop: 6, fontSize: 12, color: "#64748b" }}>알리고 카카오 알림톡 서비스 신청 및 채널 연동 상태를 확인해 주세요.</div>
+        </div>
+      ) : kakaoTemplates.length === 0 ? (
+        <div style={{ color: "#94a3b8", fontSize: 13, padding: 12, background: "#f8fafc", borderRadius: 8 }}>
+          승인된 알림톡 템플릿이 없습니다.<br />
+          <span style={{ fontSize: 12 }}>알리고 관리자 → 카카오 알림톡 → 템플릿 관리에서 템플릿을 등록하고 승인을 받아주세요.</span>
+        </div>
+      ) : (
+        <>
+          <div style={{ marginBottom: 14 }}>
+            <label style={{ fontSize: 12, color: "#64748b", display: "block", marginBottom: 4 }}>알림톡 템플릿 선택 *</label>
+            <select onChange={e => selectTemplate(e.target.value)} value={selectedTpl?.code || ""} style={{ ...inp }}>
               <option value="">-- 템플릿 선택 --</option>
-              {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+              {kakaoTemplates.map(t => <option key={t.code} value={t.code}>{t.name} ({t.code})</option>)}
             </select>
           </div>
-        )}
-        <textarea value={content} onChange={e => setContent(e.target.value)} placeholder="발송할 메시지를 입력하세요..." rows={9} style={{ ...inp, resize: "vertical", lineHeight: 1.6 }} />
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6, marginBottom: 16 }}>
-          <div style={{ fontSize: 12, color: bytes > 2000 ? "#ef4444" : bytes > SMS_MAX ? "#f59e0b" : "#64748b" }}>
-            {bytes}B · <strong>{msgType}</strong>
-          </div>
-          <div style={{ fontSize: 11, color: "#94a3b8" }}>SMS ≤90B / LMS ≤2000B</div>
-        </div>
-        <div style={{ display: "flex", gap: 10, marginBottom: 14, alignItems: "center" }}>
-          <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#475569", cursor: "pointer" }}>
-            <input type="checkbox" checked={scheduleMode} onChange={e => setScheduleMode(e.target.checked)} /> 예약 발송
-          </label>
-          {scheduleMode && (
-            <input type="datetime-local" value={scheduledAt} onChange={e => setScheduledAt(e.target.value)} style={{ ...inp, width: "auto", flex: 1 }} />
+
+          {selectedTpl && (
+            <>
+              <div style={{ marginBottom: 14, padding: 12, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8 }}>
+                <div style={{ fontSize: 11, color: "#64748b", marginBottom: 6 }}>템플릿 내용 미리보기</div>
+                <div style={{ fontSize: 13, color: "#334155", whiteSpace: "pre-wrap", lineHeight: 1.6 }}>{selectedTpl.content}</div>
+                {selectedTpl.content.includes("#{") && (
+                  <div style={{ marginTop: 8, fontSize: 11, color: "#f59e0b" }}>
+                    ※ #{"{변수}"} 형태의 항목은 수신자별로 자동 치환됩니다 (#{"{이름}"}은 수신자 이름으로 자동 대체)
+                  </div>
+                )}
+              </div>
+
+              {/* 수신자가 있을 때만 개별 메시지 편집 */}
+              {recipients.length > 0 && (
+                <div style={{ marginBottom: 14 }}>
+                  <div style={{ fontSize: 12, color: "#64748b", marginBottom: 8 }}>수신자별 발송 메시지 확인 / 수정</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 280, overflowY: "auto" }}>
+                    {recipients.map(r => (
+                      <div key={r.contact} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8, padding: 10 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                          <Avatar name={r.name} size={22} />
+                          <span style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>{r.name}</span>
+                          <span style={{ fontSize: 12, color: "#94a3b8" }}>{r.contact}</span>
+                        </div>
+                        <textarea
+                          value={messages[r.contact] || ""}
+                          onChange={e => setMessages(prev => ({ ...prev, [r.contact]: e.target.value }))}
+                          rows={3}
+                          style={{ ...inp, fontSize: 12, resize: "vertical", lineHeight: 1.5 }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
           )}
-        </div>
-        <button onClick={handleSend} disabled={sending || !recipients.length || !content.trim() || bytes > 2000}
-          style={{ width: "100%", padding: "12px 0", background: (sending || !recipients.length || !content.trim() || bytes > 2000) ? "#cbd5e1" : "#2563eb", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 15, cursor: sending ? "wait" : "pointer" }}>
-          {sending ? "처리 중..." : scheduleMode ? `${recipients.length}명에게 예약` : `${recipients.length}명에게 발송`}
-        </button>
-        {result && (
-          <div style={{ marginTop: 14, padding: 14, background: result.failed===0 ? "#f0fdf4" : "#fff7ed", border: `1px solid ${result.failed===0?"#86efac":"#fed7aa"}`, borderRadius: 8, fontSize: 13 }}>
-            <div style={{ fontWeight: 700, color: result.failed===0?"#16a34a":"#c2410c", marginBottom: 4 }}>
-              {result.failed===0 ? "발송 완료" : "일부 실패"}
-            </div>
-            <div style={{ color: "#475569" }}>총 {result.total}명 · 성공 {result.sent}명 · 실패 {result.failed}명</div>
-            {result.results?.filter(r => !r.success).map((r,i) => (
-              <div key={i} style={{ marginTop: 4, color: "#ef4444", fontSize: 12 }}>✕ {r.name} ({r.contact}): {r.error}</div>
-            ))}
-          </div>
-        )}
-      </section>
+
+          <button onClick={handleSend} disabled={sending || !recipients.length || !selectedTpl}
+            style={{ width: "100%", padding: "12px 0", background: (sending || !recipients.length || !selectedTpl) ? "#cbd5e1" : kakaoColor, color: (sending || !recipients.length || !selectedTpl) ? "#fff" : kakaoTextColor, border: "none", borderRadius: 8, fontWeight: 700, fontSize: 15, cursor: sending ? "wait" : "pointer" }}>
+            {sending ? "발송 중..." : `${recipients.length}명에게 알림톡 발송`}
+          </button>
+          <Result data={result} />
+        </>
+      )}
+    </section>
+  );
+}
+
+function Result({ data }) {
+  if (!data) return null;
+  return (
+    <div style={{ marginTop: 14, padding: 14, background: data.failed===0?"#f0fdf4":"#fff7ed", border: `1px solid ${data.failed===0?"#86efac":"#fed7aa"}`, borderRadius: 8, fontSize: 13 }}>
+      <div style={{ fontWeight: 700, color: data.failed===0?"#16a34a":"#c2410c", marginBottom: 4 }}>
+        {data.failed===0?"발송 완료":"일부 실패"}
+        {data.testMode && <span style={{ marginLeft: 8, fontSize: 11, color: "#f59e0b", fontWeight: 400 }}>(테스트 모드)</span>}
+      </div>
+      <div style={{ color: "#475569" }}>총 {data.total}명 · 성공 {data.sent}명 · 실패 {data.failed}명</div>
+      {data.results?.filter(r => !r.success).map((r,i) => (
+        <div key={i} style={{ marginTop: 4, color: "#ef4444", fontSize: 12 }}>✕ {r.name} ({r.contact}): {r.error}</div>
+      ))}
+    </div>
+  );
+}
+
+/* ── 발송 탭 ─────────────────────────────────── */
+function SendTab({ templates, applyTpl, clearApply }) {
+  const [channel, setChannel] = useState("sms");
+  const [recipients, setRecipients] = useState([]);
+
+  const addRecipient = (item) => {
+    if (recipients.some(r => r.contact === item.contact)) { showToast("이미 추가됨"); return; }
+    setRecipients(p => [...p, item]);
+  };
+
+  return (
+    <div>
+      <ChannelToggle channel={channel} onChange={setChannel} />
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(280px,360px) minmax(0,1fr)", gap: 20, alignItems: "start" }}>
+        <RecipientPanel recipients={recipients} onAdd={addRecipient} onRemove={contact => setRecipients(p => p.filter(r => r.contact !== contact))} onClear={() => setRecipients([])} />
+        {channel === "sms"
+          ? <SmsComposePanel templates={templates} applyTpl={applyTpl} clearApply={clearApply} recipients={recipients} />
+          : <KakaoComposePanel recipients={recipients} />
+        }
+      </div>
     </div>
   );
 }
@@ -260,7 +448,7 @@ function SendTab({ templates, applyTpl, clearApply }) {
 const EMPTY_FORM = { name: "", content: "" };
 
 function TemplatesTab({ templates, onTemplatesChange, onUseTemplate }) {
-  const [editing, setEditing] = useState(null); // null | "new" | template object
+  const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
 
@@ -301,11 +489,10 @@ function TemplatesTab({ templates, onTemplatesChange, onUseTemplate }) {
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <span style={{ fontSize: 14, color: "#64748b" }}>SMS 템플릿 {templates.length}개 · 모든 포털 사용자에게 공유됩니다</span>
+        <span style={{ fontSize: 13, color: "#64748b" }}>SMS 템플릿 {templates.length}개 · 모든 포털 사용자에게 공유</span>
         <button onClick={openNew} style={primaryBtn}>+ 새 템플릿</button>
       </div>
 
-      {/* 편집 폼 */}
       {editing && (
         <div style={{ ...panel, marginBottom: 16, border: "1px solid #bfdbfe", background: "#f8fbff" }}>
           <div style={{ fontWeight: 600, fontSize: 14, color: "#1d4ed8", marginBottom: 14 }}>
@@ -316,7 +503,9 @@ function TemplatesTab({ templates, onTemplatesChange, onUseTemplate }) {
             <input type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="예: 상담 일정 확인 안내" style={inp} />
           </div>
           <div style={{ marginBottom: 14 }}>
-            <label style={{ fontSize: 12, color: "#64748b", display: "block", marginBottom: 4 }}>내용 * <span style={{ color: bytes(form.content) > 2000 ? "#ef4444" : bytes(form.content) > SMS_MAX ? "#f59e0b" : "#94a3b8" }}>({bytes(form.content)}B · {bytes(form.content) > SMS_MAX ? "LMS" : "SMS"})</span></label>
+            <label style={{ fontSize: 12, color: "#64748b", display: "block", marginBottom: 4 }}>
+              내용 * <span style={{ color: bytes(form.content) > 2000 ? "#ef4444" : bytes(form.content) > SMS_MAX ? "#f59e0b" : "#94a3b8" }}>({bytes(form.content)}B · {bytes(form.content) > SMS_MAX ? "LMS" : "SMS"})</span>
+            </label>
             <textarea value={form.content} onChange={e => setForm(f => ({ ...f, content: e.target.value }))} placeholder="메시지 내용을 입력하세요..." rows={6} style={{ ...inp, resize: "vertical", lineHeight: 1.6 }} />
           </div>
           <div style={{ display: "flex", gap: 8 }}>
@@ -326,11 +515,8 @@ function TemplatesTab({ templates, onTemplatesChange, onUseTemplate }) {
         </div>
       )}
 
-      {/* 템플릿 목록 */}
       {templates.length === 0 && !editing ? (
-        <div style={{ color: "#94a3b8", textAlign: "center", padding: 40, fontSize: 14 }}>
-          등록된 템플릿이 없습니다. 새 템플릿을 추가해 보세요.
-        </div>
+        <div style={{ color: "#94a3b8", textAlign: "center", padding: 40, fontSize: 14 }}>등록된 SMS 템플릿이 없습니다. 새 템플릿을 추가해 보세요.</div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {templates.map(t => (
@@ -338,7 +524,7 @@ function TemplatesTab({ templates, onTemplatesChange, onUseTemplate }) {
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
                   <span style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>{t.name}</span>
-                  <Badge text={(t.channel||"sms").toUpperCase()} color="#2563eb" bg="#eff6ff" />
+                  <Badge text="SMS" color="#2563eb" bg="#eff6ff" />
                   <span style={{ fontSize: 11, color: "#94a3b8" }}>{bytes(t.content)}B</span>
                 </div>
                 <div style={{ fontSize: 13, color: "#475569", whiteSpace: "pre-wrap", lineHeight: 1.6, maxHeight: 72, overflow: "hidden" }}>{t.content}</div>
@@ -369,7 +555,7 @@ function ScheduledTab() {
     const params = new URLSearchParams({ page, limit: 20 });
     if (filterStatus) params.set("status", filterStatus);
     api.get(`/portal/sms/scheduled?${params}`)
-      .then(j => { setItems(j.data ?? []); setMeta(j.meta ?? { total: 0, totalPages: 0 }); })
+      .then(j => { setItems(j.data??[]); setMeta(j.meta??{total:0,totalPages:0}); })
       .catch(() => setItems([]))
       .finally(() => setLoading(false));
   }, [page, filterStatus]);
@@ -385,16 +571,16 @@ function ScheduledTab() {
 
   return (
     <div>
-      <div style={{ display: "flex", gap: 10, marginBottom: 14, alignItems: "center" }}>
-        <select value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(1); }} style={{ ...inp, width: 140 }}>
+      <div style={{ display:"flex", gap:10, marginBottom:14, alignItems:"center" }}>
+        <select value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(1); }} style={{ ...inp, width:140 }}>
           <option value="">전체 상태</option>
           <option value="pending">대기</option>
           <option value="sent">완료</option>
           <option value="failed">실패</option>
           <option value="cancelled">취소</option>
         </select>
-        <span style={{ fontSize: 13, color: "#64748b" }}>총 {meta.total}건</span>
-        <button onClick={load} style={{ ...ghostBtn, marginLeft: "auto" }}>새로고침</button>
+        <span style={{ fontSize:13, color:"#64748b" }}>총 {meta.total}건</span>
+        <button onClick={load} style={{ ...ghostBtn, marginLeft:"auto" }}>새로고침</button>
       </div>
       {loading ? <div style={{ color:"#94a3b8", textAlign:"center", padding:40 }}>불러오는 중...</div>
        : items.length===0 ? <div style={{ color:"#94a3b8", textAlign:"center", padding:40 }}>예약된 메시지가 없습니다.</div>
@@ -431,23 +617,30 @@ function LogsTab() {
   const [page, setPage] = useState(1);
   const [meta, setMeta] = useState({ total:0, totalPages:0 });
   const [filterStatus, setFilterStatus] = useState("");
+  const [filterChannel, setFilterChannel] = useState("");
   const [expanded, setExpanded] = useState(null);
 
   const load = useCallback(() => {
     setLoading(true);
     const params = new URLSearchParams({ page, limit: 20 });
     if (filterStatus) params.set("status", filterStatus);
+    if (filterChannel) params.set("channel", filterChannel);
     api.get(`/portal/sms/logs?${params}`)
       .then(j => { setLogs(j.data??[]); setMeta(j.meta??{total:0,totalPages:0}); })
       .catch(() => setLogs([]))
       .finally(() => setLoading(false));
-  }, [page, filterStatus]);
+  }, [page, filterStatus, filterChannel]);
 
   useEffect(() => { load(); }, [load]);
 
   return (
     <div>
-      <div style={{ display:"flex", gap:10, marginBottom:14, alignItems:"center" }}>
+      <div style={{ display:"flex", gap:10, marginBottom:14, alignItems:"center", flexWrap:"wrap" }}>
+        <select value={filterChannel} onChange={e => { setFilterChannel(e.target.value); setPage(1); }} style={{ ...inp, width:140 }}>
+          <option value="">전체 채널</option>
+          <option value="sms">SMS</option>
+          <option value="kakao">카카오</option>
+        </select>
         <select value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(1); }} style={{ ...inp, width:140 }}>
           <option value="">전체 상태</option>
           <option value="sent">성공</option>
@@ -464,6 +657,7 @@ function LogsTab() {
             <div key={log.id} style={{ ...panel, cursor:"pointer" }} onClick={() => setExpanded(expanded===log.id?null:log.id)}>
               <div style={{ display:"flex", alignItems:"center", gap:10 }}>
                 <StatusBadge status={log.status} />
+                <ChannelBadge channel={log.channel} />
                 <Avatar name={log.recipient_name||log.recipientName||"?"} size={28} />
                 <div style={{ flex:1, minWidth:0 }}>
                   <div style={{ fontSize:13, fontWeight:600, color:"#0f172a" }}>{log.recipient_name||log.recipientName||"-"}</div>
@@ -532,7 +726,7 @@ function ReportTab() {
           </div>
           {data.daily && data.daily.length>0 && (
             <div style={panel}>
-              <div style={{ fontWeight:600, fontSize:14, color:"#334155", marginBottom:12 }}>일별 발송 현황</div>
+              <div style={{ fontWeight:600, fontSize:14, color:"#334155", marginBottom:12 }}>일별 발송 현황 (SMS + 카카오)</div>
               <div style={{ overflowX:"auto" }}>
                 <table style={{ width:"100%", borderCollapse:"collapse", fontSize:13 }}>
                   <thead>
@@ -562,19 +756,18 @@ function ReportTab() {
   );
 }
 
-/* ── 메인 컴포넌트 ────────────────────────────── */
+/* ── 메인 ────────────────────────────────────── */
 const TABS = [
-  { key: "send", label: "발송" },
-  { key: "templates", label: "템플릿" },
-  { key: "scheduled", label: "예약" },
-  { key: "logs", label: "이력" },
-  { key: "report", label: "리포트" },
+  { key:"send", label:"발송" },
+  { key:"templates", label:"SMS 템플릿" },
+  { key:"scheduled", label:"예약" },
+  { key:"logs", label:"이력" },
+  { key:"report", label:"리포트" },
 ];
 
 export default function PortalMessages() {
   const [tab, setTab] = useState("send");
   const [templates, setTemplates] = useState([]);
-  // 템플릿 탭 → 발송 탭으로 템플릿 전달
   const [applyTpl, setApplyTpl] = useState(null);
 
   useEffect(() => {
@@ -589,29 +782,15 @@ export default function PortalMessages() {
   };
 
   return (
-    <div style={{ padding: "24px 20px", maxWidth: 1000, margin: "0 auto" }}>
-      <h2 style={{ fontSize: 20, fontWeight: 700, color: "#0f172a", marginBottom: 4 }}>문자 발송</h2>
-      <p style={{ fontSize: 13, color: "#64748b", marginBottom: 20 }}>SMS/LMS 발송, 예약, 이력 조회 — 내부 구성원 전용</p>
-
+    <div style={{ padding: "24px 20px", maxWidth: 1060, margin: "0 auto" }}>
+      <h2 style={{ fontSize: 20, fontWeight: 700, color: "#0f172a", marginBottom: 4 }}>메시지 발송</h2>
+      <p style={{ fontSize: 13, color: "#64748b", marginBottom: 20 }}>SMS · 카카오 알림톡 발송, 예약, 이력 조회 — 내부 구성원 전용</p>
       <TabBar tabs={TABS} active={tab} onChange={setTab} />
-
-      {tab === "send" && (
-        <SendTab
-          templates={templates}
-          applyTpl={applyTpl}
-          clearApply={() => setApplyTpl(null)}
-        />
-      )}
-      {tab === "templates" && (
-        <TemplatesTab
-          templates={templates}
-          onTemplatesChange={setTemplates}
-          onUseTemplate={handleUseTemplate}
-        />
-      )}
-      {tab === "scheduled" && <ScheduledTab />}
-      {tab === "logs" && <LogsTab />}
-      {tab === "report" && <ReportTab />}
+      {tab==="send" && <SendTab templates={templates} applyTpl={applyTpl} clearApply={() => setApplyTpl(null)} />}
+      {tab==="templates" && <TemplatesTab templates={templates} onTemplatesChange={setTemplates} onUseTemplate={handleUseTemplate} />}
+      {tab==="scheduled" && <ScheduledTab />}
+      {tab==="logs" && <LogsTab />}
+      {tab==="report" && <ReportTab />}
     </div>
   );
 }

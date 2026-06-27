@@ -84,6 +84,7 @@ function LawyerCard({ lawyer }) {
           src={lawyer.photoUrl}
           alt={lawyer.name}
           className="hp-lawyer-photo"
+          style={lawyer.photoFocus ? { objectPosition: lawyer.photoFocus } : undefined}
           loading="lazy"
           decoding="async"
         />

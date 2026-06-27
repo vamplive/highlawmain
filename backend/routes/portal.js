@@ -389,8 +389,25 @@ router.get("/cases", portalAuth, async (req, res) => {
 /** POST /api/portal/cases — 포털 사용자 직접 사건 등록 */
 router.post("/cases", portalAuth, async (req, res) => {
   try {
-    const { clientId } = req.portalUser;
-    const result = await portalService.registerPortalCase(clientId, req.body);
+    const { clientId, role } = req.portalUser;
+    const { members, departmentId, ...caseData } = req.body;
+    const result = await portalService.registerPortalCase(clientId, caseData);
+    // 내부 사용자인 경우 담당자/부서 저장
+    if (role === "internal" && result?.id) {
+      const crypto2 = require("crypto");
+      const now = new Date().toISOString().replace("T", " ").slice(0, 19);
+      if (Array.isArray(members)) {
+        for (const m of members) {
+          const dup = sqlite.prepare("SELECT id FROM case_members WHERE case_id=? AND member_id=?").get(result.id, m.id);
+          if (!dup) sqlite.prepare("INSERT INTO case_members (id,case_id,member_type,member_id,member_name,role,created_at) VALUES (?,?,?,?,?,?,?)").run(crypto2.randomUUID(), result.id, "lawyer", m.id, m.name || null, "담당", now);
+        }
+      }
+      if (departmentId) {
+        const dept = sqlite.prepare("SELECT name FROM departments WHERE id=?").get(departmentId);
+        const dup = sqlite.prepare("SELECT id FROM case_members WHERE case_id=? AND member_id=?").get(result.id, departmentId);
+        if (!dup) sqlite.prepare("INSERT INTO case_members (id,case_id,member_type,member_id,member_name,role,created_at) VALUES (?,?,?,?,?,?,?)").run(crypto2.randomUUID(), result.id, "department", departmentId, dept?.name || null, "담당부서", now);
+      }
+    }
     res.status(201).json({ data: result, error: null, meta: null });
   } catch (e) {
     handleError(res, e);
@@ -443,30 +460,48 @@ router.post("/cases/:id/messages", portalAuth, async (req, res) => {
 
 /** GET /api/portal/time-entries — 내 타임엔트리 목록 */
 
-/** POST /api/portal/sms/send — 내부 구성원 전용 SMS 발송 */
-router.post("/sms/send", portalAuth, internalOnly, async (req, res) => {
+
+
+
+
+/** GET /api/portal/kakao/templates — 승인된 알림톡 템플릿 목록 */
+router.get("/kakao/templates", portalAuth, internalOnly, async (req, res) => {
   try {
-    const { recipients, content } = req.body;
-    if (!recipients || !Array.isArray(recipients) || recipients.length === 0) {
-      return res.status(400).json({ data: null, error: "수신자를 1명 이상 지정해주세요", meta: null });
-    }
-    if (!content || !content.trim()) {
-      return res.status(400).json({ data: null, error: "메시지 내용을 입력해주세요", meta: null });
-    }
-    const { sendSMS } = require("../lib/sms-service");
-    const results = [];
-    for (const r of recipients) {
-      const result = await sendSMS(r.contact, content.trim());
-      results.push({ name: r.name, contact: r.contact, success: result.success, error: result.error || null });
-    }
-    const sent = results.filter(r => r.success).length;
-    const failed = results.length - sent;
-    res.json({ data: { total: results.length, sent, failed, results }, error: null, meta: null });
-  } catch (e) {
-    handleError(res, e);
-  }
+    const { listKakaoTemplates } = require("../lib/kakao-service");
+    const result = await listKakaoTemplates();
+    if (!result.ok) return res.status(502).json({ data: null, error: result.error, meta: null });
+    res.json({ data: result.templates, error: null, meta: null });
+  } catch (e) { handleError(res, e); }
 });
 
+/** POST /api/portal/kakao/send — 알림톡 발송 */
+router.post("/kakao/send", portalAuth, internalOnly, async (req, res) => {
+  try {
+    const { sendKakao } = require("../lib/kakao-service");
+    const { recipients, templateCode } = req.body;
+    if (!recipients || !Array.isArray(recipients) || recipients.length === 0)
+      return res.status(400).json({ data: null, error: "수신자를 1명 이상 지정해주세요", meta: null });
+    if (!templateCode)
+      return res.status(400).json({ data: null, error: "템플릿 코드가 필요합니다", meta: null });
+
+    const result = await sendKakao(recipients, templateCode);
+
+    // 발송 이력 기록
+    const crypto2 = require("crypto");
+    const now = new Date().toISOString().replace("T", " ").slice(0, 19);
+    for (const r of result.results) {
+      const logId = crypto2.randomUUID();
+      const content = recipients.find(x => x.contact.replace(/\D/g,"") === r.contact.replace(/\D/g,""))?.message || "";
+      sqlite.prepare(
+        "INSERT INTO message_logs (id,channel,recipient_name,recipient_contact,content,status,error_message,sent_at,created_at) VALUES (?,?,?,?,?,?,?,?,?)"
+      ).run(logId, "kakao", r.name || null, r.contact, content,
+        r.success ? "sent" : "failed", r.error || null,
+        r.success ? now : null, now);
+    }
+
+    res.json({ data: { total: result.total, sent: result.sent, failed: result.failed, results: result.results, testMode: result.testMode }, error: null, meta: null });
+  } catch (e) { handleError(res, e); }
+});
 
 /** GET /api/portal/sms/templates */
 router.get("/sms/templates", portalAuth, (req, res) => {
@@ -614,12 +649,13 @@ router.delete("/sms/scheduled/:id", portalAuth, internalOnly, (req, res) => {
 /** GET /api/portal/sms/logs */
 router.get("/sms/logs", portalAuth, internalOnly, (req, res) => {
   try {
-    const { status = "", page = 1, limit = 20 } = req.query;
+    const { status = "", channel = "", page = 1, limit = 20 } = req.query;
     const p = Math.max(1, parseInt(page));
     const l = Math.min(100, Math.max(1, parseInt(limit)));
     const offset = (p - 1) * l;
-    let where = "WHERE channel='sms'";
+    let where = "WHERE 1=1";
     const params = [];
+    if (channel) { where += " AND channel=?"; params.push(channel); }
     if (status) { where += " AND status=?"; params.push(status); }
     const total = sqlite.prepare("SELECT count(*) as n FROM message_logs " + where).get(...params).n;
     const rows = sqlite.prepare("SELECT * FROM message_logs " + where + " ORDER BY created_at DESC LIMIT ? OFFSET ?").all(...params, l, offset);
@@ -635,10 +671,10 @@ router.get("/sms/stats", portalAuth, internalOnly, (req, res) => {
     const from = /^\d{4}-\d{2}-\d{2}$/.test(req.query.from) ? req.query.from : defaultFrom;
     const to = /^\d{4}-\d{2}-\d{2}$/.test(req.query.to) ? req.query.to : today;
     const summary = sqlite.prepare(
-      "SELECT count(*) as total, sum(case when status='sent' then 1 else 0 end) as sent, sum(case when status='failed' then 1 else 0 end) as failed FROM message_logs WHERE channel='sms' AND date(created_at) BETWEEN ? AND ?"
+      "SELECT count(*) as total, sum(case when status='sent' then 1 else 0 end) as sent, sum(case when status='failed' then 1 else 0 end) as failed FROM message_logs WHERE date(created_at) BETWEEN ? AND ?"
     ).get(from, to);
     const daily = sqlite.prepare(
-      "SELECT date(created_at) as day, sum(case when status='sent' then 1 else 0 end) as sent, sum(case when status='failed' then 1 else 0 end) as failed FROM message_logs WHERE channel='sms' AND date(created_at) BETWEEN ? AND ? GROUP BY day ORDER BY day ASC"
+      "SELECT date(created_at) as day, sum(case when status='sent' then 1 else 0 end) as sent, sum(case when status='failed' then 1 else 0 end) as failed FROM message_logs WHERE date(created_at) BETWEEN ? AND ? GROUP BY day ORDER BY day ASC"
     ).all(from, to);
     res.json({
       data: {
@@ -761,11 +797,11 @@ router.get("/google/callback", async (req, res) => {
   const appUrl = (process.env.APP_URL || "http://localhost:5173").replace(/\/$/, "");
 
   if (oauthError) {
-    return res.redirect(`${appUrl}/portal/dashboard?googleError=${encodeURIComponent(oauthError)}`);
+    return res.redirect(`${appUrl}/portal/calendar?googleError=${encodeURIComponent(oauthError)}`);
   }
 
   if (!code || !state) {
-    return res.redirect(`${appUrl}/portal/dashboard?googleError=invalid_callback`);
+    return res.redirect(`${appUrl}/portal/calendar?googleError=invalid_callback`);
   }
 
   try {
@@ -776,10 +812,10 @@ router.get("/google/callback", async (req, res) => {
     const tokens = await googleCalendarOAuth.exchangeCodeForTokens(code);
     await portalService.saveGoogleTokens(userId, tokens);
 
-    res.redirect(`${appUrl}/portal/dashboard?googleConnected=1`);
+    res.redirect(`${appUrl}/portal/calendar?googleConnected=1`);
   } catch (e) {
     console.warn("[portal/google/callback] 토큰 교환 실패:", e.message);
-    res.redirect(`${appUrl}/portal/dashboard?googleError=token_exchange_failed`);
+    res.redirect(`${appUrl}/portal/calendar?googleError=token_exchange_failed`);
   }
 });
 
@@ -825,6 +861,71 @@ router.post("/google/sync-case/:caseId", portalAuth, async (req, res) => {
   }
 });
 
+
+/** POST /api/portal/google/sync-event/:eventId — 포털 일정을 구글 캘린더에 추가 */
+router.post("/google/sync-event/:eventId", portalAuth, async (req, res) => {
+  try {
+    const { userId } = req.portalUser;
+    const { eventId } = req.params;
+
+    const event = sqlite.prepare("SELECT * FROM portal_events WHERE id=?").get(eventId);
+    if (!event) return res.status(404).json({ data: null, error: "일정을 찾을 수 없습니다", meta: null });
+
+    const tokenData = await portalService.getGoogleTokens(userId);
+    if (!tokenData?.googleRefreshToken) {
+      return res.status(400).json({ data: null, error: "구글 캘린더 연동이 필요합니다", meta: null });
+    }
+
+    const { accessToken, refreshed, newExpiry } = await googleCalendarOAuth.getValidAccessToken(tokenData);
+    if (refreshed) {
+      await portalService.saveGoogleTokens(userId, {
+        accessToken,
+        refreshToken: tokenData.googleRefreshToken,
+        expiresAt: newExpiry,
+      });
+    }
+
+    const gEvent = await googleCalendarOAuth.createCaseEvent(accessToken, {
+      summary: event.title,
+      description: event.description || "",
+      date: event.starts_at || event.startsAt,
+      endDate: event.ends_at || event.endsAt,
+      isAllDay: event.is_all_day === 1 || event.isAllDay === 1,
+    });
+
+    // google_event_id를 DB에 저장 (이후 업데이트/삭제 동기화를 위해)
+    sqlite.prepare("UPDATE portal_events SET google_event_id=? WHERE id=?").run(gEvent.eventId, eventId);
+
+    res.json({ data: { ...gEvent, eventId: gEvent.eventId }, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+/** POST /api/portal/google/sync-all — 모든 미동기화 일정을 구글 캘린더에 추가 */
+router.post("/google/sync-all", portalAuth, async (req, res) => {
+  try {
+    const { userId } = req.portalUser;
+    const tokenData = await portalService.getGoogleTokens(userId);
+    if (!tokenData?.googleRefreshToken)
+      return res.status(400).json({ data: null, error: "구글 캘린더 연동이 필요합니다", meta: null });
+    const { accessToken, refreshed, newExpiry } = await googleCalendarOAuth.getValidAccessToken(tokenData);
+    if (refreshed) await portalService.saveGoogleTokens(userId, { accessToken, refreshToken: tokenData.googleRefreshToken, expiresAt: newExpiry });
+    const events = sqlite.prepare("SELECT * FROM portal_events WHERE portal_user_id=? AND (google_event_id IS NULL OR google_event_id='')").all(userId);
+    let synced = 0, failed = 0;
+    for (const ev of events) {
+      try {
+        const gEv = await googleCalendarOAuth.createCaseEvent(accessToken, {
+          summary: ev.title, description: ev.description || "",
+          date: ev.starts_at, endDate: ev.ends_at, isAllDay: ev.is_all_day === 1,
+        });
+        sqlite.prepare("UPDATE portal_events SET google_event_id=? WHERE id=?").run(gEv.eventId, ev.id);
+        synced++;
+      } catch { failed++; }
+    }
+    res.json({ data: { synced, failed, total: events.length }, error: null, meta: null });
+  } catch (e) { handleError(res, e); }
+});
 /** DELETE /api/portal/google/disconnect — 구글 캘린더 연결 해제 */
 router.delete("/google/disconnect", portalAuth, async (req, res) => {
   try {
@@ -1062,7 +1163,24 @@ router.post("/events", portalAuth, async (req, res) => {
 
 router.put("/events/:id", portalAuth, async (req, res) => {
   try {
+    const existing = sqlite.prepare("SELECT google_event_id, starts_at, ends_at, is_all_day, title, description FROM portal_events WHERE id=? AND portal_user_id=?").get(req.params.id, req.portalUser.userId);
     const result = await portalService.updatePortalEvent(req.params.id, req.portalUser.userId, req.body);
+    if (existing?.google_event_id) {
+      try {
+        const tokenData = await portalService.getGoogleTokens(req.portalUser.userId);
+        if (tokenData?.googleRefreshToken) {
+          const { accessToken, refreshed, newExpiry } = await googleCalendarOAuth.getValidAccessToken(tokenData);
+          if (refreshed) await portalService.saveGoogleTokens(req.portalUser.userId, { accessToken, refreshToken: tokenData.googleRefreshToken, expiresAt: newExpiry });
+          await googleCalendarOAuth.updateCalendarEvent(accessToken, existing.google_event_id, {
+            summary: req.body.title || existing.title,
+            description: req.body.description ?? existing.description ?? "",
+            date: req.body.startsAt || existing.starts_at,
+            endDate: req.body.endsAt || existing.ends_at,
+            isAllDay: (req.body.isAllDay ?? existing.is_all_day) === 1,
+          });
+        }
+      } catch (gErr) { console.warn("[google] 이벤트 업데이트 실패:", gErr.message); }
+    }
     res.json({ data: result, error: null, meta: null });
   } catch (e) {
     handleError(res, e);
@@ -1071,7 +1189,17 @@ router.put("/events/:id", portalAuth, async (req, res) => {
 
 router.delete("/events/:id", portalAuth, async (req, res) => {
   try {
+    const existing = sqlite.prepare("SELECT google_event_id FROM portal_events WHERE id=? AND portal_user_id=?").get(req.params.id, req.portalUser.userId);
     const result = await portalService.deletePortalEvent(req.params.id, req.portalUser.userId);
+    if (existing?.google_event_id) {
+      try {
+        const tokenData = await portalService.getGoogleTokens(req.portalUser.userId);
+        if (tokenData?.googleRefreshToken) {
+          const { accessToken } = await googleCalendarOAuth.getValidAccessToken(tokenData);
+          await googleCalendarOAuth.deleteCalendarEvent(accessToken, existing.google_event_id);
+        }
+      } catch (gErr) { console.warn("[google] 이벤트 삭제 실패:", gErr.message); }
+    }
     res.json({ data: result, error: null, meta: null });
   } catch (e) {
     handleError(res, e);
@@ -1081,6 +1209,57 @@ router.delete("/events/:id", portalAuth, async (req, res) => {
 // =============================================
 // 포털 변호사 프로필 설정 및 어드민 기능
 // =============================================
+
+
+/** GET /api/portal/internal/lawyers — 내부 변호사 목록 (멤버 피커용) */
+router.get("/internal/lawyers", portalAuth, internalOnly, (req, res) => {
+  try {
+    const rows = sqlite.prepare("SELECT id, name, position, team FROM lawyers WHERE is_active=1 ORDER BY sort_order ASC, name ASC").all();
+    res.json({ data: rows, error: null, meta: null });
+  } catch (e) { handleError(res, e); }
+});
+
+/** GET /api/portal/internal/departments — 부서 목록 */
+router.get("/internal/departments", portalAuth, internalOnly, (req, res) => {
+  try {
+    const rows = sqlite.prepare("SELECT id, name, parent_id FROM departments ORDER BY name ASC").all();
+    res.json({ data: rows, error: null, meta: null });
+  } catch (e) { handleError(res, e); }
+});
+
+/** GET /api/portal/cases/:id/members — 사건 담당자 목록 */
+router.get("/cases/:id/members", portalAuth, internalOnly, (req, res) => {
+  try {
+    const rows = sqlite.prepare("SELECT * FROM case_members WHERE case_id=? ORDER BY created_at ASC").all(req.params.id);
+    res.json({ data: rows, error: null, meta: null });
+  } catch (e) { handleError(res, e); }
+});
+
+/** POST /api/portal/cases/:id/members — 담당자 추가 */
+router.post("/cases/:id/members", portalAuth, internalOnly, (req, res) => {
+  try {
+    const { memberType, memberId, memberName, role } = req.body;
+    if (!memberId) return res.status(400).json({ data: null, error: "memberId가 필요합니다", meta: null });
+    const dup = sqlite.prepare("SELECT id FROM case_members WHERE case_id=? AND member_id=?").get(req.params.id, memberId);
+    if (dup) return res.status(409).json({ data: null, error: "이미 추가된 멤버입니다", meta: null });
+    const crypto2 = require("crypto");
+    const id = crypto2.randomUUID();
+    const now = new Date().toISOString().replace("T", " ").slice(0, 19);
+    sqlite.prepare("INSERT INTO case_members (id,case_id,member_type,member_id,member_name,role,created_at) VALUES (?,?,?,?,?,?,?)").run(id, req.params.id, memberType || "lawyer", memberId, memberName || null, role || "담당", now);
+    const row = sqlite.prepare("SELECT * FROM case_members WHERE id=?").get(id);
+    res.status(201).json({ data: row, error: null, meta: null });
+  } catch (e) { handleError(res, e); }
+});
+
+/** DELETE /api/portal/cases/:id/members/:memberId — 담당자 제거 */
+router.delete("/cases/:id/members/:memberId", portalAuth, internalOnly, (req, res) => {
+  try {
+    const row = sqlite.prepare("SELECT id FROM case_members WHERE id=? AND case_id=?").get(req.params.memberId, req.params.id);
+    if (!row) return res.status(404).json({ data: null, error: "멤버를 찾을 수 없습니다", meta: null });
+    sqlite.prepare("DELETE FROM case_members WHERE id=?").run(req.params.memberId);
+    res.json({ data: { deleted: true }, error: null, meta: null });
+  } catch (e) { handleError(res, e); }
+});
 
 router.get("/lawyers/my-profile", portalAuth, async (req, res) => {
   try {

@@ -1,7 +1,7 @@
 /**
  * 포털 사건 등록 — 사건번호 입력 후 대법원 전자소송 연동 또는 수동 입력
  */
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { portalApi } from "../../utils/api";
 import { T, fieldStyle, labelStyle } from "./portalStyles";
@@ -22,10 +22,6 @@ const INITIAL_FORM = {
   description: "",
 };
 
-/**
- * 대법원 사건번호 형식 예시: 2024가합12345, 2023나67890, 2022다345678
- * 법원 공개 API는 별도 등록이 필요하므로, 사건번호를 입력하면 형식을 파싱해 법원 정보를 자동 유추한다.
- */
 function parseCaseNumberHint(caseNumber) {
   if (!caseNumber) return {};
   const match = caseNumber.match(/^(\d{4})(가합|가단|나|다|고합|고단|고독|구합|구단|헌가|헌마|행합|행단)(\d+)$/);
@@ -53,23 +49,46 @@ export default function PortalCaseRegister() {
   const [lookupLoading, setLookupLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // 내부 사용자 전용 상태
+  const [userRole, setUserRole] = useState(null);
+  const [lawyers, setLawyers] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [selectedLawyers, setSelectedLawyers] = useState([]);
+  const [selectedDeptId, setSelectedDeptId] = useState("");
+
+  useEffect(() => {
+    portalApi.get("/me").then(res => {
+      const role = res.data?.user?.role;
+      setUserRole(role);
+      if (role === "internal") {
+        Promise.all([
+          portalApi.get("/internal/lawyers"),
+          portalApi.get("/internal/departments"),
+        ]).then(([lRes, dRes]) => {
+          setLawyers(lRes.data?.data || []);
+          setDepartments(dRes.data?.data || []);
+        }).catch(() => {});
+      }
+    }).catch(() => {});
+  }, []);
+
+  const toggleLawyer = (lawyer) => {
+    setSelectedLawyers(prev =>
+      prev.some(l => l.id === lawyer.id)
+        ? prev.filter(l => l.id !== lawyer.id)
+        : [...prev, lawyer]
+    );
+  };
+
   const field = (key) => (e) => {
     const newForm = { ...form, [key]: e.target.value };
-
-    // 사건번호 입력 시 자동 유추
     if (key === "caseNumber") {
       const hint = parseCaseNumberHint(e.target.value.trim());
       if (hint.caseType && !form.caseType) newForm.caseType = hint.caseType;
     }
-
     setForm(newForm);
   };
 
-  /**
-   * 사건번호로 법원 정보 자동 조회
-   * 대법원 전자소송 공개 API가 없어 현재는 사건번호 형식 파싱으로 대체.
-   * 향후 법원 공공데이터 API 연동 시 이 함수를 확장한다.
-   */
   const handleLookup = async () => {
     if (!form.caseNumber.trim()) {
       setError("사건번호를 먼저 입력해주세요");
@@ -77,14 +96,10 @@ export default function PortalCaseRegister() {
     }
     setLookupLoading(true);
     setError("");
-
     try {
       const hint = parseCaseNumberHint(form.caseNumber.trim());
       if (Object.keys(hint).length > 0) {
-        setForm((prev) => ({
-          ...prev,
-          caseType: hint.caseType || prev.caseType,
-        }));
+        setForm((prev) => ({ ...prev, caseType: hint.caseType || prev.caseType }));
         showToast("사건번호 형식에서 정보를 유추했습니다. 상세 정보는 직접 입력해주세요.", "info");
       } else {
         showToast("사건번호 형식을 인식하지 못했습니다. 직접 입력해주세요.", "warning");
@@ -101,7 +116,7 @@ export default function PortalCaseRegister() {
     setError("");
     setLoading(true);
     try {
-      const result = await portalApi.post("/cases", {
+      const payload = {
         title: form.title.trim(),
         caseNumber: form.caseNumber.trim() || null,
         court: form.court.trim() || null,
@@ -110,9 +125,14 @@ export default function PortalCaseRegister() {
         defendant: form.defendant.trim() || null,
         filedAt: form.filedAt || null,
         description: form.description.trim() || null,
-      });
+      };
+      if (userRole === "internal") {
+        payload.members = selectedLawyers.map(l => ({ id: l.id, name: l.name }));
+        payload.departmentId = selectedDeptId || null;
+      }
+      const result = await portalApi.post("/cases", payload);
       showToast("사건이 등록되었습니다", "success");
-      navigate(`/portal/cases/${result.data.id}`);
+      navigate(`/portal/cases/${result.data.data?.id || result.data.id}`);
     } catch (err) {
       setError(err.message || "사건 등록에 실패했습니다");
     } finally {
@@ -226,6 +246,59 @@ export default function PortalCaseRegister() {
             <input style={fieldStyle} value={form.defendant} onChange={field("defendant")} placeholder="피고 성명/법인명" />
           </div>
         </div>
+
+        {/* 담당자/부서 — 내부 사용자 전용 */}
+        {userRole === "internal" && (
+          <>
+            {sectionTitle("담당자 / 공유 부서")}
+
+            <div style={{ marginBottom: 14 }}>
+              <label style={labelStyle}>담당 변호사</label>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {lawyers.map(lawyer => {
+                  const selected = selectedLawyers.some(l => l.id === lawyer.id);
+                  return (
+                    <button
+                      key={lawyer.id}
+                      type="button"
+                      onClick={() => toggleLawyer(lawyer)}
+                      style={{
+                        padding: "6px 12px", fontSize: 13, borderRadius: 20, cursor: "pointer",
+                        border: selected ? `2px solid ${T.accent}` : "1px solid #d1d5db",
+                        background: selected ? `${T.accent}15` : "#fff",
+                        color: selected ? T.accent : "#374151",
+                        fontWeight: selected ? 600 : 400,
+                      }}
+                    >
+                      {lawyer.name}
+                      {lawyer.position && <span style={{ fontSize: 11, color: "#6b7280", marginLeft: 4 }}>{lawyer.position}</span>}
+                    </button>
+                  );
+                })}
+                {lawyers.length === 0 && <span style={{ fontSize: 13, color: "#9ca3af" }}>변호사 정보를 불러오는 중...</span>}
+              </div>
+              {selectedLawyers.length > 0 && (
+                <div style={{ marginTop: 6, fontSize: 12, color: T.textMuted }}>
+                  선택: {selectedLawyers.map(l => l.name).join(", ")}
+                </div>
+              )}
+            </div>
+
+            <div style={{ marginBottom: 14 }}>
+              <label style={labelStyle}>공유 부서</label>
+              <select
+                style={{ ...fieldStyle, appearance: "none" }}
+                value={selectedDeptId}
+                onChange={e => setSelectedDeptId(e.target.value)}
+              >
+                <option value="">선택 안 함</option>
+                {departments.map(dept => (
+                  <option key={dept.id} value={dept.id}>{dept.name}</option>
+                ))}
+              </select>
+            </div>
+          </>
+        )}
 
         {/* 메모 */}
         {sectionTitle("메모")}
