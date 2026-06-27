@@ -59,6 +59,11 @@ export default function Footer({ isLawyerDetail, lang = "ko" }) {
             >
               {isEnglish ? "Attorneys at Law" : "법무법인 하이로"}
             </p>
+            {!isEnglish && (
+              <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", margin: "4px 0 0" }}>
+                광고책임변호사 조덕재
+              </p>
+            )}
           </div>
 
           {/* 우측 — 3개 정보 컬럼 */}
