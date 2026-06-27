@@ -73,10 +73,20 @@
     /* Form */
     .form-field{display:flex;flex-direction:column;gap:8px;}
     .form-label{font-size:.82rem;font-weight:600;color:rgba(241,245,249,.8);}
-    .form-input,.form-select,.form-textarea{background:rgba(15,26,10,.7);border:1px solid rgba(184,204,42,.25);border-radius:10px;padding:12px 16px;font-size:.9rem;color:#F1F5F9;font-family:'Noto Sans KR',system-ui;outline:none;transition:border-color .18s,box-shadow .18s;width:100%;}
+    .form-input,.form-select,.form-textarea{background:rgba(15,26,10,.7);border:1px solid rgba(184,204,42,.25);border-radius:10px;padding:12px 16px;font-size:1rem;color:#F1F5F9;font-family:'Noto Sans KR',system-ui;outline:none;transition:border-color .18s,box-shadow .18s;width:100%;}
     .form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(184,204,42,.12);}
     .form-select option{background:#0F1A0A;color:#F1F5F9;}
     .form-textarea{resize:vertical;min-height:120px;}
+    /* iOS Safari / Android 모바일 최적화 */
+    a,button{-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+    input,select,textarea{-webkit-tap-highlight-color:transparent;}
+    #nav.scrolled,#mega-dd{-webkit-backdrop-filter:blur(20px);}
+    .fcta-btn,#mob-bar{-webkit-backdrop-filter:blur(14px);}
+    #drawer-overlay{-webkit-backdrop-filter:blur(4px);}
+    @media(max-width:767px){
+      .form-2col{grid-template-columns:1fr!important;}
+      .page-hero .heading{font-size:1.6rem!important;}
+    }
   </style>
 </head>
 <body>
@@ -147,7 +157,7 @@
   </div>
 </div>
 <script>
-(function(){var btn=document.getElementById('hamburger-btn'),overlay=document.getElementById('drawer-overlay'),panel=document.getElementById('drawer-panel'),drawer=document.getElementById('mobile-drawer'),lines=btn?btn.querySelectorAll('.ham-line'):[],isOpen=false,dl=document.getElementById('nav-desktop-links');function applyLayout(){var wide=window.innerWidth>=768;if(dl)dl.style.display=wide?'flex':'none';if(btn)btn.style.display=wide?'none':'flex';}applyLayout();window.addEventListener('resize',applyLayout);function openDrawer(){isOpen=true;drawer.style.pointerEvents='auto';overlay.style.pointerEvents='auto';panel.style.pointerEvents='auto';overlay.style.opacity='1';panel.style.transform='translateX(0)';document.body.style.overflow='hidden';if(btn)btn.setAttribute('aria-expanded','true');if(lines[0])lines[0].style.transform='translateY(7px) rotate(45deg)';if(lines[1])lines[1].style.opacity='0';if(lines[2])lines[2].style.transform='translateY(-7px) rotate(-45deg)';}function closeDrawer(){isOpen=false;overlay.style.opacity='0';panel.style.transform='translateX(100%)';document.body.style.overflow='';if(btn)btn.setAttribute('aria-expanded','false');if(lines[0])lines[0].style.transform='';if(lines[1])lines[1].style.opacity='1';if(lines[2])lines[2].style.transform='';setTimeout(function(){if(!isOpen){drawer.style.pointerEvents='none';overlay.style.pointerEvents='none';panel.style.pointerEvents='none';}},320);}window.closeDrawer=closeDrawer;if(btn)btn.addEventListener('click',function(){isOpen?closeDrawer():openDrawer();});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&isOpen)closeDrawer();});var megaDd=document.getElementById('mega-dd'),navTls=document.querySelectorAll('.nav-tl'),t=null;function showMega(){clearTimeout(t);if(megaDd)megaDd.classList.add('open');}function hideMega(){clearTimeout(t);t=setTimeout(function(){if(megaDd)megaDd.classList.remove('open');},280);}navTls.forEach(function(el){el.addEventListener('mouseenter',showMega);el.addEventListener('mouseleave',hideMega);});if(megaDd){megaDd.addEventListener('mouseenter',showMega);megaDd.addEventListener('mouseleave',hideMega);}})();
+(function(){var btn=document.getElementById('hamburger-btn'),overlay=document.getElementById('drawer-overlay'),panel=document.getElementById('drawer-panel'),drawer=document.getElementById('mobile-drawer'),lines=btn?btn.querySelectorAll('.ham-line'):[],isOpen=false,dl=document.getElementById('nav-desktop-links');function applyLayout(){var wide=window.innerWidth>=768;if(dl)dl.style.display=wide?'flex':'none';if(btn)btn.style.display=wide?'none':'flex';}applyLayout();window.addEventListener('resize',applyLayout);function openDrawer(){isOpen=true;drawer.style.pointerEvents='auto';overlay.style.pointerEvents='auto';panel.style.pointerEvents='auto';overlay.style.opacity='1';panel.style.transform='translateX(0)';var _sy=window.scrollY;document.body.style.position='fixed';document.body.style.top='-'+_sy+'px';document.body.style.width='100%';if(btn)btn.setAttribute('aria-expanded','true');if(lines[0])lines[0].style.transform='translateY(7px) rotate(45deg)';if(lines[1])lines[1].style.opacity='0';if(lines[2])lines[2].style.transform='translateY(-7px) rotate(-45deg)';}function closeDrawer(){isOpen=false;overlay.style.opacity='0';panel.style.transform='translateX(100%)';var _sy2=parseInt(document.body.style.top||'0')*-1;document.body.style.position='';document.body.style.top='';document.body.style.width='';window.scrollTo(0,_sy2);if(btn)btn.setAttribute('aria-expanded','false');if(lines[0])lines[0].style.transform='';if(lines[1])lines[1].style.opacity='1';if(lines[2])lines[2].style.transform='';setTimeout(function(){if(!isOpen){drawer.style.pointerEvents='none';overlay.style.pointerEvents='none';panel.style.pointerEvents='none';}},320);}window.closeDrawer=closeDrawer;if(btn)btn.addEventListener('click',function(){isOpen?closeDrawer():openDrawer();});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&isOpen)closeDrawer();});var megaDd=document.getElementById('mega-dd'),navTls=document.querySelectorAll('.nav-tl'),t=null;function showMega(){clearTimeout(t);if(megaDd)megaDd.classList.add('open');}function hideMega(){clearTimeout(t);t=setTimeout(function(){if(megaDd)megaDd.classList.remove('open');},280);}navTls.forEach(function(el){el.addEventListener('mouseenter',showMega);el.addEventListener('mouseleave',hideMega);});if(megaDd){megaDd.addEventListener('mouseenter',showMega);megaDd.addEventListener('mouseleave',hideMega);}})();
 </script>
 
 <!-- PAGE HERO -->
@@ -192,7 +202,7 @@
     <div class="card fu" style="padding:36px;">
       <h3 style="font-size:1.1rem;font-weight:700;color:#F1F5F9;margin-bottom:24px;">이메일 상담신청</h3>
       <form action="mailto:mingukang@highlaw.net" method="post" enctype="text/plain" style="display:flex;flex-direction:column;gap:20px;">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;flex-wrap:wrap;">
+        <div class="form-2col" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
           <div class="form-field">
             <label class="form-label" for="name">성함 *</label>
             <input class="form-input" id="name" name="성함" type="text" placeholder="홍길동" required>
