@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="법무법인 하이로 군사센터 상담문의 — 상담신청, 진행절차, FAQ.">
+  <title>상담문의 | 법무법인 하이로 군사센터</title>
+  <link rel="icon" type="image/png" href="https://highlaw.co.kr/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;}html{scroll-behavior:smooth;font-size:16px;}
+    body{font-family:'Noto Sans KR',system-ui,sans-serif;background:#0F1A0A;color:#F1F5F9;overflow-x:hidden;-webkit-font-smoothing:antialiased;padding-bottom:76px;}
+    :root{--gold:#B8CC2A;--gold-dim:rgba(184,204,42,.18);--gold-border:rgba(184,204,42,.28);--navy-card:rgba(26,46,15,.88);--text-sub:#CBD5E1;--text-muted:#94A3B8;}
+    p,h1,h2,h3,h4,li,span{word-break:keep-all;overflow-wrap:break-word;}
+    .heading{font-family:'Noto Sans KR',system-ui,sans-serif;line-height:1.3;font-weight:800;}
+    .card{background:var(--navy-card);border:1px solid var(--gold-border);border-radius:14px;transition:border-color .25s,box-shadow .25s;}
+    .card:hover{border-color:rgba(184,204,42,.5);box-shadow:0 8px 32px rgba(184,204,42,.08);}
+    .fu{opacity:0;transform:translateY(36px);transition:opacity .75s cubic-bezier(.22,1,.36,1),transform .75s cubic-bezier(.22,1,.36,1);}
+    .fu.vis{opacity:1;transform:none;}
+    .fu.d1{transition-delay:.08s}.fu.d2{transition-delay:.18s}.fu.d3{transition-delay:.28s}.fu.d4{transition-delay:.40s}
+    .sec{padding:84px 0;}.wrap{max-width:64rem;margin:0 auto;padding:0 20px;}
+    .bg-a{background:#0F1A0A}.bg-b{background:#132010}
+    .kbtn{display:inline-flex;align-items:center;gap:8px;background:#FEE500;color:#191919;font-weight:700;border-radius:12px;cursor:pointer;text-decoration:none;transition:background .18s,transform .18s;}
+    .kbtn:hover{background:#FFD700;transform:translateY(-2px)}
+    #nav{position:fixed;top:0;left:0;right:0;z-index:100;transition:background .3s,box-shadow .3s;border-bottom:1px solid rgba(184,204,42,.22);}
+    #nav .nav-inner{max-width:1240px;margin:0 auto;padding:0 24px;height:72px;display:flex;align-items:center;justify-content:space-between;}
+    #nav.scrolled{background:rgba(15,26,10,.95);backdrop-filter:blur(20px);box-shadow:0 2px 24px rgba(0,0,0,.35);}
+    #mega-dd{position:absolute;top:100%;left:0;right:0;z-index:200;background:rgba(8,16,5,.97);border:1px solid rgba(184,204,42,.22);border-top:none;border-radius:0 0 10px 10px;backdrop-filter:blur(20px);opacity:0;pointer-events:none;transform:translateY(-4px);transition:opacity .18s ease,transform .18s ease;}
+    #mega-dd.open{opacity:1;pointer-events:auto;transform:translateY(0);}
+    .mega-dd-wrap{padding:18px 0 16px;display:grid;grid-template-columns:repeat(5,1fr);gap:0;}
+    .mega-col{padding:0 14px;border-right:1px solid rgba(184,204,42,.1);min-width:0;}
+    .mega-col:last-child{border-right:none;}
+    .mega-col-title{font-size:.62rem;letter-spacing:.22em;color:var(--gold);text-transform:uppercase;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid rgba(184,204,42,.15);font-weight:700;white-space:nowrap;}
+    .mega-col a{display:block;padding:6px 4px;font-size:.82rem;color:rgba(241,245,249,.68);text-decoration:none;transition:color .15s,padding-left .15s;white-space:nowrap;border-radius:4px;}
+    .mega-col a:hover{color:var(--gold);padding-left:8px;}
+    .nav-tl{display:inline-block;padding:8px 22px;font-size:.82rem;font-weight:500;color:rgba(241,245,249,.7);text-decoration:none;border-bottom:1.5px solid transparent;transition:color .2s,border-color .2s;white-space:nowrap;}
+    .nav-tl:hover,.nav-tl.active{color:#F1F5F9;border-bottom-color:rgba(184,204,42,.7);}
+    .nav-tl.active{color:var(--gold);border-bottom-color:var(--gold);}
+    #fcta{position:fixed;bottom:28px;right:20px;z-index:200;display:flex;flex-direction:column;align-items:flex-end;gap:8px;}
+    .fcta-btn{position:relative;width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(15,26,10,.90);border:1px solid rgba(255,255,255,.18);backdrop-filter:blur(14px);box-shadow:0 4px 18px rgba(0,0,0,.5);cursor:pointer;text-decoration:none;color:#F1F5F9;transition:transform .2s,background .2s;outline:none;}
+    .fcta-btn:hover{transform:translateX(-5px);}
+    .fcta-tip{position:absolute;right:54px;top:50%;transform:translateY(-50%);background:rgba(6,14,4,.95);color:#F1F5F9;font-size:.7rem;font-weight:600;white-space:nowrap;padding:5px 11px;border-radius:6px;border:1px solid rgba(255,255,255,.12);opacity:0;pointer-events:none;transition:opacity .18s;}
+    .fcta-btn:hover .fcta-tip{opacity:1;}
+    .fcta-kakao{background:#FEE500;border-color:#FEE500;color:#191919;}
+    .fcta-naver{background:#03C75A;border-color:#03C75A;color:#fff;}
+    .fcta-phone{border-color:rgba(184,204,42,.45);}
+    #btn-top{display:none;}
+    .subnav-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+    .subnav-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 16px;border-radius:8px;font-size:.8rem;font-weight:600;letter-spacing:.04em;text-decoration:none;border:1px solid rgba(184,204,42,.3);color:rgba(241,245,249,.7);transition:border-color .18s,color .18s,background .18s;}
+    .subnav-btn:hover{border-color:var(--gold);color:var(--gold);background:rgba(184,204,42,.06);}
+    .subnav-btn.active{border-color:var(--gold);color:var(--gold);background:rgba(184,204,42,.1);}
+    .page-hero{padding-top:120px;padding-bottom:56px;background:linear-gradient(135deg,#0F1A0A,#1A2E0F,#0F1A0A);border-bottom:1px solid rgba(184,204,42,.12);}
+    @media(max-width:767px){.sec{padding:56px 0;}#fcta{bottom:88px!important;right:12px;gap:6px;}.fcta-btn{width:42px;height:42px;}.fcta-tip{display:none!important;}}
+    #mob-bar{display:none;position:fixed;bottom:0;left:0;right:0;z-index:300;background:rgba(10,20,7,.97);border-top:1px solid rgba(184,204,42,.2);backdrop-filter:blur(14px);padding:10px 14px;gap:10px;align-items:center;}
+    @media(max-width:767px){body{padding-bottom:76px;}#mob-bar{display:flex;}}
+    #mob-kakao{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;background:#FEE500;color:#191919;border-radius:10px;padding:14px 0;min-height:48px;font-size:.9rem;font-weight:700;text-decoration:none;}
+    #mob-call{display:flex;align-items:center;justify-content:center;min-width:64px;min-height:48px;border:1.5px solid rgba(184,204,42,.4);border-radius:10px;color:var(--gold);text-decoration:none;flex-direction:column;gap:2px;}
+    /* FAQ accordion */
+    .faq-item{border-bottom:1px solid rgba(184,204,42,.12);}
+    .faq-q{width:100%;display:flex;align-items:center;justify-content:space-between;padding:18px 0;background:none;border:none;cursor:pointer;color:#F1F5F9;font-size:.95rem;font-weight:600;font-family:'Noto Sans KR',system-ui;text-align:left;gap:12px;}
+    .faq-a{overflow:hidden;max-height:0;transition:max-height .35s cubic-bezier(.4,0,.2,1);}
+    .faq-a.open{max-height:300px;}
+    .faq-a-inner{padding:0 0 18px;font-size:.88rem;color:var(--text-sub);line-height:1.8;}
+    .faq-icon{flex-shrink:0;width:22px;height:22px;border-radius:50%;background:rgba(184,204,42,.1);border:1px solid rgba(184,204,42,.3);display:flex;align-items:center;justify-content:center;transition:transform .25s,background .25s;}
+    .faq-item.open .faq-icon{transform:rotate(45deg);background:var(--gold);}
+    /* Step */
+    .step-item{display:flex;gap:20px;align-items:flex-start;}
+    .step-num{width:44px;height:44px;flex-shrink:0;border-radius:50%;background:rgba(184,204,42,.12);border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:.9rem;font-weight:800;color:var(--gold);}
+    .step-line{width:2px;background:rgba(184,204,42,.18);margin:8px auto;flex:1;}
+    /* Form */
+    .form-field{display:flex;flex-direction:column;gap:8px;}
+    .form-label{font-size:.82rem;font-weight:600;color:rgba(241,245,249,.8);}
+    .form-input,.form-select,.form-textarea{background:rgba(15,26,10,.7);border:1px solid rgba(184,204,42,.25);border-radius:10px;padding:12px 16px;font-size:.9rem;color:#F1F5F9;font-family:'Noto Sans KR',system-ui;outline:none;transition:border-color .18s,box-shadow .18s;width:100%;}
+    .form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(184,204,42,.12);}
+    .form-select option{background:#0F1A0A;color:#F1F5F9;}
+    .form-textarea{resize:vertical;min-height:120px;}
+  </style>
+</head>
+<body>
+
+<!-- FLOATING CTA -->
+<div id="fcta">
+  <button id="btn-top" class="fcta-btn" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="맨 위로"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 15.75 7.5-7.5 7.5 7.5"/></svg><span class="fcta-tip">맨 위로</span></button>
+  <a href="https://www.instagram.com/highlaw.official?igsh=ZGg2N3hmaDNkZjJw" target="_blank" rel="noopener noreferrer" class="fcta-btn" aria-label="인스타그램"><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 1.366.062 2.633.336 3.608 1.311.975.975 1.249 2.242 1.311 3.608.058 1.266.07 1.646.07 4.85s-.012 3.584-.07 4.85c-.062 1.366-.336 2.633-1.311 3.608-.975.975-2.242 1.249-3.608 1.311-1.266.058-1.646.07-4.85.07s-3.584-.012-4.85-.07c-1.366-.062-2.633-.336-3.608-1.311-.975-.975-1.249-2.242-1.311-3.608C2.175 15.747 2.163 15.367 2.163 12s.012-3.584-.07-4.85c.062-1.366.336-2.633 1.311-3.608.975-.975 2.242-1.249 3.608-1.311C8.416 2.175 8.796 2.163 12 2.163zm0 1.838c-3.15 0-3.51.012-4.74.068-1.024.047-1.578.218-1.948.362-.49.19-.84.418-1.207.785-.367.367-.595.717-.785 1.207-.144.37-.315.924-.362 1.948-.056 1.23-.068 1.59-.068 4.74s.012 3.51.068 4.74c.047 1.024.218 1.578.362 1.948.19.49.418.84.785 1.207.367.367.717.595 1.207.785.37.144.924.315 1.948.362 1.23.056 1.59.068 4.74.068s3.51-.012 4.74-.068c1.024-.047 1.578-.218 1.948-.362.49-.19.84-.418 1.207-.785.367-.367.595-.717.785-1.207.144-.37.315-.924.362-1.948.056-1.23.068-1.59.068-4.74s-.012-3.51-.068-4.74c-.047-1.024-.218-1.578-.362-1.948-.19-.49-.418-.84-.785-1.207-.367-.367-.717-.595-1.207-.785-.37-.144-.924-.315-1.948-.362-1.23-.056-1.59-.068-4.74-.068zm0 3.155A4.844 4.844 0 1 1 12 16.84a4.844 4.844 0 0 1 0-9.688zm0 7.99a3.146 3.146 0 1 0 0-6.293 3.146 3.146 0 0 0 0 6.293zm6.16-8.198a1.132 1.132 0 1 1-2.265 0 1.132 1.132 0 0 1 2.265 0z"/></svg><span class="fcta-tip">인스타그램</span></a>
+  <a href="http://pf.kakao.com/_GxebGX/chat" target="_blank" rel="noopener noreferrer" class="fcta-btn fcta-kakao" aria-label="카카오톡 상담"><svg width="20" height="20" viewBox="0 0 24 24" fill="#191919"><path d="M12 2C6.477 2 2 5.97 2 10.865c0 3.14 1.718 5.91 4.337 7.612-.19.672-.687 2.433-.789 2.812-.123.476.174.471.366.342.151-.1 2.398-1.628 3.365-2.284.547.076 1.109.116 1.721.116 5.523 0 10-3.97 10-8.865S17.523 2 12 2z"/></svg><span class="fcta-tip" style="color:#191919;background:#FEE500;border-color:#FEE500;">카카오톡</span></a>
+  <a href="https://map.naver.com/p/search/%ED%95%98%EC%9D%B4%EB%A1%9C/place/2029221798?placePath=/ticket" target="_blank" rel="noopener noreferrer" class="fcta-btn fcta-naver" aria-label="네이버 예약"><svg width="17" height="17" viewBox="0 0 24 24" fill="#fff"><path d="M16.273 12.845 7.376 0H0v24h7.727V11.155L16.624 24H24V0h-7.727z"/></svg><span class="fcta-tip" style="color:#fff;background:#03C75A;border-color:#03C75A;">네이버 예약</span></a>
+  <a href="tel:02-6925-6757" class="fcta-btn fcta-phone" aria-label="전화 상담"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.338c0 8.765 7.097 15.863 15.863 15.863h1.125c.621 0 1.125-.504 1.125-1.125v-2.572a1.125 1.125 0 0 0-.824-1.086l-3.163-.79a1.125 1.125 0 0 0-1.197.428l-.956 1.193a14.12 14.12 0 0 1-6.415-6.415l1.194-.957a1.125 1.125 0 0 0 .428-1.197l-.79-3.163A1.125 1.125 0 0 0 7.46 3H4.887C4.267 3 3.75 3.517 3.75 4.137c0 .12-.003.239-.01.358l-.123 1.842"/></svg><span class="fcta-tip">전화</span></a>
+</div>
+
+<!-- NAVBAR -->
+<nav id="nav" aria-label="주 탐색">
+  <div class="nav-inner">
+    <a href="/military" style="display:flex;align-items:center;gap:10px;text-decoration:none;flex-shrink:0;">
+      <img src="https://highlaw.co.kr/favicon.png" alt="" style="height:30px;width:auto;" onerror="this.style.display='none'">
+      <div style="display:flex;flex-direction:column;gap:1px;"><span style="font-size:.88rem;letter-spacing:.08em;color:#F1F5F9;font-weight:700;text-transform:uppercase;line-height:1.2;">HIGHLAW 군사센터</span><span style="font-size:.6rem;color:rgba(241,245,249,.5);letter-spacing:.06em;line-height:1.2;">법무법인 하이로</span></div>
+    </a>
+    <div style="display:flex;align-items:center;gap:4px;align-self:stretch;">
+      <div id="nav-desktop-links" style="display:none;align-items:center;gap:8px;position:relative;height:100%;">
+        <a href="/military/about" class="nav-tl">하이로 군사센터</a>
+        <a href="/military/partners" class="nav-tl">구성원</a>
+        <a href="/military/practices" class="nav-tl">업무 분야</a>
+        <a href="/military/info" class="nav-tl">하이로 소식</a>
+        <a href="/military/consultation" class="nav-tl active">상담문의</a>
+        <div id="mega-dd">
+          <div class="mega-dd-wrap">
+            <div class="mega-col"><div class="mega-col-title">하이로 군사센터</div><a href="/military/about#greeting">인사말</a><a href="/military/about#values">핵심가치</a><a href="/military/about#directions">오시는 길</a><a href="/military/about#probono">공익활동</a><a href="/military/about#history">연혁</a></div>
+            <div class="mega-col"><div class="mega-col-title">구성원</div><a href="/military/partners#lawyers">변호사</a><a href="/military/partners#specialists">전문위원</a><a href="/military/partners#staff">직원</a></div>
+            <div class="mega-col"><div class="mega-col-title">업무 분야</div><a href="/military/practices#discipline">군징계</a><a href="/military/practices#criminal">군형사</a><a href="/military/practices#admin">행정</a><a href="/military/practices#civil">민사</a></div>
+            <div class="mega-col"><div class="mega-col-title">하이로 소식</div><a href="/military/info#news">하이로 뉴스</a><a href="/military/info#guide">군법 가이드</a></div>
+            <div class="mega-col"><div class="mega-col-title">상담문의</div><a href="/military/consultation#form">상담신청</a><a href="/military/consultation#process">진행절차</a><a href="/military/consultation#faq">FAQ</a></div>
+          </div>
+        </div>
+      </div>
+      <button id="hamburger-btn" aria-label="메뉴 열기" aria-expanded="false" style="display:flex;flex-direction:column;justify-content:center;align-items:center;gap:5px;width:42px;height:42px;background:rgba(184,204,42,.1);border:1px solid rgba(184,204,42,.3);border-radius:8px;cursor:pointer;padding:0;margin-left:8px;">
+        <span class="ham-line" style="display:block;width:20px;height:2px;background:#F1F5F9;border-radius:2px;transition:transform .25s,opacity .25s;"></span>
+        <span class="ham-line" style="display:block;width:20px;height:2px;background:#F1F5F9;border-radius:2px;transition:transform .25s,opacity .25s;"></span>
+        <span class="ham-line" style="display:block;width:20px;height:2px;background:#F1F5F9;border-radius:2px;transition:transform .25s,opacity .25s;"></span>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<!-- MOBILE DRAWER -->
+<div id="mobile-drawer" role="dialog" aria-modal="true" style="position:fixed;inset:0;z-index:500;pointer-events:none;">
+  <div id="drawer-overlay" style="position:absolute;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);opacity:0;transition:opacity .3s ease;pointer-events:none;" onclick="closeDrawer()"></div>
+  <div id="drawer-panel" style="position:absolute;top:0;right:0;bottom:0;width:min(320px,88vw);background:#0F1A0A;border-left:1px solid rgba(184,204,42,.2);display:flex;flex-direction:column;transform:translateX(100%);transition:transform .32s cubic-bezier(.4,0,.2,1);pointer-events:none;overflow-y:auto;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 22px 18px;border-bottom:1px solid rgba(184,204,42,.12);">
+      <div style="font-size:.85rem;font-weight:700;color:#F1F5F9;">법무법인 하이로</div>
+      <button onclick="closeDrawer()" style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);color:#94A3B8;cursor:pointer;display:flex;align-items:center;justify-content:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg></button>
+    </div>
+    <div style="padding:16px 22px 0;display:flex;flex-direction:column;gap:2px;">
+      <a href="/military" onclick="closeDrawer()" style="padding:12px 14px;border-radius:10px;color:rgba(241,245,249,.6);font-size:.85rem;text-decoration:none;display:block;border:1px solid rgba(184,204,42,.15);margin-bottom:6px;">군 징계·형사 메인</a>
+      <a href="/military/about" onclick="closeDrawer()" style="padding:12px 14px;border-radius:10px;color:rgba(241,245,249,.75);font-size:.88rem;text-decoration:none;display:block;">하이로 군사센터</a>
+      <a href="/military/partners" onclick="closeDrawer()" style="padding:12px 14px;border-radius:10px;color:rgba(241,245,249,.75);font-size:.88rem;text-decoration:none;display:block;">구성원</a>
+      <a href="/military/practices" onclick="closeDrawer()" style="padding:12px 14px;border-radius:10px;color:rgba(241,245,249,.75);font-size:.88rem;text-decoration:none;display:block;">업무 분야</a>
+      <a href="/military/info" onclick="closeDrawer()" style="padding:12px 14px;border-radius:10px;color:rgba(241,245,249,.75);font-size:.88rem;text-decoration:none;display:block;">하이로 소식</a>
+      <a href="/military/consultation" onclick="closeDrawer()" style="padding:12px 14px;border-radius:10px;color:var(--gold);font-size:.88rem;font-weight:700;text-decoration:none;display:block;background:rgba(184,204,42,.06);border:1px solid rgba(184,204,42,.2);">상담문의 ✓</a>
+    </div>
+    <div style="margin:20px 22px;height:1px;background:linear-gradient(90deg,rgba(184,204,42,.2),transparent);"></div>
+    <div style="padding:0 22px;display:flex;flex-direction:column;gap:10px;">
+      <a href="http://pf.kakao.com/_GxebGX/chat" target="_blank" rel="noopener noreferrer" class="kbtn" style="justify-content:center;padding:14px;font-size:.9rem;"><svg width="18" height="18" viewBox="0 0 24 24" fill="#191919"><path d="M12 2C6.477 2 2 5.97 2 10.865c0 3.14 1.718 5.91 4.337 7.612-.19.672-.687 2.433-.789 2.812-.123.476.174.471.366.342.151-.1 2.398-1.628 3.365-2.284.547.076 1.109.116 1.721.116 5.523 0 10-3.97 10-8.865S17.523 2 12 2z"/></svg>카카오톡 상담</a>
+    </div>
+    <div style="flex:1;min-height:32px;"></div>
+  </div>
+</div>
+<script>
+(function(){var btn=document.getElementById('hamburger-btn'),overlay=document.getElementById('drawer-overlay'),panel=document.getElementById('drawer-panel'),drawer=document.getElementById('mobile-drawer'),lines=btn?btn.querySelectorAll('.ham-line'):[],isOpen=false,dl=document.getElementById('nav-desktop-links');function applyLayout(){var wide=window.innerWidth>=768;if(dl)dl.style.display=wide?'flex':'none';if(btn)btn.style.display=wide?'none':'flex';}applyLayout();window.addEventListener('resize',applyLayout);function openDrawer(){isOpen=true;drawer.style.pointerEvents='auto';overlay.style.pointerEvents='auto';panel.style.pointerEvents='auto';overlay.style.opacity='1';panel.style.transform='translateX(0)';document.body.style.overflow='hidden';if(btn)btn.setAttribute('aria-expanded','true');if(lines[0])lines[0].style.transform='translateY(7px) rotate(45deg)';if(lines[1])lines[1].style.opacity='0';if(lines[2])lines[2].style.transform='translateY(-7px) rotate(-45deg)';}function closeDrawer(){isOpen=false;overlay.style.opacity='0';panel.style.transform='translateX(100%)';document.body.style.overflow='';if(btn)btn.setAttribute('aria-expanded','false');if(lines[0])lines[0].style.transform='';if(lines[1])lines[1].style.opacity='1';if(lines[2])lines[2].style.transform='';setTimeout(function(){if(!isOpen){drawer.style.pointerEvents='none';overlay.style.pointerEvents='none';panel.style.pointerEvents='none';}},320);}window.closeDrawer=closeDrawer;if(btn)btn.addEventListener('click',function(){isOpen?closeDrawer():openDrawer();});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&isOpen)closeDrawer();});var megaDd=document.getElementById('mega-dd'),navTls=document.querySelectorAll('.nav-tl'),t=null;function showMega(){clearTimeout(t);if(megaDd)megaDd.classList.add('open');}function hideMega(){clearTimeout(t);t=setTimeout(function(){if(megaDd)megaDd.classList.remove('open');},280);}navTls.forEach(function(el){el.addEventListener('mouseenter',showMega);el.addEventListener('mouseleave',hideMega);});if(megaDd){megaDd.addEventListener('mouseenter',showMega);megaDd.addEventListener('mouseleave',hideMega);}})();
+</script>
+
+<!-- PAGE HERO -->
+<div class="page-hero">
+  <div class="wrap">
+    <p style="font-size:.62rem;letter-spacing:.22em;color:var(--gold);text-transform:uppercase;font-weight:700;margin-bottom:14px;">CONSULTATION</p>
+    <h1 class="heading" style="font-size:2rem;color:#F1F5F9;margin-bottom:16px;">상담문의</h1>
+    <p style="font-size:.95rem;color:var(--text-sub);line-height:1.8;max-width:560px;margin-bottom:28px;">지금 바로 연락주세요. 군 사건은 첫 대응 속도가 결과를 좌우합니다.</p>
+    <nav class="subnav-bar">
+      <a href="#form" class="subnav-btn active">상담신청</a>
+      <a href="#process" class="subnav-btn">진행절차</a>
+      <a href="#faq" class="subnav-btn">FAQ</a>
+    </nav>
+  </div>
+</div>
+
+<!-- 상담신청 -->
+<section id="form" class="sec bg-a">
+  <div class="wrap">
+    <div style="width:52px;height:3px;background:linear-gradient(90deg,var(--gold),transparent);border-radius:2px;margin-bottom:14px;" class="fu"></div>
+    <p style="font-size:.62rem;letter-spacing:.22em;color:var(--gold);text-transform:uppercase;font-weight:700;margin-bottom:10px;" class="fu">GET IN TOUCH</p>
+    <h2 class="heading fu" style="font-size:1.75rem;color:#F1F5F9;margin-bottom:16px;">상담신청</h2>
+    <p class="fu d1" style="font-size:.9rem;color:var(--text-sub);line-height:1.8;max-width:600px;margin-bottom:40px;">무료 초기 상담을 신청하세요. 24시간 접수, 영업일 기준 당일 또는 다음날 연락드립니다.</p>
+
+    <!-- 빠른 상담 채널 -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:48px;">
+      <a href="http://pf.kakao.com/_GxebGX/chat" target="_blank" rel="noopener noreferrer" class="fu d1" style="display:flex;align-items:center;gap:14px;padding:20px 22px;border-radius:14px;background:#FEE500;text-decoration:none;border:2px solid #FEE500;transition:transform .18s;">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="#191919"><path d="M12 2C6.477 2 2 5.97 2 10.865c0 3.14 1.718 5.91 4.337 7.612-.19.672-.687 2.433-.789 2.812-.123.476.174.471.366.342.151-.1 2.398-1.628 3.365-2.284.547.076 1.109.116 1.721.116 5.523 0 10-3.97 10-8.865S17.523 2 12 2z"/></svg>
+        <div><p style="font-size:.72rem;color:rgba(25,25,25,.65);font-weight:600;margin-bottom:2px;">가장 빠른 방법</p><p style="font-size:.95rem;font-weight:800;color:#191919;">카카오톡 상담</p></div>
+      </a>
+      <a href="https://map.naver.com/p/search/%ED%95%98%EC%9D%B4%EB%A1%9C/place/2029221798?placePath=/ticket" target="_blank" rel="noopener noreferrer" class="fu d2" style="display:flex;align-items:center;gap:14px;padding:20px 22px;border-radius:14px;background:#03C75A;text-decoration:none;transition:transform .18s;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="#fff"><path d="M16.273 12.845 7.376 0H0v24h7.727V11.155L16.624 24H24V0h-7.727z"/></svg>
+        <div><p style="font-size:.72rem;color:rgba(255,255,255,.7);font-weight:600;margin-bottom:2px;">온라인 예약</p><p style="font-size:.95rem;font-weight:800;color:#fff;">네이버 예약</p></div>
+      </a>
+      <a href="tel:02-6925-6757" class="fu d3" style="display:flex;align-items:center;gap:14px;padding:20px 22px;border-radius:14px;background:var(--navy-card);border:1px solid rgba(184,204,42,.35);text-decoration:none;transition:transform .18s;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.338c0 8.765 7.097 15.863 15.863 15.863h1.125c.621 0 1.125-.504 1.125-1.125v-2.572a1.125 1.125 0 0 0-.824-1.086l-3.163-.79a1.125 1.125 0 0 0-1.197.428l-.956 1.193a14.12 14.12 0 0 1-6.415-6.415l1.194-.957a1.125 1.125 0 0 0 .428-1.197l-.79-3.163A1.125 1.125 0 0 0 7.46 3H4.887C4.267 3 3.75 3.517 3.75 4.137c0 .12-.003.239-.01.358l-.123 1.842"/></svg>
+        <div><p style="font-size:.72rem;color:rgba(184,204,42,.7);font-weight:600;margin-bottom:2px;">전화 상담</p><p style="font-size:.95rem;font-weight:800;color:var(--gold);">02-6925-6757</p></div>
+      </a>
+    </div>
+
+    <!-- 문의 양식 -->
+    <div class="card fu" style="padding:36px;">
+      <h3 style="font-size:1.1rem;font-weight:700;color:#F1F5F9;margin-bottom:24px;">이메일 상담신청</h3>
+      <form action="mailto:mingukang@highlaw.net" method="post" enctype="text/plain" style="display:flex;flex-direction:column;gap:20px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;flex-wrap:wrap;">
+          <div class="form-field">
+            <label class="form-label" for="name">성함 *</label>
+            <input class="form-input" id="name" name="성함" type="text" placeholder="홍길동" required>
+          </div>
+          <div class="form-field">
+            <label class="form-label" for="phone">연락처 *</label>
+            <input class="form-input" id="phone" name="연락처" type="tel" placeholder="010-0000-0000" required>
+          </div>
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="category">사건 분류 *</label>
+          <select class="form-select" id="category" name="사건분류" required>
+            <option value="">선택해주세요</option>
+            <option>군징계</option>
+            <option>군형사</option>
+            <option>행정 (보훈/국가배상)</option>
+            <option>민사</option>
+            <option>기타</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="content">사건 개요 *</label>
+          <textarea class="form-textarea" id="content" name="사건개요" placeholder="현재 상황을 간략히 설명해 주세요. 구체적일수록 더 정확한 안내가 가능합니다." required></textarea>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:rgba(184,204,42,.05);border-radius:8px;border:1px solid rgba(184,204,42,.15);">
+          <input type="checkbox" id="privacy" required style="accent-color:var(--gold);width:16px;height:16px;flex-shrink:0;">
+          <label for="privacy" style="font-size:.82rem;color:var(--text-sub);cursor:pointer;">개인정보 수집·이용에 동의합니다. (수집항목: 성명, 연락처 / 이용목적: 법률상담 / 보유기간: 상담 종료 후 1년)</label>
+        </div>
+        <button type="submit" style="background:var(--gold);color:#0F1A0A;font-size:1rem;font-weight:800;padding:16px;border-radius:12px;border:none;cursor:pointer;font-family:'Noto Sans KR',system-ui;transition:background .18s;">상담 신청하기</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- 진행절차 -->
+<section id="process" class="sec bg-b">
+  <div class="wrap">
+    <div style="width:52px;height:3px;background:linear-gradient(90deg,var(--gold),transparent);border-radius:2px;margin-bottom:14px;" class="fu"></div>
+    <p style="font-size:.62rem;letter-spacing:.22em;color:var(--gold);text-transform:uppercase;font-weight:700;margin-bottom:10px;" class="fu">HOW IT WORKS</p>
+    <h2 class="heading fu" style="font-size:1.75rem;color:#F1F5F9;margin-bottom:40px;">진행절차</h2>
+    <div style="max-width:560px;display:flex;flex-direction:column;gap:0;">
+      <div class="fu d1" style="display:flex;gap:20px;">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:0;">
+          <div class="step-num">01</div>
+          <div style="width:2px;height:60px;background:rgba(184,204,42,.18);margin-top:4px;"></div>
+        </div>
+        <div style="padding-top:8px;padding-bottom:20px;">
+          <h3 style="font-size:1rem;font-weight:700;color:#F1F5F9;margin-bottom:6px;">초기 상담 (무료)</h3>
+          <p style="font-size:.88rem;color:var(--text-sub);line-height:1.8;">카카오톡·전화·이메일로 상담 신청. 사건의 성격과 긴급도를 파악하고 담당 변호인을 배정합니다.</p>
+        </div>
+      </div>
+      <div class="fu d2" style="display:flex;gap:20px;">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:0;">
+          <div class="step-num">02</div>
+          <div style="width:2px;height:60px;background:rgba(184,204,42,.18);margin-top:4px;"></div>
+        </div>
+        <div style="padding-top:8px;padding-bottom:20px;">
+          <h3 style="font-size:1rem;font-weight:700;color:#F1F5F9;margin-bottom:6px;">사건 분석 및 전략 수립</h3>
+          <p style="font-size:.88rem;color:var(--text-sub);line-height:1.8;">관련 서류 검토, 군 내부 경위 파악. 최선의 법적 전략을 의뢰인과 공유합니다.</p>
+        </div>
+      </div>
+      <div class="fu d3" style="display:flex;gap:20px;">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:0;">
+          <div class="step-num">03</div>
+          <div style="width:2px;height:60px;background:rgba(184,204,42,.18);margin-top:4px;"></div>
+        </div>
+        <div style="padding-top:8px;padding-bottom:20px;">
+          <h3 style="font-size:1rem;font-weight:700;color:#F1F5F9;margin-bottom:6px;">변호인 선임 계약</h3>
+          <p style="font-size:.88rem;color:var(--text-sub);line-height:1.8;">착수금·보수 등 모든 비용을 사전에 명확히 안내합니다. 이해 후 계약 진행.</p>
+        </div>
+      </div>
+      <div class="fu d4" style="display:flex;gap:20px;">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:0;">
+          <div class="step-num">04</div>
+          <div style="width:2px;height:60px;background:rgba(184,204,42,.18);margin-top:4px;"></div>
+        </div>
+        <div style="padding-top:8px;padding-bottom:20px;">
+          <h3 style="font-size:1rem;font-weight:700;color:#F1F5F9;margin-bottom:6px;">사건 대응 및 진행 보고</h3>
+          <p style="font-size:.88rem;color:var(--text-sub);line-height:1.8;">수사 조력, 의견서 제출, 법정 변론, 항고 대응 등. 매 단계 진행 상황을 의뢰인에게 보고합니다.</p>
+        </div>
+      </div>
+      <div class="fu" style="display:flex;gap:20px;">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:0;">
+          <div class="step-num" style="background:var(--gold);color:#0F1A0A;border-color:var(--gold);">✓</div>
+        </div>
+        <div style="padding-top:8px;">
+          <h3 style="font-size:1rem;font-weight:700;color:var(--gold);margin-bottom:6px;">사건 종결 및 사후 관리</h3>
+          <p style="font-size:.88rem;color:var(--text-sub);line-height:1.8;">최종 결과를 상세히 설명하고 전역 후 불이익 여부 등 사후 영향을 함께 점검합니다.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq" class="sec bg-a">
+  <div class="wrap">
+    <div style="width:52px;height:3px;background:linear-gradient(90deg,var(--gold),transparent);border-radius:2px;margin-bottom:14px;" class="fu"></div>
+    <p style="font-size:.62rem;letter-spacing:.22em;color:var(--gold);text-transform:uppercase;font-weight:700;margin-bottom:10px;" class="fu">FAQ</p>
+    <h2 class="heading fu" style="font-size:1.75rem;color:#F1F5F9;margin-bottom:40px;">자주 묻는 질문</h2>
+    <div style="max-width:680px;display:flex;flex-direction:column;" class="fu d1">
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          <span>초기 상담 비용이 있나요?</span>
+          <span class="faq-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg></span>
+        </button>
+        <div class="faq-a"><div class="faq-a-inner">초기 상담은 무료입니다. 카카오톡·전화·이메일로 먼저 연락주시면 사건의 성격을 파악한 후 담당 변호인과의 면담을 안내해 드립니다.</div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          <span>부모님이 군인 자녀를 대신해 상담할 수 있나요?</span>
+          <span class="faq-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg></span>
+        </button>
+        <div class="faq-a"><div class="faq-a-inner">가능합니다. 가족이 먼저 상담을 의뢰하시는 경우가 많습니다. 사건 상황을 파악한 후 본인과의 직접 소통 방법을 안내해 드립니다.</div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          <span>상담 내용은 비밀이 보장되나요?</span>
+          <span class="faq-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg></span>
+        </button>
+        <div class="faq-a"><div class="faq-a-inner">변호사 비밀유지 의무에 따라 모든 상담 내용은 철저히 비밀이 보장됩니다. 어떤 이유로도 제3자에게 공개되지 않습니다.</div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          <span>긴급 상황입니다. 주말·야간에도 연락 가능한가요?</span>
+          <span class="faq-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg></span>
+        </button>
+        <div class="faq-a"><div class="faq-a-inner">긴급한 군 사건의 경우 카카오톡으로 먼저 상황을 남겨주시면 가능한 빨리 확인하여 연락드립니다. 구속영장 발부·즉결심판 등 초긴급 상황임을 명시해 주세요.</div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          <span>징계 처분을 이미 받았는데 지금도 도움이 되나요?</span>
+          <span class="faq-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg></span>
+        </button>
+        <div class="faq-a"><div class="faq-a-inner">항고심사위원회 청구(30일 이내), 행정심판, 행정소송 등 불복 수단이 있습니다. 처분 사실을 알게 된 즉시 연락주시면 가능한 방법을 검토해 드립니다.</div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          <span>변호사 선임 비용은 어느 정도 되나요?</span>
+          <span class="faq-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg></span>
+        </button>
+        <div class="faq-a"><div class="faq-a-inner">사건의 종류·복잡도·예상 소요 기간에 따라 달라집니다. 초기 상담에서 사건 파악 후 착수금·성공보수 등을 투명하게 안내해 드립니다. 비용 부담이 걱정되신다면 상담 시 먼저 말씀해 주세요.</div></div>
+      </div>
+    </div>
+
+    <div style="margin-top:48px;padding:28px 32px;background:var(--navy-card);border:1px solid rgba(184,204,42,.2);border-radius:14px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;" class="fu">
+      <div>
+        <p style="font-size:.95rem;font-weight:700;color:#F1F5F9;margin-bottom:6px;">더 궁금한 점이 있으신가요?</p>
+        <p style="font-size:.85rem;color:var(--text-sub);">카카오톡으로 질문하시면 빠르게 답변드립니다.</p>
+      </div>
+      <a href="http://pf.kakao.com/_GxebGX/chat" target="_blank" rel="noopener noreferrer" class="kbtn" style="padding:14px 28px;font-size:.9rem;white-space:nowrap;"><svg width="18" height="18" viewBox="0 0 24 24" fill="#191919"><path d="M12 2C6.477 2 2 5.97 2 10.865c0 3.14 1.718 5.91 4.337 7.612-.19.672-.687 2.433-.789 2.812-.123.476.174.471.366.342.151-.1 2.398-1.628 3.365-2.284.547.076 1.109.116 1.721.116 5.523 0 10-3.97 10-8.865S17.523 2 12 2z"/></svg>카카오톡으로 질문</a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer style="background:#0F1A0A;" role="contentinfo">
+  <div class="wrap" style="padding:52px 20px 44px;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:48px;flex-wrap:wrap;">
+      <div><p style="font-size:13px;letter-spacing:.25em;color:#fff;text-transform:uppercase;margin:0;">HIGH &amp; LAW FIRM</p><p style="font-size:14px;color:rgba(255,255,255,.6);margin:8px 0 0;">법무법인 하이로</p></div>
+      <div style="display:flex;gap:64px;flex-wrap:wrap;">
+        <div><p style="font-size:10px;letter-spacing:.15em;color:rgba(255,255,255,.4);margin:0 0 12px;font-family:monospace;">LOCATION</p><p style="font-size:14px;color:rgba(255,255,255,.8);line-height:1.7;margin:0;">서울 강남구 테헤란로 141, 15층</p></div>
+        <div><p style="font-size:10px;letter-spacing:.15em;color:rgba(255,255,255,.4);margin:0 0 12px;font-family:monospace;">CONTACT</p><p style="font-size:14px;color:rgba(255,255,255,.8);line-height:1.7;margin:0;">T. 02-6925-6757</p></div>
+      </div>
+    </div>
+    <div style="margin-top:48px;padding-top:24px;border-top:1px solid rgba(255,255,255,.15);display:flex;flex-direction:column;gap:16px;">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <a href="/military" style="font-size:12px;color:rgba(255,255,255,.5);text-decoration:none;border:1px solid rgba(255,255,255,.2);padding:4px 12px;border-radius:6px;">군 징계·형사 메인</a>
+        <a href="/military/practices" style="font-size:12px;color:rgba(255,255,255,.5);text-decoration:none;border:1px solid rgba(255,255,255,.2);padding:4px 12px;border-radius:6px;">업무분야</a>
+        <a href="/military/consultation" style="font-size:12px;color:var(--gold);text-decoration:none;border:1px solid rgba(184,204,42,.5);padding:4px 12px;border-radius:6px;background:rgba(184,204,42,.08);">상담문의</a>
+      </div>
+      <span style="font-size:11px;color:rgba(255,255,255,.4);font-family:monospace;">법무법인 하이로 | 대표변호사 : 조덕재, 김범, 강민구 | 사업자등록번호 : 433-86-04078<br>&copy; 2026 HIGH &amp; LAW FIRM. ALL RIGHTS RESERVED.</span>
+    </div>
+  </div>
+</footer>
+
+<div id="mob-bar" role="navigation">
+  <a href="http://pf.kakao.com/_GxebGX/chat" target="_blank" rel="noopener noreferrer" id="mob-kakao"><svg width="18" height="18" viewBox="0 0 24 24" fill="#191919"><path d="M12 2C6.477 2 2 5.97 2 10.865c0 3.14 1.718 5.91 4.337 7.612-.19.672-.687 2.433-.789 2.812-.123.476.174.471.366.342.151-.1 2.398-1.628 3.365-2.284.547.076 1.109.116 1.721.116 5.523 0 10-3.97 10-8.865S17.523 2 12 2z"/></svg>카카오톡 무료 상담</a>
+  <a href="tel:02-6925-6757" id="mob-call"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.338c0 8.765 7.097 15.863 15.863 15.863h1.125c.621 0 1.125-.504 1.125-1.125v-2.572a1.125 1.125 0 0 0-.824-1.086l-3.163-.79a1.125 1.125 0 0 0-1.197.428l-.956 1.193a14.12 14.12 0 0 1-6.415-6.415l1.194-.957a1.125 1.125 0 0 0 .428-1.197l-.79-3.163A1.125 1.125 0 0 0 7.46 3H4.887C4.267 3 3.75 3.517 3.75 4.137c0 .12-.003.239-.01.358l-.123 1.842"/></svg><span>전화</span></a>
+</div>
+
+<script>
+(function(){'use strict';var nav=document.getElementById('nav'),btnTop=document.getElementById('btn-top');window.addEventListener('scroll',function(){if(window.scrollY>48)nav.classList.add('scrolled');else nav.classList.remove('scrolled');if(btnTop)btnTop.style.display=window.scrollY>400?'flex':'none';},{passive:true});var els=document.querySelectorAll('.fu'),io=new IntersectionObserver(function(entries){entries.forEach(function(e){if(e.isIntersecting){e.target.classList.add('vis');io.unobserve(e.target);}});},{threshold:0.12,rootMargin:'0px 0px -48px 0px'});els.forEach(function(el){io.observe(el);});var subBtns=document.querySelectorAll('.subnav-btn');function updateSubnav(){var hash=location.hash||'#form';subBtns.forEach(function(b){b.classList.toggle('active',b.getAttribute('href')===hash);});}window.addEventListener('hashchange',updateSubnav);updateSubnav();})();
+
+function toggleFaq(btn) {
+  var item = btn.closest('.faq-item');
+  var ans = item.querySelector('.faq-a');
+  var wasOpen = item.classList.contains('open');
+  document.querySelectorAll('.faq-item').forEach(function(el) {
+    el.classList.remove('open');
+    el.querySelector('.faq-a').classList.remove('open');
+  });
+  if (!wasOpen) { item.classList.add('open'); ans.classList.add('open'); }
+}
+</script>
+</body>
+</html>
