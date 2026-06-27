@@ -65,22 +65,15 @@ const MENU_TREE = [
   },
   { id: "messages", to: "/admin/messages", label: "메시지", icon: "mail" },
 
-  // ── 홈페이지 섹션별 편집 ─────────────────────────────
+  // ── 홈페이지 편집 ─────────────────────────────────────
+  { id: "homepage", to: "/admin/homepage", label: "홈페이지", icon: "globe" },
+
+  // ── 콘텐츠 관리 ───────────────────────────────────────
   {
-    id: "homepage",
-    label: "홈페이지",
-    icon: "globe",
+    id: "content",
+    label: "콘텐츠",
+    icon: "edit",
     children: [
-      // 각 메뉴별 편집 — site-manager?tab=xxx 로 직접 이동
-      { to: "/admin/site-manager?tab=home",              label: "Index 편집" },
-      { to: "/admin/site-manager?tab=about",             label: "소개란 편집" },
-      { to: "/admin/site-manager?tab=members",           label: "구성원 편집" },
-      { to: "/admin/site-manager?tab=practice",          label: "업무 분야" },
-      { to: "/admin/site-manager?tab=news-edit",         label: "소식" },
-      { to: "/admin/site-manager?tab=recruit-edit",      label: "채용" },
-      { to: "/admin/site-manager?tab=consultation-edit", label: "상담/문의" },
-      { to: "/admin/site-manager?tab=layout",            label: "공통 (헤더/푸터)" },
-      // 개별 관리 도구
       { to: "/admin/chatbot",   label: "상담 챗봇" },
       { to: "/admin/reviews",   label: "후기" },
       { to: "/admin/lectures",  label: "강의" },

@@ -137,11 +137,12 @@ const AREAS = [
     highlights: ["방산 납품·계약 법률 검토", "부당업자 제재처분 대응", "방위사업법 관련 자문", "군수조달 소송 대리"],
   },
   {
-    to: "/practice/military-criminal",
+    to: "/military",
+    fullLoad: true,
     image: "/practice-justice.png",
     icon: Award,
     label: "MILITARY CRIMINAL",
-    title: "군형사",
+    title: "군사센터",
     desc: "군형법이 적용되는 군인, 군무원 등의 특수성을 고려하여 군검찰·군사법원의 수사 및 재판 절차에 부합하는 군 법무관 출신 및 전문 변호사 군단이 전방위적 조력을 다합니다.",
     highlights: ["군인·군무원 형사변호", "군 징계 및 인사 소청", "군사 수사 절차 동행", "보통·고등군사법원 대응"],
   },
@@ -369,13 +370,17 @@ export default function PracticePage() {
           {/* ━━━ 분야 선택 카드 ━━━ */}
           <section style={{ background: "#fff", padding: "0 24px var(--section-py)" }}>
             <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-              <SectionHeading eyebrow="PRACTICE AREAS" title="전문 분야를 선택하세요" />
+              <SectionHeading eyebrow="PRACTICE AREAS" title="어떤 고민이 있으신가요" />
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 stagger">
                 {AREAS.map((area, i) => {
                   const Icon = area.icon;
+                  // fullLoad: React Router 외부 경로 (정적 HTML 등)는 <a href>로 강제 풀페이지 이동
+                  const cardProps = area.fullLoad
+                    ? { as: "a", href: area.to }
+                    : { as: Link, to: area.to };
                   return (
-                    <SurfaceCard key={i} as={Link} to={area.to} className="reveal group block" style={{ textDecoration: "none", overflow: "hidden" }}>
+                    <SurfaceCard key={i} {...cardProps} className="reveal group block" style={{ textDecoration: "none", overflow: "hidden" }}>
                       <div className="relative overflow-hidden" style={{ height: 220 }}>
                         <div className="absolute inset-0 transition-transform duration-700 group-hover:scale-105" style={{ backgroundImage: `url(${area.image})`, backgroundSize: "cover", backgroundPosition: "center" }} />
                         <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.7) 100%)" }} />

@@ -64,7 +64,7 @@ router.post("/", adminAuth, async (req, res) => {
   try {
     const id = crypto.randomUUID();
     const {
-      name, nameEn, nameHanja, position, team, photoUrl, tagline,
+      name, nameEn, nameHanja, position, team, photoUrl, photoFocus, tagline,
       education, career, specialties, qualifications,
       publications, books, media, columns, cases, memberships,
       consultHours, blogUrl, introduction, email, phone, sortOrder, isActive,
@@ -79,6 +79,7 @@ router.post("/", adminAuth, async (req, res) => {
       position: position || "변호사",
       team: team || null,
       photoUrl: photoUrl || null,
+      photoFocus: photoFocus || null,
       tagline: tagline || null,
       education: education || null,
       career: career || null,
@@ -114,7 +115,7 @@ router.patch("/:id", adminAuth, async (req, res) => {
 
     const updates = {};
     const fields = [
-      "name", "nameEn", "nameHanja", "position", "team", "photoUrl", "tagline",
+      "name", "nameEn", "nameHanja", "position", "team", "photoUrl", "photoFocus", "tagline",
       "education", "career", "specialties", "qualifications",
       "publications", "books", "media", "columns", "cases", "memberships",
       "consultHours", "blogUrl", "introduction", "email", "phone", "sortOrder", "isActive",

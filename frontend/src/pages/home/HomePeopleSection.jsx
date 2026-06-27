@@ -80,13 +80,31 @@ function LawyerCard({ lawyer }) {
       className="hp-lawyer-card"
     >
       {lawyer.photoUrl ? (
-        <img
-          src={lawyer.photoUrl}
-          alt={lawyer.name}
-          className="hp-lawyer-photo"
-          loading="lazy"
-          decoding="async"
-        />
+        <div style={{
+          width: "100%", aspectRatio: "3/4",
+          position: "relative", overflow: "hidden",
+          background: "#e8e6e3",
+        }}>
+          <img
+            src={lawyer.photoUrl}
+            alt={lawyer.name}
+            loading="lazy"
+            decoding="async"
+            style={{
+              width: "88%", height: "88%",
+              objectFit: "cover",
+              objectPosition: lawyer.photoFocus || "center top",
+              display: "block",
+              margin: "auto",
+              marginTop: "6%",
+            }}
+          />
+          <div style={{
+            position: "absolute", bottom: 0, left: 0, right: 0,
+            height: 80,
+            background: "linear-gradient(transparent, rgba(0,0,0,0.4))",
+          }} />
+        </div>
       ) : (
         <div className="hp-lawyer-placeholder" aria-hidden="true">
           <span>변호사</span>

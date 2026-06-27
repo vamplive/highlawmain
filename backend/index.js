@@ -230,6 +230,7 @@ const LARGE_BODY_PATHS = [
   "/api/inquiry",
   "/api/lawyers",
   "/api/lectures",
+  "/api/military",
 ];
 app.use((req, res, next) => {
   const isLarge = LARGE_BODY_PATHS.some((p) => req.path === p || req.path.startsWith(p + "/"));
@@ -339,6 +340,7 @@ app.use("/api/clients", require("./routes/clients"));
 app.use("/api/messages", require("./routes/messages"));
 app.use("/api/triggers", require("./routes/triggers"));
 app.use("/api/site-settings", require("./routes/site-settings"));
+app.use("/api/military", require("./routes/military"));
 app.use("/api/announcements", require("./routes/announcements"));
 app.use("/api/media", require("./routes/media"));
 app.use("/api/ai-configs", require("./routes/ai-configs"));
