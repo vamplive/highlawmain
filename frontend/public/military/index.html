@@ -2329,9 +2329,9 @@
     <div id="lawyer-slideshow-outer" style="position:relative; width:100%; max-width:480px; margin:0 auto;">
 
   <div class="lawyer-slideshow-wrap" style="position:relative; width:100%;">
-    <div class="lawyer-track" style="display:flex; flex-wrap:nowrap; width:100%; overflow-x:scroll; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:auto; scrollbar-width:none; -ms-overflow-style:none;">
+    <div class="lawyer-track" style="display:flex; flex-wrap:nowrap; width:100%; overflow-x:scroll; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:auto; scrollbar-width:none; -ms-overflow-style:none; touch-action:pan-x; overscroll-behavior-x:contain;">
       <!-- slide 1 -->
-    <div class="lawyer-slide" style="min-width:100%; flex-shrink:0; box-sizing:border-box; scroll-snap-align:start; padding:0 20px;">
+    <div class="lawyer-slide" style="flex:0 0 100%; box-sizing:border-box; scroll-snap-align:start; padding:0 20px;">
         <div class="card lawyer-card fu cin-scale d1" role="button" tabindex="0"
            onclick="openLawyerModal('강민구')"
            onkeydown="if(event.key==='Enter'||event.key===' ')openLawyerModal('강민구')"
@@ -2371,7 +2371,7 @@
       </div>
       </div>
       <!-- slide 2 -->
-    <div class="lawyer-slide" style="min-width:100%; flex-shrink:0; box-sizing:border-box; scroll-snap-align:start; padding:0 20px;">
+    <div class="lawyer-slide" style="flex:0 0 100%; box-sizing:border-box; scroll-snap-align:start; padding:0 20px;">
         <div class="card lawyer-card fu cin-scale d2" role="button" tabindex="0"
            onclick="openLawyerModal('조덕재')"
            onkeydown="if(event.key==='Enter'||event.key===' ')openLawyerModal('조덕재')"
@@ -2405,7 +2405,7 @@
       </div>
       </div>
       <!-- slide 3 -->
-    <div class="lawyer-slide" style="min-width:100%; flex-shrink:0; box-sizing:border-box; scroll-snap-align:start; padding:0 20px;">
+    <div class="lawyer-slide" style="flex:0 0 100%; box-sizing:border-box; scroll-snap-align:start; padding:0 20px;">
         <div class="card lawyer-card fu cin-scale d3" role="button" tabindex="0"
            onclick="openLawyerModal('김범')"
            onkeydown="if(event.key==='Enter'||event.key===' ')openLawyerModal('김범')"
@@ -2503,6 +2503,12 @@
   }, { passive: true });
 
   updateDots();
+
+  /* iOS: overflow-x:scroll 컨테이너 안에서 IntersectionObserver가 교차를 감지 못하는 버그 우회
+     — 슬라이드 내 카드에 .vis를 즉시 추가해 opacity:0/transform 초기 상태 해제 */
+  track.querySelectorAll('.fu, .cin-scale, .cin-left, .cin-right, .cin-blur, .fu.d1, .fu.d2, .fu.d3').forEach(function (el) {
+    el.classList.add('vis');
+  });
 })();
 </script>
 
