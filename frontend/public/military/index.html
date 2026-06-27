@@ -2327,8 +2327,8 @@
 
     <div id="lawyer-slideshow-outer" style="position:relative; width:100%; max-width:480px; margin:0 auto;">
 
-  <div class="lawyer-slideshow-wrap" style="overflow:hidden; position:relative; width:100%;">
-    <div class="lawyer-track" style="display:flex; flex-wrap:nowrap; transition:transform 0.45s cubic-bezier(.4,0,.2,1); will-change:transform;">
+  <div class="lawyer-slideshow-wrap" style="overflow:hidden; position:relative; width:100%; transform:translateZ(0); -webkit-transform:translateZ(0);">
+    <div class="lawyer-track" style="display:flex; flex-wrap:nowrap; transition:transform 0.45s cubic-bezier(.4,0,.2,1); -webkit-transition:-webkit-transform 0.45s cubic-bezier(.4,0,.2,1);">
       <!-- slide 1 -->
     <div class="lawyer-slide" style="min-width:100%; flex-shrink:0; box-sizing:border-box; padding:0 20px;">
         <div class="card lawyer-card fu cin-scale d1" role="button" tabindex="0"
@@ -2442,24 +2442,26 @@
 
   <!-- arrows -->
   <button onclick="lawyerGo(-1)" aria-label="이전 변호사" class="lawyer-arrow"
-          style="position:absolute; left:8px; top:50%; transform:translateY(-50%); z-index:10;
+          style="position:absolute; left:0; top:50%; transform:translateY(-50%); z-index:10;
                  background:rgba(0,0,0,.55); border:1px solid rgba(184,204,42,.4); border-radius:50%;
-                 width:32px; height:32px; color:#B8CC2A; font-size:18px; cursor:pointer;
-                 display:flex; align-items:center; justify-content:center; line-height:1;">&#8249;</button>
+                 width:44px; height:44px; color:#B8CC2A; font-size:22px; cursor:pointer;
+                 display:flex; align-items:center; justify-content:center; line-height:1;
+                 touch-action:manipulation; -webkit-tap-highlight-color:transparent;">&#8249;</button>
   <button onclick="lawyerGo(1)" aria-label="다음 변호사" class="lawyer-arrow"
-          style="position:absolute; right:8px; top:50%; transform:translateY(-50%); z-index:10;
+          style="position:absolute; right:0; top:50%; transform:translateY(-50%); z-index:10;
                  background:rgba(0,0,0,.55); border:1px solid rgba(184,204,42,.4); border-radius:50%;
-                 width:32px; height:32px; color:#B8CC2A; font-size:18px; cursor:pointer;
-                 display:flex; align-items:center; justify-content:center; line-height:1;">&#8250;</button>
+                 width:44px; height:44px; color:#B8CC2A; font-size:22px; cursor:pointer;
+                 display:flex; align-items:center; justify-content:center; line-height:1;
+                 touch-action:manipulation; -webkit-tap-highlight-color:transparent;">&#8250;</button>
 
   <!-- dots -->
   <div class="lawyer-dots" style="display:flex; justify-content:center; gap:8px; margin-top:12px;">
-    <div class="lawyer-dot" data-idx="0" onclick="lawyerGo(0,true)"
-         style="width:8px; height:8px; border-radius:50%; background:#B8CC2A; transform:scale(1.3); cursor:pointer; transition:all .3s;"></div>
-    <div class="lawyer-dot" data-idx="1" onclick="lawyerGo(1,true)"
-         style="width:8px; height:8px; border-radius:50%; background:rgba(184,204,42,.3); cursor:pointer; transition:all .3s;"></div>
-    <div class="lawyer-dot" data-idx="2" onclick="lawyerGo(2,true)"
-         style="width:8px; height:8px; border-radius:50%; background:rgba(184,204,42,.3); cursor:pointer; transition:all .3s;"></div>
+    <div class="lawyer-dot" role="button" tabindex="0" data-idx="0" onclick="lawyerGo(0,true)"
+         style="width:8px; height:8px; border-radius:50%; background:#B8CC2A; transform:scale(1.3); cursor:pointer; touch-action:manipulation; -webkit-tap-highlight-color:transparent; transition:all .3s;"></div>
+    <div class="lawyer-dot" role="button" tabindex="0" data-idx="1" onclick="lawyerGo(1,true)"
+         style="width:8px; height:8px; border-radius:50%; background:rgba(184,204,42,.3); cursor:pointer; touch-action:manipulation; -webkit-tap-highlight-color:transparent; transition:all .3s;"></div>
+    <div class="lawyer-dot" role="button" tabindex="0" data-idx="2" onclick="lawyerGo(2,true)"
+         style="width:8px; height:8px; border-radius:50%; background:rgba(184,204,42,.3); cursor:pointer; touch-action:manipulation; -webkit-tap-highlight-color:transparent; transition:all .3s;"></div>
   </div>
 
 </div>
@@ -2473,10 +2475,13 @@
 
   function goTo(n) {
     cur = ((n % total) + total) % total;
-    track.style.transform = 'translateX(-' + (cur * 100) + '%)';
+    var tx = 'translateX(-' + (cur * 100) + '%)';
+    track.style.webkitTransform = tx;
+    track.style.transform = tx;
     dots.forEach(function (d, i) {
       d.style.background = (i === cur) ? '#B8CC2A' : 'rgba(184,204,42,.3)';
-      d.style.transform  = (i === cur) ? 'scale(1.3)' : 'scale(1)';
+      d.style.webkitTransform = (i === cur) ? 'scale(1.3)' : 'scale(1)';
+      d.style.transform        = (i === cur) ? 'scale(1.3)' : 'scale(1)';
     });
   }
 
@@ -2484,13 +2489,23 @@
     goTo(absolute ? n : cur + n);
   };
 
-  var startX = 0;
+  var startX = 0, startY = 0, dir = null;
   track.addEventListener('touchstart', function (e) {
     startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    dir = null;
   }, { passive: true });
+  track.addEventListener('touchmove', function (e) {
+    if (!dir) {
+      var dx = Math.abs(e.touches[0].clientX - startX);
+      var dy = Math.abs(e.touches[0].clientY - startY);
+      dir = dx > dy ? 'h' : 'v';
+    }
+    if (dir === 'h') e.preventDefault();
+  }, { passive: false });
   track.addEventListener('touchend', function (e) {
     var dx = startX - e.changedTouches[0].clientX;
-    if (Math.abs(dx) > 40) goTo(dx > 0 ? cur + 1 : cur - 1);
+    if (dir === 'h' && Math.abs(dx) > 40) goTo(dx > 0 ? cur + 1 : cur - 1);
   });
 
   goTo(0);
