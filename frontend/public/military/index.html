@@ -227,7 +227,7 @@
       /* 변호사 슬라이드 → 3열 그리드 */
       .lawyer-slideshow-wrap { overflow: visible !important; max-width: 100% !important; width: 100% !important; }
       #lawyer-slideshow-outer { max-width: 900px !important; }
-      .lawyer-track { flex-wrap: wrap !important; gap: 0 !important; transition: none !important; transform: none !important; justify-content: center !important; }
+      .lawyer-track { flex-wrap: wrap !important; gap: 0 !important; transition: none !important; transform: none !important; justify-content: center !important; overflow-x: visible !important; scroll-snap-type: none !important; }
       .lawyer-slide { min-width: 0 !important; width: 33.333% !important; flex: 0 0 33.333% !important; padding: 0 12px !important; box-sizing: border-box !important; }
       .lawyer-arrow { display: none !important; }
       .lawyer-dots { display: none !important; }
@@ -1042,6 +1042,7 @@
     }
     .lawyer-arrow { display: flex; }
     .lawyer-dots  { display: flex; }
+    .lawyer-track::-webkit-scrollbar { display: none; }
 
     /* ══ 임명장 슬라이드 반응형 ══ */
 
@@ -2327,10 +2328,10 @@
 
     <div id="lawyer-slideshow-outer" style="position:relative; width:100%; max-width:480px; margin:0 auto;">
 
-  <div class="lawyer-slideshow-wrap" style="overflow:hidden; position:relative; width:100%; transform:translateZ(0); -webkit-transform:translateZ(0);">
-    <div class="lawyer-track" style="display:flex; flex-wrap:nowrap; transition:transform 0.45s cubic-bezier(.4,0,.2,1); -webkit-transition:-webkit-transform 0.45s cubic-bezier(.4,0,.2,1);">
+  <div class="lawyer-slideshow-wrap" style="position:relative; width:100%;">
+    <div class="lawyer-track" style="display:flex; flex-wrap:nowrap; width:100%; overflow-x:scroll; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:auto; scrollbar-width:none; -ms-overflow-style:none;">
       <!-- slide 1 -->
-    <div class="lawyer-slide" style="min-width:100%; flex-shrink:0; box-sizing:border-box; padding:0 20px;">
+    <div class="lawyer-slide" style="min-width:100%; flex-shrink:0; box-sizing:border-box; scroll-snap-align:start; padding:0 20px;">
         <div class="card lawyer-card fu cin-scale d1" role="button" tabindex="0"
            onclick="openLawyerModal('강민구')"
            onkeydown="if(event.key==='Enter'||event.key===' ')openLawyerModal('강민구')"
@@ -2370,7 +2371,7 @@
       </div>
       </div>
       <!-- slide 2 -->
-    <div class="lawyer-slide" style="min-width:100%; flex-shrink:0; box-sizing:border-box; padding:0 20px;">
+    <div class="lawyer-slide" style="min-width:100%; flex-shrink:0; box-sizing:border-box; scroll-snap-align:start; padding:0 20px;">
         <div class="card lawyer-card fu cin-scale d2" role="button" tabindex="0"
            onclick="openLawyerModal('조덕재')"
            onkeydown="if(event.key==='Enter'||event.key===' ')openLawyerModal('조덕재')"
@@ -2404,7 +2405,7 @@
       </div>
       </div>
       <!-- slide 3 -->
-    <div class="lawyer-slide" style="min-width:100%; flex-shrink:0; box-sizing:border-box; padding:0 20px;">
+    <div class="lawyer-slide" style="min-width:100%; flex-shrink:0; box-sizing:border-box; scroll-snap-align:start; padding:0 20px;">
         <div class="card lawyer-card fu cin-scale d3" role="button" tabindex="0"
            onclick="openLawyerModal('김범')"
            onkeydown="if(event.key==='Enter'||event.key===' ')openLawyerModal('김범')"
@@ -2466,49 +2467,42 @@
 
 </div>
 <script>
-/* ── 변호사 슬라이드쇼 ── */
+/* ── 변호사 슬라이드쇼 (scroll-snap, iOS 네이티브) ── */
 (function () {
   var track = document.querySelector('.lawyer-track');
   var dots  = document.querySelectorAll('.lawyer-dot');
   if (!track) return;
   var cur = 0, total = 3;
 
+  function updateDots() {
+    dots.forEach(function (d, i) {
+      d.style.background      = (i === cur) ? '#B8CC2A' : 'rgba(184,204,42,.3)';
+      d.style.webkitTransform = (i === cur) ? 'scale(1.3)' : 'scale(1)';
+      d.style.transform       = (i === cur) ? 'scale(1.3)' : 'scale(1)';
+    });
+  }
+
   function goTo(n) {
     cur = ((n % total) + total) % total;
-    var tx = 'translateX(-' + (cur * 100) + '%)';
-    track.style.webkitTransform = tx;
-    track.style.transform = tx;
-    dots.forEach(function (d, i) {
-      d.style.background = (i === cur) ? '#B8CC2A' : 'rgba(184,204,42,.3)';
-      d.style.webkitTransform = (i === cur) ? 'scale(1.3)' : 'scale(1)';
-      d.style.transform        = (i === cur) ? 'scale(1.3)' : 'scale(1)';
-    });
+    track.scrollTo({ left: cur * track.offsetWidth, behavior: 'smooth' });
+    updateDots();
   }
 
   window.lawyerGo = function (n, absolute) {
     goTo(absolute ? n : cur + n);
   };
 
-  var startX = 0, startY = 0, dir = null;
-  track.addEventListener('touchstart', function (e) {
-    startX = e.touches[0].clientX;
-    startY = e.touches[0].clientY;
-    dir = null;
+  /* 네이티브 스와이프 후 도트 동기화 */
+  var t;
+  track.addEventListener('scroll', function () {
+    clearTimeout(t);
+    t = setTimeout(function () {
+      var idx = Math.round(track.scrollLeft / track.offsetWidth);
+      if (idx !== cur) { cur = idx; updateDots(); }
+    }, 150);
   }, { passive: true });
-  track.addEventListener('touchmove', function (e) {
-    if (!dir) {
-      var dx = Math.abs(e.touches[0].clientX - startX);
-      var dy = Math.abs(e.touches[0].clientY - startY);
-      dir = dx > dy ? 'h' : 'v';
-    }
-    if (dir === 'h') e.preventDefault();
-  }, { passive: false });
-  track.addEventListener('touchend', function (e) {
-    var dx = startX - e.changedTouches[0].clientX;
-    if (dir === 'h' && Math.abs(dx) > 40) goTo(dx > 0 ? cur + 1 : cur - 1);
-  });
 
-  goTo(0);
+  updateDots();
 })();
 </script>
 
