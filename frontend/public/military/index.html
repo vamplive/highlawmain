@@ -2361,14 +2361,9 @@
       </div>
     </div>
 
-    <div style="position:relative; width:100%; max-width:480px; margin:0 auto;">
-
-  <!-- 슬라이드 래퍼: overflow hidden -->
-  <div class="lawyer-slideshow-wrap" style="overflow:hidden; position:relative; width:100%;">
-    <div class="lawyer-track" style="display:flex; flex-wrap:nowrap; transition:transform 0.45s cubic-bezier(.4,0,.2,1); will-change:transform;">
-      <!-- 강민구 슬라이드 -->
-      <div class="lawyer-slide" style="min-width:100%; flex-shrink:0; box-sizing:border-box; padding:0 20px;">
-        <div class="card lawyer-card" role="button" tabindex="0"
+    <div style="display:flex; flex-wrap:wrap; gap:14px; justify-content:center; max-width:900px; margin:0 auto;">
+      <div style="flex:1; min-width:min(100%, 250px);">
+        <div class="card lawyer-card fu cin-scale d1" role="button" tabindex="0"
            onclick="openLawyerModal('강민구')"
            onkeydown="if(event.key==='Enter'||event.key===' ')openLawyerModal('강민구')"
            aria-label="강민구 변호사 약력 보기">
@@ -2406,9 +2401,9 @@
         </div>
       </div>
       </div>
-      <!-- 조덕재 슬라이드 -->
-      <div class="lawyer-slide" style="min-width:100%; flex-shrink:0; box-sizing:border-box; padding:0 20px;">
-        <div class="card lawyer-card" role="button" tabindex="0"
+      </div>
+      <div style="flex:1; min-width:min(100%, 250px);">
+        <div class="card lawyer-card fu cin-scale d2" role="button" tabindex="0"
            onclick="openLawyerModal('조덕재')"
            onkeydown="if(event.key==='Enter'||event.key===' ')openLawyerModal('조덕재')"
            aria-label="조덕재 변호사 약력 보기">
@@ -2440,9 +2435,9 @@
         </div>
       </div>
       </div>
-      <!-- 김범 슬라이드 -->
-      <div class="lawyer-slide" style="min-width:100%; flex-shrink:0; box-sizing:border-box; padding:0 20px;">
-        <div class="card lawyer-card" role="button" tabindex="0"
+      </div>
+      <div style="flex:1; min-width:min(100%, 250px);">
+        <div class="card lawyer-card fu cin-scale d3" role="button" tabindex="0"
            onclick="openLawyerModal('김범')"
            onkeydown="if(event.key==='Enter'||event.key===' ')openLawyerModal('김범')"
            aria-label="김범 변호사 약력 보기">
@@ -2474,84 +2469,37 @@
         </div>
       </div>
       </div>
+      </div>
     </div>
-  </div>
+        <!-- 임명장 — 2개 나란히 -->
+    <div class="fu cert-reveal mt-10" style="width:100%; max-width:min(700px, calc(100vw - 32px)); margin:0 auto; margin-top:40px;">
 
-  <!-- 이전/다음 버튼 -->
-  <button onclick="lawyerGo(-1)" aria-label="이전 변호사" class="lawyer-arrow"
-          style="position:absolute; left:8px; top:50%; transform:translateY(-50%); z-index:10;
-                 background:rgba(0,0,0,.55); border:1px solid rgba(184,204,42,.4); border-radius:50%;
-                 width:32px; height:32px; color:#B8CC2A; font-size:18px; cursor:pointer;
-                 display:flex; align-items:center; justify-content:center; line-height:1;">&#8249;</button>
-  <button onclick="lawyerGo(1)" aria-label="다음 변호사" class="lawyer-arrow"
-          style="position:absolute; right:8px; top:50%; transform:translateY(-50%); z-index:10;
-                 background:rgba(0,0,0,.55); border:1px solid rgba(184,204,42,.4); border-radius:50%;
-                 width:32px; height:32px; color:#B8CC2A; font-size:18px; cursor:pointer;
-                 display:flex; align-items:center; justify-content:center; line-height:1;">&#8250;</button>
-
-  <!-- 도트 인디케이터 -->
-  <div class="lawyer-dots" style="display:flex; justify-content:center; gap:8px; margin-top:12px;">
-    <div class="lawyer-dot" data-idx="0" onclick="lawyerGo(0,true)"
-         style="width:8px; height:8px; border-radius:50%; background:#B8CC2A; transform:scale(1.3); cursor:pointer; transition:all .3s;"></div>
-    <div class="lawyer-dot" data-idx="1" onclick="lawyerGo(1,true)"
-         style="width:8px; height:8px; border-radius:50%; background:rgba(184,204,42,.3); cursor:pointer; transition:all .3s;"></div>
-    <div class="lawyer-dot" data-idx="2" onclick="lawyerGo(2,true)"
-         style="width:8px; height:8px; border-radius:50%; background:rgba(184,204,42,.3); cursor:pointer; transition:all .3s;"></div>
-  </div>
-
-</div>
-    </div>
-
-    <!-- 임명장 슬라이드쇼 -->
-    <div class="fu cert-reveal mt-10" style="width:100%; max-width:min(340px, calc(100vw - 40px)); margin:0 auto; margin-top:40px;">
-
-      <!-- CERTIFICATE 타이틀 (카드 바로 위) -->
-      <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px; justify-content:center;">
+      <!-- Certificate 타이틀 -->
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px; justify-content:center;">
         <span style="display:inline-block; width:28px; height:1px; background:rgba(184,204,42,.5);"></span>
         <span style="font-size:.6rem; letter-spacing:.22em; color:var(--gold); text-transform:uppercase; font-weight:700;">Certificate of Appointment</span>
         <span style="display:inline-block; width:28px; height:1px; background:rgba(184,204,42,.5);"></span>
       </div>
 
-      <!-- 슬라이드 컨테이너 -->
-      <div class="cert-slideshow-wrap" style="position:relative; overflow:hidden; border-radius:14px; border:1px solid rgba(184,204,42,.3); box-shadow:0 8px 40px rgba(0,0,0,.5), 0 0 0 1px rgba(184,204,42,.1); margin:0 auto; aspect-ratio:5/7; background:#f8f5ee;">
-        <!-- 골드 상단 띠 -->
-        <div style="height:0px; background:linear-gradient(90deg, #fff, #fff, #fff);"></div>
-
-        <div class="cert-track" style="display:flex; flex-wrap:nowrap; width:100%; height:100%; transition:transform 0.55s cubic-bezier(.4,0,.2,1); will-change:transform; padding-top:4px;">
-          <!-- 슬라이드 1: 김범 -->
-          <div class="cert-slide" style="min-width:100%; flex-shrink:0; box-sizing:border-box; height:100%;">
-            <img src="/military/cert1.jpg"
-                 alt="김범 변호사 군검사 임명장 — 참모총장 발령"
-                 loading="lazy"
-                 style="width:100%; height:100%; display:block; object-fit:contain; object-position:center center;">
-          </div>
-          <!-- 슬라이드 2: 조덕재 -->
-          <div class="cert-slide" style="min-width:100%; flex-shrink:0; box-sizing:border-box; height:100%;">
-            <img src="/military/cert2.png"
-                 alt="조덕재 변호사 군검사 임명장"
-                 loading="lazy"
-                 style="width:100%; height:100%; display:block; object-fit:contain; object-position:center center;">
-          </div>
+      <!-- 두 임명장 나란히 -->
+      <div style="display:flex; gap:10px; align-items:flex-start;">
+        <!-- 김범 임명장 -->
+        <div style="flex:1; min-width:0; border-radius:10px; overflow:hidden; border:1px solid rgba(184,204,42,.3); box-shadow:0 8px 30px rgba(0,0,0,.45), 0 0 0 1px rgba(184,204,42,.1); background:#f8f5ee;">
+          <img src="/military/cert1.jpg"
+               alt="김범 변호사 군검사 임명장 — 참모총장 발령"
+               loading="lazy"
+               style="width:100%; height:auto; display:block; object-fit:contain;">
         </div>
-
-        <!-- 이전/다음 화살표 버튼 -->
-        <button onclick="certGo(-1); return false;" aria-label="이전 임명장"
-                style="position:absolute; left:8px; top:50%; transform:translateY(-50%); z-index:10;
-                       background:rgba(0,0,0,.45); border:none; border-radius:50%; width:36px; height:36px;
-                       color:#B8CC2A; font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center;">&#8249;</button>
-        <button onclick="certGo(1); return false;" aria-label="다음 임명장"
-                style="position:absolute; right:8px; top:50%; transform:translateY(-50%); z-index:10;
-                       background:rgba(0,0,0,.45); border:none; border-radius:50%; width:36px; height:36px;
-                       color:#B8CC2A; font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center;">&#8250;</button>
+        <!-- 조덕재 임명장 -->
+        <div style="flex:1; min-width:0; border-radius:10px; overflow:hidden; border:1px solid rgba(184,204,42,.3); box-shadow:0 8px 30px rgba(0,0,0,.45), 0 0 0 1px rgba(184,204,42,.1); background:#f8f5ee;">
+          <img src="/military/cert2.png"
+               alt="조덕재 변호사 군검사 임명장"
+               loading="lazy"
+               style="width:100%; height:auto; display:block; object-fit:contain;">
+        </div>
       </div>
 
-      <!-- 인디케이터 도트 -->
-      <div class="cert-dots" style="display:flex; justify-content:center; gap:8px; margin-top:12px;">
-        <div class="cert-dot active" data-cert="0" onclick="certGo(0, true)" style="width:8px;height:8px;border-radius:50%;background:#B8CC2A;transform:scale(1.3);cursor:pointer;transition:background .3s,transform .3s;"></div>
-        <div class="cert-dot" data-cert="1" onclick="certGo(1, true)" style="width:8px;height:8px;border-radius:50%;background:rgba(184,204,42,.3);cursor:pointer;transition:background .3s,transform .3s;"></div>
-      </div>
-
-      <!-- 임명장 하단 문구 -->
+      <!-- 하단 문구 -->
       <p style="margin-top:14px; text-align:center; font-size:.78rem; color:var(--text-muted); line-height:1.6; padding:0 4px;">
         참모총장으로부터 직접 군검사에 임명된<br>실제 군검사 출신입니다.
       </p>
@@ -2559,7 +2507,6 @@
     </div>
   </div>
 </section>
-
 <hr class="gsep">
 
 <!-- ══════════════════════════════════════
@@ -3183,118 +3130,10 @@ document.addEventListener('keydown', function(e) {
 
 
 
-<script>
-/* ── 임명장 슬라이드쇼 ── */
-(function() {
-  var track = document.querySelector('.cert-slideshow-wrap .cert-track');
-  var dots  = document.querySelectorAll('.cert-dots .cert-dot');
-  if (!track || dots.length < 2) return;
-
-  var cur   = 0;
-  var total = 2;
-
-  function goTo(n) {
-    cur = ((n % total) + total) % total;
-    track.style.transform = 'translateX(-' + (cur * 100) + '%)';
-    dots.forEach(function(d, i) {
-      d.style.background   = (i === cur) ? '#B8CC2A' : 'rgba(184,204,42,.3)';
-      d.style.transform    = (i === cur) ? 'scale(1.3)' : 'scale(1)';
-    });
-  }
-
-  /* 전역 certGo 함수 (버튼 onclick용) */
-  window.certGo = function(n, absolute) {
-    if (absolute) { goTo(n); } else { goTo(cur + n); }
-    resetTimer();
-  };
-
-  /* 터치 스와이프 */
-  var touchStartX = 0;
-  track.addEventListener('touchstart', function(e) {
-    touchStartX = e.touches[0].clientX;
-  }, { passive: true });
-  track.addEventListener('touchend', function(e) {
-    var dx = touchStartX - e.changedTouches[0].clientX;
-    if (Math.abs(dx) > 40) {
-      goTo(dx > 0 ? cur + 1 : cur - 1);
-      resetTimer();
-    }
-  });
-
-  /* 자동 롤링 5초 */
-  var timer;
-  function resetTimer() {
-    clearInterval(timer);
-    timer = setInterval(function() { goTo(cur + 1); }, 5000);
-  }
-
-  goTo(0);
-  resetTimer();
-})();
-</script>
 
 
-<script>
-/* ── 변호사 슬라이드쇼 ── */
-(function() {
-  var track = document.querySelector('.lawyer-track');
-  var dots  = document.querySelectorAll('.lawyer-dot');
-  if (!track) return;
 
-  var cur   = 0;
-  var total = 3;
 
-  function goTo(n) {
-    cur = ((n % total) + total) % total;
-    track.style.transform = 'translateX(-' + (cur * 100) + '%)';
-    dots.forEach(function(d, i) {
-      d.style.background = (i === cur) ? '#B8CC2A' : 'rgba(184,204,42,.3)';
-      d.style.transform  = (i === cur) ? 'scale(1.3)' : 'scale(1)';
-    });
-  }
-
-  /* 전역 lawyerGo (버튼 onclick용) */
-  window.lawyerGo = function(n, absolute) {
-    goTo(absolute ? n : cur + n);
-  };
-
-  /* 터치 & 마우스 드래그 스와이프 */
-  var startX = 0;
-  var isDragging = false;
-  track.addEventListener('touchstart', function(e) {
-    startX = e.touches[0].clientX;
-  }, { passive: true });
-  track.addEventListener('touchend', function(e) {
-    var dx = startX - e.changedTouches[0].clientX;
-    if (Math.abs(dx) > 40) goTo(dx > 0 ? cur + 1 : cur - 1);
-  });
-  /* PC 마우스 드래그 */
-  track.addEventListener('mousedown', function(e) {
-    startX = e.clientX; isDragging = true;
-  });
-  window.addEventListener('mouseup', function(e) {
-    if (!isDragging) return;
-    isDragging = false;
-    var dx = startX - e.clientX;
-    if (Math.abs(dx) > 40) goTo(dx > 0 ? cur + 1 : cur - 1);
-  });
-
-  /* 카드 높이 최대값 기준으로 통일 */
-  function syncCardHeights() {
-    var cards = document.querySelectorAll('.lawyer-slide .card.lawyer-card');
-    if (!cards.length) return;
-    cards.forEach(function(c) { c.style.minHeight = ''; });
-    var maxH = 0;
-    cards.forEach(function(c) { maxH = Math.max(maxH, c.offsetHeight); });
-    cards.forEach(function(c) { c.style.minHeight = maxH + 'px'; });
-  }
-
-  window.addEventListener('load', function() { syncCardHeights(); goTo(0); });
-  window.addEventListener('resize', syncCardHeights);
-
-  goTo(0);
-})();
-</script>
 <!-- ══════════════════════════════════════
      모바일 하단 고정 CTA 바
 ══════════════════════════════════════ -->
