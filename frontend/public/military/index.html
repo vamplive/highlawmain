@@ -235,6 +235,9 @@
       .cert-reveal { max-width: 720px !important; }
       [aria-label="이전 임명장"], [aria-label="다음 임명장"] { display: none !important; }
       [class*="cert-dot"] { display: none !important; }
+      /* PC: 3D flip 제거 — rotateY 애니메이션이 이미지를 깨져 보이게 함 */
+      .cert-reveal { opacity: 1 !important; transition: none !important; }
+      .cert-reveal.vis { animation: none !important; opacity: 1 !important; transform: none !important; }
     }
 
     /* ── Floating CTA ── */
