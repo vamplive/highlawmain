@@ -70,7 +70,7 @@ async function sendFriendTalk(to, message, options = {}) {
     form.append("image_url", options.imageUrl);
     form.append("image_link", options.imageLink || "");
   }
-  form.append("failover", "N");
+  form.append("failover", "Y");
   form.append("testMode", config.testMode);
 
   const controller = new AbortController();

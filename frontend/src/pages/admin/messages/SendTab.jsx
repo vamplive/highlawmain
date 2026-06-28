@@ -117,6 +117,16 @@ export default function SendTab() {
 
   // 직접 수신자 추가/삭제
   const addManualRecipient = (recipient) => {
+    const contact = recipient.contact?.trim();
+    if (!contact) return;
+    const alreadyManual = manualRecipients.some((r) => r.contact === contact);
+    const alreadyDb = recipientList.some(
+      (c) => selectedClients.has(c.id) && (c.phone === contact || c.email === contact)
+    );
+    if (alreadyManual || alreadyDb) {
+      showToast("이미 선택된 연락처입니다");
+      return;
+    }
     setManualRecipients((prev) => [...prev, { ...recipient, id: `manual_${Date.now()}_${Math.random()}` }]);
   };
   const removeManualRecipient = (id) => {

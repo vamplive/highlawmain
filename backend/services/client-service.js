@@ -448,8 +448,9 @@ async function touchLastContacted(contact) {
 /**
  * 수신동의 필터 — 발송 대상 목록에서 해당 채널 수신거부 고객을 제외한다.
  * 미등록 연락처(clients에 없음)는 "동의"로 간주해 통과시킨다. (관리자 수동 발송은 합법적 동의 기반이므로)
+ * kakao는 전화번호 기반이므로 sms와 동일하게 phone + smsConsent 기준으로 필터링한다.
  * @param {Array<{contact:string}>} recipients - 발송 대상 목록
- * @param {"sms"|"email"} channel
+ * @param {"sms"|"email"|"kakao"} channel
  * @returns {Promise<{allowed: Array, blocked: Array}>}
  */
 async function filterByConsent(recipients, channel) {
@@ -457,13 +458,14 @@ async function filterByConsent(recipients, channel) {
     return { allowed: [], blocked: [] };
   }
 
-  const contactField = channel === "email" ? clients.email : clients.phone;
-  const consentField = channel === "email" ? clients.emailConsent : clients.smsConsent;
+  const isEmailChannel = channel === "email";
+  const contactField = isEmailChannel ? clients.email : clients.phone;
+  const consentField = isEmailChannel ? clients.emailConsent : clients.smsConsent;
 
   const normalizedContacts = recipients
     .map((r) => r.contact)
     .filter(Boolean)
-    .map((c) => (channel === "email" ? c.trim().toLowerCase() : cleanPhone(c)));
+    .map((c) => (isEmailChannel ? c.trim().toLowerCase() : cleanPhone(c)));
 
   if (normalizedContacts.length === 0) {
     return { allowed: recipients, blocked: [] };
@@ -476,14 +478,14 @@ async function filterByConsent(recipients, channel) {
     .where(and(inArray(contactField, normalizedContacts), eq(consentField, 0)));
 
   const blockedSet = new Set(
-    blockedRows.map((r) => (channel === "email" ? String(r.contact || "").toLowerCase() : cleanPhone(r.contact || "")))
+    blockedRows.map((r) => (isEmailChannel ? String(r.contact || "").toLowerCase() : cleanPhone(r.contact || "")))
   );
 
   const allowed = [];
   const blocked = [];
   for (const r of recipients) {
     if (!r.contact) continue;
-    const normalized = channel === "email" ? r.contact.trim().toLowerCase() : cleanPhone(r.contact);
+    const normalized = isEmailChannel ? r.contact.trim().toLowerCase() : cleanPhone(r.contact);
     if (blockedSet.has(normalized)) {
       blocked.push(r);
     } else {

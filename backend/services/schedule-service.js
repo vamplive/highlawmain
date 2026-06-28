@@ -8,6 +8,7 @@ const { scheduledMessages, messageLogs, messageTemplates } = require("../db/sche
 const { eq, desc, sql, and, lte } = require("drizzle-orm");
 const { sendSMS } = require("../lib/sms-service");
 const { sendEmail } = require("../lib/email-service");
+const { sendFriendTalk } = require("../lib/kakao-friendtalk-service");
 const { ServiceError, validateUUID, normalizeMessageChannel, cleanPhone } = require("./helpers");
 const clientService = require("./client-service");
 const {
@@ -33,8 +34,8 @@ async function createSchedule(data) {
   const { recipients, templateId, subject, content, scheduledAt, source = "manual", originRef } = data;
   const channel = normalizeMessageChannel(data.channel);
 
-  if (!channel || !["sms", "email"].includes(channel)) {
-    throw new ServiceError("채널은 sms 또는 email이어야 합니다", 400);
+  if (!channel || !["sms", "email", "kakao"].includes(channel)) {
+    throw new ServiceError("채널은 sms, email 또는 kakao이어야 합니다", 400);
   }
   if (!Array.isArray(recipients) || recipients.length === 0) {
     throw new ServiceError("수신자를 1명 이상 지정해주세요", 400);
@@ -187,14 +188,19 @@ async function processPendingMessages() {
           emailHtml = injectTrackingPixel(bodyWithFooter, logId);
         }
 
-        const sendResult = item.channel === "sms"
-          ? await sendSMS(recipient.contact, renderedContent)
-          : await sendEmail(recipient.contact, renderedSubject, emailHtml);
+        let sendResult;
+        if (item.channel === "sms") {
+          sendResult = await sendSMS(recipient.contact, renderedContent);
+        } else if (item.channel === "kakao") {
+          sendResult = await sendFriendTalk(recipient.contact, renderedContent, { name: recipient.name });
+        } else {
+          sendResult = await sendEmail(recipient.contact, renderedSubject, emailHtml);
+        }
 
         const now = sqlDateTimeNow();
 
-        if (item.channel === "sms") {
-          const [smsLog] = await db.insert(messageLogs).values({
+        if (item.channel === "sms" || item.channel === "kakao") {
+          const [newLog] = await db.insert(messageLogs).values({
             channel: item.channel,
             recipientName: recipient.name || null,
             recipientContact: recipient.contact,
@@ -206,7 +212,7 @@ async function processPendingMessages() {
             errorMessage: sendResult.error || null,
             sentAt: sendResult.success ? now : null,
           }).returning();
-          logId = smsLog.id;
+          logId = newLog.id;
         } else {
           await db.update(messageLogs)
             .set({
