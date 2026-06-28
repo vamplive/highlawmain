@@ -230,6 +230,76 @@ function applyHomeContent(html, content) {
   return result;
 }
 
+/* ── 서브 페이지 히어로 콘텐츠 파싱 ── */
+
+/**
+ * 서브 페이지 HTML의 id="hero" 섹션에서 heading/subheading/description 추출
+ */
+function parseSubPageHero(html) {
+  const heroSection = extractSectionById(html, "hero");
+  if (!heroSection) return { heading: "", subheading: "", description: "" };
+
+  const heading = (heroSection.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i)?.[1] || "")
+    .replace(/<[^>]+>/g, "").trim();
+
+  // 부제목: eyebrow/subtitle/sub 클래스 p·span 우선, 없으면 h2
+  const subheading = (
+    heroSection.match(/<(?:p|span)[^>]+class="[^"]*(?:eyebrow|subtitle|sub-title|sub)[^"]*"[^>]*>([\s\S]*?)<\/(?:p|span)>/i)?.[1]
+    || heroSection.match(/<h2[^>]*>([\s\S]*?)<\/h2>/i)?.[1]
+    || ""
+  ).replace(/<[^>]+>/g, "").trim();
+
+  // 설명: desc/description/lead/intro 클래스 p
+  const description = (
+    heroSection.match(/<p[^>]+class="[^"]*(?:desc|description|lead|intro)[^"]*"[^>]*>([\s\S]*?)<\/p>/i)?.[1]
+    || ""
+  ).replace(/<[^>]+>/g, "").trim();
+
+  return { heading, subheading, description };
+}
+
+/**
+ * 서브 페이지 HTML의 hero 섹션에 heading/subheading/description 반영
+ */
+function applySubPageHero(html, heroData) {
+  const heroSection = extractSectionById(html, "hero");
+  if (!heroSection) throw new Error('히어로 섹션(id="hero")을 찾을 수 없습니다');
+
+  let updated = heroSection;
+
+  // h1 제목 교체 (함수로 전달해 $-특수문자 처리 방지)
+  if (heroData.heading !== undefined) {
+    const h1Match = updated.match(/(<h1[^>]*>)([\s\S]*?)(<\/h1>)/i);
+    if (h1Match) {
+      updated = updated.replace(h1Match[0], () => `${h1Match[1]}${heroData.heading}${h1Match[3]}`);
+    }
+  }
+
+  // 부제목 교체
+  if (heroData.subheading !== undefined) {
+    const subMatch = updated.match(/(<(?:p|span)[^>]+class="[^"]*(?:eyebrow|subtitle|sub-title|sub)[^"]*"[^>]*>)([\s\S]*?)(<\/(?:p|span)>)/i);
+    if (subMatch) {
+      updated = updated.replace(subMatch[0], () => `${subMatch[1]}${heroData.subheading}${subMatch[3]}`);
+    } else {
+      // h2로 fallback
+      const h2Match = updated.match(/(<h2[^>]*>)([\s\S]*?)(<\/h2>)/i);
+      if (h2Match) {
+        updated = updated.replace(h2Match[0], () => `${h2Match[1]}${heroData.subheading}${h2Match[3]}`);
+      }
+    }
+  }
+
+  // 설명 교체
+  if (heroData.description !== undefined) {
+    const descMatch = updated.match(/(<p[^>]+class="[^"]*(?:desc|description|lead|intro)[^"]*"[^>]*>)([\s\S]*?)(<\/p>)/i);
+    if (descMatch) {
+      updated = updated.replace(descMatch[0], () => `${descMatch[1]}${heroData.description}${descMatch[3]}`);
+    }
+  }
+
+  return replaceSectionById(html, "hero", updated);
+}
+
 /* ── 미들웨어: 페이지 유효성 검사 ── */
 function requirePage(req, res, next) {
   const { page } = req.params;
@@ -365,5 +435,29 @@ router.put("/home/content", adminAuth, requireMinRole("staff"), (req, res) => {
 /* 기존 경로 호환 (/api/military/content, /api/military/html) */
 router.get("/content", adminAuth, (req, res) => res.redirect("/api/military/home/content"));
 router.get("/html",    adminAuth, (req, res) => res.redirect("/api/military/home/html"));
+
+/* ── 서브 페이지 히어로 구조화 콘텐츠 ── */
+
+/** GET /api/military/:page/hero */
+router.get("/:page/hero", adminAuth, requirePage, (req, res) => {
+  try {
+    const html = readPage(req.params.page);
+    res.json({ data: parseSubPageHero(html), error: null, meta: null });
+  } catch (err) {
+    res.status(500).json({ data: null, error: err.message, meta: null });
+  }
+});
+
+/** PUT /api/military/:page/hero */
+router.put("/:page/hero", adminAuth, requireMinRole("staff"), requirePage, (req, res) => {
+  try {
+    const html = readPage(req.params.page);
+    const updated = applySubPageHero(html, req.body);
+    writePage(req.params.page, updated);
+    res.json({ data: parseSubPageHero(updated), error: null, meta: { message: "히어로가 저장되었습니다" } });
+  } catch (err) {
+    res.status(500).json({ data: null, error: err.message, meta: null });
+  }
+});
 
 module.exports = router;
