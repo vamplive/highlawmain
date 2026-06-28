@@ -142,6 +142,7 @@ jobs:
           ALIGO_API_KEY: ${{ secrets.ALIGO_API_KEY }}
           ALIGO_USER_ID: ${{ secrets.ALIGO_USER_ID }}
           ALIGO_SENDER: ${{ secrets.ALIGO_SENDER }}
+          KAKAO_SENDER_KEY: ${{ secrets.KAKAO_SENDER_KEY }}
         run: |
           set -euo pipefail
           # Aligo secrets are optional, bypass strict checks
@@ -152,6 +153,7 @@ jobs:
             printf 'ALIGO_API_KEY=%s\n' "$ALIGO_API_KEY"
             printf 'ALIGO_USER_ID=%s\n' "$ALIGO_USER_ID"
             printf 'ALIGO_SENDER=%s\n' "$ALIGO_SENDER"
+            printf 'KAKAO_SENDER_KEY=%s\n' "$KAKAO_SENDER_KEY"
           } > "$tmp_env"
 
           scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes \

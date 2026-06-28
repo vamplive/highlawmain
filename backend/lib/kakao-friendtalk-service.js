@@ -1,9 +1,10 @@
 /**
  * 알리고 카카오 채널 친구톡(FriendTalk) 발송 서비스
  * - 엔드포인트: https://kakaoapi.aligo.in/akv10/friend/send/
- * - 필수 환경변수: ALIGO_API_KEY, ALIGO_USER_ID, KAKAO_SENDER_KEY
+ * - 필수 환경변수: ALIGO_API_KEY, KAKAO_SENDER_KEY
+ *   + KAKAO_USER_ID (카카오 전용 계정 ID) 또는 ALIGO_USER_ID (SMS와 공유)
  * - 선택 환경변수: ALIGO_TEST_MODE (Y이면 테스트 발송)
- * - 친구톡은 카카오 채널을 추가한 사용자에게만 발송됨 (미추가 시 실패)
+ * - 친구톡은 카카오 채널을 추가한 수신자에게만 발송됨 (미추가 시 실패)
  */
 
 const FRIENDTALK_ENDPOINT = "https://kakaoapi.aligo.in/akv10/friend/send/";
@@ -23,7 +24,8 @@ function validatePhone(phone) {
 function readConfig() {
   return {
     apiKey: process.env.ALIGO_API_KEY,
-    userId: process.env.ALIGO_USER_ID,
+    // 카카오 계정이 SMS 계정과 다를 경우 KAKAO_USER_ID로 분리 설정 가능
+    userId: process.env.KAKAO_USER_ID || process.env.ALIGO_USER_ID,
     senderKey: process.env.KAKAO_SENDER_KEY,
     testMode: (process.env.ALIGO_TEST_MODE || "N").toUpperCase() === "Y" ? "Y" : "N",
   };
@@ -42,7 +44,7 @@ function readConfig() {
 async function sendFriendTalk(to, message, options = {}) {
   const config = readConfig();
   if (!config.apiKey || !config.userId || !config.senderKey) {
-    return { success: false, error: "카카오 친구톡 설정이 올바르지 않습니다 (ALIGO_API_KEY, ALIGO_USER_ID, KAKAO_SENDER_KEY 확인)" };
+    return { success: false, error: "카카오 친구톡 설정이 올바르지 않습니다 (ALIGO_API_KEY, KAKAO_SENDER_KEY, KAKAO_USER_ID 또는 ALIGO_USER_ID 확인)" };
   }
 
   const recipient = validatePhone(to);
