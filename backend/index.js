@@ -256,6 +256,7 @@ const STORAGE_PATH = process.env.STORAGE_PATH || path.join(__dirname, "data");
     "uploads/lectures",    // 강의 자료
     "uploads/media",       // 미디어 라이브러리
     "uploads/messenger",   // 메신저 파일
+    "uploads/messages",    // 메시지 첨부 이미지
     "uploads/receipts",    // 영수증
     "uploads/recruit",     // 채용 첨부파일
     "uploads/signatures",  // 서명 이미지

@@ -1,7 +1,8 @@
 /**
  * 발송 탭 2단계 — 메시지 작성 패널.
- * 템플릿 선택, 이메일 제목, 본문, 바이트 카운터, 미리보기.
+ * 템플릿 선택, 이메일 제목, 본문, 바이트 카운터, 이미지 첨부, 미리보기.
  */
+import { useRef } from "react";
 import { COLORS } from "../../../components/admin";
 import { renderPlaceholders } from "../../../utils/formatters";
 import { SMS_BYTE_LIMIT } from "./messageConstants";
@@ -15,9 +16,14 @@ export default function SendComposerPanel({
   showEmailSubject, subject, onSubjectChange,
   content, onContentChange, byteLen, showSmsCounter,
   previewSample,
+  imageFile, imagePreviewUrl, onImageChange, onImageRemove,
+  channel,
 }) {
   const insertToken = (token) => onContentChange(content ? `${content}${token}` : token);
   const applyPreset = (text) => onContentChange(text);
+  const fileInputRef = useRef(null);
+
+  const showImageUpload = channel === "kakao" || channel === "email" || channel === "both";
 
   return (
     <>
@@ -91,12 +97,68 @@ export default function SendComposerPanel({
         )}
       </div>
 
+      {showImageUpload && (
+        <div style={{ marginBottom: 12 }}>
+          <Label>이미지 첨부 {channel === "kakao" ? "(친구톡 이미지형)" : "(선택)"}</Label>
+          {imagePreviewUrl ? (
+            <div style={{ position: "relative", display: "inline-block" }}>
+              <img
+                src={imagePreviewUrl}
+                alt="첨부 이미지"
+                style={{ maxWidth: "100%", maxHeight: 200, borderRadius: 6, border: `1px solid ${COLORS.borderLight}` }}
+              />
+              <button
+                onClick={onImageRemove}
+                style={{
+                  position: "absolute", top: 4, right: 4,
+                  background: "rgba(0,0,0,0.6)", color: "#fff",
+                  border: "none", borderRadius: "50%",
+                  width: 22, height: 22, cursor: "pointer",
+                  fontSize: 13, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center",
+                }}
+                title="이미지 제거"
+              >
+                ×
+              </button>
+            </div>
+          ) : (
+            <div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/gif,image/webp"
+                style={{ display: "none" }}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) onImageChange(file);
+                  e.target.value = "";
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                style={{
+                  ...chipStyle,
+                  padding: "7px 14px",
+                  borderStyle: "dashed",
+                  color: COLORS.textMuted,
+                }}
+              >
+                + 이미지 선택 (jpg/png/gif/webp, 최대 10MB)
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       {content && (
         <Preview
           content={content}
           subject={subject}
           showSubject={showEmailSubject}
           sample={previewSample}
+          imagePreviewUrl={imagePreviewUrl}
+          channel={channel}
         />
       )}
     </>
@@ -113,23 +175,28 @@ const chipStyle = {
   cursor: "pointer",
 };
 
-function Preview({ content, subject, showSubject, sample }) {
+function Preview({ content, subject, showSubject, sample, imagePreviewUrl, channel }) {
   const sampleData = sample || { name: "홍길동", category: "civil" };
   const previewSubject = renderPlaceholders(subject || "", sampleData);
   const previewContent = renderPlaceholders(content, sampleData);
+  const isKakao = channel === "kakao";
   return (
     <div style={{
-      marginTop: 16, padding: 14, background: "#faf9f6",
-      borderLeft: `2px solid ${COLORS.accent}`, borderRadius: 4,
+      marginTop: 16, padding: 14, background: isKakao ? "#fef9c3" : "#faf9f6",
+      borderLeft: `2px solid ${isKakao ? "#eab308" : COLORS.accent}`, borderRadius: 4,
     }}>
       <div style={{ fontSize: 10, fontWeight: 600, color: COLORS.muted, marginBottom: 6, letterSpacing: 0.5 }}>
         미리보기 · {sampleData.name}님
         {!sample && <span style={{ color: COLORS.warning, marginLeft: 6, fontWeight: 400 }}>(샘플)</span>}
+        {isKakao && <span style={{ marginLeft: 6, color: "#a16207", fontWeight: 400 }}>카카오톡</span>}
       </div>
       {showSubject && previewSubject && (
         <div style={{ fontSize: 13, fontWeight: 600, color: COLORS.text, marginBottom: 6 }}>
           {previewSubject}
         </div>
+      )}
+      {imagePreviewUrl && (
+        <img src={imagePreviewUrl} alt="" style={{ maxWidth: "100%", maxHeight: 120, borderRadius: 4, marginBottom: 8, display: "block" }} />
       )}
       <div style={{ fontSize: 13, color: COLORS.textSecondary, whiteSpace: "pre-wrap", lineHeight: 1.6 }}>
         {previewContent}

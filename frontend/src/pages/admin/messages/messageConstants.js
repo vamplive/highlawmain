@@ -24,12 +24,13 @@ export const STATUS_COLORS = {
 };
 
 /** 채널 배지 색상 */
-export const CHANNEL_COLORS = { sms: "#3498db", email: "#9b59b6" };
+export const CHANNEL_COLORS = { sms: "#3498db", email: "#9b59b6", kakao: "#f9e000" };
 
 /** 채널 선택 드롭다운 옵션 */
 export const CHANNEL_OPTIONS = [
   { value: "sms", label: "SMS 문자" },
   { value: "email", label: "이메일" },
+  { value: "kakao", label: "카카오톡" },
 ];
 
 /** 빈 템플릿 초기값 */

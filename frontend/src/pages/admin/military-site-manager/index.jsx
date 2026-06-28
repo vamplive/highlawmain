@@ -3,11 +3,11 @@
  * — 6개 탭: 군사센터 홈, 하이로 군사센터, 구성원, 업무분야, 하이로 소식, 상담문의
  */
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
 import { PageHeader } from "../../../components/admin";
 import { COLORS } from "../../../components/admin/styles";
 import HomeSectionsTab from "./HomeSectionsTab";
 import SubPageTab from "./SubPageTab";
+import AdminLawyers from "../lawyers";
 
 /* ══════════════════════════════════════
    탭 및 서브탭 정의
@@ -100,40 +100,6 @@ function MainTabBar({ activeTab, onSelect }) {
   );
 }
 
-/* ── 구성원 탭: site-manager?tab=members로 안내 ── */
-function MembersTab() {
-  return (
-    <div style={{
-      maxWidth: 560, padding: "32px 36px",
-      border: `1px solid ${COLORS.border}`, borderRadius: 10,
-      background: COLORS.bgForm, textAlign: "center",
-    }}>
-      <div style={{ fontSize: 32, marginBottom: 12 }}>👥</div>
-      <h3 style={{ fontSize: 16, fontWeight: 700, color: COLORS.text, marginBottom: 10 }}>
-        구성원 관리
-      </h3>
-      <p style={{ fontSize: 13.5, color: COLORS.textSecondary, lineHeight: 1.7, marginBottom: 24 }}>
-        군사센터 구성원은 홈페이지 공통 변호사 프로필과 연동됩니다.
-        <br />
-        아래 링크의 '구성원' 탭에서 등록·수정·삭제할 수 있습니다.
-      </p>
-      <Link
-        to="/admin/site-manager?tab=members"
-        style={{
-          display: "inline-block",
-          padding: "10px 24px", fontSize: 13.5, fontWeight: 600,
-          color: "#fff", background: COLORS.primary, borderRadius: 6,
-          textDecoration: "none",
-        }}
-      >
-        구성원 관리 페이지로 이동 →
-      </Link>
-      <p style={{ fontSize: 12, color: COLORS.textMuted, marginTop: 16 }}>
-        /admin/site-manager → 구성원 탭
-      </p>
-    </div>
-  );
-}
 
 /* ══════════════════════════════════════
    메인 컴포넌트
@@ -171,7 +137,7 @@ export default function MilitarySiteManager() {
       )}
 
       {/* 구성원 */}
-      {activeTab === "members" && <MembersTab />}
+      {activeTab === "members" && <AdminLawyers />}
 
       {/* 업무분야 */}
       {activeTab === "practices" && (
