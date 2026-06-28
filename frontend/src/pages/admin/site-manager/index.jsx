@@ -20,12 +20,12 @@ import SeoSection from "./SeoSection";
 import AnnouncementsSection from "./AnnouncementsSection";
 import HistorySection from "./HistorySection";
 import AdminLawyers from "../lawyers";
-import AdminBlog from "../blog";
-import AdminRecruit from "../recruit";
-import AdminQna from "../qna";
+import NewsBlogSection from "./NewsBlogSection";
+import RecruitSectionWrapper from "./RecruitSectionWrapper";
+import ConsultationSectionWrapper from "./ConsultationSectionWrapper";
 
 /** 독립 저장을 관리하는 탭 (하단 저장 바 미표시) */
-const SELF_SAVING_TABS = ["seo", "announcements", "history", "hero-videos", "members", "news-edit", "recruit-edit", "consultation-edit"];
+const SELF_SAVING_TABS = ["seo", "announcements", "history", "hero-videos", "members"];
 /** 미리보기 가능한 탭 */
 const PREVIEWABLE_TABS = ["home", "about", "practice", "layout"];
 
@@ -69,9 +69,10 @@ export default function AdminSiteManager() {
       case "announcements": return <AnnouncementsSection toast={toast} setToast={setToast} />;
       case "history": return <HistorySection />;
       case "members": return <AdminLawyers />;
-      case "news-edit": return <AdminBlog />;
-      case "recruit-edit": return <AdminRecruit />;
-      case "consultation-edit": return <AdminQna />;
+      case "news-edit": return <NewsBlogSection settings={settings} update={update} />;
+      case "recruit-edit": return <RecruitSectionWrapper settings={settings} update={update} />;
+      case "consultation-edit":
+        return <ConsultationSectionWrapper settings={settings} update={update} updateItem={updateItem} addItem={addItem} removeItem={removeItem} />;
       default: return null;
     }
   };

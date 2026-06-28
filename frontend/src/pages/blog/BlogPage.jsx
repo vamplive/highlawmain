@@ -3,11 +3,16 @@ import { useState, useEffect, useLayoutEffect, useCallback, useRef } from "react
 import { Link, useSearchParams } from "react-router-dom";
 import { api } from "../../utils/api";
 import useReveal from "../../hooks/useReveal";
+import { useSiteSettingsPage } from "../../hooks/useSiteSettings";
 import { SkeletonGrid } from "../../components/ui/Skeleton";
 import ErrorState from "../../components/ui/ErrorState";
 import Seo from "../../components/Seo";
 import { buildBreadcrumbJsonLd } from "../../lib/seo";
 import { PublicHero, SurfaceCard } from "../../components/public/PublicDesign";
+
+const NEWS_DEFAULTS = {
+  hero: { heading: "하이로 소식", subheading: "BLOG & NEWS", description: "법률 이슈와 판례 분석, 실무 가이드를 제공합니다." },
+};
 
 /** 블로그 카테고리 라벨/키 매핑 */
 const CATEGORY_OPTIONS = [
@@ -32,6 +37,7 @@ function formatDate(dateStr) {
 export default function BlogPage() {
   const ref = useReveal();
   const listRef = useRef();
+  const { settings: siteSettings } = useSiteSettingsPage("news", NEWS_DEFAULTS);
   const [searchParams, setSearchParams] = useSearchParams();
   const [posts, setPosts] = useState([]);
   const [meta, setMeta] = useState({ total: 0, page: 1, totalPages: 1 });
@@ -106,9 +112,9 @@ export default function BlogPage() {
         ])}
       />
       <PublicHero
-        eyebrow="BLOG"
-        title="블로그"
-        description="법률 이슈와 판례 분석, 실무 가이드를 제공합니다."
+        eyebrow={siteSettings.hero.subheading}
+        title={siteSettings.hero.heading}
+        description={siteSettings.hero.description}
       />
 
       {/* ==================== 카테고리 필터 ==================== */}

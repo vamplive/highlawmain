@@ -1,14 +1,21 @@
 /** 상담안내 페이지 FAQ 아코디언 섹션 */
 import { useState } from "react";
 import { FAQ_ITEMS } from "./consultationConstants";
+import { useSiteSettingsPage } from "../../hooks/useSiteSettings";
 import { SectionHeading } from "../../components/public/PublicDesign";
 
 /** FAQ 아코디언 펼침 시 최대 높이 (px) */
 const FAQ_MAX_HEIGHT = 200;
 
+const CONSULTATION_FAQ_DEFAULTS = {
+  faq: { items: FAQ_ITEMS },
+};
+
 /** @param {{ compact?: boolean }} props compact=true 시 section/container 래퍼 생략 */
 export default function ConsultationFAQ({ compact = false }) {
   const [openIndex, setOpenIndex] = useState(null);
+  const { settings } = useSiteSettingsPage("consultation", CONSULTATION_FAQ_DEFAULTS);
+  const faqItems = settings.faq?.items?.length > 0 ? settings.faq.items : FAQ_ITEMS;
 
   function handleToggle(index) {
     setOpenIndex((prev) => (prev === index ? null : index));
@@ -20,7 +27,7 @@ export default function ConsultationFAQ({ compact = false }) {
 
       {/* 아코디언 목록 */}
       <div className="reveal" style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-        {FAQ_ITEMS.map((item, idx) => {
+        {faqItems.map((item, idx) => {
           const isOpen = openIndex === idx;
           return (
             <div key={idx} style={{ borderBottom: "1px solid var(--border-color)" }}>

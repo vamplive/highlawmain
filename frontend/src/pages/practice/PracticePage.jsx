@@ -10,6 +10,7 @@ import {
   Briefcase, HardHat, Award, Scale, Building2, Music, Building, Heart, Key, Globe
 } from "lucide-react";
 import useReveal from "../../hooks/useReveal";
+import { useSiteSettingsPage } from "../../hooks/useSiteSettings";
 import Seo from "../../components/Seo";
 import { buildBreadcrumbJsonLd } from "../../lib/seo";
 import { PublicHero, SectionHeading, SurfaceCard } from "../../components/public/PublicDesign";
@@ -193,6 +194,15 @@ const AREAS = [
   },
 ];
 
+/* 강점 탭 아이콘: 설정에는 아이콘이 없으므로 순서대로 자동 지정 */
+const ADVANTAGE_ICONS = [Target, Shield, Clock, Users];
+
+const PRACTICE_DEFAULTS = {
+  hero: { heading: "업무분야", subheading: "PRACTICE AREAS" },
+  pain_points: { items: [] },
+  advantages: { items: [] },
+};
+
 const TABS = [
   { id: "pain-points", label: "상담점검" },
   { id: "advantages", label: "하이로의 강점" },
@@ -204,6 +214,7 @@ export default function PracticePage() {
   // URL 쿼리파라미터를 단일 진실 소스로 사용 — 드롭다운 링크 클릭 시 즉시 반영
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get("tab") || "pain-points";
+  const { settings } = useSiteSettingsPage("practice", PRACTICE_DEFAULTS);
 
   return (
     <div ref={ref}>
@@ -218,8 +229,8 @@ export default function PracticePage() {
       />
       <PublicHero
         image="/realestate-hero.jpg"
-        eyebrow="Expertise"
-        title="업무 분야"
+        eyebrow={settings.hero.subheading}
+        title={settings.hero.heading}
         description={"검증된 실무 역량과 정교한 법리 해석을 결합하여,\n클라이언트의 가치를 실현하는 최적의 법률 솔루션을 제시합니다."}
         primaryAction={{ to: "/consultation", label: "상담 예약", icon: <Phone size={15} /> }}
         secondaryAction={{ href: "tel:02-6925-6757", label: "02-6925-6757" }}
@@ -295,7 +306,7 @@ export default function PracticePage() {
             <div style={{ maxWidth: 1100, margin: "0 auto" }}>
               <SectionHeading eyebrow="DO YOU NEED US" title="이런 문제로 고민하고 계신가요?" />
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 stagger">
-                {PAIN_POINTS.map((p, i) => (
+                {(settings.pain_points?.items?.length > 0 ? settings.pain_points.items : PAIN_POINTS).map((p, i) => (
                   <SurfaceCard key={i} className="reveal flex items-center gap-4" style={{ padding: "18px 24px", background: "var(--bg-primary)", borderLeft: "3px solid var(--accent-gold)" }}>
                     <p style={{ fontSize: 14, color: "var(--gray-600)", fontWeight: 400, lineHeight: 1.6 }}>&quot;{p.text}&quot;</p>
                   </SurfaceCard>
@@ -344,8 +355,8 @@ export default function PracticePage() {
             <div style={{ maxWidth: 1000, margin: "0 auto" }}>
               <SectionHeading eyebrow="WHY SPECIALIST" title="왜 법무법인 하이로인가" />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 stagger">
-                {ADVANTAGES.map((a, i) => {
-                  const Icon = a.icon;
+                {(settings.advantages?.items?.length > 0 ? settings.advantages.items : ADVANTAGES).map((a, i) => {
+                  const Icon = a.icon || ADVANTAGE_ICONS[i] || Target;
                   return (
                     <SurfaceCard key={i} className="reveal flex gap-5" style={{ padding: "32px 28px" }}>
                       <div style={{ width: 52, height: 52, background: "var(--accent-gold-light)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>

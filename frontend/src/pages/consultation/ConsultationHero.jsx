@@ -7,17 +7,22 @@ import { PublicHero } from "../../components/public/PublicDesign";
 import { safeHttpUrl } from "../../utils/safeUrl";
 import { TELEGRAM_CONTACT_URL } from "../../utils/telegramContact";
 
+const CONSULTATION_HERO_DEFAULTS = {
+  hero: { heading: "상담안내", subheading: "CONSULTATION", description: "법무법인 하이로의 1:1 맞춤 법률 상담을 신청하세요. 전문 변호사가 직접 상담합니다." },
+};
+
 export default function ConsultationHero() {
   const lang = useLanguage();
-  const { settings } = useSiteSettingsPage("layout", LAYOUT_DEFAULTS, lang);
-  const contact = settings.contact || LAYOUT_DEFAULTS.contact;
+  const { settings: layoutSettings } = useSiteSettingsPage("layout", LAYOUT_DEFAULTS, lang);
+  const { settings: consultationSettings } = useSiteSettingsPage("consultation", CONSULTATION_HERO_DEFAULTS);
+  const contact = layoutSettings.contact || LAYOUT_DEFAULTS.contact;
   const telegramUrl = safeHttpUrl(contact.telegramUrl, TELEGRAM_CONTACT_URL);
   const showTelegram = (contact.telegramEnabled !== false || !contact.telegramUrl) && !!telegramUrl;
 
   return (
     <PublicHero
-      eyebrow="CONSULTATION"
-      title="상담안내"
+      eyebrow={consultationSettings.hero.subheading}
+      title={consultationSettings.hero.heading}
       primaryAction={{
         href: KAKAO_CHANNEL_CHAT,
         target: "_blank",
