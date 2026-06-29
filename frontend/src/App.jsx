@@ -62,6 +62,8 @@ const AdminClientDetail = lazy(() => import("./pages/admin/clients/ClientDetail"
 const AdminMessages = lazy(() => import("./pages/admin/messages"));
 const PortalMessages = lazy(() => import("./pages/portal/PortalMessages"));
 const AdminSiteManager = lazy(() => import("./pages/admin/site-manager"));
+const AdminMilitarySiteManager = lazy(() => import("./pages/admin/military-site-manager"));
+const AdminHomepageManager = lazy(() => import("./pages/admin/homepage"));
 const AdminMedia = lazy(() => import("./pages/admin/media"));
 const AdminAnalytics = lazy(() => import("./pages/admin/analytics"));
 const AdminSettings = lazy(() => import("./pages/admin/settings"));

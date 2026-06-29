@@ -117,33 +117,13 @@ async function getValidAccessToken(tokenData) {
 }
 
 /**
- * 구글 캘린더에 이벤트 생성 (사건 또는 포털 일정)
+ * 구글 캘린더에 사건 이벤트 생성
  * @param {string} accessToken
- * @param {{ summary, description, date, endDate, isAllDay }} eventData
- *   date/endDate: "YYYY-MM-DD" 또는 "YYYY-MM-DDTHH:mm" 형식
+ * @param {{ summary, description, date }} eventData
  * @returns {{ eventId, htmlLink }}
  */
-async function createCaseEvent(accessToken, { summary, description, date, endDate, isAllDay }) {
-  const startStr = date ? String(date) : new Date().toISOString().substring(0, 10);
-  const endStr = endDate ? String(endDate) : startStr;
-
-  // 시간 정보가 있으면 dateTime, 없거나 isAllDay이면 date
-  const hasTime = !isAllDay && startStr.includes("T") && startStr.length > 10;
-
-  let startField, endField;
-  if (hasTime) {
-    // "YYYY-MM-DDTHH:mm" 형식을 ISO로 변환 (초 추가)
-    const toISO = (s) => s.length === 16 ? s + ":00" : s;
-    startField = { dateTime: toISO(startStr), timeZone: TIMEZONE };
-    endField = { dateTime: toISO(endStr.includes("T") ? endStr : startStr), timeZone: TIMEZONE };
-  } else {
-    startField = { date: startStr.substring(0, 10), timeZone: TIMEZONE };
-    // 종일 이벤트: Google Calendar는 end를 exclusive로 처리하므로 +1일
-    const endDate10 = endStr.substring(0, 10);
-    const endPlusOne = new Date(endDate10 + "T00:00:00+09:00");
-    endPlusOne.setDate(endPlusOne.getDate() + 1);
-    endField = { date: endPlusOne.toISOString().substring(0, 10), timeZone: TIMEZONE };
-  }
+async function createCaseEvent(accessToken, { summary, description, date }) {
+  const startDate = date ? date.substring(0, 10) : new Date().toISOString().substring(0, 10);
 
   const res = await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events", {
     method: "POST",
@@ -154,8 +134,8 @@ async function createCaseEvent(accessToken, { summary, description, date, endDat
     body: JSON.stringify({
       summary,
       description,
-      start: startField,
-      end: endField,
+      start: { date: startDate, timeZone: TIMEZONE },
+      end: { date: startDate, timeZone: TIMEZONE },
     }),
   });
 
@@ -168,58 +148,10 @@ async function createCaseEvent(accessToken, { summary, description, date, endDat
   return { eventId: data.id, htmlLink: data.htmlLink };
 }
 
-
-/**
- * 구글 캘린더 이벤트 수정
- */
-async function updateCalendarEvent(accessToken, googleEventId, { summary, description, date, endDate, isAllDay }) {
-  const startStr = date ? String(date) : new Date().toISOString().substring(0, 10);
-  const endStr = endDate ? String(endDate) : startStr;
-  const hasTime = !isAllDay && startStr.includes("T") && startStr.length > 10;
-  let startField, endField;
-  if (hasTime) {
-    const toISO = (s) => s.length === 16 ? s + ":00" : s;
-    startField = { dateTime: toISO(startStr), timeZone: TIMEZONE };
-    endField = { dateTime: toISO(endStr.includes("T") ? endStr : startStr), timeZone: TIMEZONE };
-  } else {
-    startField = { date: startStr.substring(0, 10), timeZone: TIMEZONE };
-    const d = new Date(endStr.substring(0, 10) + "T00:00:00+09:00");
-    d.setDate(d.getDate() + 1);
-    endField = { date: d.toISOString().substring(0, 10), timeZone: TIMEZONE };
-  }
-  const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${googleEventId}`, {
-    method: "PATCH",
-    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ summary, description, start: startField, end: endField }),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.error?.message || "캘린더 이벤트 수정 실패");
-  }
-  const data = await res.json();
-  return { eventId: data.id, htmlLink: data.htmlLink };
-}
-
-/**
- * 구글 캘린더 이벤트 삭제
- */
-async function deleteCalendarEvent(accessToken, googleEventId) {
-  const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${googleEventId}`, {
-    method: "DELETE",
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
-  if (!res.ok && res.status !== 404 && res.status !== 410) {
-    throw new Error("캘린더 이벤트 삭제 실패");
-  }
-  return { deleted: true };
-}
-
 module.exports = {
   isConfigured,
   getAuthUrl,
   exchangeCodeForTokens,
   getValidAccessToken,
   createCaseEvent,
-  updateCalendarEvent,
-  deleteCalendarEvent,
 };

@@ -1374,7 +1374,7 @@ async function listLawyersForOrgChart() {
     LEFT JOIN departments d ON d.id = pu.department_id
     LEFT JOIN lawyers lw ON LOWER(lw.email) = LOWER(pu.email)
     WHERE pu.is_active = 1
-    ORDER BY d.created_at ASC, c.name ASC
+    ORDER BY d.name ASC, c.name ASC
   `).all();
 
   return rows.map((r) => ({
