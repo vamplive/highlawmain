@@ -137,7 +137,7 @@ export default function PortalCalendar() {
     setShowIcalModal(true);
     try {
       const res = await portalApi.get("/me/ical-token");
-      setIcalUrl(res.data?.data?.icalUrl || "");
+      setIcalUrl(res.data?.icalUrl || "");
     } catch (e) {
       setIcalError(e?.response?.data?.error || "iCal 주소를 가져오지 못했습니다");
     } finally {
