@@ -1404,4 +1404,30 @@ router.get('/me/ical-token', portalAuth, (req, res) => {
   } catch (e) { handleError(res, e); }
 });
 
+
+router.post('/events/:id/share', portalAuth, async (req, res) => {
+  try {
+    const { userIds } = req.body;
+    if (!Array.isArray(userIds) || userIds.length === 0)
+      return res.status(400).json({ data: null, error: '공유할 구성원을 선택해주세요', meta: null });
+    const src = sqlite.prepare('SELECT * FROM portal_events WHERE id = ?').get(req.params.id);
+    if (!src) return res.status(404).json({ data: null, error: '일정을 찾을 수 없습니다', meta: null });
+    const { randomUUID } = require('crypto');
+    let count = 0;
+    for (const uid of userIds) {
+      if (uid === req.portalUser.userId) continue;
+      const exists = sqlite.prepare(
+        "SELECT id FROM portal_events WHERE portal_user_id = ? AND title = ? AND starts_at = ?"
+      ).get(uid, src.title, src.starts_at);
+      if (!exists) {
+        sqlite.prepare(
+          "INSERT INTO portal_events (id,portal_user_id,title,description,starts_at,ends_at,is_all_day,color,location,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,datetime('now'),datetime('now'))"
+        ).run(randomUUID(), uid, src.title, src.description, src.starts_at, src.ends_at, src.is_all_day, src.color, src.location);
+        count++;
+      }
+    }
+    res.json({ data: { shared: count }, error: null, meta: null });
+  } catch (e) { handleError(res, e); }
+});
+
 module.exports = router;

@@ -39,6 +39,15 @@ export default function PortalCalendar() {
   const [formEndsAt, setFormEndsAt] = useState("");
   const [formIsAllDay, setFormIsAllDay] = useState(false);
   const [formColor, setFormColor] = useState("#0ea5e9");
+  const [formLocation, setFormLocation] = useState("");
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareMembers, setShareMembers] = useState([]);
+  const [selectedShareIds, setSelectedShareIds] = useState([]);
+  const [sharePhone, setSharePhone] = useState("");
+  const [sharePhoneName, setSharePhoneName] = useState("");
+  const [shareTab, setShareTab] = useState("internal");
+  const [sharingSending, setShareSending] = useState(false);
+  const [sharePendingEvent, setSharePendingEvent] = useState(null);
 
   const colorPalette = [
     { value: "#0ea5e9", label: "스카이" },
@@ -213,6 +222,7 @@ export default function PortalCalendar() {
     setFormEndsAt(formatDateForInput(date, "18:00"));
     setFormIsAllDay(false);
     setFormColor("#0ea5e9");
+    setFormLocation("");
     setFormAutoSync(false);
     setShowModal(true);
   };
@@ -228,6 +238,7 @@ export default function PortalCalendar() {
     setFormEndsAt(fmt(event.endsAt || event.startsAt));
     setFormIsAllDay(event.isAllDay === 1);
     setFormColor(event.color || "#0ea5e9");
+    setFormLocation(event.location || "");
     setShowModal(true);
   };
 
@@ -242,6 +253,7 @@ export default function PortalCalendar() {
       endsAt: formEndsAt || formStartsAt,
       isAllDay: formIsAllDay ? 1 : 0,
       color: formColor,
+      location: formLocation || null,
     };
     try {
       if (isEditing && selectedEvent) {
@@ -264,7 +276,53 @@ export default function PortalCalendar() {
     }
   };
 
-  const handleDeleteEvent = async () => {
+  const handleOpenShare = async (event) => {
+    setSharePendingEvent(event || null);
+    setSelectedShareIds([]);
+    setSharePhone("");
+    setSharePhoneName("");
+    setShareTab("internal");
+    setShowShareModal(true);
+    if (shareMembers.length === 0) {
+      try {
+        const res = await portalApi.get("/members");
+        setShareMembers((res.data || []).filter(m => m.userId !== res.myId));
+      } catch { showToast("구성원 목록을 불러오지 못했습니다", "error"); }
+    }
+  };
+
+  const handleShareInternal = async () => {
+    if (!selectedShareIds.length) return showToast("공유할 구성원을 선택해주세요");
+    if (!sharePendingEvent?.id) return showToast("일정을 먼저 저장해주세요");
+    setShareSending(true);
+    try {
+      const res = await portalApi.post(`/events/${sharePendingEvent.id}/share`, { userIds: selectedShareIds });
+      showToast(`${res.data?.shared ?? 0}명에게 일정이 공유되었습니다`);
+      setShowShareModal(false);
+    } catch (e) { showToast(e.message || "공유에 실패했습니다", "error"); }
+    finally { setShareSending(false); }
+  };
+
+  const handleShareSms = async () => {
+    if (!sharePhone.trim()) return showToast("전화번호를 입력해주세요");
+    if (!sharePendingEvent) return showToast("일정 정보가 없습니다");
+    const ev = sharePendingEvent;
+    const dt = ev.isAllDay ? ev.startsAt?.substring(0,10) :
+      new Date(ev.startsAt).toLocaleString("ko-KR", { year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit" });
+    const msg = `[하이로법률사무소] 일정 안내\n제목: ${ev.title}\n일시: ${dt}${ev.location ? "\n장소: "+ev.location : ""}${ev.description ? "\n"+ev.description : ""}`;
+    setShareSending(true);
+    try {
+      await portalApi.post("/sms/send", {
+        recipients: [{ name: sharePhoneName || "수신자", contact: sharePhone.trim() }],
+        content: msg,
+      });
+      showToast("문자가 발송되었습니다");
+      setSharePhone(""); setSharePhoneName("");
+    } catch (e) { showToast(e.message || "발송 실패", "error"); }
+    finally { setShareSending(false); }
+  };
+
+    const handleDeleteEvent = async () => {
     if (!selectedEvent) return;
     if (!window.confirm("이 일정을 삭제하시겠습니까?")) return;
     try {
@@ -543,10 +601,24 @@ export default function PortalCalendar() {
               </div>
             </div>
 
-            <div style={{ marginBottom: 20 }}>
+            <div style={{ marginBottom: 16 }}>
               <label style={labelStyle}>상세 설명</label>
-              <textarea placeholder="일정 상세 내용을 적어주세요 (장소, 준비물 등)" value={formDescription} onChange={e => setFormDescription(e.target.value)} style={{ ...fieldStyle, height: 80, resize: "vertical" }} disabled={selectedEvent?.isCourtDate} />
+              <textarea placeholder="일정 상세 내용을 적어주세요 (장소, 준비물 등)" value={formDescription} onChange={e => setFormDescription(e.target.value)} style={{ ...fieldStyle, height: 70, resize: "vertical" }} disabled={selectedEvent?.isCourtDate} />
             </div>
+            {!selectedEvent?.isCourtDate && (
+              <div style={{ marginBottom: 16 }}>
+                <label style={labelStyle}>회의실</label>
+                <input type="text" placeholder="회의실 이름 또는 장소를 입력하세요" value={formLocation} onChange={e => setFormLocation(e.target.value)} style={fieldStyle} />
+              </div>
+            )}
+            {!selectedEvent?.isCourtDate && (
+              <div style={{ marginBottom: 16 }}>
+                <button type="button" onClick={() => handleOpenShare(selectedEvent || { title: formTitle, startsAt: formStartsAt, endsAt: formEndsAt, isAllDay: formIsAllDay, location: formLocation, description: formDescription, id: null })}
+                  style={{ padding: "8px 14px", background: "#f1f5f9", color: "#334155", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+                  📤 일정 공유
+                </button>
+              </div>
+            )}
 
             {/* 구글 캘린더 섹션 */}
             {!selectedEvent?.isCourtDate && (
@@ -574,7 +646,7 @@ export default function PortalCalendar() {
                 ) : (
                   <div style={{ fontSize: 12, color: "#94a3b8" }}>
                     구글 캘린더와 연동하면 이 일정을 구글 캘린더에 추가할 수 있습니다.
-                    <button type="button" onClick={handleGoogleConnect} style={{ marginLeft: 8, color: "#1a73e8", background: "none", border: "none", cursor: "pointer", fontSize: 12, padding: 0 }}>연동하기 →</button>
+                    <button type="button" onClick={handleShowIcal} style={{ marginLeft: 8, color: "#1a73e8", background: "none", border: "none", cursor: "pointer", fontSize: 12, padding: 0 }}>연동하기 →</button>
                   </div>
                 )}
               </div>
@@ -599,6 +671,81 @@ export default function PortalCalendar() {
               </div>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* 일정 공유 모달 */}
+      {showShareModal && (
+        <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(15,23,42,0.45)", zIndex: 3000, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }}>
+          <div style={{ background: "#fff", borderRadius: 14, width: "100%", maxWidth: 460, padding: "24px", boxShadow: "0 20px 40px rgba(0,0,0,0.18)", maxHeight: "80vh", display: "flex", flexDirection: "column" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 700, color: "#0f172a", margin: 0 }}>📤 일정 공유</h3>
+              <button onClick={() => setShowShareModal(false)} style={{ background: "transparent", border: "none", cursor: "pointer", color: "#94a3b8", fontSize: 20 }}>✕</button>
+            </div>
+            {sharePendingEvent && (
+              <div style={{ padding: "8px 12px", background: "#f8fafc", borderRadius: 8, marginBottom: 14, fontSize: 12, color: "#334155", border: "1px solid #e2e8f0" }}>
+                <strong>{sharePendingEvent.title || "(제목 없음)"}</strong>
+                {sharePendingEvent.startsAt && <span style={{ marginLeft: 8, color: "#64748b" }}>{sharePendingEvent.startsAt?.substring(0,16).replace("T"," ")}</span>}
+              </div>
+            )}
+            <div style={{ display: "flex", gap: 0, marginBottom: 16, border: "1px solid #e2e8f0", borderRadius: 8, overflow: "hidden" }}>
+              {[["internal","👥 내부 구성원 공유"],["sms","📱 문자로 공유"]].map(([key,label]) => (
+                <button key={key} type="button" onClick={() => setShareTab(key)}
+                  style={{ flex: 1, padding: "9px 0", fontSize: 13, fontWeight: shareTab===key?700:400, background: shareTab===key?"#0ea5e9":"#fff", color: shareTab===key?"#fff":"#475569", border: "none", cursor: "pointer" }}>
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div style={{ flex: 1, overflowY: "auto" }}>
+              {shareTab === "internal" ? (
+                <div>
+                  {!sharePendingEvent?.id && (
+                    <div style={{ marginBottom: 10, padding: "8px 12px", background: "#fff7ed", borderRadius: 8, fontSize: 12, color: "#c2410c", border: "1px solid #fed7aa" }}>
+                      ⚠ 일정을 먼저 저장한 후 공유할 수 있습니다.
+                    </div>
+                  )}
+                  {shareMembers.length === 0 ? (
+                    <div style={{ color: "#94a3b8", fontSize: 13, textAlign: "center", padding: 20 }}>구성원을 불러오는 중...</div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      {shareMembers.map(m => (
+                        <label key={m.userId} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 8, border: "1px solid #e2e8f0", cursor: "pointer", background: selectedShareIds.includes(m.userId) ? "#eff6ff" : "#fff" }}>
+                          <input type="checkbox" checked={selectedShareIds.includes(m.userId)} onChange={e => setSelectedShareIds(prev => e.target.checked ? [...prev,m.userId] : prev.filter(id=>id!==m.userId))} />
+                          <span style={{ fontSize: 13, color: "#334155", fontWeight: 500 }}>{m.name || m.email}</span>
+                          {m.position && <span style={{ fontSize: 11, color: "#94a3b8" }}>{m.position}</span>}
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                  <button onClick={handleShareInternal} disabled={sharingSending || !selectedShareIds.length || !sharePendingEvent?.id}
+                    style={{ marginTop: 14, width: "100%", padding: "10px 0", background: (!selectedShareIds.length || !sharePendingEvent?.id) ? "#cbd5e1" : "#0ea5e9", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, fontSize: 14, cursor: "pointer" }}>
+                    {sharingSending ? "공유 중..." : `${selectedShareIds.length}명에게 일정 공유`}
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <div style={{ marginBottom: 10 }}>
+                    <label style={labelStyle}>이름 (선택)</label>
+                    <input type="text" placeholder="수신자 이름" value={sharePhoneName} onChange={e => setSharePhoneName(e.target.value)} style={fieldStyle} />
+                  </div>
+                  <div style={{ marginBottom: 14 }}>
+                    <label style={labelStyle}>전화번호</label>
+                    <input type="tel" placeholder="010-0000-0000" value={sharePhone} onChange={e => setSharePhone(e.target.value)} style={fieldStyle} />
+                  </div>
+                  {sharePendingEvent && (
+                    <div style={{ marginBottom: 14, padding: "10px 12px", background: "#f8fafc", borderRadius: 8, fontSize: 12, color: "#475569", border: "1px solid #e2e8f0", whiteSpace: "pre-wrap" }}>
+                      <strong style={{ display: "block", marginBottom: 4, color: "#334155" }}>발송될 문자 미리보기</strong>
+                      {`[하이로법률사무소] 일정 안내\n제목: ${sharePendingEvent.title || ""}\n일시: ${sharePendingEvent.isAllDay ? (sharePendingEvent.startsAt||"").substring(0,10) : (sharePendingEvent.startsAt||"").substring(0,16).replace("T"," ")}${sharePendingEvent.location ? "\n장소: "+sharePendingEvent.location : ""}${sharePendingEvent.description ? "\n"+sharePendingEvent.description.substring(0,50) : ""}`}
+                    </div>
+                  )}
+                  <button onClick={handleShareSms} disabled={sharingSending || !sharePhone.trim()}
+                    style={{ width: "100%", padding: "10px 0", background: !sharePhone.trim() ? "#cbd5e1" : "#2563eb", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, fontSize: 14, cursor: "pointer" }}>
+                    {sharingSending ? "발송 중..." : "문자 발송"}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
