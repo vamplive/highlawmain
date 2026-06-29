@@ -576,20 +576,48 @@ export default function PortalCalendar() {
 
               {/* 날짜/시간 행 */}
               <div style={{ display: "flex", alignItems: "flex-start", gap: 16, padding: "14px 20px", borderBottom: "1px solid #f1f5f9" }}>
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 4 }}>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 6 }}>
                   <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
                 </svg>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                    <input type={formIsAllDay ? "date" : "datetime-local"} value={formStartsAt}
-                      onChange={e => setFormStartsAt(e.target.value)} disabled={selectedEvent?.isCourtDate} required
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
+                  {/* 시작 */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", width: 26, flexShrink: 0 }}>시작</span>
+                    <input type="date"
+                      value={formStartsAt.substring(0, 10)}
+                      onChange={e => setFormStartsAt(
+                        formIsAllDay ? e.target.value : `${e.target.value}T${formStartsAt.includes("T") ? formStartsAt.substring(11, 16) : "09:00"}`
+                      )}
+                      disabled={selectedEvent?.isCourtDate} required
                       style={{ border: "none", outline: "none", fontSize: 13, color: "#334155", background: "#f1f5f9", borderRadius: 7, padding: "6px 10px", cursor: "pointer", fontFamily: "inherit" }} />
-                    <span style={{ color: "#94a3b8", fontSize: 13 }}>—</span>
-                    <input type={formIsAllDay ? "date" : "datetime-local"} value={formEndsAt}
-                      onChange={e => setFormEndsAt(e.target.value)} disabled={selectedEvent?.isCourtDate} required
-                      style={{ border: "none", outline: "none", fontSize: 13, color: "#334155", background: "#f1f5f9", borderRadius: 7, padding: "6px 10px", cursor: "pointer", fontFamily: "inherit" }} />
+                    {!formIsAllDay && (
+                      <input type="time"
+                        value={formStartsAt.includes("T") ? formStartsAt.substring(11, 16) : "09:00"}
+                        onChange={e => { setFormStartsAt(`${formStartsAt.substring(0, 10)}T${e.target.value}`); e.target.blur(); }}
+                        disabled={selectedEvent?.isCourtDate}
+                        style={{ border: "none", outline: "none", fontSize: 13, color: "#334155", background: "#f1f5f9", borderRadius: 7, padding: "6px 10px", cursor: "pointer", fontFamily: "inherit", width: 90 }} />
+                    )}
                   </div>
-                  <label style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 10, fontSize: 12, color: "#64748b", cursor: "pointer" }}>
+                  {/* 종료 */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", width: 26, flexShrink: 0 }}>종료</span>
+                    <input type="date"
+                      value={(formEndsAt || formStartsAt).substring(0, 10)}
+                      onChange={e => setFormEndsAt(
+                        formIsAllDay ? e.target.value : `${e.target.value}T${formEndsAt.includes("T") ? formEndsAt.substring(11, 16) : "18:00"}`
+                      )}
+                      disabled={selectedEvent?.isCourtDate}
+                      style={{ border: "none", outline: "none", fontSize: 13, color: "#334155", background: "#f1f5f9", borderRadius: 7, padding: "6px 10px", cursor: "pointer", fontFamily: "inherit" }} />
+                    {!formIsAllDay && (
+                      <input type="time"
+                        value={formEndsAt.includes("T") ? formEndsAt.substring(11, 16) : "18:00"}
+                        onChange={e => { setFormEndsAt(`${formEndsAt.substring(0, 10)}T${e.target.value}`); e.target.blur(); }}
+                        disabled={selectedEvent?.isCourtDate}
+                        style={{ border: "none", outline: "none", fontSize: 13, color: "#334155", background: "#f1f5f9", borderRadius: 7, padding: "6px 10px", cursor: "pointer", fontFamily: "inherit", width: 90 }} />
+                    )}
+                  </div>
+                  {/* 하루 종일 */}
+                  <label style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 2, fontSize: 12, color: "#64748b", cursor: selectedEvent?.isCourtDate ? "default" : "pointer" }}>
                     <input type="checkbox" checked={formIsAllDay} disabled={selectedEvent?.isCourtDate}
                       onChange={e => {
                         setFormIsAllDay(e.target.checked);

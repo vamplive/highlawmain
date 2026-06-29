@@ -25,7 +25,7 @@ router.get('/:token.ics', (req, res) => {
     'PRODID:-//Highlaw//Portal Calendar//KO',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
-    'X-WR-CALNAME:하이로 일정',
+    'X-WR-CALNAME:법무법인 하이로',
     'X-WR-TIMEZONE:Asia/Seoul',
   ];
 
