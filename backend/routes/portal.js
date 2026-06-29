@@ -29,7 +29,13 @@ const googleCalendarOAuth = require("../lib/google-calendar-oauth");
 const { logSecurityEvent } = require("../lib/audit-log");
 const { handleError } = require("../lib/route-handler");
 const notif = require("../lib/notifications");
-const { sqlite } = require("../db");
+const { db: msgDb, sqlite } = require("../db");
+const { messageTemplates, messageLogs } = require("../db/schema");
+const { sendSMS: sendSMSFn } = require("../lib/sms-service");
+const { sendFriendTalk: sendFriendTalkFn } = require("../lib/kakao-friendtalk-service");
+const portalScheduleService = require("../services/schedule-service");
+const { eq: deq, desc: ddesc, sql: dsql, and: dand } = require("drizzle-orm");
+const { cleanPhone: cleanPhoneFn } = require("../services/helpers");
 
 const router = Router();
 
@@ -1102,7 +1108,7 @@ router.post("/bookings/:id/cancel", portalAuth, async (req, res) => {
 // 고객 관리 (내부 구성원 전용)
 // =============================================
 
-router.get("/clients", portalAuth, internalOnly, async (req, res) => {
+router.get("/clients", portalAuth, async (req, res) => {
   try {
     const result = await portalService.listPortalClients(req.query);
     res.json({ data: result, error: null, meta: null });
@@ -1208,6 +1214,180 @@ router.delete("/clients/:clientId/persons/:id", portalAuth, internalOnly, async 
   } catch (e) {
     handleError(res, e);
   }
+});
+
+
+// =============================================
+// 포털 메시지 발송 (SMS / 카카오 / 예약 / 이력)
+// =============================================
+const MSG_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+router.get('/sms/templates', portalAuth, async (req, res) => {
+  try {
+    const rows = await msgDb.select().from(messageTemplates)
+      .where(deq(messageTemplates.channel, 'sms')).orderBy(messageTemplates.sortOrder);
+    res.json({ data: rows, error: null, meta: null });
+  } catch (e) { handleError(res, e); }
+});
+
+router.post('/sms/templates', portalAuth, async (req, res) => {
+  try {
+    const { name, content } = req.body;
+    if (!name?.trim() || !content?.trim())
+      return res.status(400).json({ data: null, error: '이름과 내용은 필수입니다', meta: null });
+    const [inserted] = await msgDb.insert(messageTemplates)
+      .values({ name: name.trim(), channel: 'sms', content: content.trim(), isActive: 1, sortOrder: 0 }).returning();
+    res.json({ data: inserted, error: null, meta: null });
+  } catch (e) { handleError(res, e); }
+});
+
+router.patch('/sms/templates/:id', portalAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!MSG_UUID_RE.test(id)) return res.status(400).json({ data: null, error: '유효하지 않은 ID', meta: null });
+    const { name, content } = req.body;
+    const updateData = { updatedAt: dsql`(datetime('now'))` };
+    if (name !== undefined) updateData.name = name.trim();
+    if (content !== undefined) updateData.content = content.trim();
+    const [updated] = await msgDb.update(messageTemplates).set(updateData).where(deq(messageTemplates.id, id)).returning();
+    if (!updated) return res.status(404).json({ data: null, error: '템플릿을 찾을 수 없습니다', meta: null });
+    res.json({ data: updated, error: null, meta: null });
+  } catch (e) { handleError(res, e); }
+});
+
+router.delete('/sms/templates/:id', portalAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!MSG_UUID_RE.test(id)) return res.status(400).json({ data: null, error: '유효하지 않은 ID', meta: null });
+    await msgDb.delete(messageTemplates).where(deq(messageTemplates.id, id));
+    res.json({ data: { deleted: true }, error: null, meta: null });
+  } catch (e) { handleError(res, e); }
+});
+
+router.post('/sms/send', portalAuth, async (req, res) => {
+  try {
+    const { recipients, content } = req.body;
+    if (!Array.isArray(recipients) || recipients.length === 0)
+      return res.status(400).json({ data: null, error: '수신자를 1명 이상 지정해주세요', meta: null });
+    if (!content?.trim())
+      return res.status(400).json({ data: null, error: '메시지 내용을 입력해주세요', meta: null });
+    const now = new Date().toISOString().replace('T', ' ').slice(0, 19);
+    const results = [];
+    for (const r of recipients) {
+      const contact = cleanPhoneFn(String(r.contact || ''));
+      const sendResult = await sendSMSFn(contact, content.trim());
+      const [log] = await msgDb.insert(messageLogs).values({
+        channel: 'sms', recipientName: r.name || null, recipientContact: contact,
+        content: content.trim(), status: sendResult.success ? 'sent' : 'failed',
+        errorMessage: sendResult.error || null, sentAt: sendResult.success ? now : null,
+      }).returning();
+      results.push({ recipientContact: contact, success: sendResult.success, error: sendResult.error, logId: log.id });
+    }
+    const sent = results.filter(r => r.success).length;
+    res.json({ data: { total: results.length, sent, failed: results.length - sent, results }, error: null, meta: null });
+  } catch (e) { handleError(res, e); }
+});
+
+router.post('/sms/schedule', portalAuth, async (req, res) => {
+  try {
+    const item = await portalScheduleService.createSchedule(req.body || {});
+    res.json({ data: item, error: null, meta: null });
+  } catch (e) { res.status(e.status || 500).json({ data: null, error: e.message || '서버 오류', meta: null }); }
+});
+
+router.get('/sms/scheduled', portalAuth, async (req, res) => {
+  try {
+    const result = await portalScheduleService.listSchedules(req.query);
+    res.json({ data: result.items, error: null, meta: result.meta });
+  } catch (e) { res.status(e.status || 500).json({ data: null, error: e.message || '서버 오류', meta: null }); }
+});
+
+router.delete('/sms/scheduled/:id', portalAuth, async (req, res) => {
+  try {
+    const result = await portalScheduleService.cancelSchedule(req.params.id);
+    res.json({ data: result, error: null, meta: null });
+  } catch (e) { res.status(e.status || 500).json({ data: null, error: e.message || '서버 오류', meta: null }); }
+});
+
+router.get('/sms/logs', portalAuth, async (req, res) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
+    const { channel, status } = req.query;
+    const conditions = [deq(messageLogs.channel, channel || 'sms')];
+    if (status) conditions.push(deq(messageLogs.status, status));
+    const whereClause = dand(...conditions);
+    const rows = await msgDb.select().from(messageLogs).where(whereClause)
+      .orderBy(ddesc(messageLogs.createdAt)).limit(limit).offset((page - 1) * limit);
+    const [{ total }] = await msgDb.select({ total: dsql`count(*)` }).from(messageLogs).where(whereClause);
+    res.json({ data: rows, error: null, meta: { page, limit, total: Number(total), totalPages: Math.ceil(Number(total) / limit) } });
+  } catch (e) { handleError(res, e); }
+});
+
+router.get('/sms/stats', portalAuth, async (req, res) => {
+  try {
+    const { from, to } = req.query;
+    const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+    const today = new Date().toISOString().slice(0, 10);
+    const defaultFrom = new Date(Date.now() - 29 * 86400000).toISOString().slice(0, 10);
+    const fromDate = DATE_RE.test(from) ? from : defaultFrom;
+    const toDate = DATE_RE.test(to) ? to : today;
+    const rangeCond = dsql`date(${messageLogs.createdAt}) BETWEEN ${fromDate} AND ${toDate}`;
+    const [summary] = await msgDb.select({
+      total: dsql`count(*)`,
+      sent: dsql`sum(case when status='sent' then 1 else 0 end)`,
+      failed: dsql`sum(case when status='failed' then 1 else 0 end)`,
+      smsSent: dsql`sum(case when channel='sms' and status='sent' then 1 else 0 end)`,
+    }).from(messageLogs).where(rangeCond);
+    const byChannel = await msgDb.select({
+      channel: messageLogs.channel,
+      sent: dsql`sum(case when status='sent' then 1 else 0 end)`,
+      failed: dsql`sum(case when status='failed' then 1 else 0 end)`,
+    }).from(messageLogs).where(rangeCond).groupBy(messageLogs.channel);
+    const daily = sqlite.prepare(
+      "SELECT date(created_at) as day, channel, sum(case when status='sent' then 1 else 0 end) as sent, " +
+      "sum(case when status='failed' then 1 else 0 end) as failed " +
+      "FROM message_logs WHERE date(created_at) BETWEEN ? AND ? GROUP BY day, channel ORDER BY day ASC"
+    ).all(fromDate, toDate);
+    res.json({ data: {
+      range: { from: fromDate, to: toDate },
+      total: Number(summary.total||0), sent: Number(summary.sent||0), failed: Number(summary.failed||0),
+      opened: 0, emailSent: 0, smsSent: Number(summary.smsSent||0), openRate: 0,
+      byChannel: byChannel.map(r => ({ channel: r.channel, sent: Number(r.sent||0), failed: Number(r.failed||0), opened: 0 })),
+      daily: daily.map(r => ({ day: r.day, channel: r.channel, sent: Number(r.sent||0), failed: Number(r.failed||0), opened: 0 })),
+    }, error: null, meta: null });
+  } catch (e) { handleError(res, e); }
+});
+
+router.get('/kakao/templates', portalAuth, async (req, res) => {
+  try {
+    const rows = await msgDb.select().from(messageTemplates)
+      .where(deq(messageTemplates.channel, 'kakao')).orderBy(messageTemplates.sortOrder);
+    res.json({ data: rows.map(t => ({ ...t, code: t.id })), error: null, meta: null });
+  } catch (e) { handleError(res, e); }
+});
+
+router.post('/kakao/send', portalAuth, async (req, res) => {
+  try {
+    const { recipients } = req.body;
+    if (!Array.isArray(recipients) || recipients.length === 0)
+      return res.status(400).json({ data: null, error: '수신자를 1명 이상 지정해주세요', meta: null });
+    const now = new Date().toISOString().replace('T', ' ').slice(0, 19);
+    const results = [];
+    for (const r of recipients) {
+      const contact = cleanPhoneFn(String(r.contact || ''));
+      const message = r.message || '';
+      const sendResult = await sendFriendTalkFn(contact, message, { name: r.name });
+      const [log] = await msgDb.insert(messageLogs).values({
+        channel: 'kakao', recipientName: r.name || null, recipientContact: contact,
+        content: message, status: sendResult.success ? 'sent' : 'failed',
+        errorMessage: sendResult.error || null, sentAt: sendResult.success ? now : null,
+      }).returning();
+      results.push({ recipientContact: contact, success: sendResult.success, error: sendResult.error, logId: log.id });
+    }
+    const sent = results.filter(r => r.success).length;
+    res.json({ data: { total: results.length, sent, failed: results.length - sent, results }, error: null, meta: null });
+  } catch (e) { handleError(res, e); }
 });
 
 module.exports = router;
