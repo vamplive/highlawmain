@@ -544,128 +544,173 @@ export default function PortalCalendar() {
       )}
 
 
-      {/* 모달 */}
+      {/* 일정 드로어 */}
       {showModal && (
-        <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(15,23,42,0.3)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }}>
-          <form onSubmit={handleSaveEvent} style={{ background: "#fff", borderRadius: 12, width: "100%", maxWidth: 460, padding: 24, boxShadow: "0 20px 25px -5px rgba(0,0,0,0.15)", maxHeight: "90vh", overflowY: "auto" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-              <h3 style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", margin: 0 }}>
-                {selectedEvent?.isCourtDate ? "법정 일정 상세" : (isEditing ? "일정 수정 / 상세" : "새 일정 등록")}
-              </h3>
-              <button type="button" onClick={() => setShowModal(false)} style={{ background: "transparent", border: "none", cursor: "pointer", color: "#94a3b8" }}>
+        <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "stretch" }}
+          onClick={() => setShowModal(false)}>
+          <div style={{ flex: 1, background: "rgba(15,23,42,0.25)", backdropFilter: "blur(2px)" }} />
+          <form onSubmit={handleSaveEvent} onClick={e => e.stopPropagation()}
+            style={{ width: 480, maxWidth: "100vw", display: "flex", flexDirection: "column", background: "#fff", boxShadow: "-8px 0 40px rgba(15,23,42,0.14)" }}>
+
+            {/* 드로어 헤더 */}
+            <div style={{ padding: "16px 20px", borderBottom: "1px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>
+                {selectedEvent?.isCourtDate ? "법정 일정 상세" : (isEditing ? "일정 수정" : "새 일정 등록")}
+              </span>
+              <button type="button" onClick={() => setShowModal(false)}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8", display: "flex", padding: 4, borderRadius: 6 }}>
                 <X size={18} />
               </button>
             </div>
 
-            <div style={{ marginBottom: 16 }}>
-              <label style={labelStyle}>일정 제목</label>
-              <input type="text" placeholder="제목을 입력해 주세요" value={formTitle} onChange={e => setFormTitle(e.target.value)} style={fieldStyle} disabled={selectedEvent?.isCourtDate} required />
+            {/* 제목 */}
+            <div style={{ padding: "18px 20px 14px", borderBottom: "1px solid #e2e8f0", flexShrink: 0 }}>
+              <input type="text" placeholder="제목을 입력하세요"
+                value={formTitle} onChange={e => setFormTitle(e.target.value)}
+                disabled={selectedEvent?.isCourtDate} required
+                style={{ width: "100%", border: "none", outline: "none", fontSize: 20, fontWeight: 700, color: "#0f172a", background: "transparent", boxSizing: "border-box", caretColor: "#0ea5e9" }} />
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
-              <div>
-                <label style={labelStyle}>시작 시간</label>
-                <input type={formIsAllDay ? "date" : "datetime-local"} value={formStartsAt} onChange={e => setFormStartsAt(e.target.value)} style={fieldStyle} disabled={selectedEvent?.isCourtDate} required />
-              </div>
-              <div>
-                <label style={labelStyle}>종료 시간</label>
-                <input type={formIsAllDay ? "date" : "datetime-local"} value={formEndsAt} onChange={e => setFormEndsAt(e.target.value)} style={fieldStyle} disabled={selectedEvent?.isCourtDate} required />
-              </div>
-            </div>
+            {/* 폼 본문 */}
+            <div style={{ flex: 1, overflowY: "auto" }}>
 
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#475569", cursor: selectedEvent?.isCourtDate ? "default" : "pointer" }}>
-                <input type="checkbox" checked={formIsAllDay} disabled={selectedEvent?.isCourtDate}
-                  onChange={e => {
-                    setFormIsAllDay(e.target.checked);
-                    if (e.target.checked) {
-                      setFormStartsAt(prev => prev.substring(0, 10));
-                      setFormEndsAt(prev => prev.substring(0, 10));
-                    } else {
-                      setFormStartsAt(prev => `${prev.substring(0, 10)}T09:00`);
-                      setFormEndsAt(prev => `${prev.substring(0, 10)}T18:00`);
-                    }
-                  }} />
-                하루 종일 (시간 미지정)
-              </label>
-            </div>
-
-            <div style={{ marginBottom: 16 }}>
-              <label style={labelStyle}>일정 색상</label>
-              <div style={{ display: "flex", gap: 8 }}>
-                {colorPalette.map(c => (
-                  <button key={c.value} type="button" onClick={() => !selectedEvent?.isCourtDate && setFormColor(c.value)}
-                    style={{ width: 24, height: 24, borderRadius: "50%", background: c.value, border: formColor === c.value ? "2px solid #0f172a" : "none", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", cursor: selectedEvent?.isCourtDate ? "default" : "pointer" }}
-                    title={c.label} disabled={selectedEvent?.isCourtDate} />
-                ))}
-              </div>
-            </div>
-
-            <div style={{ marginBottom: 16 }}>
-              <label style={labelStyle}>상세 설명</label>
-              <textarea placeholder="일정 상세 내용을 적어주세요 (장소, 준비물 등)" value={formDescription} onChange={e => setFormDescription(e.target.value)} style={{ ...fieldStyle, height: 70, resize: "vertical" }} disabled={selectedEvent?.isCourtDate} />
-            </div>
-            {!selectedEvent?.isCourtDate && (
-              <div style={{ marginBottom: 16 }}>
-                <label style={labelStyle}>회의실</label>
-                <input type="text" placeholder="회의실 이름 또는 장소를 입력하세요" value={formLocation} onChange={e => setFormLocation(e.target.value)} style={fieldStyle} />
-              </div>
-            )}
-            {!selectedEvent?.isCourtDate && (
-              <div style={{ marginBottom: 16 }}>
-                <button type="button" onClick={() => handleOpenShare(selectedEvent || { title: formTitle, startsAt: formStartsAt, endsAt: formEndsAt, isAllDay: formIsAllDay, location: formLocation, description: formDescription, id: null })}
-                  style={{ padding: "8px 14px", background: "#f1f5f9", color: "#334155", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
-                  📤 일정 공유
-                </button>
-              </div>
-            )}
-
-            {/* 구글 캘린더 섹션 */}
-            {!selectedEvent?.isCourtDate && (
-              <div style={{ marginBottom: 16, padding: 12, background: "#f8fafc", borderRadius: 8, border: "1px solid #e2e8f0" }}>
-                <div style={{ fontSize: 12, color: "#64748b", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
-                  <img src="https://www.google.com/favicon.ico" alt="G" width={12} height={12} />
-                  구글 캘린더
-                  {(selectedEvent?.googleEventId || selectedEvent?.google_event_id) && (
-                    <span style={{ fontSize: 11, color: "#16a34a", background: "#dcfce7", borderRadius: 4, padding: "1px 6px" }}>동기화됨</span>
-                  )}
-                </div>
-                {googleConnected ? (
-                  isEditing && selectedEvent ? (
-                    <button type="button" onClick={() => handleSyncEvent(selectedEvent)} disabled={syncingEventId === selectedEvent.id}
-                      style={{ padding: "7px 14px", fontSize: 13, fontWeight: 500, color: "#1a73e8", background: "#e8f0fe", border: "1px solid #c5d8f7", borderRadius: 6, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, opacity: syncingEventId === selectedEvent.id ? 0.6 : 1 }}>
-                      <img src="https://www.google.com/favicon.ico" alt="G" width={14} height={14} />
-                      {syncingEventId === selectedEvent.id ? "추가 중..." : (selectedEvent?.googleEventId || selectedEvent?.google_event_id) ? "구글 캘린더 다시 동기화" : "구글 캘린더에 추가"}
-                    </button>
-                  ) : (
-                    <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#374151", cursor: "pointer" }}>
-                      <input type="checkbox" checked={formAutoSync} onChange={e => setFormAutoSync(e.target.checked)} />
-                      저장 후 구글 캘린더에 추가
-                    </label>
-                  )
-                ) : (
-                  <div style={{ fontSize: 12, color: "#94a3b8" }}>
-                    구글 캘린더와 연동하면 이 일정을 구글 캘린더에 추가할 수 있습니다.
-                    <button type="button" onClick={handleShowIcal} style={{ marginLeft: 8, color: "#1a73e8", background: "none", border: "none", cursor: "pointer", fontSize: 12, padding: 0 }}>연동하기 →</button>
+              {/* 날짜/시간 행 */}
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 16, padding: "14px 20px", borderBottom: "1px solid #f1f5f9" }}>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 4 }}>
+                  <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+                </svg>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                    <input type={formIsAllDay ? "date" : "datetime-local"} value={formStartsAt}
+                      onChange={e => setFormStartsAt(e.target.value)} disabled={selectedEvent?.isCourtDate} required
+                      style={{ border: "none", outline: "none", fontSize: 13, color: "#334155", background: "#f1f5f9", borderRadius: 7, padding: "6px 10px", cursor: "pointer", fontFamily: "inherit" }} />
+                    <span style={{ color: "#94a3b8", fontSize: 13 }}>—</span>
+                    <input type={formIsAllDay ? "date" : "datetime-local"} value={formEndsAt}
+                      onChange={e => setFormEndsAt(e.target.value)} disabled={selectedEvent?.isCourtDate} required
+                      style={{ border: "none", outline: "none", fontSize: 13, color: "#334155", background: "#f1f5f9", borderRadius: 7, padding: "6px 10px", cursor: "pointer", fontFamily: "inherit" }} />
                   </div>
-                )}
+                  <label style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 10, fontSize: 12, color: "#64748b", cursor: "pointer" }}>
+                    <input type="checkbox" checked={formIsAllDay} disabled={selectedEvent?.isCourtDate}
+                      onChange={e => {
+                        setFormIsAllDay(e.target.checked);
+                        if (e.target.checked) {
+                          setFormStartsAt(prev => prev.substring(0, 10));
+                          setFormEndsAt(prev => prev.substring(0, 10));
+                        } else {
+                          setFormStartsAt(prev => `${prev.substring(0, 10)}T09:00`);
+                          setFormEndsAt(prev => `${prev.substring(0, 10)}T18:00`);
+                        }
+                      }} />
+                    하루 종일
+                  </label>
+                </div>
               </div>
-            )}
 
-            <div style={{ display: "flex", justifyContent: (isEditing && !selectedEvent?.isCourtDate) ? "space-between" : "flex-end", gap: 8 }}>
+              {/* 색상 행 */}
+              <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "12px 20px", borderBottom: "1px solid #f1f5f9" }}>
+                <div style={{ width: 17, height: 17, borderRadius: "50%", background: formColor, flexShrink: 0, border: "2px solid rgba(0,0,0,0.08)", boxShadow: "0 1px 3px rgba(0,0,0,0.12)" }} />
+                <div style={{ display: "flex", gap: 8 }}>
+                  {colorPalette.map(c => (
+                    <button key={c.value} type="button"
+                      onClick={() => !selectedEvent?.isCourtDate && setFormColor(c.value)}
+                      disabled={selectedEvent?.isCourtDate}
+                      title={c.label}
+                      style={{ width: 22, height: 22, borderRadius: "50%", background: c.value, border: `2px solid ${formColor === c.value ? "#0f172a" : "transparent"}`, cursor: selectedEvent?.isCourtDate ? "default" : "pointer", transition: "border-color 0.15s", flexShrink: 0 }} />
+                  ))}
+                </div>
+              </div>
+
+              {/* 장소/회의실 행 */}
+              {!selectedEvent?.isCourtDate && (
+                <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "12px 20px", borderBottom: "1px solid #f1f5f9" }}>
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" />
+                  </svg>
+                  <input type="text" placeholder="회의실 또는 장소" value={formLocation}
+                    onChange={e => setFormLocation(e.target.value)}
+                    style={{ flex: 1, border: "none", outline: "none", fontSize: 13, color: "#334155", background: "transparent", fontFamily: "inherit" }} />
+                </div>
+              )}
+
+              {/* 메모/설명 행 */}
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 16, padding: "12px 20px", borderBottom: "1px solid #f1f5f9" }}>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 3 }}>
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" />
+                </svg>
+                <textarea placeholder="메모를 입력하세요" value={formDescription}
+                  onChange={e => setFormDescription(e.target.value)}
+                  disabled={selectedEvent?.isCourtDate}
+                  style={{ flex: 1, border: "none", outline: "none", fontSize: 13, color: "#334155", background: "transparent", resize: "none", minHeight: 72, lineHeight: 1.7, fontFamily: "inherit" }} />
+              </div>
+
+              {/* 일정 공유 행 */}
+              {!selectedEvent?.isCourtDate && (
+                <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "12px 20px", borderBottom: "1px solid #f1f5f9" }}>
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                    <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                  </svg>
+                  <button type="button"
+                    onClick={() => handleOpenShare(selectedEvent || { title: formTitle, startsAt: formStartsAt, endsAt: formEndsAt, isAllDay: formIsAllDay, location: formLocation, description: formDescription, id: null })}
+                    style={{ fontSize: 13, color: "#475569", background: "none", border: "none", cursor: "pointer", padding: 0, textDecoration: "none" }}>
+                    일정 공유
+                  </button>
+                </div>
+              )}
+
+              {/* 구글 캘린더 행 */}
+              {!selectedEvent?.isCourtDate && (
+                <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "12px 20px" }}>
+                  <img src="https://www.google.com/favicon.ico" alt="G" width={16} height={16} style={{ flexShrink: 0, borderRadius: 2 }} />
+                  <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 8 }}>
+                    {googleConnected ? (
+                      isEditing && selectedEvent ? (
+                        <button type="button" onClick={() => handleSyncEvent(selectedEvent)}
+                          disabled={syncingEventId === selectedEvent.id}
+                          style={{ fontSize: 13, color: "#1a73e8", background: "none", border: "none", cursor: "pointer", padding: 0, opacity: syncingEventId === selectedEvent.id ? 0.6 : 1 }}>
+                          {syncingEventId === selectedEvent.id ? "추가 중..." : (selectedEvent?.googleEventId || selectedEvent?.google_event_id) ? "다시 동기화" : "구글 캘린더에 추가"}
+                        </button>
+                      ) : (
+                        <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, color: "#374151", cursor: "pointer" }}>
+                          <input type="checkbox" checked={formAutoSync} onChange={e => setFormAutoSync(e.target.checked)} />
+                          저장 후 구글 캘린더에 추가
+                        </label>
+                      )
+                    ) : (
+                      <>
+                        <span style={{ fontSize: 13, color: "#94a3b8" }}>구글 캘린더 미연동</span>
+                        <button type="button" onClick={handleShowIcal}
+                          style={{ fontSize: 12, color: "#1a73e8", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                          연동하기 →
+                        </button>
+                      </>
+                    )}
+                    {(selectedEvent?.googleEventId || selectedEvent?.google_event_id) && (
+                      <span style={{ fontSize: 11, color: "#16a34a", background: "#dcfce7", borderRadius: 4, padding: "1px 6px", marginLeft: "auto" }}>동기화됨</span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+            </div>
+
+            {/* 드로어 푸터 */}
+            <div style={{ padding: "14px 20px", borderTop: "1px solid #e2e8f0", display: "flex", justifyContent: (isEditing && !selectedEvent?.isCourtDate) ? "space-between" : "flex-end", alignItems: "center", gap: 8, flexShrink: 0, background: "#fafbfc" }}>
               {isEditing && !selectedEvent?.isCourtDate && (
-                <button type="button" onClick={handleDeleteEvent} style={{ background: "#fff", color: "#ef4444", border: "1px solid #fee2e2", borderRadius: 6, padding: "8px 14px", fontSize: 13, fontWeight: 500, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
-                  <Trash2 size={14} />
-                  삭제
+                <button type="button" onClick={handleDeleteEvent}
+                  style={{ background: "#fff", color: "#ef4444", border: "1px solid #fecaca", borderRadius: 8, padding: "8px 14px", fontSize: 13, fontWeight: 500, cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>
+                  <Trash2 size={14} /> 삭제
                 </button>
               )}
               <div style={{ display: "flex", gap: 8 }}>
-                <button type="button" onClick={() => setShowModal(false)} style={{ background: "#fff", color: "#475569", border: "1px solid #cbd5e1", borderRadius: 6, padding: "8px 14px", fontSize: 13, fontWeight: 500, cursor: "pointer" }}>
+                <button type="button" onClick={() => setShowModal(false)}
+                  style={{ background: "#fff", color: "#475569", border: "1px solid #e2e8f0", borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 500, cursor: "pointer" }}>
                   {selectedEvent?.isCourtDate ? "닫기" : "취소"}
                 </button>
                 {!selectedEvent?.isCourtDate && (
-                  <button type="submit" style={{ background: "#0ea5e9", color: "#fff", border: "none", borderRadius: 6, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                    {isEditing ? "수정 완료" : "등록"}
+                  <button type="submit"
+                    style={{ background: "#0ea5e9", color: "#fff", border: "none", borderRadius: 8, padding: "8px 20px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                    {isEditing ? "수정 완료" : "저장"}
                   </button>
                 )}
               </div>
