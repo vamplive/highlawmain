@@ -26,6 +26,10 @@ export default function PortalCalendar() {
   const [syncingEventId, setSyncingEventId] = useState(null);
   const [formAutoSync, setFormAutoSync] = useState(false);
   const [bulkSyncing, setBulkSyncing] = useState(false);
+  const [showIcalModal, setShowIcalModal] = useState(false);
+  const [icalUrl, setIcalUrl] = useState("");
+  const [icalLoading, setIcalLoading] = useState(false);
+  const [icalCopied, setIcalCopied] = useState(false);
 
   // 폼 상태
   const [formTitle, setFormTitle] = useState("");
@@ -124,18 +128,27 @@ export default function PortalCalendar() {
     });
   };
 
-  // Google 연동
-  const handleGoogleConnect = async () => {
+  // iCal 모달 열기
+  const handleShowIcal = async () => {
+    setIcalLoading(true);
+    setShowIcalModal(true);
     try {
-      const res = await portalApi.get("/google/auth-url");
-      if (!res.data?.data?.configured) {
-        showToast("구글 캘린더 연동이 아직 설정되지 않았습니다. 관리자에게 문의해주세요.", "error");
-        return;
-      }
-      window.location.href = res.data.data.authUrl;
+      const res = await portalApi.get("/me/ical-token");
+      setIcalUrl(res.data?.data?.icalUrl || "");
     } catch {
-      showToast("구글 캘린더 연동 URL을 가져오지 못했습니다", "error");
+      showToast("iCal 주소를 가져오지 못했습니다", "error");
+      setShowIcalModal(false);
+    } finally {
+      setIcalLoading(false);
     }
+  };
+
+  const handleCopyIcal = () => {
+    if (!icalUrl) return;
+    navigator.clipboard.writeText(icalUrl).then(() => {
+      setIcalCopied(true);
+      setTimeout(() => setIcalCopied(false), 2000);
+    });
   };
 
   const handleGoogleDisconnect = async () => {
@@ -299,7 +312,7 @@ export default function PortalCalendar() {
               </button>
             </>
           ) : (
-            <button onClick={handleGoogleConnect} style={{
+            <button onClick={handleShowIcal} style={{
               padding: "8px 14px", fontSize: 13, fontWeight: 500, color: "#1a73e8",
               background: "#e8f0fe", border: "1px solid #c5d8f7", borderRadius: 7, cursor: "pointer",
               display: "flex", alignItems: "center", gap: 6,
@@ -396,6 +409,59 @@ export default function PortalCalendar() {
           )}
         </div>
       </div>
+
+      {/* iCal 모달 */}
+      {showIcalModal && (
+        <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(15,23,42,0.45)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }}>
+          <div style={{ background: "#fff", borderRadius: 14, width: "100%", maxWidth: 520, padding: "28px 28px 24px", boxShadow: "0 20px 40px rgba(0,0,0,0.18)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <img src="https://www.google.com/favicon.ico" alt="G" width={18} height={18} style={{ borderRadius: 3 }} />
+                <h3 style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", margin: 0 }}>구글 캘린더 연동</h3>
+              </div>
+              <button onClick={() => setShowIcalModal(false)} style={{ background: "transparent", border: "none", cursor: "pointer", color: "#94a3b8", fontSize: 20, lineHeight: 1 }}>✕</button>
+            </div>
+
+            <p style={{ fontSize: 13, color: "#475569", marginBottom: 14 }}>아래 URL을 복사하여 구글 캘린더에 추가하세요.</p>
+
+            <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
+              <input
+                readOnly
+                value={icalLoading ? "주소 생성 중..." : icalUrl}
+                style={{ flex: 1, padding: "9px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 12, color: "#334155", background: "#f8fafc", fontFamily: "monospace" }}
+              />
+              <button
+                onClick={handleCopyIcal}
+                disabled={icalLoading || !icalUrl}
+                style={{ padding: "9px 16px", background: icalCopied ? "#16a34a" : "#1a73e8", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: "pointer", whiteSpace: "nowrap", minWidth: 64 }}
+              >
+                {icalCopied ? "복사됨 ✓" : "복사"}
+              </button>
+            </div>
+
+            <div style={{ background: "#f8fafc", borderRadius: 10, padding: "16px 18px", border: "1px solid #e2e8f0" }}>
+              <p style={{ fontSize: 12, fontWeight: 700, color: "#334155", margin: "0 0 10px" }}>구글 캘린더 추가 방법</p>
+              <ol style={{ margin: 0, paddingLeft: 18, display: "flex", flexDirection: "column", gap: 7 }}>
+                {[
+                  "위 URL을 복사합니다.",
+                  "PC에서 Google 캘린더에 로그인합니다.",
+                  "화면 왼쪽 메뉴 하단의 '다른 캘린더' 옆에 있는 +(추가) 버튼을 클릭합니다.",
+                  "메뉴 중 'URL로 추가'를 선택하고, 1번에서 복사한 주소를 붙여넣은 뒤 '캘린더 추가'를 누릅니다.",
+                ].map((step, i) => (
+                  <li key={i} style={{ fontSize: 12, color: "#475569", lineHeight: 1.6 }}>{step}</li>
+                ))}
+              </ol>
+            </div>
+
+            <div style={{ marginTop: 20, display: "flex", justifyContent: "flex-end" }}>
+              <button onClick={() => setShowIcalModal(false)} style={{ padding: "9px 20px", background: "#f1f5f9", color: "#475569", border: "none", borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
+                닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
 
       {/* 모달 */}
       {showModal && (

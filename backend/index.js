@@ -359,6 +359,7 @@ app.use("/api/receipts", require("./routes/receipts"));
 app.use("/api/payment-cards", require("./routes/payment-cards"));
 app.use("/api/chatbot", require("./routes/chatbot"));
 app.use("/api/inquiry", require("./routes/qna"));
+app.use("/ical", require("./routes/ical"));
 app.use("/api/portal", require("./routes/portal"));
 app.use("/api/portal/approvals", require("./routes/approvals"));
 app.use("/api/admin/organization", require("./routes/organization"));
