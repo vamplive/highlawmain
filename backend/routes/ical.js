@@ -25,8 +25,11 @@ router.get('/:token.ics', (req, res) => {
     'PRODID:-//Highlaw//Portal Calendar//KO',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
+    'NAME:법무법인 하이로',
     'X-WR-CALNAME:법무법인 하이로',
+    'X-WR-CALDESC:법무법인 하이로 포털 일정',
     'X-WR-TIMEZONE:Asia/Seoul',
+    'X-APPLE-CALENDAR-COLOR:#0ea5e9',
   ];
 
   for (const ev of events) {
@@ -53,7 +56,7 @@ router.get('/:token.ics', (req, res) => {
   lines.push('END:VCALENDAR');
 
   res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
-  res.setHeader('Content-Disposition', 'inline; filename="highlaw.ics"');
+  res.setHeader('Content-Disposition', 'inline; filename="highlaw_calendar.ics"; filename*=UTF-8\'\'\'%EB%B2%95%EB%AC%B4%EB%B2%95%EC%9D%B8_%ED%95%98%EC%9D%B4%EB%A1%9C.ics\'');
   res.send(lines.join('\r\n'));
 });
 

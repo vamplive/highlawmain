@@ -335,6 +335,11 @@ export default function PortalCalendar() {
     }
   };
 
+  const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
+  const MINUTES = ["00","05","10","15","20","25","30","35","40","45","50","55"];
+  const selTime = { border: "none", outline: "none", fontSize: 13, color: "#334155", background: "#f1f5f9", borderRadius: 7, padding: "5px 7px", cursor: "pointer", fontFamily: "inherit", appearance: "auto" };
+  const roundMin = (raw) => { const n = parseInt(raw || "0", 10); return String(Math.min(55, Math.round(n / 5) * 5)).padStart(2, "0"); };
+
   const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
 
   return (
@@ -591,11 +596,22 @@ export default function PortalCalendar() {
                       disabled={selectedEvent?.isCourtDate} required
                       style={{ border: "none", outline: "none", fontSize: 13, color: "#334155", background: "#f1f5f9", borderRadius: 7, padding: "6px 10px", cursor: "pointer", fontFamily: "inherit" }} />
                     {!formIsAllDay && (
-                      <input type="time"
-                        value={formStartsAt.includes("T") ? formStartsAt.substring(11, 16) : "09:00"}
-                        onChange={e => { setFormStartsAt(`${formStartsAt.substring(0, 10)}T${e.target.value}`); e.target.blur(); }}
-                        disabled={selectedEvent?.isCourtDate}
-                        style={{ border: "none", outline: "none", fontSize: 13, color: "#334155", background: "#f1f5f9", borderRadius: 7, padding: "6px 10px", cursor: "pointer", fontFamily: "inherit", width: 90 }} />
+                      <>
+                        <select
+                          value={formStartsAt.includes("T") ? formStartsAt.substring(11, 13) : "09"}
+                          onChange={e => setFormStartsAt(`${formStartsAt.substring(0, 10)}T${e.target.value}:${formStartsAt.includes("T") ? formStartsAt.substring(14, 16) : "00"}`)}
+                          disabled={selectedEvent?.isCourtDate}
+                          style={selTime}>
+                          {HOURS.map(h => <option key={h} value={h}>{h}시</option>)}
+                        </select>
+                        <select
+                          value={roundMin(formStartsAt.includes("T") ? formStartsAt.substring(14, 16) : "00")}
+                          onChange={e => setFormStartsAt(`${formStartsAt.substring(0, 10)}T${formStartsAt.includes("T") ? formStartsAt.substring(11, 13) : "09"}:${e.target.value}`)}
+                          disabled={selectedEvent?.isCourtDate}
+                          style={selTime}>
+                          {MINUTES.map(m => <option key={m} value={m}>{m}분</option>)}
+                        </select>
+                      </>
                     )}
                   </div>
                   {/* 종료 */}
@@ -609,11 +625,22 @@ export default function PortalCalendar() {
                       disabled={selectedEvent?.isCourtDate}
                       style={{ border: "none", outline: "none", fontSize: 13, color: "#334155", background: "#f1f5f9", borderRadius: 7, padding: "6px 10px", cursor: "pointer", fontFamily: "inherit" }} />
                     {!formIsAllDay && (
-                      <input type="time"
-                        value={formEndsAt.includes("T") ? formEndsAt.substring(11, 16) : "18:00"}
-                        onChange={e => { setFormEndsAt(`${formEndsAt.substring(0, 10)}T${e.target.value}`); e.target.blur(); }}
-                        disabled={selectedEvent?.isCourtDate}
-                        style={{ border: "none", outline: "none", fontSize: 13, color: "#334155", background: "#f1f5f9", borderRadius: 7, padding: "6px 10px", cursor: "pointer", fontFamily: "inherit", width: 90 }} />
+                      <>
+                        <select
+                          value={(formEndsAt || formStartsAt).includes("T") ? (formEndsAt || formStartsAt).substring(11, 13) : "18"}
+                          onChange={e => setFormEndsAt(`${formEndsAt.substring(0, 10)}T${e.target.value}:${formEndsAt.includes("T") ? formEndsAt.substring(14, 16) : "00"}`)}
+                          disabled={selectedEvent?.isCourtDate}
+                          style={selTime}>
+                          {HOURS.map(h => <option key={h} value={h}>{h}시</option>)}
+                        </select>
+                        <select
+                          value={roundMin(formEndsAt.includes("T") ? formEndsAt.substring(14, 16) : "00")}
+                          onChange={e => setFormEndsAt(`${formEndsAt.substring(0, 10)}T${formEndsAt.includes("T") ? formEndsAt.substring(11, 13) : "18"}:${e.target.value}`)}
+                          disabled={selectedEvent?.isCourtDate}
+                          style={selTime}>
+                          {MINUTES.map(m => <option key={m} value={m}>{m}분</option>)}
+                        </select>
+                      </>
                     )}
                   </div>
                   {/* 하루 종일 */}
