@@ -271,12 +271,10 @@ function SmsComposePanel({ templates, applyTpl, clearApply, recipients }) {
           ⏰ {new Date(scheduledAt).toLocaleString("ko-KR")}에 {recipients.length}명에게 예약 발송됩니다
         </div>
       )}
-      {!scheduleMode && (
-        <button onClick={handleSend} disabled={sending || !recipients.length || !content.trim() || bytes > 2000}
-          style={{ width: "100%", padding: "12px 0", background: (sending || !recipients.length || !content.trim() || bytes > 2000) ? "#cbd5e1" : "#2563eb", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 15, cursor: sending ? "wait" : "pointer" }}>
-          {sending ? "처리 중..." : `${recipients.length}명에게 발송`}
-        </button>
-      )}
+      <button onClick={handleSend} disabled={sending || !recipients.length || !content.trim() || bytes > 2000}
+        style={{ width: "100%", padding: "12px 0", background: (sending || !recipients.length || !content.trim() || bytes > 2000) ? "#cbd5e1" : "#2563eb", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 15, cursor: sending ? "wait" : "pointer" }}>
+        {sending ? "처리 중..." : "발송"}
+      </button>
       <Result data={result} />
     </section>
   );
