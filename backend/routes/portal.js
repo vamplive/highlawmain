@@ -1290,7 +1290,7 @@ router.post('/sms/send', portalAuth, async (req, res) => {
 
 router.post('/sms/schedule', portalAuth, async (req, res) => {
   try {
-    const item = await portalScheduleService.createSchedule(req.body || {});
+    const item = await portalScheduleService.createSchedule({ channel: 'sms', ...(req.body || {}) });
     res.json({ data: item, error: null, meta: null });
   } catch (e) { res.status(e.status || 500).json({ data: null, error: e.message || '서버 오류', meta: null }); }
 });

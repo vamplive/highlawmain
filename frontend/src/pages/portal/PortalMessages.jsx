@@ -206,22 +206,25 @@ function SmsComposePanel({ templates, applyTpl, clearApply, recipients }) {
     if (t) setContent(t.content);
   };
 
+  const handleScheduleConfirm = async () => {
+    if (!recipients.length) return showToast("수신자를 추가해주세요");
+    if (!content.trim()) return showToast("메시지 내용을 입력해주세요");
+    if (!scheduledAt) return showToast("예약 시각을 입력해주세요");
+    if (new Date(scheduledAt).getTime() < Date.now() + 30000) return showToast("예약 시각은 현재 이후여야 합니다");
+    setSending(true);
+    try {
+      await api.post("/portal/sms/schedule", { recipients: recipients.map(r => ({ name: r.name, contact: r.contact })), content: content.trim(), scheduledAt });
+      showToast("예약 등록 완료");
+      setScheduleMode(false);
+      setScheduledAt("");
+    } catch (e) { showToast("예약 실패: " + e.message); }
+    finally { setSending(false); }
+  };
+
   const handleSend = async () => {
     if (!recipients.length) return showToast("수신자를 추가해주세요");
     if (!content.trim()) return showToast("메시지 내용을 입력해주세요");
     if (bytes > 2000) return showToast("2000바이트를 초과합니다");
-    if (scheduleMode) {
-      if (!scheduledAt) return showToast("예약 시각을 입력해주세요");
-      if (new Date(scheduledAt).getTime() < Date.now() + 30000) return showToast("예약 시각은 현재 이후여야 합니다");
-      if (!window.confirm(`${recipients.length}명에게 ${new Date(scheduledAt).toLocaleString("ko-KR")}에 예약 발송하시겠습니까?`)) return;
-      setSending(true);
-      try {
-        await api.post("/portal/sms/schedule", { recipients: recipients.map(r => ({ name: r.name, contact: r.contact })), content: content.trim(), scheduledAt });
-        showToast("예약 등록 완료");
-      } catch (e) { showToast("예약 실패: " + e.message); }
-      finally { setSending(false); }
-      return;
-    }
     if (!window.confirm(`${recipients.length}명에게 ${msgType}를 발송하시겠습니까?`)) return;
     setSending(true); setResult(null);
     try {
@@ -255,11 +258,25 @@ function SmsComposePanel({ templates, applyTpl, clearApply, recipients }) {
           <input type="checkbox" checked={scheduleMode} onChange={e => setScheduleMode(e.target.checked)} /> 예약 발송
         </label>
         {scheduleMode && <input type="datetime-local" value={scheduledAt} onChange={e => setScheduledAt(e.target.value)} style={{ ...inp, width: "auto", flex: 1 }} />}
+        {scheduleMode && (
+          <button onClick={handleScheduleConfirm}
+            disabled={!scheduledAt || !recipients.length || !content.trim() || sending}
+            style={{ padding: "9px 16px", background: (!scheduledAt || !recipients.length || !content.trim() || sending) ? "#cbd5e1" : "#0369a1", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: (!scheduledAt || !recipients.length || !content.trim() || sending) ? "default" : "pointer", whiteSpace: "nowrap" }}>
+            {sending ? "처리 중..." : "확인"}
+          </button>
+        )}
       </div>
-      <button onClick={handleSend} disabled={sending || !recipients.length || !content.trim() || bytes > 2000}
-        style={{ width: "100%", padding: "12px 0", background: (sending || !recipients.length || !content.trim() || bytes > 2000) ? "#cbd5e1" : "#2563eb", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 15, cursor: sending ? "wait" : "pointer" }}>
-        {sending ? "처리 중..." : scheduleMode ? `${recipients.length}명에게 예약` : `${recipients.length}명에게 발송`}
-      </button>
+      {scheduleMode && scheduledAt && (
+        <div style={{ marginBottom: 10, padding: "8px 12px", background: "#eff6ff", borderRadius: 8, fontSize: 12, color: "#1d4ed8" }}>
+          ⏰ {new Date(scheduledAt).toLocaleString("ko-KR")}에 {recipients.length}명에게 예약 발송됩니다
+        </div>
+      )}
+      {!scheduleMode && (
+        <button onClick={handleSend} disabled={sending || !recipients.length || !content.trim() || bytes > 2000}
+          style={{ width: "100%", padding: "12px 0", background: (sending || !recipients.length || !content.trim() || bytes > 2000) ? "#cbd5e1" : "#2563eb", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 15, cursor: sending ? "wait" : "pointer" }}>
+          {sending ? "처리 중..." : `${recipients.length}명에게 발송`}
+        </button>
+      )}
       <Result data={result} />
     </section>
   );
