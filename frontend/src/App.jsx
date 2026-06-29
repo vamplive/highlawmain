@@ -93,8 +93,6 @@ const AdminPortalMembers = lazy(() => import("./pages/admin/portal-members"));
 const AdminPortalBoardAdmin = lazy(() => import("./pages/admin/portal-board-admin"));
 const AdminPortalTimeOverview = lazy(() => import("./pages/admin/portal-time-overview"));
 const AdminChatbot = lazy(() => import("./pages/admin/chatbot"));
-const AdminMilitarySiteManager = lazy(() => import("./pages/admin/military-site-manager"));
-const AdminHomepageManager = lazy(() => import("./pages/admin/homepage"));
 
 /* ── 로그인/포털 진입 청크: 지연 로딩 ── */
 const LoginPage = lazy(() => import("./pages/public/LoginPage"));
