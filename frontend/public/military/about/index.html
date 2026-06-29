@@ -56,6 +56,7 @@
     .subnav-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 16px;border-radius:8px;font-size:.8rem;font-weight:600;letter-spacing:.04em;text-decoration:none;border:1px solid rgba(184,204,42,.3);color:rgba(241,245,249,.7);transition:border-color .18s,color .18s,background .18s;}
     .subnav-btn:hover{border-color:var(--gold);color:var(--gold);background:rgba(184,204,42,.06);}
     .subnav-btn.active{border-color:var(--gold);color:var(--gold);background:rgba(184,204,42,.1);}
+    .tab-section{display:none;}.tab-section.active{display:block;}
     .page-hero{padding-top:120px;padding-bottom:56px;background:linear-gradient(135deg,#0F1A0A,#1A2E0F,#0F1A0A);border-bottom:1px solid rgba(184,204,42,.12);}
     @media(max-width:767px){.sec{padding:56px 0;}#fcta{bottom:88px!important;right:12px;gap:6px;}.fcta-btn{width:42px;height:42px;}.fcta-tip{display:none!important;}}
     #mob-bar{display:none;position:fixed;bottom:0;left:0;right:0;z-index:300;background:rgba(10,20,7,.97);border-top:1px solid rgba(184,204,42,.2);backdrop-filter:blur(14px);padding:10px 14px;gap:10px;align-items:center;}
@@ -65,6 +66,19 @@
     /* Timeline */
     .timeline-item{position:relative;padding-left:28px;border-left:2px solid rgba(184,204,42,.25);}
     .timeline-item::before{content:'';position:absolute;left:-5px;top:6px;width:8px;height:8px;border-radius:50%;background:var(--gold);}
+    /* iOS Safari / Android 모바일 최적화 */
+    a,button{-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+    input,select,textarea{-webkit-tap-highlight-color:transparent;}
+    #nav.scrolled,#mega-dd{-webkit-backdrop-filter:blur(20px);}
+    .fcta-btn,#mob-bar{-webkit-backdrop-filter:blur(14px);}
+    #drawer-overlay{-webkit-backdrop-filter:blur(4px);}
+    @media(max-width:767px){
+      .greet-grid{grid-template-columns:1fr!important;gap:24px!important;}
+      .dir-grid{grid-template-columns:1fr!important;gap:20px!important;}
+      .map-wrap{min-height:220px!important;}
+      .info-sep{display:none!important;}
+      .page-hero .heading{font-size:1.6rem!important;}
+    }
   </style>
 </head>
 <body>
@@ -139,7 +153,7 @@
   </div>
 </div>
 <script>
-(function(){var btn=document.getElementById('hamburger-btn');var overlay=document.getElementById('drawer-overlay');var panel=document.getElementById('drawer-panel');var drawer=document.getElementById('mobile-drawer');var lines=btn?btn.querySelectorAll('.ham-line'):[];var isOpen=false;var dl=document.getElementById('nav-desktop-links');function applyLayout(){var wide=window.innerWidth>=768;if(dl)dl.style.display=wide?'flex':'none';if(btn)btn.style.display=wide?'none':'flex';}applyLayout();window.addEventListener('resize',applyLayout);function openDrawer(){isOpen=true;drawer.style.pointerEvents='auto';overlay.style.pointerEvents='auto';panel.style.pointerEvents='auto';overlay.style.opacity='1';panel.style.transform='translateX(0)';document.body.style.overflow='hidden';if(btn)btn.setAttribute('aria-expanded','true');if(lines[0])lines[0].style.transform='translateY(7px) rotate(45deg)';if(lines[1])lines[1].style.opacity='0';if(lines[2])lines[2].style.transform='translateY(-7px) rotate(-45deg)';}function closeDrawer(){isOpen=false;overlay.style.opacity='0';panel.style.transform='translateX(100%)';document.body.style.overflow='';if(btn)btn.setAttribute('aria-expanded','false');if(lines[0])lines[0].style.transform='';if(lines[1])lines[1].style.opacity='1';if(lines[2])lines[2].style.transform='';setTimeout(function(){if(!isOpen){drawer.style.pointerEvents='none';overlay.style.pointerEvents='none';panel.style.pointerEvents='none';}},320);}window.closeDrawer=closeDrawer;if(btn)btn.addEventListener('click',function(){isOpen?closeDrawer():openDrawer();});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&isOpen)closeDrawer();});var megaDd=document.getElementById('mega-dd');var navTls=document.querySelectorAll('.nav-tl');var t=null;function showMega(){clearTimeout(t);if(megaDd)megaDd.classList.add('open');}function hideMega(){clearTimeout(t);t=setTimeout(function(){if(megaDd)megaDd.classList.remove('open');},280);}navTls.forEach(function(el){el.addEventListener('mouseenter',showMega);el.addEventListener('mouseleave',hideMega);});if(megaDd){megaDd.addEventListener('mouseenter',showMega);megaDd.addEventListener('mouseleave',hideMega);}window.toggleDrawerSub=function(key){var sub=document.getElementById('dd-'+key+'-sub');if(!sub)return;var open=sub.style.display!=='none';['about','partners','practices','info','consultation'].forEach(function(k){var el=document.getElementById('dd-'+k+'-sub');if(el)el.style.display='none';});if(!open)sub.style.display='flex';};})();
+(function(){var btn=document.getElementById('hamburger-btn');var overlay=document.getElementById('drawer-overlay');var panel=document.getElementById('drawer-panel');var drawer=document.getElementById('mobile-drawer');var lines=btn?btn.querySelectorAll('.ham-line'):[];var isOpen=false;var dl=document.getElementById('nav-desktop-links');function applyLayout(){var wide=window.innerWidth>=768;if(dl)dl.style.display=wide?'flex':'none';if(btn)btn.style.display=wide?'none':'flex';}applyLayout();window.addEventListener('resize',applyLayout);function openDrawer(){isOpen=true;drawer.style.pointerEvents='auto';overlay.style.pointerEvents='auto';panel.style.pointerEvents='auto';overlay.style.opacity='1';panel.style.transform='translateX(0)';var _sy=window.scrollY;document.body.style.position='fixed';document.body.style.top='-'+_sy+'px';document.body.style.width='100%';if(btn)btn.setAttribute('aria-expanded','true');if(lines[0])lines[0].style.transform='translateY(7px) rotate(45deg)';if(lines[1])lines[1].style.opacity='0';if(lines[2])lines[2].style.transform='translateY(-7px) rotate(-45deg)';}function closeDrawer(){isOpen=false;overlay.style.opacity='0';panel.style.transform='translateX(100%)';var _sy2=parseInt(document.body.style.top||'0')*-1;document.body.style.position='';document.body.style.top='';document.body.style.width='';window.scrollTo(0,_sy2);if(btn)btn.setAttribute('aria-expanded','false');if(lines[0])lines[0].style.transform='';if(lines[1])lines[1].style.opacity='1';if(lines[2])lines[2].style.transform='';setTimeout(function(){if(!isOpen){drawer.style.pointerEvents='none';overlay.style.pointerEvents='none';panel.style.pointerEvents='none';}},320);}window.closeDrawer=closeDrawer;if(btn)btn.addEventListener('click',function(){isOpen?closeDrawer():openDrawer();});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&isOpen)closeDrawer();});var megaDd=document.getElementById('mega-dd');var navTls=document.querySelectorAll('.nav-tl');var t=null;function showMega(){clearTimeout(t);if(megaDd)megaDd.classList.add('open');}function hideMega(){clearTimeout(t);t=setTimeout(function(){if(megaDd)megaDd.classList.remove('open');},280);}navTls.forEach(function(el){el.addEventListener('mouseenter',showMega);el.addEventListener('mouseleave',hideMega);});if(megaDd){megaDd.addEventListener('mouseenter',showMega);megaDd.addEventListener('mouseleave',hideMega);}window.toggleDrawerSub=function(key){var sub=document.getElementById('dd-'+key+'-sub');if(!sub)return;var open=sub.style.display!=='none';['about','partners','practices','info','consultation'].forEach(function(k){var el=document.getElementById('dd-'+k+'-sub');if(el)el.style.display='none';});if(!open)sub.style.display='flex';};})();
 </script>
 
 <!-- PAGE HERO -->
@@ -159,12 +173,12 @@
 </div>
 
 <!-- 인사말 -->
-<section id="greeting" class="sec bg-a">
+<section id="greeting" class="sec bg-a tab-section active">
   <div class="wrap">
     <div style="width:52px;height:3px;background:linear-gradient(90deg,var(--gold),transparent);border-radius:2px;margin-bottom:14px;" class="fu"></div>
     <p style="font-size:.62rem;letter-spacing:.22em;color:var(--gold);text-transform:uppercase;font-weight:700;margin-bottom:10px;" class="fu">GREETING</p>
     <h2 class="heading fu" style="font-size:1.75rem;color:#F1F5F9;margin-bottom:40px;">인사말</h2>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center;" class="fu d1">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center;" class="fu d1 greet-grid">
       <div>
         <p style="font-size:1rem;line-height:2;color:var(--text-sub);margin-bottom:24px;">군 법률 분쟁은 단순한 법률 문제가 아닙니다. 한 사람의 군 생활 전체, 나아가 전역 이후의 삶까지 좌우하는 결정입니다.</p>
         <p style="font-size:1rem;line-height:2;color:var(--text-sub);margin-bottom:24px;">하이로 군사센터는 군검사 출신 변호인들이 직접 설립한 법무법인입니다. 수사관의 시각, 검사의 경험, 변호인의 사명을 하나로 결합하여 의뢰인 한 분 한 분의 권리를 지킵니다.</p>
@@ -186,7 +200,7 @@
 </section>
 
 <!-- 핵심가치 -->
-<section id="values" class="sec bg-b">
+<section id="values" class="sec bg-b tab-section">
   <div class="wrap">
     <div style="width:52px;height:3px;background:linear-gradient(90deg,var(--gold),transparent);border-radius:2px;margin-bottom:14px;" class="fu"></div>
     <p style="font-size:.62rem;letter-spacing:.22em;color:var(--gold);text-transform:uppercase;font-weight:700;margin-bottom:10px;" class="fu">CORE VALUES</p>
@@ -217,43 +231,52 @@
 </section>
 
 <!-- 오시는 길 -->
-<section id="directions" class="sec bg-a">
+<section id="directions" class="sec bg-a tab-section">
   <div class="wrap">
     <div style="width:52px;height:3px;background:linear-gradient(90deg,var(--gold),transparent);border-radius:2px;margin-bottom:14px;" class="fu"></div>
     <p style="font-size:.62rem;letter-spacing:.22em;color:var(--gold);text-transform:uppercase;font-weight:700;margin-bottom:10px;" class="fu">DIRECTIONS</p>
     <h2 class="heading fu" style="font-size:1.75rem;color:#F1F5F9;margin-bottom:40px;">오시는 길</h2>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;" class="fu d1">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;" class="fu d1 dir-grid">
       <div>
         <div class="card" style="padding:28px;margin-bottom:20px;">
           <h3 style="font-size:1rem;font-weight:700;color:var(--gold);margin-bottom:16px;">📍 주소</h3>
-          <p style="font-size:.9rem;color:var(--text-sub);line-height:1.8;margin-bottom:12px;">서울특별시 강남구 테헤란로 141, 15층<br><span style="font-size:.8rem;color:var(--text-muted);">(우: 06135, 한진타운빌딩 15층)</span></p>
+          <p style="font-size:.9rem;color:var(--text-sub);line-height:1.8;margin-bottom:12px;">서울특별시 강남구 테헤란로 141 (역삼KR빌딩) 15층<br><span style="font-size:.8rem;color:var(--text-muted);">(우편번호: 06132)</span></p>
           <a href="https://map.naver.com/p/search/%ED%95%98%EC%9D%B4%EB%A1%9C/place/2029221798" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;color:var(--gold);font-size:.82rem;text-decoration:none;border:1px solid rgba(184,204,42,.3);padding:6px 14px;border-radius:8px;transition:background .18s;">네이버 지도로 보기 →</a>
         </div>
         <div class="card" style="padding:28px;">
-          <h3 style="font-size:1rem;font-weight:700;color:var(--gold);margin-bottom:16px;">🚇 대중교통</h3>
-          <div style="display:flex;flex-direction:column;gap:12px;">
-            <div><span style="font-size:.75rem;color:var(--gold);font-weight:700;margin-right:8px;">지하철</span><span style="font-size:.88rem;color:var(--text-sub);">2호선 선릉역 4번 출구 도보 5분</span></div>
-            <div><span style="font-size:.75rem;color:var(--gold);font-weight:700;margin-right:8px;">버스</span><span style="font-size:.88rem;color:var(--text-sub);">테헤란로 인근 버스 정류장 이용</span></div>
-            <div><span style="font-size:.75rem;color:var(--gold);font-weight:700;margin-right:8px;">주차</span><span style="font-size:.88rem;color:var(--text-sub);">건물 내 주차장 이용 가능</span></div>
+          <h3 style="font-size:1rem;font-weight:700;color:var(--gold);margin-bottom:16px;">🚇 대중교통 &amp; 주차</h3>
+          <div style="display:flex;flex-direction:column;gap:14px;">
+            <div>
+              <span style="font-size:.75rem;color:var(--gold);font-weight:700;display:block;margin-bottom:4px;">지하철</span>
+              <span style="font-size:.88rem;color:var(--text-sub);line-height:1.7;">2호선 <strong style="color:#F1F5F9;">역삼역 4번 출구</strong>에서 강남역 방향으로 도보 1분</span>
+            </div>
+            <div>
+              <span style="font-size:.75rem;color:var(--gold);font-weight:700;display:block;margin-bottom:4px;">버스</span>
+              <span style="font-size:.88rem;color:var(--text-sub);line-height:1.7;"><strong style="color:#F1F5F9;">역삼역.포스코타워역삼</strong> 정류장 하차<br>간선버스: 147, 242, 350 &nbsp;/&nbsp; 지선버스: 3412, 4432</span>
+            </div>
+            <div>
+              <span style="font-size:.75rem;color:var(--gold);font-weight:700;display:block;margin-bottom:4px;">주차</span>
+              <span style="font-size:.88rem;color:var(--text-sub);line-height:1.7;">건물 내 기계식 및 자주식 지하 주차장 이용<br>법률 상담 방문 차량에 한하여 <strong style="color:#F1F5F9;">2시간 무료 주차권</strong>을 인포데스크에서 제공</span>
+            </div>
           </div>
         </div>
       </div>
-      <div class="card" style="overflow:hidden;min-height:320px;position:relative;">
+      <div class="card map-wrap" style="overflow:hidden;min-height:320px;position:relative;">
         <iframe src="https://map.naver.com/p/search/%EB%B2%95%EB%AC%B4%EB%B2%95%EC%9D%B8%ED%95%98%EC%9D%B4%EB%A1%9C/place/2029221798" width="100%" height="100%" style="border:none;position:absolute;inset:0;min-height:320px;" title="법무법인 하이로 위치 지도" loading="lazy"></iframe>
       </div>
     </div>
     <div class="card" style="margin-top:20px;padding:20px 28px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;" class="fu">
       <div><p style="font-size:.78rem;color:var(--text-muted);margin-bottom:4px;">운영시간</p><p style="font-size:.9rem;color:#F1F5F9;font-weight:600;">평일 10:00 — 18:00</p></div>
-      <div style="height:40px;width:1px;background:rgba(184,204,42,.15);"></div>
+      <div class="info-sep" style="height:40px;width:1px;background:rgba(184,204,42,.15);"></div>
       <div><p style="font-size:.78rem;color:var(--text-muted);margin-bottom:4px;">전화</p><p style="font-size:.9rem;color:#F1F5F9;font-weight:600;"><a href="tel:02-6925-6757" style="color:inherit;text-decoration:none;">02-6925-6757</a></p></div>
-      <div style="height:40px;width:1px;background:rgba(184,204,42,.15);"></div>
+      <div class="info-sep" style="height:40px;width:1px;background:rgba(184,204,42,.15);"></div>
       <div><p style="font-size:.78rem;color:var(--text-muted);margin-bottom:4px;">이메일</p><p style="font-size:.9rem;color:#F1F5F9;font-weight:600;">mingukang@highlaw.net</p></div>
     </div>
   </div>
 </section>
 
 <!-- 공익활동 -->
-<section id="probono" class="sec bg-b">
+<section id="probono" class="sec bg-b tab-section">
   <div class="wrap">
     <div style="width:52px;height:3px;background:linear-gradient(90deg,var(--gold),transparent);border-radius:2px;margin-bottom:14px;" class="fu"></div>
     <p style="font-size:.62rem;letter-spacing:.22em;color:var(--gold);text-transform:uppercase;font-weight:700;margin-bottom:10px;" class="fu">PRO BONO</p>
@@ -280,7 +303,7 @@
 </section>
 
 <!-- 연혁 -->
-<section id="history" class="sec bg-a">
+<section id="history" class="sec bg-a tab-section">
   <div class="wrap">
     <div style="width:52px;height:3px;background:linear-gradient(90deg,var(--gold),transparent);border-radius:2px;margin-bottom:14px;" class="fu"></div>
     <p style="font-size:.62rem;letter-spacing:.22em;color:var(--gold);text-transform:uppercase;font-weight:700;margin-bottom:10px;" class="fu">HISTORY</p>
@@ -309,7 +332,7 @@
 <footer style="background:#0F1A0A;" role="contentinfo">
   <div class="wrap" style="padding:52px 20px 44px;">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:48px;flex-wrap:wrap;">
-      <div><p style="font-size:13px;letter-spacing:.25em;color:#fff;text-transform:uppercase;margin:0;">HIGH &amp; LAW FIRM</p><p style="font-size:14px;color:rgba(255,255,255,.6);margin:8px 0 0;">법무법인 하이로</p></div>
+      <div><p style="font-size:13px;letter-spacing:.25em;color:#fff;text-transform:uppercase;margin:0;">HIGH &amp; LAW FIRM</p><p style="font-size:14px;color:rgba(255,255,255,.6);margin:8px 0 0;">법무법인 하이로</p><p style="font-size:12px;color:rgba(255,255,255,.4);margin:4px 0 0;">광고책임변호사 조덕재</p></div>
       <div style="display:flex;gap:64px;flex-wrap:wrap;">
         <div><p style="font-size:10px;letter-spacing:.15em;color:rgba(255,255,255,.4);margin:0 0 12px;font-family:monospace;">LOCATION</p><p style="font-size:14px;color:rgba(255,255,255,.8);line-height:1.7;margin:0;">서울특별시 강남구 테헤란로 141, 15층</p></div>
         <div><p style="font-size:10px;letter-spacing:.15em;color:rgba(255,255,255,.4);margin:0 0 12px;font-family:monospace;">CONTACT</p><p style="font-size:14px;color:rgba(255,255,255,.8);line-height:1.7;margin:0;">T. 02-6925-6757<br>E. mingukang@highlaw.net</p></div>
@@ -337,7 +360,24 @@
 </div>
 
 <script>
-(function(){'use strict';var nav=document.getElementById('nav');var btnTop=document.getElementById('btn-top');window.addEventListener('scroll',function(){if(window.scrollY>48)nav.classList.add('scrolled');else nav.classList.remove('scrolled');if(btnTop)btnTop.style.display=window.scrollY>400?'flex':'none';},{passive:true});var els=document.querySelectorAll('.fu');var io=new IntersectionObserver(function(entries){entries.forEach(function(e){if(e.isIntersecting){e.target.classList.add('vis');io.unobserve(e.target);}});},{threshold:0.12,rootMargin:'0px 0px -48px 0px'});els.forEach(function(el){io.observe(el);});var subBtns=document.querySelectorAll('.subnav-btn');function updateSubnav(){var hash=location.hash||'#greeting';subBtns.forEach(function(b){b.classList.toggle('active',b.getAttribute('href')===hash);});}window.addEventListener('hashchange',updateSubnav);updateSubnav();})();
+(function(){'use strict';
+  var nav=document.getElementById('nav'),btnTop=document.getElementById('btn-top');
+  window.addEventListener('scroll',function(){if(window.scrollY>48)nav.classList.add('scrolled');else nav.classList.remove('scrolled');if(btnTop)btnTop.style.display=window.scrollY>400?'flex':'none';},{passive:true});
+  var subBtns=document.querySelectorAll('.subnav-btn');
+  var tabSections=document.querySelectorAll('.tab-section');
+  function showTab(hash){
+    if(!hash||!document.querySelector(hash))hash='#greeting';
+    tabSections.forEach(function(s){s.classList.remove('active');});
+    subBtns.forEach(function(b){b.classList.remove('active');});
+    var section=document.querySelector(hash);
+    var btn=document.querySelector('.subnav-btn[href="'+hash+'"]');
+    if(section){section.classList.add('active');section.querySelectorAll('.fu').forEach(function(el){el.classList.add('vis');});}
+    if(btn)btn.classList.add('active');
+  }
+  subBtns.forEach(function(btn){btn.addEventListener('click',function(e){e.preventDefault();var hash=btn.getAttribute('href');history.pushState(null,'',hash);showTab(hash);});});
+  window.addEventListener('popstate',function(){showTab(location.hash);});
+  showTab(location.hash);
+})();
 </script>
 </body>
 </html>

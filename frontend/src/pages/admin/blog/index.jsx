@@ -451,10 +451,10 @@ function BlogOverallAnalyticsModal({ data, loading, onClose, onOpenPost }) {
   );
 }
 
-export default function AdminBlog({ basePath = "/admin" }) {
+export default function AdminBlog({ basePath = "/admin", defaultCategory = "" }) {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [category, setCategory] = useState("");
+  const [category, setCategory] = useState(defaultCategory);
   const [status, setStatus] = useState("");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);

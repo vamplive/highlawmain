@@ -1,7 +1,9 @@
 /**
  * 발송 탭 1단계 — 수신자 선택 패널.
- * 채널 선택, 출처 선택, 세그먼트 빌더, 검색, 수신자 리스트, 카운트 바.
+ * 채널 선택, 출처 선택, 세그먼트 빌더, 검색, 수신자 리스트,
+ * 직접 수신자 추가 입력, 선택된 수신자 목록(개별·전체 삭제).
  */
+import { useState, useRef } from "react";
 import { COLORS } from "../../../components/admin";
 import { formatPhone } from "../../../utils/formatters";
 import { CATEGORY_LABELS, STATUS_LABELS, STATUS_COLORS } from "./messageConstants";
@@ -14,7 +16,8 @@ import { countBarStyle, linkBtnStyle, listContainerStyle, searchInputStyle } fro
 const CHANNEL_OPTIONS = [
   { value: "sms", label: "SMS" },
   { value: "email", label: "이메일" },
-  { value: "both", label: "둘 다" },
+  { value: "kakao", label: "카카오톡" },
+  { value: "both", label: "SMS+이메일" },
 ];
 
 const SOURCE_OPTIONS = [
@@ -30,12 +33,14 @@ export default function SendRecipientPanel({
   filteredClients, selectedClients, onToggleClient, onToggleAll,
   clientFilter, onFilterChange,
   onSegmentResult, segmentCount,
+  manualRecipients, onAddManual, onRemoveManual, onClearAll,
 }) {
   const smsReady = filteredClients.filter((c) => c.phone).length;
   const emailReady = filteredClients.filter((c) => c.email).length;
   const selectedItems = filteredClients.filter((c) => selectedClients.has(c.id));
   const selectedSms = selectedItems.filter((c) => c.phone).length;
   const selectedEmail = selectedItems.filter((c) => c.email).length;
+  const totalSelected = selectedClients.size + manualRecipients.length;
 
   return (
     <div style={{ minWidth: 0 }}>
@@ -73,7 +78,7 @@ export default function SendRecipientPanel({
       )}
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8, marginTop: 12 }}>
-        <StatCard label="선택" value={`${selectedClients.size}명`} accent />
+        <StatCard label="선택" value={`${totalSelected}명`} accent />
         <StatCard label="문자 가능" value={`${selectedSms || smsReady}명`} />
         <StatCard label="이메일 가능" value={`${selectedEmail || emailReady}명`} />
       </div>
@@ -111,6 +116,166 @@ export default function SendRecipientPanel({
         <span>{selectedClients.size}명 선택됨</span>
         <span style={{ color: COLORS.muted }}>· 전체 {filteredClients.length}명</span>
       </div>
+
+      {/* 직접 수신자 추가 */}
+      <ManualRecipientForm channel={channel} onAdd={onAddManual} />
+
+      {/* 선택된 수신자 목록 */}
+      {totalSelected > 0 && (
+        <SelectedRecipientsPanel
+          dbRecipients={selectedItems}
+          manualRecipients={manualRecipients}
+          channel={channel}
+          onRemoveDb={onToggleClient}
+          onRemoveManual={onRemoveManual}
+          onClearAll={onClearAll}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ─── 직접 수신자 추가 폼 ─── */
+function ManualRecipientForm({ channel, onAdd }) {
+  const [name, setName] = useState("");
+  const [contact, setContact] = useState("");
+  const nameRef = useRef(null);
+
+  const isEmail = channel === "email";
+  const isKakao = channel === "kakao";
+  const placeholder = isEmail ? "이메일 주소" : "전화번호 (01012345678)";
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    const trimName = name.trim();
+    const trimContact = contact.trim();
+    if (!trimContact) return;
+    onAdd({
+      name: trimName || trimContact,
+      contact: trimContact,
+      phone: (!isEmail) ? trimContact : undefined,
+      email: isEmail ? trimContact : undefined,
+    });
+    setName("");
+    setContact("");
+    nameRef.current?.focus();
+  }
+
+  return (
+    <div style={{ marginTop: 14 }}>
+      <div style={{ fontSize: 11, fontWeight: 600, color: COLORS.textMuted, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>
+        직접 수신자 추가 (고객DB 외)
+      </div>
+      <form onSubmit={handleSubmit} style={{ display: "flex", gap: 6 }}>
+        <input
+          ref={nameRef}
+          style={{ ...searchInputStyle, flex: "0 0 80px" }}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="이름"
+        />
+        <input
+          style={{ ...searchInputStyle, flex: 1 }}
+          value={contact}
+          onChange={(e) => setContact(e.target.value)}
+          placeholder={placeholder}
+          type={isEmail ? "email" : "text"}
+        />
+        <button
+          type="submit"
+          style={{
+            ...linkBtnStyle,
+            padding: "5px 12px",
+            background: COLORS.accent,
+            color: "#fff",
+            borderRadius: 5,
+            fontWeight: 600,
+          }}
+        >
+          추가
+        </button>
+      </form>
+    </div>
+  );
+}
+
+/* ─── 선택된 수신자 패널 ─── */
+function SelectedRecipientsPanel({ dbRecipients, manualRecipients, channel, onRemoveDb, onRemoveManual, onClearAll }) {
+  const all = [
+    ...dbRecipients.map((c) => ({
+      key: `db-${c.id}`,
+      name: c.name || "-",
+      contact: channel === "email" ? (c.email || "-") : formatPhone(c.phone),
+      onRemove: () => onRemoveDb(c.id),
+      tag: "DB",
+    })),
+    ...manualRecipients.map((r) => ({
+      key: r.id,
+      name: r.name || "-",
+      contact: r.contact,
+      onRemove: () => onRemoveManual(r.id),
+      tag: "직접",
+    })),
+  ];
+
+  return (
+    <div style={{
+      marginTop: 14,
+      border: `1px solid ${COLORS.borderLight}`,
+      borderRadius: 7,
+      overflow: "hidden",
+    }}>
+      <div style={{
+        display: "flex", justifyContent: "space-between", alignItems: "center",
+        padding: "8px 12px",
+        background: "#f0f9ff",
+        borderBottom: `1px solid ${COLORS.borderLight}`,
+      }}>
+        <span style={{ fontSize: 11.5, fontWeight: 700, color: "#0369a1" }}>
+          선택된 수신자 {all.length}명
+        </span>
+        <button
+          onClick={onClearAll}
+          style={{ ...linkBtnStyle, fontSize: 11, color: "#dc2626" }}
+        >
+          전체 삭제
+        </button>
+      </div>
+      <div style={{ maxHeight: 200, overflowY: "auto" }}>
+        {all.map((r) => (
+          <div
+            key={r.key}
+            style={{
+              display: "flex", alignItems: "center", gap: 8,
+              padding: "7px 12px",
+              borderBottom: `1px solid ${COLORS.borderLight}`,
+            }}
+          >
+            <span style={{
+              fontSize: 9.5, fontWeight: 600,
+              padding: "1px 5px", borderRadius: 3,
+              background: r.tag === "DB" ? "#e0e7ff" : "#fef3c7",
+              color: r.tag === "DB" ? "#4338ca" : "#92400e",
+              flexShrink: 0,
+            }}>
+              {r.tag}
+            </span>
+            <span style={{ fontSize: 12.5, fontWeight: 500, color: COLORS.text, flex: "0 0 auto", maxWidth: 90, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {r.name}
+            </span>
+            <span style={{ fontSize: 11, color: COLORS.textMuted, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {r.contact}
+            </span>
+            <button
+              onClick={r.onRemove}
+              style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8", fontSize: 14, padding: "0 2px", flexShrink: 0, lineHeight: 1 }}
+              title="삭제"
+            >
+              ×
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -119,7 +284,7 @@ function RecipientRow({ client: c, channel, source, selected, onToggle }) {
   const phone = formatPhone(c.phone);
   const contact = channel === "both"
     ? `${phone} · ${c.email || "-"}`
-    : channel === "sms" ? phone : (c.email || "-");
+    : channel === "sms" || channel === "kakao" ? phone : (c.email || "-");
   const statusColor = c.status ? (STATUS_COLORS[c.status] || COLORS.muted) : null;
 
   return (

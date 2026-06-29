@@ -165,6 +165,7 @@ const lawyers = sqliteTable("lawyers", {
   position: text("position").notNull().default("변호사"),
   team: text("team"),
   photoUrl: text("photo_url"),
+  photoFocus: text("photo_focus"),
   tagline: text("tagline"),
   education: text("education"),
   career: text("career"),

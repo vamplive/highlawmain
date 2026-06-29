@@ -91,6 +91,8 @@ const AdminPortalMembers = lazy(() => import("./pages/admin/portal-members"));
 const AdminPortalBoardAdmin = lazy(() => import("./pages/admin/portal-board-admin"));
 const AdminPortalTimeOverview = lazy(() => import("./pages/admin/portal-time-overview"));
 const AdminChatbot = lazy(() => import("./pages/admin/chatbot"));
+const AdminMilitarySiteManager = lazy(() => import("./pages/admin/military-site-manager"));
+const AdminHomepageManager = lazy(() => import("./pages/admin/homepage"));
 
 /* ── 로그인/포털 진입 청크: 지연 로딩 ── */
 const LoginPage = lazy(() => import("./pages/public/LoginPage"));
@@ -216,6 +218,8 @@ function AdminArea() {
           <Route path="clients/:id" element={<LazyRoute><AdminClientDetail /></LazyRoute>} />
           <Route path="messages" element={<LazyRoute><AdminMessages /></LazyRoute>} />
           <Route path="site-manager" element={<LazyRoute><AdminSiteManager /></LazyRoute>} />
+          <Route path="military-site-manager" element={<LazyRoute><AdminMilitarySiteManager /></LazyRoute>} />
+          <Route path="homepage" element={<LazyRoute><AdminHomepageManager /></LazyRoute>} />
           <Route path="media" element={<LazyRoute><AdminMedia /></LazyRoute>} />
           <Route path="analytics" element={<LazyRoute><AdminAnalytics /></LazyRoute>} />
           <Route path="settings" element={<LazyRoute><AdminSettings /></LazyRoute>} />
@@ -352,7 +356,7 @@ export default function App() {
           <Route path="contracts/:id" element={<LazyRoute><PortalContractSign /></LazyRoute>} />
           <Route path="blog" element={<LazyRoute><PortalBlog /></LazyRoute>} />
           <Route path="qna" element={<Navigate to="/admin/inquiry" replace />} />
-          <Route path="messages" element={<LazyRoute><PortalMessages /></LazyRoute>} />
+          <Route path="messages" element={<LazyRoute><AdminMessages /></LazyRoute>} />
           <Route path="reviews" element={<LazyRoute><PortalReviews /></LazyRoute>} />
           <Route path="editor" element={<LazyRoute><EditorPage /></LazyRoute>} />
           <Route path="editor/:id" element={<LazyRoute><EditorPage /></LazyRoute>} />

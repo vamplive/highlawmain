@@ -51,6 +51,7 @@
     .subnav-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 16px;border-radius:8px;font-size:.8rem;font-weight:600;letter-spacing:.04em;text-decoration:none;border:1px solid rgba(184,204,42,.3);color:rgba(241,245,249,.7);transition:border-color .18s,color .18s,background .18s;}
     .subnav-btn:hover{border-color:var(--gold);color:var(--gold);background:rgba(184,204,42,.06);}
     .subnav-btn.active{border-color:var(--gold);color:var(--gold);background:rgba(184,204,42,.1);}
+    .tab-section{display:none;}.tab-section.active{display:block;}
     .page-hero{padding-top:120px;padding-bottom:56px;background:linear-gradient(135deg,#0F1A0A,#1A2E0F,#0F1A0A);border-bottom:1px solid rgba(184,204,42,.12);}
     @media(max-width:767px){.sec{padding:56px 0;}#fcta{bottom:88px!important;right:12px;gap:6px;}.fcta-btn{width:42px;height:42px;}.fcta-tip{display:none!important;}}
     #mob-bar{display:none;position:fixed;bottom:0;left:0;right:0;z-index:300;background:rgba(10,20,7,.97);border-top:1px solid rgba(184,204,42,.2);backdrop-filter:blur(14px);padding:10px 14px;gap:10px;align-items:center;}
@@ -63,6 +64,13 @@
     .member-photo{width:100%;aspect-ratio:3/4;object-fit:cover;object-position:top;}
     .member-photo-placeholder{width:100%;aspect-ratio:3/4;background:linear-gradient(135deg,#1A2E0F,#0F1A0A);display:flex;align-items:center;justify-content:center;font-size:3rem;}
     .tag{display:inline-block;padding:3px 10px;border-radius:6px;font-size:.68rem;font-weight:700;letter-spacing:.08em;border:1px solid rgba(184,204,42,.35);color:var(--gold);background:rgba(184,204,42,.08);}
+    /* iOS Safari / Android 모바일 최적화 */
+    a,button{-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+    input,select,textarea{-webkit-tap-highlight-color:transparent;}
+    #nav.scrolled,#mega-dd{-webkit-backdrop-filter:blur(20px);}
+    .fcta-btn,#mob-bar{-webkit-backdrop-filter:blur(14px);}
+    #drawer-overlay{-webkit-backdrop-filter:blur(4px);}
+    @media(max-width:767px){.page-hero .heading{font-size:1.6rem!important;}}
   </style>
 </head>
 <body>
@@ -135,7 +143,7 @@
   </div>
 </div>
 <script>
-(function(){var btn=document.getElementById('hamburger-btn'),overlay=document.getElementById('drawer-overlay'),panel=document.getElementById('drawer-panel'),drawer=document.getElementById('mobile-drawer'),lines=btn?btn.querySelectorAll('.ham-line'):[],isOpen=false,dl=document.getElementById('nav-desktop-links');function applyLayout(){var wide=window.innerWidth>=768;if(dl)dl.style.display=wide?'flex':'none';if(btn)btn.style.display=wide?'none':'flex';}applyLayout();window.addEventListener('resize',applyLayout);function openDrawer(){isOpen=true;drawer.style.pointerEvents='auto';overlay.style.pointerEvents='auto';panel.style.pointerEvents='auto';overlay.style.opacity='1';panel.style.transform='translateX(0)';document.body.style.overflow='hidden';if(btn)btn.setAttribute('aria-expanded','true');if(lines[0])lines[0].style.transform='translateY(7px) rotate(45deg)';if(lines[1])lines[1].style.opacity='0';if(lines[2])lines[2].style.transform='translateY(-7px) rotate(-45deg)';}function closeDrawer(){isOpen=false;overlay.style.opacity='0';panel.style.transform='translateX(100%)';document.body.style.overflow='';if(btn)btn.setAttribute('aria-expanded','false');if(lines[0])lines[0].style.transform='';if(lines[1])lines[1].style.opacity='1';if(lines[2])lines[2].style.transform='';setTimeout(function(){if(!isOpen){drawer.style.pointerEvents='none';overlay.style.pointerEvents='none';panel.style.pointerEvents='none';}},320);}window.closeDrawer=closeDrawer;if(btn)btn.addEventListener('click',function(){isOpen?closeDrawer():openDrawer();});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&isOpen)closeDrawer();});var megaDd=document.getElementById('mega-dd'),navTls=document.querySelectorAll('.nav-tl'),t=null;function showMega(){clearTimeout(t);if(megaDd)megaDd.classList.add('open');}function hideMega(){clearTimeout(t);t=setTimeout(function(){if(megaDd)megaDd.classList.remove('open');},280);}navTls.forEach(function(el){el.addEventListener('mouseenter',showMega);el.addEventListener('mouseleave',hideMega);});if(megaDd){megaDd.addEventListener('mouseenter',showMega);megaDd.addEventListener('mouseleave',hideMega);}})();
+(function(){var btn=document.getElementById('hamburger-btn'),overlay=document.getElementById('drawer-overlay'),panel=document.getElementById('drawer-panel'),drawer=document.getElementById('mobile-drawer'),lines=btn?btn.querySelectorAll('.ham-line'):[],isOpen=false,dl=document.getElementById('nav-desktop-links');function applyLayout(){var wide=window.innerWidth>=768;if(dl)dl.style.display=wide?'flex':'none';if(btn)btn.style.display=wide?'none':'flex';}applyLayout();window.addEventListener('resize',applyLayout);function openDrawer(){isOpen=true;drawer.style.pointerEvents='auto';overlay.style.pointerEvents='auto';panel.style.pointerEvents='auto';overlay.style.opacity='1';panel.style.transform='translateX(0)';var _sy=window.scrollY;document.body.style.position='fixed';document.body.style.top='-'+_sy+'px';document.body.style.width='100%';if(btn)btn.setAttribute('aria-expanded','true');if(lines[0])lines[0].style.transform='translateY(7px) rotate(45deg)';if(lines[1])lines[1].style.opacity='0';if(lines[2])lines[2].style.transform='translateY(-7px) rotate(-45deg)';}function closeDrawer(){isOpen=false;overlay.style.opacity='0';panel.style.transform='translateX(100%)';var _sy2=parseInt(document.body.style.top||'0')*-1;document.body.style.position='';document.body.style.top='';document.body.style.width='';window.scrollTo(0,_sy2);if(btn)btn.setAttribute('aria-expanded','false');if(lines[0])lines[0].style.transform='';if(lines[1])lines[1].style.opacity='1';if(lines[2])lines[2].style.transform='';setTimeout(function(){if(!isOpen){drawer.style.pointerEvents='none';overlay.style.pointerEvents='none';panel.style.pointerEvents='none';}},320);}window.closeDrawer=closeDrawer;if(btn)btn.addEventListener('click',function(){isOpen?closeDrawer():openDrawer();});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&isOpen)closeDrawer();});var megaDd=document.getElementById('mega-dd'),navTls=document.querySelectorAll('.nav-tl'),t=null;function showMega(){clearTimeout(t);if(megaDd)megaDd.classList.add('open');}function hideMega(){clearTimeout(t);t=setTimeout(function(){if(megaDd)megaDd.classList.remove('open');},280);}navTls.forEach(function(el){el.addEventListener('mouseenter',showMega);el.addEventListener('mouseleave',hideMega);});if(megaDd){megaDd.addEventListener('mouseenter',showMega);megaDd.addEventListener('mouseleave',hideMega);}})();
 </script>
 
 <!-- PAGE HERO -->
@@ -153,7 +161,7 @@
 </div>
 
 <!-- 변호사 -->
-<section id="lawyers" class="sec bg-a">
+<section id="lawyers" class="sec bg-a tab-section active">
   <div class="wrap">
     <div style="width:52px;height:3px;background:linear-gradient(90deg,var(--gold),transparent);border-radius:2px;margin-bottom:14px;" class="fu"></div>
     <p style="font-size:.62rem;letter-spacing:.22em;color:var(--gold);text-transform:uppercase;font-weight:700;margin-bottom:10px;" class="fu">ATTORNEYS</p>
@@ -161,47 +169,53 @@
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:24px;">
       <!-- 조덕재 변호사 -->
       <div class="member-card fu d1">
-        <div class="member-photo-placeholder"><span>👨‍⚖️</span></div>
+        <img src="/uploads/media/lawyers/media-212f4bda-2535-48ae-a463-e01abbc478cd.png" alt="조덕재 대표변호사" class="member-photo" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+        <div class="member-photo-placeholder" style="display:none;"><span>👨‍⚖️</span></div>
         <div style="padding:20px;">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
             <span class="tag">대표변호사</span>
           </div>
           <h3 style="font-size:1.2rem;font-weight:800;color:#F1F5F9;margin-bottom:4px;">조덕재</h3>
-          <p style="font-size:.78rem;color:var(--gold);margin-bottom:12px;">대표변호사</p>
+          <p style="font-size:.78rem;color:var(--gold);margin-bottom:12px;">Deokjae Cho</p>
           <ul style="list-style:none;display:flex;flex-direction:column;gap:6px;">
-            <li style="font-size:.82rem;color:var(--text-sub);display:flex;gap:6px;"><span style="color:var(--gold);flex-shrink:0;">·</span>군검사 출신</li>
-            <li style="font-size:.82rem;color:var(--text-sub);display:flex;gap:6px;"><span style="color:var(--gold);flex-shrink:0;">·</span>군 징계·형사 전문</li>
+            <li style="font-size:.82rem;color:var(--text-sub);display:flex;gap:6px;"><span style="color:var(--gold);flex-shrink:0;">·</span>육군 15사단·2군단 법무부 군검사</li>
+            <li style="font-size:.82rem;color:var(--text-sub);display:flex;gap:6px;"><span style="color:var(--gold);flex-shrink:0;">·</span>국방시설본부 소송수행자 (부동산·건설)</li>
+            <li style="font-size:.82rem;color:var(--text-sub);display:flex;gap:6px;"><span style="color:var(--gold);flex-shrink:0;">·</span>군형사·중대재해·노동 전문</li>
           </ul>
         </div>
       </div>
       <!-- 김범 변호사 -->
       <div class="member-card fu d2">
-        <div class="member-photo-placeholder"><span>👨‍⚖️</span></div>
+        <img src="/uploads/media/lawyers/media-26c8d93b-b55f-4b24-819f-729cae95c439.jpg" alt="김범 대표변호사" class="member-photo" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+        <div class="member-photo-placeholder" style="display:none;"><span>👨‍⚖️</span></div>
         <div style="padding:20px;">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
             <span class="tag">대표변호사</span>
           </div>
           <h3 style="font-size:1.2rem;font-weight:800;color:#F1F5F9;margin-bottom:4px;">김범</h3>
-          <p style="font-size:.78rem;color:var(--gold);margin-bottom:12px;">대표변호사</p>
+          <p style="font-size:.78rem;color:var(--gold);margin-bottom:12px;">Beom Kim</p>
           <ul style="list-style:none;display:flex;flex-direction:column;gap:6px;">
-            <li style="font-size:.82rem;color:var(--text-sub);display:flex;gap:6px;"><span style="color:var(--gold);flex-shrink:0;">·</span>군검사 출신</li>
-            <li style="font-size:.82rem;color:var(--text-sub);display:flex;gap:6px;"><span style="color:var(--gold);flex-shrink:0;">·</span>군형사·행정 전문</li>
+            <li style="font-size:.82rem;color:var(--text-sub);display:flex;gap:6px;"><span style="color:var(--gold);flex-shrink:0;">·</span>육군 23사단 법무부 군검사 및 징계장교</li>
+            <li style="font-size:.82rem;color:var(--text-sub);display:flex;gap:6px;"><span style="color:var(--gold);flex-shrink:0;">·</span>국방부 법무관리관실 송무팀 소송수행자</li>
+            <li style="font-size:.82rem;color:var(--text-sub);display:flex;gap:6px;"><span style="color:var(--gold);flex-shrink:0;">·</span>군형사·징계·행정, 기업금융·노무 전문</li>
           </ul>
         </div>
       </div>
       <!-- 강민구 변호사 -->
       <div class="member-card fu d3">
-        <img src="/military/photos/kang.jpg" alt="강민구 대표변호사" class="member-photo" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+        <img src="/uploads/media/lawyers/media-6ffcc0bf-8d0f-4893-b403-a93c29b532fc.png" alt="강민구 대표변호사" class="member-photo" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
         <div class="member-photo-placeholder" style="display:none;"><span>👨‍⚖️</span></div>
         <div style="padding:20px;">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
             <span class="tag">대표변호사</span>
           </div>
           <h3 style="font-size:1.2rem;font-weight:800;color:#F1F5F9;margin-bottom:4px;">강민구</h3>
-          <p style="font-size:.78rem;color:var(--gold);margin-bottom:12px;">대표변호사</p>
+          <p style="font-size:.78rem;color:var(--gold);margin-bottom:12px;">MinGu Kang</p>
           <ul style="list-style:none;display:flex;flex-direction:column;gap:6px;">
-            <li style="font-size:.82rem;color:var(--text-sub);display:flex;gap:6px;"><span style="color:var(--gold);flex-shrink:0;">·</span>군검사 출신</li>
-            <li style="font-size:.82rem;color:var(--text-sub);display:flex;gap:6px;"><span style="color:var(--gold);flex-shrink:0;">·</span>민사·보훈 전문</li>
+            <li style="font-size:.82rem;color:var(--text-sub);display:flex;gap:6px;"><span style="color:var(--gold);flex-shrink:0;">·</span>해군 작전사령부·해병대사령부 법무관</li>
+            <li style="font-size:.82rem;color:var(--text-sub);display:flex;gap:6px;"><span style="color:var(--gold);flex-shrink:0;">·</span>청해부대(소말리아해역호송전대) 법무참모</li>
+            <li style="font-size:.82rem;color:var(--text-sub);display:flex;gap:6px;"><span style="color:var(--gold);flex-shrink:0;">·</span>해군 군검사·방위사업청 소송수행자</li>
+            <li style="font-size:.82rem;color:var(--text-sub);display:flex;gap:6px;"><span style="color:var(--gold);flex-shrink:0;">·</span>방산·국제·중대재해·인사노무 전문</li>
           </ul>
         </div>
       </div>
@@ -210,36 +224,22 @@
 </section>
 
 <!-- 전문위원 -->
-<section id="specialists" class="sec bg-b">
+<section id="specialists" class="sec bg-b tab-section">
   <div class="wrap">
     <div style="width:52px;height:3px;background:linear-gradient(90deg,var(--gold),transparent);border-radius:2px;margin-bottom:14px;" class="fu"></div>
     <p style="font-size:.62rem;letter-spacing:.22em;color:var(--gold);text-transform:uppercase;font-weight:700;margin-bottom:10px;" class="fu">SPECIALISTS</p>
     <h2 class="heading fu" style="font-size:1.75rem;color:#F1F5F9;margin-bottom:16px;">전문위원</h2>
     <p class="fu d1" style="font-size:.9rem;color:var(--text-sub);line-height:1.8;max-width:600px;margin-bottom:40px;">군 내부 실무를 누구보다 잘 아는 전문위원들이 변호인과 함께 사건을 분석합니다.</p>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:24px;">
-      <div class="member-card fu d1">
-        <img src="/military/photos/jo.png" alt="전문위원" class="member-photo" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-        <div class="member-photo-placeholder" style="display:none;"><span>🎖️</span></div>
-        <div style="padding:20px;">
-          <div style="margin-bottom:10px;"><span class="tag" style="border-color:rgba(255,255,255,.2);color:rgba(241,245,249,.7);background:rgba(255,255,255,.05);">전문위원</span></div>
-          <h3 style="font-size:1.1rem;font-weight:800;color:#F1F5F9;margin-bottom:4px;">헌병 출신 전문위원</h3>
-          <p style="font-size:.82rem;color:var(--text-sub);line-height:1.7;">군 수사 절차·징계 실무 자문.<br>현역 시절 수백 건의 징계 수사 경험.</p>
-        </div>
-      </div>
-      <div class="member-card fu d2">
-        <div class="member-photo-placeholder"><span>🎖️</span></div>
-        <div style="padding:20px;">
-          <div style="margin-bottom:10px;"><span class="tag" style="border-color:rgba(255,255,255,.2);color:rgba(241,245,249,.7);background:rgba(255,255,255,.05);">전문위원</span></div>
-          <h3 style="font-size:1.1rem;font-weight:800;color:#F1F5F9;margin-bottom:4px;">보훈 전문위원</h3>
-          <p style="font-size:.82rem;color:var(--text-sub);line-height:1.7;">국가유공자·보훈보상자 등록,<br>전공상 인정 절차 전문 자문.</p>
-        </div>
-      </div>
+    <div class="card fu d1" style="padding:40px;text-align:center;">
+      <p style="font-size:1.8rem;margin-bottom:14px;">🎖️</p>
+      <p style="font-size:.95rem;font-weight:700;color:#F1F5F9;margin-bottom:8px;">전문위원 소개 준비 중</p>
+      <p style="font-size:.85rem;color:var(--text-sub);line-height:1.8;">전문위원 프로필을 업데이트하고 있습니다.<br>자세한 문의는 카카오톡 또는 전화 상담을 이용해 주세요.</p>
     </div>
   </div>
 </section>
 
 <!-- 직원 -->
-<section id="staff" class="sec bg-a">
+<section id="staff" class="sec bg-a tab-section">
   <div class="wrap">
     <div style="width:52px;height:3px;background:linear-gradient(90deg,var(--gold),transparent);border-radius:2px;margin-bottom:14px;" class="fu"></div>
     <p style="font-size:.62rem;letter-spacing:.22em;color:var(--gold);text-transform:uppercase;font-weight:700;margin-bottom:10px;" class="fu">STAFF</p>
@@ -247,12 +247,19 @@
     <p class="fu d1" style="font-size:.9rem;color:var(--text-sub);line-height:1.8;max-width:600px;margin-bottom:40px;">의뢰인의 첫 연락부터 사건 마무리까지, 전담 스태프가 함께합니다.</p>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:24px;">
       <div class="member-card fu d1">
-        <img src="/military/photos/kim.jpg" alt="사무장" class="member-photo" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-        <div class="member-photo-placeholder" style="display:none;"><span>🧑‍💼</span></div>
+        <div class="member-photo-placeholder"><span>🧑‍💼</span></div>
         <div style="padding:20px;">
-          <div style="margin-bottom:10px;"><span class="tag" style="border-color:rgba(255,255,255,.15);color:rgba(241,245,249,.55);background:rgba(255,255,255,.03);">사무장</span></div>
-          <h3 style="font-size:1.1rem;font-weight:800;color:#F1F5F9;margin-bottom:4px;">사무장</h3>
-          <p style="font-size:.82rem;color:var(--text-sub);line-height:1.7;">사건 접수·진행 일정 관리.<br>첫 상담 예약 및 서류 접수 담당.</p>
+          <div style="margin-bottom:10px;"><span class="tag" style="border-color:rgba(255,255,255,.15);color:rgba(241,245,249,.55);background:rgba(255,255,255,.03);">직원</span></div>
+          <h3 style="font-size:1.1rem;font-weight:800;color:#F1F5F9;margin-bottom:4px;">허유나</h3>
+          <p style="font-size:.82rem;color:var(--text-sub);line-height:1.7;">의뢰인 응대 및 사건 접수,<br>일정 관리 담당.</p>
+        </div>
+      </div>
+      <div class="member-card fu d2">
+        <div class="member-photo-placeholder"><span>🧑‍💼</span></div>
+        <div style="padding:20px;">
+          <div style="margin-bottom:10px;"><span class="tag" style="border-color:rgba(255,255,255,.15);color:rgba(241,245,249,.55);background:rgba(255,255,255,.03);">직원</span></div>
+          <h3 style="font-size:1.1rem;font-weight:800;color:#F1F5F9;margin-bottom:4px;">반서현</h3>
+          <p style="font-size:.82rem;color:var(--text-sub);line-height:1.7;">상담 예약 및 서류 접수,<br>사건 진행 지원 담당.</p>
         </div>
       </div>
     </div>
@@ -271,7 +278,7 @@
 <footer style="background:#0F1A0A;" role="contentinfo">
   <div class="wrap" style="padding:52px 20px 44px;">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:48px;flex-wrap:wrap;">
-      <div><p style="font-size:13px;letter-spacing:.25em;color:#fff;text-transform:uppercase;margin:0;">HIGH &amp; LAW FIRM</p><p style="font-size:14px;color:rgba(255,255,255,.6);margin:8px 0 0;">법무법인 하이로</p></div>
+      <div><p style="font-size:13px;letter-spacing:.25em;color:#fff;text-transform:uppercase;margin:0;">HIGH &amp; LAW FIRM</p><p style="font-size:14px;color:rgba(255,255,255,.6);margin:8px 0 0;">법무법인 하이로</p><p style="font-size:12px;color:rgba(255,255,255,.4);margin:4px 0 0;">광고책임변호사 조덕재</p></div>
       <div style="display:flex;gap:64px;flex-wrap:wrap;">
         <div><p style="font-size:10px;letter-spacing:.15em;color:rgba(255,255,255,.4);margin:0 0 12px;font-family:monospace;">LOCATION</p><p style="font-size:14px;color:rgba(255,255,255,.8);line-height:1.7;margin:0;">서울특별시 강남구 테헤란로 141, 15층</p></div>
         <div><p style="font-size:10px;letter-spacing:.15em;color:rgba(255,255,255,.4);margin:0 0 12px;font-family:monospace;">CONTACT</p><p style="font-size:14px;color:rgba(255,255,255,.8);line-height:1.7;margin:0;">T. 02-6925-6757</p></div>
@@ -294,7 +301,24 @@
 </div>
 
 <script>
-(function(){'use strict';var nav=document.getElementById('nav'),btnTop=document.getElementById('btn-top');window.addEventListener('scroll',function(){if(window.scrollY>48)nav.classList.add('scrolled');else nav.classList.remove('scrolled');if(btnTop)btnTop.style.display=window.scrollY>400?'flex':'none';},{passive:true});var els=document.querySelectorAll('.fu'),io=new IntersectionObserver(function(entries){entries.forEach(function(e){if(e.isIntersecting){e.target.classList.add('vis');io.unobserve(e.target);}});},{threshold:0.12,rootMargin:'0px 0px -48px 0px'});els.forEach(function(el){io.observe(el);});var subBtns=document.querySelectorAll('.subnav-btn');function updateSubnav(){var hash=location.hash||'#lawyers';subBtns.forEach(function(b){b.classList.toggle('active',b.getAttribute('href')===hash);});}window.addEventListener('hashchange',updateSubnav);updateSubnav();})();
+(function(){'use strict';
+  var nav=document.getElementById('nav'),btnTop=document.getElementById('btn-top');
+  window.addEventListener('scroll',function(){if(window.scrollY>48)nav.classList.add('scrolled');else nav.classList.remove('scrolled');if(btnTop)btnTop.style.display=window.scrollY>400?'flex':'none';},{passive:true});
+  var subBtns=document.querySelectorAll('.subnav-btn');
+  var tabSections=document.querySelectorAll('.tab-section');
+  function showTab(hash){
+    if(!hash||!document.querySelector(hash))hash='#lawyers';
+    tabSections.forEach(function(s){s.classList.remove('active');});
+    subBtns.forEach(function(b){b.classList.remove('active');});
+    var section=document.querySelector(hash);
+    var btn=document.querySelector('.subnav-btn[href="'+hash+'"]');
+    if(section){section.classList.add('active');section.querySelectorAll('.fu').forEach(function(el){el.classList.add('vis');});}
+    if(btn)btn.classList.add('active');
+  }
+  subBtns.forEach(function(btn){btn.addEventListener('click',function(e){e.preventDefault();var hash=btn.getAttribute('href');history.pushState(null,'',hash);showTab(hash);});});
+  window.addEventListener('popstate',function(){showTab(location.hash);});
+  showTab(location.hash);
+})();
 </script>
 </body>
 </html>

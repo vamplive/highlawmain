@@ -7,8 +7,15 @@ import { SectionHeading, SurfaceCard } from "../../components/public/PublicDesig
 import { safeHttpUrl } from "../../utils/safeUrl";
 import { TELEGRAM_CONTACT_URL } from "../../utils/telegramContact";
 
+const CONSULTATION_STEPS_DEFAULTS = {
+  process: { items: STEPS },
+};
+
 /** @param {{ compact?: boolean }} props compact=true 시 section/container 래퍼 생략 */
 export default function ConsultationSteps({ compact = false }) {
+  const { settings } = useSiteSettingsPage("consultation", CONSULTATION_STEPS_DEFAULTS);
+  const processItems = settings.process?.items?.length > 0 ? settings.process.items : STEPS;
+
   const content = (
     <>
       <SectionHeading
@@ -19,7 +26,7 @@ export default function ConsultationSteps({ compact = false }) {
 
       {/* 절차 카드 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 stagger" style={{ marginBottom: 80 }}>
-        {STEPS.map((s, i) => (
+        {processItems.map((s, i) => (
           <SurfaceCard
             key={i}
             className="reveal text-center"

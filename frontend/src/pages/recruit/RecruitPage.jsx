@@ -1,9 +1,14 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import useReveal from "../../hooks/useReveal";
+import { useSiteSettingsPage } from "../../hooks/useSiteSettings";
 import { api } from "../../utils/api";
 import Seo from "../../components/Seo";
 import { PublicHero, SectionHeading, SurfaceCard } from "../../components/public/PublicDesign";
+
+const RECRUIT_DEFAULTS = {
+  hero: { heading: "인재 채용", subheading: "CAREERS AT HIGHLAW", description: "신의성실(Loyalty)과 품격(Dignity)을 바탕으로, 탁월한 법률 솔루션을 창출해 나갈 하이로의 인재를 모십니다." },
+};
 
 const CATEGORY_META = {
   new_lawyer: { label: "신입변호사", icon: "⚖️", color: "#1a3a6b", light: "rgba(26,58,107,0.06)" },
@@ -192,6 +197,7 @@ export default function RecruitPage() {
   const [loading, setLoading] = useState(true);
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get("tab") || "recruit";
+  const { settings } = useSiteSettingsPage("recruit", RECRUIT_DEFAULTS);
 
   useEffect(() => {
     api.get("/recruit")
@@ -210,9 +216,9 @@ export default function RecruitPage() {
 
       <PublicHero
         image="/construction-hero3.jpg"
-        eyebrow="CAREERS AT HIGHLAW"
-        title="인재 채용"
-        description="신의성실(Loyalty)과 품격(Dignity)을 바탕으로, 탁월한 법률 솔루션을 창출해 나갈 하이로의 인재를 모십니다."
+        eyebrow={settings.hero.subheading}
+        title={settings.hero.heading}
+        description={settings.hero.description}
       />
 
       <style>{`

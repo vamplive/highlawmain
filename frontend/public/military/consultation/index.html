@@ -51,6 +51,7 @@
     .subnav-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 16px;border-radius:8px;font-size:.8rem;font-weight:600;letter-spacing:.04em;text-decoration:none;border:1px solid rgba(184,204,42,.3);color:rgba(241,245,249,.7);transition:border-color .18s,color .18s,background .18s;}
     .subnav-btn:hover{border-color:var(--gold);color:var(--gold);background:rgba(184,204,42,.06);}
     .subnav-btn.active{border-color:var(--gold);color:var(--gold);background:rgba(184,204,42,.1);}
+    .tab-section{display:none;}.tab-section.active{display:block;}
     .page-hero{padding-top:120px;padding-bottom:56px;background:linear-gradient(135deg,#0F1A0A,#1A2E0F,#0F1A0A);border-bottom:1px solid rgba(184,204,42,.12);}
     @media(max-width:767px){.sec{padding:56px 0;}#fcta{bottom:88px!important;right:12px;gap:6px;}.fcta-btn{width:42px;height:42px;}.fcta-tip{display:none!important;}}
     #mob-bar{display:none;position:fixed;bottom:0;left:0;right:0;z-index:300;background:rgba(10,20,7,.97);border-top:1px solid rgba(184,204,42,.2);backdrop-filter:blur(14px);padding:10px 14px;gap:10px;align-items:center;}
@@ -72,10 +73,20 @@
     /* Form */
     .form-field{display:flex;flex-direction:column;gap:8px;}
     .form-label{font-size:.82rem;font-weight:600;color:rgba(241,245,249,.8);}
-    .form-input,.form-select,.form-textarea{background:rgba(15,26,10,.7);border:1px solid rgba(184,204,42,.25);border-radius:10px;padding:12px 16px;font-size:.9rem;color:#F1F5F9;font-family:'Noto Sans KR',system-ui;outline:none;transition:border-color .18s,box-shadow .18s;width:100%;}
+    .form-input,.form-select,.form-textarea{background:rgba(15,26,10,.7);border:1px solid rgba(184,204,42,.25);border-radius:10px;padding:12px 16px;font-size:1rem;color:#F1F5F9;font-family:'Noto Sans KR',system-ui;outline:none;transition:border-color .18s,box-shadow .18s;width:100%;}
     .form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(184,204,42,.12);}
     .form-select option{background:#0F1A0A;color:#F1F5F9;}
     .form-textarea{resize:vertical;min-height:120px;}
+    /* iOS Safari / Android 모바일 최적화 */
+    a,button{-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+    input,select,textarea{-webkit-tap-highlight-color:transparent;}
+    #nav.scrolled,#mega-dd{-webkit-backdrop-filter:blur(20px);}
+    .fcta-btn,#mob-bar{-webkit-backdrop-filter:blur(14px);}
+    #drawer-overlay{-webkit-backdrop-filter:blur(4px);}
+    @media(max-width:767px){
+      .form-2col{grid-template-columns:1fr!important;}
+      .page-hero .heading{font-size:1.6rem!important;}
+    }
   </style>
 </head>
 <body>
@@ -146,7 +157,7 @@
   </div>
 </div>
 <script>
-(function(){var btn=document.getElementById('hamburger-btn'),overlay=document.getElementById('drawer-overlay'),panel=document.getElementById('drawer-panel'),drawer=document.getElementById('mobile-drawer'),lines=btn?btn.querySelectorAll('.ham-line'):[],isOpen=false,dl=document.getElementById('nav-desktop-links');function applyLayout(){var wide=window.innerWidth>=768;if(dl)dl.style.display=wide?'flex':'none';if(btn)btn.style.display=wide?'none':'flex';}applyLayout();window.addEventListener('resize',applyLayout);function openDrawer(){isOpen=true;drawer.style.pointerEvents='auto';overlay.style.pointerEvents='auto';panel.style.pointerEvents='auto';overlay.style.opacity='1';panel.style.transform='translateX(0)';document.body.style.overflow='hidden';if(btn)btn.setAttribute('aria-expanded','true');if(lines[0])lines[0].style.transform='translateY(7px) rotate(45deg)';if(lines[1])lines[1].style.opacity='0';if(lines[2])lines[2].style.transform='translateY(-7px) rotate(-45deg)';}function closeDrawer(){isOpen=false;overlay.style.opacity='0';panel.style.transform='translateX(100%)';document.body.style.overflow='';if(btn)btn.setAttribute('aria-expanded','false');if(lines[0])lines[0].style.transform='';if(lines[1])lines[1].style.opacity='1';if(lines[2])lines[2].style.transform='';setTimeout(function(){if(!isOpen){drawer.style.pointerEvents='none';overlay.style.pointerEvents='none';panel.style.pointerEvents='none';}},320);}window.closeDrawer=closeDrawer;if(btn)btn.addEventListener('click',function(){isOpen?closeDrawer():openDrawer();});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&isOpen)closeDrawer();});var megaDd=document.getElementById('mega-dd'),navTls=document.querySelectorAll('.nav-tl'),t=null;function showMega(){clearTimeout(t);if(megaDd)megaDd.classList.add('open');}function hideMega(){clearTimeout(t);t=setTimeout(function(){if(megaDd)megaDd.classList.remove('open');},280);}navTls.forEach(function(el){el.addEventListener('mouseenter',showMega);el.addEventListener('mouseleave',hideMega);});if(megaDd){megaDd.addEventListener('mouseenter',showMega);megaDd.addEventListener('mouseleave',hideMega);}})();
+(function(){var btn=document.getElementById('hamburger-btn'),overlay=document.getElementById('drawer-overlay'),panel=document.getElementById('drawer-panel'),drawer=document.getElementById('mobile-drawer'),lines=btn?btn.querySelectorAll('.ham-line'):[],isOpen=false,dl=document.getElementById('nav-desktop-links');function applyLayout(){var wide=window.innerWidth>=768;if(dl)dl.style.display=wide?'flex':'none';if(btn)btn.style.display=wide?'none':'flex';}applyLayout();window.addEventListener('resize',applyLayout);function openDrawer(){isOpen=true;drawer.style.pointerEvents='auto';overlay.style.pointerEvents='auto';panel.style.pointerEvents='auto';overlay.style.opacity='1';panel.style.transform='translateX(0)';var _sy=window.scrollY;document.body.style.position='fixed';document.body.style.top='-'+_sy+'px';document.body.style.width='100%';if(btn)btn.setAttribute('aria-expanded','true');if(lines[0])lines[0].style.transform='translateY(7px) rotate(45deg)';if(lines[1])lines[1].style.opacity='0';if(lines[2])lines[2].style.transform='translateY(-7px) rotate(-45deg)';}function closeDrawer(){isOpen=false;overlay.style.opacity='0';panel.style.transform='translateX(100%)';var _sy2=parseInt(document.body.style.top||'0')*-1;document.body.style.position='';document.body.style.top='';document.body.style.width='';window.scrollTo(0,_sy2);if(btn)btn.setAttribute('aria-expanded','false');if(lines[0])lines[0].style.transform='';if(lines[1])lines[1].style.opacity='1';if(lines[2])lines[2].style.transform='';setTimeout(function(){if(!isOpen){drawer.style.pointerEvents='none';overlay.style.pointerEvents='none';panel.style.pointerEvents='none';}},320);}window.closeDrawer=closeDrawer;if(btn)btn.addEventListener('click',function(){isOpen?closeDrawer():openDrawer();});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&isOpen)closeDrawer();});var megaDd=document.getElementById('mega-dd'),navTls=document.querySelectorAll('.nav-tl'),t=null;function showMega(){clearTimeout(t);if(megaDd)megaDd.classList.add('open');}function hideMega(){clearTimeout(t);t=setTimeout(function(){if(megaDd)megaDd.classList.remove('open');},280);}navTls.forEach(function(el){el.addEventListener('mouseenter',showMega);el.addEventListener('mouseleave',hideMega);});if(megaDd){megaDd.addEventListener('mouseenter',showMega);megaDd.addEventListener('mouseleave',hideMega);}})();
 </script>
 
 <!-- PAGE HERO -->
@@ -164,7 +175,7 @@
 </div>
 
 <!-- 상담신청 -->
-<section id="form" class="sec bg-a">
+<section id="form" class="sec bg-a tab-section active">
   <div class="wrap">
     <div style="width:52px;height:3px;background:linear-gradient(90deg,var(--gold),transparent);border-radius:2px;margin-bottom:14px;" class="fu"></div>
     <p style="font-size:.62rem;letter-spacing:.22em;color:var(--gold);text-transform:uppercase;font-weight:700;margin-bottom:10px;" class="fu">GET IN TOUCH</p>
@@ -191,7 +202,7 @@
     <div class="card fu" style="padding:36px;">
       <h3 style="font-size:1.1rem;font-weight:700;color:#F1F5F9;margin-bottom:24px;">이메일 상담신청</h3>
       <form action="mailto:mingukang@highlaw.net" method="post" enctype="text/plain" style="display:flex;flex-direction:column;gap:20px;">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;flex-wrap:wrap;">
+        <div class="form-2col" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
           <div class="form-field">
             <label class="form-label" for="name">성함 *</label>
             <input class="form-input" id="name" name="성함" type="text" placeholder="홍길동" required>
@@ -227,7 +238,7 @@
 </section>
 
 <!-- 진행절차 -->
-<section id="process" class="sec bg-b">
+<section id="process" class="sec bg-b tab-section">
   <div class="wrap">
     <div style="width:52px;height:3px;background:linear-gradient(90deg,var(--gold),transparent);border-radius:2px;margin-bottom:14px;" class="fu"></div>
     <p style="font-size:.62rem;letter-spacing:.22em;color:var(--gold);text-transform:uppercase;font-weight:700;margin-bottom:10px;" class="fu">HOW IT WORKS</p>
@@ -287,7 +298,7 @@
 </section>
 
 <!-- FAQ -->
-<section id="faq" class="sec bg-a">
+<section id="faq" class="sec bg-a tab-section">
   <div class="wrap">
     <div style="width:52px;height:3px;background:linear-gradient(90deg,var(--gold),transparent);border-radius:2px;margin-bottom:14px;" class="fu"></div>
     <p style="font-size:.62rem;letter-spacing:.22em;color:var(--gold);text-transform:uppercase;font-weight:700;margin-bottom:10px;" class="fu">FAQ</p>
@@ -351,7 +362,7 @@
 <footer style="background:#0F1A0A;" role="contentinfo">
   <div class="wrap" style="padding:52px 20px 44px;">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:48px;flex-wrap:wrap;">
-      <div><p style="font-size:13px;letter-spacing:.25em;color:#fff;text-transform:uppercase;margin:0;">HIGH &amp; LAW FIRM</p><p style="font-size:14px;color:rgba(255,255,255,.6);margin:8px 0 0;">법무법인 하이로</p></div>
+      <div><p style="font-size:13px;letter-spacing:.25em;color:#fff;text-transform:uppercase;margin:0;">HIGH &amp; LAW FIRM</p><p style="font-size:14px;color:rgba(255,255,255,.6);margin:8px 0 0;">법무법인 하이로</p><p style="font-size:12px;color:rgba(255,255,255,.4);margin:4px 0 0;">광고책임변호사 조덕재</p></div>
       <div style="display:flex;gap:64px;flex-wrap:wrap;">
         <div><p style="font-size:10px;letter-spacing:.15em;color:rgba(255,255,255,.4);margin:0 0 12px;font-family:monospace;">LOCATION</p><p style="font-size:14px;color:rgba(255,255,255,.8);line-height:1.7;margin:0;">서울 강남구 테헤란로 141, 15층</p></div>
         <div><p style="font-size:10px;letter-spacing:.15em;color:rgba(255,255,255,.4);margin:0 0 12px;font-family:monospace;">CONTACT</p><p style="font-size:14px;color:rgba(255,255,255,.8);line-height:1.7;margin:0;">T. 02-6925-6757</p></div>
@@ -374,7 +385,23 @@
 </div>
 
 <script>
-(function(){'use strict';var nav=document.getElementById('nav'),btnTop=document.getElementById('btn-top');window.addEventListener('scroll',function(){if(window.scrollY>48)nav.classList.add('scrolled');else nav.classList.remove('scrolled');if(btnTop)btnTop.style.display=window.scrollY>400?'flex':'none';},{passive:true});var els=document.querySelectorAll('.fu'),io=new IntersectionObserver(function(entries){entries.forEach(function(e){if(e.isIntersecting){e.target.classList.add('vis');io.unobserve(e.target);}});},{threshold:0.12,rootMargin:'0px 0px -48px 0px'});els.forEach(function(el){io.observe(el);});var subBtns=document.querySelectorAll('.subnav-btn');function updateSubnav(){var hash=location.hash||'#form';subBtns.forEach(function(b){b.classList.toggle('active',b.getAttribute('href')===hash);});}window.addEventListener('hashchange',updateSubnav);updateSubnav();})();
+(function(){'use strict';
+  var nav=document.getElementById('nav'),btnTop=document.getElementById('btn-top');
+  window.addEventListener('scroll',function(){if(window.scrollY>48)nav.classList.add('scrolled');else nav.classList.remove('scrolled');if(btnTop)btnTop.style.display=window.scrollY>400?'flex':'none';},{passive:true});
+  var subBtns=document.querySelectorAll('.subnav-btn');
+  var tabSections=document.querySelectorAll('.tab-section');
+  function showTab(hash){
+    if(!hash||!document.querySelector(hash))hash='#form';
+    tabSections.forEach(function(s){s.classList.remove('active');});
+    subBtns.forEach(function(b){b.classList.remove('active');});
+    var section=document.querySelector(hash);
+    var btn=document.querySelector('.subnav-btn[href="'+hash+'"]');
+    if(section){section.classList.add('active');section.querySelectorAll('.fu').forEach(function(el){el.classList.add('vis');});}
+    if(btn)btn.classList.add('active');
+  }
+  subBtns.forEach(function(btn){btn.addEventListener('click',function(e){e.preventDefault();var hash=btn.getAttribute('href');history.pushState(null,'',hash);showTab(hash);});});
+  window.addEventListener('popstate',function(){showTab(location.hash);});
+  showTab(location.hash);
 
 function toggleFaq(btn) {
   var item = btn.closest('.faq-item');

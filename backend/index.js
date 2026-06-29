@@ -230,6 +230,7 @@ const LARGE_BODY_PATHS = [
   "/api/inquiry",
   "/api/lawyers",
   "/api/lectures",
+  "/api/military",
 ];
 app.use((req, res, next) => {
   const isLarge = LARGE_BODY_PATHS.some((p) => req.path === p || req.path.startsWith(p + "/"));
@@ -255,6 +256,7 @@ const STORAGE_PATH = process.env.STORAGE_PATH || path.join(__dirname, "data");
     "uploads/lectures",    // 강의 자료
     "uploads/media",       // 미디어 라이브러리
     "uploads/messenger",   // 메신저 파일
+    "uploads/messages",    // 메시지 첨부 이미지
     "uploads/receipts",    // 영수증
     "uploads/recruit",     // 채용 첨부파일
     "uploads/signatures",  // 서명 이미지
@@ -339,6 +341,7 @@ app.use("/api/clients", require("./routes/clients"));
 app.use("/api/messages", require("./routes/messages"));
 app.use("/api/triggers", require("./routes/triggers"));
 app.use("/api/site-settings", require("./routes/site-settings"));
+app.use("/api/military", require("./routes/military"));
 app.use("/api/announcements", require("./routes/announcements"));
 app.use("/api/media", require("./routes/media"));
 app.use("/api/ai-configs", require("./routes/ai-configs"));

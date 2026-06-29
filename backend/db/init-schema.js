@@ -640,6 +640,8 @@ module.exports = {
   try { sqlite.exec("ALTER TABLE lawyers ADD COLUMN memberships TEXT"); } catch (e) { warnMigrationSkip(e); }
   try { sqlite.exec("ALTER TABLE lawyers ADD COLUMN consult_hours TEXT"); } catch (e) { warnMigrationSkip(e); }
   try { sqlite.exec("ALTER TABLE lawyers ADD COLUMN blog_url TEXT"); } catch (e) { warnMigrationSkip(e); }
+  // 사진 포커스 포인트 — CSS object-position 값 (예: "center 30%"). NULL이면 기본값 "center top" 사용
+  try { sqlite.exec("ALTER TABLE lawyers ADD COLUMN photo_focus TEXT"); } catch (e) { warnMigrationSkip(e); }
 
   // 경력 필드의 강의 항목을 lectures 테이블로 자동 마이그레이션
   try {

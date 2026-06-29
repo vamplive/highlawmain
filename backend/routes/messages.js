@@ -11,6 +11,7 @@ const { messageTemplates, messageLogs } = require("../db/schema");
 const { eq, desc, sql, and } = require("drizzle-orm");
 const { sendSMS } = require("../lib/sms-service");
 const { sendEmail } = require("../lib/email-service");
+const { sendFriendTalk } = require("../lib/kakao-friendtalk-service");
 const { adminAuth, requireRole, requireMinRole } = require("../lib/auth");
 const { auditMiddleware } = require("../lib/audit-log");
 const clientService = require("../services/client-service");
@@ -20,8 +21,48 @@ const {
   replacePlaceholders, appendEmailFooter, injectTrackingPixel,
 } = require("../lib/message-render");
 const { cleanPhone, normalizeMessageChannel } = require("../services/helpers");
+const multer = require("multer");
+const path = require("path");
+const crypto = require("crypto");
+const fs = require("fs");
 
 const router = Router();
+
+// =============================================
+// 이미지 업로드 (메시지 첨부용)
+// =============================================
+const STORAGE_PATH = process.env.STORAGE_PATH || path.join(__dirname, "..", "data");
+const MSG_IMG_DIR = path.join(STORAGE_PATH, "uploads", "messages");
+if (!fs.existsSync(MSG_IMG_DIR)) fs.mkdirSync(MSG_IMG_DIR, { recursive: true });
+
+const msgImgStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, MSG_IMG_DIR),
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, `msg-${crypto.randomUUID()}${ext}`);
+  },
+});
+const imgUpload = multer({
+  storage: msgImgStorage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  fileFilter: (_req, file, cb) => {
+    if (/\.(jpg|jpeg|png|gif|webp)$/i.test(path.extname(file.originalname))) {
+      cb(null, true);
+    } else {
+      cb(new Error("이미지 파일(jpg/png/gif/webp)만 업로드 가능합니다"));
+    }
+  },
+});
+
+/** POST /upload-image — 메시지 첨부 이미지 업로드 */
+router.post("/upload-image", adminAuth, imgUpload.single("image"), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ data: null, error: "이미지 파일이 필요합니다", meta: null });
+  }
+  const url = `/uploads/messages/${req.file.filename}`;
+  const baseUrl = (process.env.APP_URL || "").replace(/\/$/, "");
+  res.json({ data: { url, fullUrl: baseUrl ? `${baseUrl}${url}` : url }, error: null, meta: null });
+});
 
 // 메시지 발송·템플릿·로그 변경은 모두 감사 로그에 기록.
 // 단, 공개 추적 픽셀(track/open, track/click)은 GET이라 auditMiddleware가 무시한다.
@@ -35,6 +76,10 @@ function normalizeRecipient(recipient, channel) {
     ? String(recipient.contact || "").trim().toLowerCase()
     : cleanPhone(String(recipient.contact || ""));
   return { ...recipient, contact };
+}
+
+function channelUsesPhone(channel) {
+  return channel === "sms" || channel === "kakao";
 }
 
 // =============================================
@@ -103,8 +148,8 @@ router.post("/templates", adminAuth, async (req, res) => {
       return res.status(400).json({ data: null, error: "이름과 내용은 필수입니다", meta: null });
     }
     const normalizedChannel = normalizeMessageChannel(channel || "sms");
-    if (channel && !["sms", "email"].includes(normalizedChannel)) {
-      return res.status(400).json({ data: null, error: "채널은 sms 또는 email이어야 합니다", meta: null });
+    if (channel && !["sms", "email", "kakao"].includes(normalizedChannel)) {
+      return res.status(400).json({ data: null, error: "채널은 sms, email 또는 kakao이어야 합니다", meta: null });
     }
 
     const [inserted] = await db.insert(messageTemplates).values({
@@ -140,7 +185,7 @@ router.patch("/templates/:id", adminAuth, async (req, res) => {
     if (name !== undefined) updateData.name = name.trim();
     if (channel !== undefined) {
       const normalizedChannel = normalizeMessageChannel(channel);
-      if (!["sms", "email"].includes(normalizedChannel)) {
+      if (!["sms", "email", "kakao"].includes(normalizedChannel)) {
         return res.status(400).json({ data: null, error: "채널은 sms 또는 email이어야 합니다", meta: null });
       }
       updateData.channel = normalizedChannel;
@@ -196,8 +241,8 @@ router.post("/send", adminAuth, requireMinRole("manager"), async (req, res) => {
     const { recipients, templateId, subject, content, skipConsentFilter } = req.body;
     const channel = normalizeMessageChannel(req.body.channel);
 
-    if (!channel || !["sms", "email"].includes(channel)) {
-      return res.status(400).json({ data: null, error: "채널은 sms 또는 email이어야 합니다", meta: null });
+    if (!channel || !["sms", "email", "kakao"].includes(channel)) {
+      return res.status(400).json({ data: null, error: "채널은 sms, email 또는 kakao이어야 합니다", meta: null });
     }
     if (!recipients || !Array.isArray(recipients) || recipients.length === 0) {
       return res.status(400).json({ data: null, error: "수신자를 1명 이상 지정해주세요", meta: null });
@@ -257,13 +302,23 @@ router.post("/send", adminAuth, requireMinRole("manager"), async (req, res) => {
         finalEmailHtml = injectTrackingPixel(bodyWithFooter, log.id);
       }
 
-      const sendResult = channel === "sms"
-        ? await sendSMS(recipient.contact, renderedContent)
-        : await sendEmail(recipient.contact, renderedSubject, finalEmailHtml);
+      let sendResult;
+      if (channel === "sms") {
+        sendResult = await sendSMS(recipient.contact, renderedContent);
+      } else if (channel === "email") {
+        sendResult = await sendEmail(recipient.contact, renderedSubject, finalEmailHtml);
+      } else {
+        // kakao — imageUrl은 req.body.imageUrl 또는 recipient.imageUrl로 전달
+        const imageUrl = req.body.imageUrl || recipient.imageUrl || undefined;
+        sendResult = await sendFriendTalk(recipient.contact, renderedContent, {
+          name: recipient.name,
+          imageUrl,
+        });
+      }
 
       const now = new Date().toISOString().replace("T", " ").slice(0, 19);
 
-      if (channel === "sms") {
+      if (channel === "sms" || channel === "kakao") {
         [log] = await db.insert(messageLogs).values({
           channel,
           recipientName: recipient.name || null,

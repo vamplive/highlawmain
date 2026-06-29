@@ -36,7 +36,7 @@ const VALUES = [
 
 const ABOUT_DEFAULTS = {
   hero: { heading: "사무소 소개", subheading: "ABOUT HIGHLAW LAWFIRM", description: "노무·인사, 기업, 국제, 엔터테인먼트, 게임, 방산 등 각 분야의 인정받은 변호사들이 최적화된 법률 솔루션을 제공합니다." },
-  philosophy: { heading: "특수 분야의 깊이로\n결과를 만드는 로펌", description: "법무법인 하이로는 불법파견·게임사기·노동·군사건의 4개 분야만 집중적으로 다룹니다. 첫 상담부터 사건 종결까지, 해당 분야의 절차와 판례를 깊이 이해하는 변호사가 직접 사건을 진행합니다." },
+  philosophy: { heading: "Message from Partners", description: "법무법인 하이로는 Loyalty, Dignity, Integrity를 핵심 가치로 삼아, 클라이언트에게 최적의 법률 솔루션을 제공하기 위해 설립된 Premium Lawfirm Service 브랜드입니다.\n\n우리는 단순히 법률 지식을 전달하는 데 그치지 않습니다. 각 사안의 본질을 꿰뚫는 전문성을 바탕으로 문제의 이면을 파고들어 그 흐름과 구조를 분석함으로써, 보다 근본적이고 지속 가능한 해결책을 제시하고자 하고 있습니다.\n\n하이로의 구성원들은 모두 대형로펌에서 우수한 성과를 인정받은 전문가로서, 각자의 분야에서 풍부한 실무 경험과 학문적 깊이를 겸비하고 있습니다.\n\n법무법인 하이로는 저희를 신뢰하는 클라이언트들이 언제든지 저희를 다시 찾아올 수 있는 믿음을 제공하고자 합니다.\n\n법무법인 하이로 대표변호사 조덕재 · 김범 · 강민구" },
   values: { items: [
     { title: "신의성실", subtitle: "LOYALTY", desc: "의뢰인의 신뢰를 가장 소중한 가치로 여기며, 어떠한 순간에도 의뢰인의 이익과 권리를 최우선으로 수호합니다." },
     { title: "품격", subtitle: "DIGNITY", desc: "깊이 있는 학문적 성찰과 품위 있는 변론을 통해, 하이엔드 서비스에 걸맞은 차별화된 사법적 결과를 창출합니다." },
@@ -44,10 +44,16 @@ const ABOUT_DEFAULTS = {
     { title: "전문성", subtitle: "EXPERTISE", desc: "대형 로펌 출신의 풍부한 실무 경험과 고도의 정밀 법리 분석으로 클라이언트에게 가장 정교한 솔루션을 제시합니다." },
   ] },
   history: { items: [
-    { year: "설립", text: "법무법인 하이로 출범 — 불법파견·게임사기·노동·군사건 특화" },
-    { year: "구성", text: "대표변호사 조덕재·김범·강민구 체제 정립" },
-    { year: "확장", text: "서울특별시 강남구 테헤란로 141, 15층 사무소 운영" },
-    { year: "현재", text: "특수 분야 사건에 한해 의뢰인 직접 상담 원칙 유지" },
+    { year: "2026 - 현재", title: "전문성 공고화 및 디지털 사법지원 시스템 고도화", desc: "첫 상담부터 변호사가 모든 서면을 직접 전담하는 책임 상담제 및 인공지능 기반 사법 보조 데이터 분석 시스템을 구축하여 의뢰인 밀착 대응 시스템을 확대 고도화하였습니다." },
+    { year: "2025", title: "서울 강남 오피스 확장 이전", desc: "서울특별시 강남구 테헤란로 141 (역삼KR빌딩) 15층으로 오피스를 확장 이전하여, 불법파견 및 게임사기 관련 주요 거점 의뢰인들과 소통할 수 있는 프리미엄 컨설팅 룸과 인프라를 확충하였습니다." },
+    { year: "2024", title: "동일 분야 최고 실력의 파트너십 완성", desc: "노동법 및 불법파견 사건의 권위자인 조덕재 대표변호사, 게임 소송계의 선구자인 김범 대표변호사, 군사 전문 행정 분야의 강민구 대표변호사가 파트너십을 맺어 3대 대표변호사 체제를 정립하였습니다." },
+    { year: "2023", title: "법무법인 하이로 공식 출범", desc: "불법파견, 게임사기, 노동, 군사건 등 고유의 노하우가 집적된 4대 특수 사법 분야의 독보적인 법률 권익 수호를 기치로 법무법인 하이로가 설립되어 법조계에 첫발을 내디뎠습니다." },
+  ] },
+  probono: { intro: "법무법인 하이로는 법치주의 확립과 사회 구성원 모두의 보편적 인권 옹호를 중요한 사명으로 여깁니다. 우리가 지닌 법률 전문성을 바탕으로 정의의 온기가 사회 곳곳에 미치도록 지속 가능한 사회공헌 활동을 실천합니다.", items: [
+    { badge: "군장병 무료상담", title: "군 장병 권익 및 인권 보호", desc: "격오지에 근무하거나 비용 문제로 법적 조력을 받지 못해 부당한 징계나 군형사 위기에 처한 영외 군장병 및 하급 간부들을 위한 무료 소송 지원과 무료 전화 법률 상담 창구를 운영합니다." },
+    { badge: "비정규직 노동법률지원", title: "취약 계층 노동자 법률 구조", desc: "불법파견의 부당함에 직면한 비정규직 노동자, 그리고 임금 체불과 부당해고 등의 사각지대에 방치된 플랫폼 노동자 및 5인 미만 소규모 사업장 소속 근로자들의 신속한 보상과 법적 안정을 위해 힘씁니다." },
+    { badge: "게임소비자 권익보호", title: "청년 게이머 및 디지털 소비자 권익 옹호", desc: "대형 플랫폼 및 게임사들의 불공정 거래 조건이나 기만 행위에 처한 청년 게이머 집단의 정당한 권익 보호를 위해, 무료 공익 단체소송 대리 및 관련 법제 개선을 위한 학술 연구와 정책 제안을 정기적으로 추진합니다." },
+    { badge: "무료 교육 나눔", title: "지역사회 상생 및 무료 법률 교육", desc: "사법 접근성이 낮은 서민 가구와 예비 청년 창업자, 노동 분쟁 예방에 목마른 구직 청년층을 위해 필수적인 기초 노동법 지식과 생활 법률 세미나를 정기적으로 주최하여 지식을 공유합니다." },
   ] },
 };
 
@@ -194,24 +200,11 @@ export default function AboutPage() {
                 title="Message from Partners"
               />
               <div style={{ color: "var(--text-secondary)", fontWeight: 300, fontSize: 15, lineHeight: 1.9, display: "flex", flexDirection: "column", gap: 24, marginBottom: 60, textAlign: "left" }}>
-                <p>
-                  <strong>법무법인 하이로</strong>는 <strong>Loyalty, Dignity, Integrity</strong>를 핵심 가치로 삼아, 클라이언트에게 최적의 법률 솔루션을 제공하기 위해 설립된 <strong>Premium Lawfirm Service</strong> 브랜드입니다.
-                </p>
-                <p>
-                  우리는 단순히 법률 지식을 전달하는 데 그치지 않습니다. 각 사안의 본질을 꿰뚫는 전문성을 바탕으로 문제의 이면을 파고들어 그 흐름과 구조를 분석함으로써, 보다 근본적이고 지속 가능한 해결책을 제시하고자 하고 있습니다. 이는 HIGHLAW의 이름이 곧 ‘고객에 충실한 하이엔드 서비스’의 기준이 되고자 하는 우리의 다짐이기도 합니다.
-                </p>
-                <p>
-                  하이로의 구성원들은 모두 대형로펌에서 우수한 성과를 인정받은 전문가로서, 각자의 분야에서 풍부한 실무 경험과 학문적 깊이를 겸비하고 있습니다. 민사·형사소송은 물론 인사·노무, 국제법무, 기업법무, 부동산·건설, 지식재산권, 군사법 등 폭넓은 분야에서 탁월한 역량을 검증받았습니다. 각 분야의 전문 변호사들이 협력해 정밀하고 전략적인 솔루션을 제시하며, 언제나 고객에게 가장 적합한 방식으로 최선의 결과를 제공하는 조력자가 되고자 합니다.
-                </p>
-                <p>
-                  법무법인 하이로는 저희를 신뢰하는 클라이언트들이 언제든지 저희를 다시 찾아올 수 있는 믿음을 제공하고자 합니다. 한결같은 헌신과 지적인 품격, 그리고 변함없는 성실함으로 클라이언트의 신뢰를 지키고, 신뢰와 결과로 보답하는 법률 파트너가 되도록 하겠습니다.
-                </p>
-                <p>
-                  언제나 맞춤형 <strong>HIGH-END SERVICE</strong>를 제공하기 위해 끊임없는 연구와 정직한 태도로 클라이언트와 여정을 함께하는 파트너가 되어드리도록 하겠습니다.
-                </p>
-                <p style={{ marginTop: 32, fontWeight: 500, color: "var(--text-primary)", textAlign: "right", fontSize: 16 }}>
-                  법무법인 하이로 대표변호사 조덕재 · 김범 · 강민구
-                </p>
+                {settings.philosophy.description.split("\n\n").map((para, i, arr) => (
+                  <p key={i} style={i === arr.length - 1 ? { marginTop: 32, fontWeight: 500, color: "var(--text-primary)", textAlign: "right", fontSize: 16 } : {}}>
+                    {para}
+                  </p>
+                ))}
               </div>
             </div>
           )}
@@ -375,32 +368,11 @@ export default function AboutPage() {
                 title="사회적 책임과 온기를 채우는 하이로의 공익 활동"
               />
               <div style={{ color: "var(--text-secondary)", fontWeight: 300, fontSize: 15, lineHeight: 1.8, marginBottom: 40, maxWidth: 800, margin: "0 auto 40px" }}>
-                법무법인 하이로는 법치주의 확립과 사회 구성원 모두의 보편적 인권 옹호를 중요한 사명으로 여깁니다. 우리가 지닌 법률 전문성을 바탕으로 정의의 온기가 사회 곳곳에 미치도록 지속 가능한 사회공헌 활동을 실천합니다.
+                {settings.probono.intro}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 stagger">
-                {[
-                  {
-                    title: "군 장병 권익 및 인권 보호",
-                    desc: "격오지에 근무하거나 비용 문제로 법적 조력을 받지 못해 부당한 징계나 군형사 위기에 처한 영외 군장병 및 하급 간부들을 위한 무료 소송 지원과 무료 전화 법률 상담 창구를 운영합니다.",
-                    badge: "군장병 무료상담"
-                  },
-                  {
-                    title: "취약 계층 노동자 법률 구조",
-                    desc: "불법파견의 부당함에 직면한 비정규직 노동자, 그리고 임금 체불과 부당해고 등의 사각지대에 방치된 플랫폼 노동자 및 5인 미만 소규모 사업장 소속 근로자들의 신속한 보상과 법적 안정을 위해 힘씁니다.",
-                    badge: "비정규직 노동법률지원"
-                  },
-                  {
-                    title: "청년 게이머 및 디지털 소비자 권익 옹호",
-                    desc: "대형 플랫폼 및 게임사들의 불공정 거래 조건이나 기만 행위에 처한 청년 게이머 집단의 정당한 권익 보호를 위해, 무료 공익 단체소송 대리 및 관련 법제 개선을 위한 학술 연구와 정책 제안을 정기적으로 추진합니다.",
-                    badge: "게임소비자 권익보호"
-                  },
-                  {
-                    title: "지역사회 상생 및 무료 법률 교육",
-                    desc: "사법 접근성이 낮은 서민 가구와 예비 청년 창업자, 노동 분쟁 예방에 목마른 구직 청년층을 위해 필수적인 기초 노동법 지식과 생활 법률 세미나를 정기적으로 주최하여 지식을 공유합니다.",
-                    badge: "무료 교육 나눔"
-                  }
-                ].map((activity, idx) => (
+                {settings.probono.items.map((activity, idx) => (
                   <SurfaceCard key={idx} style={{ padding: "32px 28px", display: "flex", flexDirection: "column", height: "100%" }} className="reveal">
                     <div style={{ alignSelf: "flex-start", background: "var(--accent-gold-light)", color: "var(--accent-gold)", fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 4, marginBottom: 16 }}>
                       {activity.badge}
@@ -422,28 +394,7 @@ export default function AboutPage() {
               />
               
               <div style={{ maxWidth: 600, margin: "0 auto", position: "relative", paddingLeft: 24, borderLeft: "2px solid var(--border-subtle)", textAlign: "left" }}>
-                {[
-                  {
-                    year: "2026 - 현재",
-                    title: "전문성 공고화 및 디지털 사법지원 시스템 고도화",
-                    desc: "첫 상담부터 변호사가 모든 서면을 직접 전담하는 책임 상담제 및 인공지능 기반 사법 보조 데이터 분석 시스템을 구축하여 의뢰인 밀착 대응 시스템을 확대 고도화하였습니다."
-                  },
-                  {
-                    year: "2025",
-                    title: "서울 강남 오피스 확장 이전",
-                    desc: "서울특별시 강남구 테헤란로 141 (역삼KR빌딩) 15층으로 오피스를 확장 이전하여, 불법파견 및 게임사기 관련 주요 거점 의뢰인들과 소통할 수 있는 프리미엄 컨설팅 룸과 인프라를 확충하였습니다."
-                  },
-                  {
-                    year: "2024",
-                    title: "동일 분야 최고 실력의 파트너십 완성",
-                    desc: "노동법 및 불법파견 사건의 권위자인 조덕재 대표변호사, 게임 소송계의 선구자인 김범 대표변호사, 군사 전문 행정 분야의 강민구 대표변호사가 파트너십을 맺어 3대 대표변호사 체제를 정립하였습니다."
-                  },
-                  {
-                    year: "2023",
-                    title: "법무법인 하이로 공식 출범",
-                    desc: "불법파견, 게임사기, 노동, 군사건 등 고유의 노하우가 집적된 4대 특수 사법 분야의 독보적인 법률 권익 수호를 기치로 법무법인 하이로가 설립되어 법조계에 첫발을 내디뎠습니다."
-                  }
-                ].map((item, idx) => (
+                {settings.history.items.map((item, idx) => (
                   <div key={idx} style={{ position: "relative", marginBottom: 40 }} className="reveal">
                     <div 
                       style={{ 
