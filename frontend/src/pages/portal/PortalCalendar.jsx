@@ -441,12 +441,27 @@ export default function PortalCalendar() {
 
             <div style={{ background: "#f8fafc", borderRadius: 10, padding: "16px 18px", border: "1px solid #e2e8f0" }}>
               <p style={{ fontSize: 12, fontWeight: 700, color: "#334155", margin: "0 0 10px" }}>구글 캘린더 추가 방법</p>
-              <ol style={{ margin: 0, paddingLeft: 18, display: "flex", flexDirection: "column", gap: 7 }}>
+              <p style={{ fontSize: 12, fontWeight: 600, color: "#1a73e8", margin: "0 0 6px", display: "flex", alignItems: "center", gap: 6 }}>
+                <img src="https://www.google.com/favicon.ico" alt="G" width={12} height={12} style={{ borderRadius: 2 }} /> Google 캘린더
+              </p>
+              <ol style={{ margin: "0 0 14px", paddingLeft: 18, display: "flex", flexDirection: "column", gap: 6 }}>
                 {[
                   "위 URL을 복사합니다.",
                   "PC에서 Google 캘린더에 로그인합니다.",
                   "화면 왼쪽 메뉴 하단의 '다른 캘린더' 옆에 있는 +(추가) 버튼을 클릭합니다.",
-                  "메뉴 중 'URL로 추가'를 선택하고, 1번에서 복사한 주소를 붙여넣은 뒤 '캘린더 추가'를 누릅니다.",
+                  "메뉴 중 'URL로 추가'를 선택하고, 복사한 주소를 붙여넣은 뒤 '캘린더 추가'를 누릅니다.",
+                ].map((step, i) => (
+                  <li key={i} style={{ fontSize: 12, color: "#475569", lineHeight: 1.6 }}>{step}</li>
+                ))}
+              </ol>
+              <p style={{ fontSize: 12, fontWeight: 600, color: "#334155", margin: "0 0 6px" }}>
+                🍎 iPhone (iOS)
+              </p>
+              <ol style={{ margin: 0, paddingLeft: 18, display: "flex", flexDirection: "column", gap: 6 }}>
+                {[
+                  "위 URL을 복사합니다.",
+                  "iOS 설정 > 앱 > 캘린더 > 캘린더 계정 > 계정 추가 > 기타를 선택합니다.",
+                  "'구독할 캘린더 추가'를 선택한 후 복사한 URL을 붙여넣고 다음을 누릅니다.",
                 ].map((step, i) => (
                   <li key={i} style={{ fontSize: 12, color: "#475569", lineHeight: 1.6 }}>{step}</li>
                 ))}

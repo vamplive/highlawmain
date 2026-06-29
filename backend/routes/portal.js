@@ -1393,11 +1393,11 @@ router.post('/kakao/send', portalAuth, async (req, res) => {
 
 router.get('/me/ical-token', portalAuth, (req, res) => {
   try {
-    const user = sqlite.prepare('SELECT id, ical_token FROM portal_users WHERE id = ?').get(req.user.id);
+    const user = sqlite.prepare('SELECT id, ical_token FROM portal_users WHERE id = ?').get(req.portalUser.id);
     let token = user && user.ical_token;
     if (!token) {
       token = require('crypto').randomBytes(32).toString('hex');
-      sqlite.prepare('UPDATE portal_users SET ical_token = ? WHERE id = ?').run(token, req.user.id);
+      sqlite.prepare('UPDATE portal_users SET ical_token = ? WHERE id = ?').run(token, req.portalUser.id);
     }
     const icalUrl = 'https://highlaw.co.kr/ical/' + token + '.ics';
     res.json({ data: { token, icalUrl }, error: null, meta: null });
