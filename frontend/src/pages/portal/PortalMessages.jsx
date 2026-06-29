@@ -188,6 +188,7 @@ function SmsComposePanel({ templates, applyTpl, clearApply, recipients }) {
   const [content, setContent] = useState("");
   const [scheduleMode, setScheduleMode] = useState(false);
   const [scheduledAt, setScheduledAt] = useState("");
+  const [scheduleConfirmed, setScheduleConfirmed] = useState(false);
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState(null);
   const bytes = getByteLength(content);
@@ -206,25 +207,29 @@ function SmsComposePanel({ templates, applyTpl, clearApply, recipients }) {
     if (t) setContent(t.content);
   };
 
-  const handleScheduleConfirm = async () => {
-    if (!recipients.length) return showToast("수신자를 추가해주세요");
-    if (!content.trim()) return showToast("메시지 내용을 입력해주세요");
+  const handleScheduleConfirm = () => {
     if (!scheduledAt) return showToast("예약 시각을 입력해주세요");
     if (new Date(scheduledAt).getTime() < Date.now() + 30000) return showToast("예약 시각은 현재 이후여야 합니다");
-    setSending(true);
-    try {
-      await api.post("/portal/sms/schedule", { recipients: recipients.map(r => ({ name: r.name, contact: r.contact })), content: content.trim(), scheduledAt });
-      showToast("예약 등록 완료");
-      setScheduleMode(false);
-      setScheduledAt("");
-    } catch (e) { showToast("예약 실패: " + e.message); }
-    finally { setSending(false); }
+    setScheduleConfirmed(true);
   };
 
   const handleSend = async () => {
     if (!recipients.length) return showToast("수신자를 추가해주세요");
     if (!content.trim()) return showToast("메시지 내용을 입력해주세요");
     if (bytes > 2000) return showToast("2000바이트를 초과합니다");
+    if (scheduleMode) {
+      if (!scheduledAt) return showToast("예약 시각을 입력해주세요");
+      if (!scheduleConfirmed) return showToast("캘린더에서 시각 선택 후 확인 버튼을 눌러주세요");
+      if (!window.confirm(`${new Date(scheduledAt).toLocaleString("ko-KR")}에 ${recipients.length}명에게 예약 발송하시겠습니까?`)) return;
+      setSending(true);
+      try {
+        await api.post("/portal/sms/schedule", { recipients: recipients.map(r => ({ name: r.name, contact: r.contact })), content: content.trim(), scheduledAt });
+        showToast("예약 등록 완료");
+        setScheduleMode(false); setScheduledAt(""); setScheduleConfirmed(false);
+      } catch (e) { showToast("예약 실패: " + e.message); }
+      finally { setSending(false); }
+      return;
+    }
     if (!window.confirm(`${recipients.length}명에게 ${msgType}를 발송하시겠습니까?`)) return;
     setSending(true); setResult(null);
     try {
@@ -257,18 +262,22 @@ function SmsComposePanel({ templates, applyTpl, clearApply, recipients }) {
         <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#475569", cursor: "pointer" }}>
           <input type="checkbox" checked={scheduleMode} onChange={e => setScheduleMode(e.target.checked)} /> 예약 발송
         </label>
-        {scheduleMode && <input type="datetime-local" value={scheduledAt} onChange={e => setScheduledAt(e.target.value)} style={{ ...inp, width: "auto", flex: 1 }} />}
+        {scheduleMode && <input type="datetime-local" value={scheduledAt} onChange={e => { setScheduledAt(e.target.value); setScheduleConfirmed(false); }} style={{ ...inp, width: "auto", flex: 1 }} />}
         {scheduleMode && (
-          <button onClick={handleScheduleConfirm}
-            disabled={!scheduledAt || !recipients.length || !content.trim() || sending}
-            style={{ padding: "9px 16px", background: (!scheduledAt || !recipients.length || !content.trim() || sending) ? "#cbd5e1" : "#0369a1", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: (!scheduledAt || !recipients.length || !content.trim() || sending) ? "default" : "pointer", whiteSpace: "nowrap" }}>
-            {sending ? "처리 중..." : "확인"}
+          <button onClick={handleScheduleConfirm} disabled={!scheduledAt}
+            style={{ padding: "9px 16px", background: scheduleConfirmed ? "#16a34a" : (!scheduledAt ? "#cbd5e1" : "#0369a1"), color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: !scheduledAt ? "default" : "pointer", whiteSpace: "nowrap" }}>
+            {scheduleConfirmed ? "✓ 확인됨" : "확인"}
           </button>
         )}
       </div>
-      {scheduleMode && scheduledAt && (
-        <div style={{ marginBottom: 10, padding: "8px 12px", background: "#eff6ff", borderRadius: 8, fontSize: 12, color: "#1d4ed8" }}>
-          ⏰ {new Date(scheduledAt).toLocaleString("ko-KR")}에 {recipients.length}명에게 예약 발송됩니다
+      {scheduleMode && scheduleConfirmed && scheduledAt && (
+        <div style={{ marginBottom: 10, padding: "8px 12px", background: "#f0fdf4", borderRadius: 8, fontSize: 12, color: "#16a34a", display: "flex", alignItems: "center", gap: 6 }}>
+          ⏰ {new Date(scheduledAt).toLocaleString("ko-KR")}에 {recipients.length}명에게 예약 발송 — '발송' 버튼으로 등록하세요
+        </div>
+      )}
+      {scheduleMode && !scheduleConfirmed && scheduledAt && (
+        <div style={{ marginBottom: 10, padding: "8px 12px", background: "#fff7ed", borderRadius: 8, fontSize: 12, color: "#c2410c" }}>
+          위 '확인' 버튼으로 예약 시각을 확정하세요
         </div>
       )}
       <button onClick={handleSend} disabled={sending || !recipients.length || !content.trim() || bytes > 2000}
