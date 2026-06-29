@@ -732,13 +732,10 @@ export default function PortalCalendar() {
                         </label>
                       )
                     ) : (
-                      <>
-                        <span style={{ fontSize: 13, color: "#94a3b8" }}>구글 캘린더 미연동</span>
-                        <button type="button" onClick={handleShowIcal}
-                          style={{ fontSize: 12, color: "#1a73e8", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-                          연동하기 →
-                        </button>
-                      </>
+                      <button type="button" onClick={handleShowIcal}
+                        style={{ fontSize: 13, color: "#1a73e8", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                        캘린더 구독 URL 보기 →
+                      </button>
                     )}
                     {(selectedEvent?.googleEventId || selectedEvent?.google_event_id) && (
                       <span style={{ fontSize: 11, color: "#16a34a", background: "#dcfce7", borderRadius: 4, padding: "1px 6px", marginLeft: "auto" }}>동기화됨</span>
