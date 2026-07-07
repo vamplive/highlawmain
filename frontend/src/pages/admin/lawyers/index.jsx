@@ -343,8 +343,8 @@ export default function AdminLawyers() {
           <div style={{ marginTop: 12 }} />
           <FormField label="소개글" value={crud.form.introduction} onChange={(v) => crud.setField("introduction", v)} type="textarea" placeholder="구성원 소개글" />
 
-          {/* 변호사/전문위원 전용 섹션 */}
-          {(crud.form.position === "대표변호사" || crud.form.position === "변호사" || crud.form.position === "전문위원") && (
+          {/* 모든 구성원 상세 정보 섹션 */}
+          {true && (
             <>
               <SectionTitle>학력 · 경력</SectionTitle>
               <RepeatableEditor label="학력" value={crud.form.education} onChange={setArr("education")} fields={TIMELINE_FIELDS} />

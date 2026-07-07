@@ -180,6 +180,7 @@ async function getUserProfile(userId, clientId) {
       email: portalUsers.email,
       clientId: portalUsers.clientId,
       role: portalUsers.role,
+      departmentId: portalUsers.departmentId,
       googleConnected: sql`CASE WHEN ${portalUsers.googleRefreshToken} IS NOT NULL THEN 1 ELSE 0 END`,
     })
     .from(portalUsers)
@@ -359,9 +360,7 @@ async function deletePortalUser(id) {
  * 의뢰인의 사건 목록 조회
  */
 async function getUserCases(clientId) {
-  if (!clientId) return [];
-
-  return db
+  const baseQuery = db
     .select({
       id: caseFilesTable.id,
       title: caseFilesTable.title,
@@ -377,11 +376,25 @@ async function getUserCases(clientId) {
       createdAt: caseFilesTable.createdAt,
       updatedAt: caseFilesTable.updatedAt,
       lawyerName: lawyers.name,
+      clientId: caseFilesTable.clientId,
+      clientName: clients.name,
+      visitRoute: caseFilesTable.visitRoute,
+      referrerName: caseFilesTable.referrerName,
+      registeredAt: caseFilesTable.registeredAt,
+      departmentIds: caseFilesTable.departmentIds,
+      memberIds: caseFilesTable.memberIds,
+      consultantIds: caseFilesTable.consultantIds,
     })
     .from(caseFilesTable)
     .leftJoin(lawyers, eq(caseFilesTable.lawyerId, lawyers.id))
-    .where(eq(caseFilesTable.clientId, clientId))
+    .leftJoin(clients, eq(caseFilesTable.clientId, clients.id))
     .orderBy(desc(caseFilesTable.createdAt));
+
+  if (clientId) {
+    return baseQuery.where(eq(caseFilesTable.clientId, clientId));
+  }
+  // Internal users (clientId=null) see all cases
+  return baseQuery;
 }
 
 /**
@@ -390,14 +403,27 @@ async function getUserCases(clientId) {
  * - 사건번호 입력 시 대법원 API 조회 결과를 함께 저장
  */
 async function registerPortalCase(clientId, data) {
-  if (!clientId) throw new ServiceError("계정에 연결된 의뢰인 정보가 없습니다", 400);
-
-  const { title, caseNumber, court, caseType, plaintiff, defendant, filedAt, description } = data;
+  const {
+    title, caseNumber, court, caseType, plaintiff, defendant, filedAt, description, status,
+    consultantId, consultantName, consultantIds: rawConsultantIds, paymentMethod,
+    visitRoute, referrerId, referrerName,
+    retainerFee, retainerInstallments, retainerDay,
+    successFee, successInstallments, successDay,
+    registeredAt, departmentIds, members,
+  } = data;
   if (!title || !title.trim()) throw new ServiceError("사건명을 입력해주세요", 400);
+
+  const memberIds = Array.isArray(members) && members.length > 0
+    ? JSON.stringify(members.map(m => m.id || m).filter(Boolean))
+    : null;
+  const consultantIds = Array.isArray(rawConsultantIds) && rawConsultantIds.length > 0
+    ? JSON.stringify(rawConsultantIds.map(c => (typeof c === 'object' ? c.id : c)).filter(Boolean))
+    : null;
 
   const [inserted] = await db.insert(caseFilesTable).values({
     clientId,
     title: title.trim(),
+    status: status || "접수/상담",
     caseNumber: caseNumber || null,
     court: court || null,
     caseType: caseType || null,
@@ -405,10 +431,86 @@ async function registerPortalCase(clientId, data) {
     defendant: defendant || null,
     filedAt: filedAt || null,
     description: description || null,
-    status: "접수",
+    consultantId: consultantId || null,
+    consultantName: consultantName || null,
+    consultantIds: consultantIds || null,
+    paymentMethod: paymentMethod || null,
+    visitRoute: visitRoute || null,
+    referrerId: referrerId || null,
+    referrerName: referrerName || null,
+    retainerFee: retainerFee ? parseInt(retainerFee) : null,
+    retainerInstallments: retainerInstallments ? parseInt(retainerInstallments) : null,
+    retainerDay: retainerDay ? parseInt(retainerDay) : null,
+    successFee: successFee ? parseInt(successFee) : null,
+    successInstallments: successInstallments ? parseInt(successInstallments) : null,
+    successDay: successDay ? parseInt(successDay) : null,
+    registeredAt: registeredAt || null,
+    departmentIds: departmentIds && Array.isArray(departmentIds) && departmentIds.length > 0 ? JSON.stringify(departmentIds) : null,
+    memberIds: memberIds,
   }).returning();
 
   return inserted;
+}
+
+
+/**
+ * 포털 사건 수정 (소유권 확인 후)
+ * - 내부 사용자: 모든 사건 수정 가능
+ * - 외부 의뢰인: 자신의 사건만 수정 가능
+ */
+async function updatePortalCase(caseId, clientId, data) {
+  validateUUID(caseId);
+
+  const [existing] = await db
+    .select({ id: caseFilesTable.id, clientId: caseFilesTable.clientId })
+    .from(caseFilesTable)
+    .where(clientId
+      ? and(eq(caseFilesTable.id, caseId), eq(caseFilesTable.clientId, clientId))
+      : eq(caseFilesTable.id, caseId));
+
+  if (!existing) throw new ServiceError("사건을 찾을 수 없습니다", 404);
+
+  const allowed = ["title", "caseNumber", "court", "caseType", "plaintiff", "defendant",
+                   "filedAt", "description", "status", "lawyerId",
+                   "consultantId", "consultantName", "paymentMethod",
+                   "visitRoute", "referrerId", "referrerName",
+                   "retainerFee", "retainerInstallments", "retainerDay",
+                   "successFee", "successInstallments", "successDay",
+                   "registeredAt", "departmentIds", "memberIds"];
+  const updates = {};
+  for (const key of allowed) {
+    if (data[key] !== undefined) updates[key] = data[key] || null;
+  }
+  // departmentIds: handle separately (JSON stringify)
+  if (data.departmentIds !== undefined) {
+    updates.departmentIds = Array.isArray(data.departmentIds) && data.departmentIds.length > 0
+      ? JSON.stringify(data.departmentIds) : null;
+  }
+  // members array -> memberIds JSON
+  if (data.members !== undefined) {
+    const ids = Array.isArray(data.members) ? data.members.map(m => m.id || m).filter(Boolean) : [];
+    updates.memberIds = ids.length > 0 ? JSON.stringify(ids) : null;
+  }
+  // consultantIds array -> consultantIds JSON
+  if (data.consultantIds !== undefined) {
+    const cids = Array.isArray(data.consultantIds) ? data.consultantIds.map(c => (typeof c === 'object' ? c.id : c)).filter(Boolean) : [];
+    updates.consultantIds = cids.length > 0 ? JSON.stringify(cids) : null;
+    if (cids.length > 0 && !data.consultantId) updates.consultantId = cids[0];
+  }
+  if (data.title !== undefined && !data.title?.trim()) {
+    throw new ServiceError("사건명을 입력해주세요", 400);
+  }
+  if (Object.keys(updates).length === 0) throw new ServiceError("변경할 내용이 없습니다", 400);
+
+  updates.updatedAt = new Date().toISOString().replace("T", " ").substring(0, 19);
+
+  const [updated] = await db
+    .update(caseFilesTable)
+    .set(updates)
+    .where(eq(caseFilesTable.id, caseId))
+    .returning();
+
+  return updated;
 }
 
 /**
@@ -431,13 +533,31 @@ async function getCaseDetail(caseId, clientId) {
       plaintiff: caseFilesTable.plaintiff,
       defendant: caseFilesTable.defendant,
       filedAt: caseFilesTable.filedAt,
+      consultantId: caseFilesTable.consultantId,
+      consultantName: caseFilesTable.consultantName,
+      paymentMethod: caseFilesTable.paymentMethod,
+      visitRoute: caseFilesTable.visitRoute,
+      referrerId: caseFilesTable.referrerId,
+      referrerName: caseFilesTable.referrerName,
+      retainerFee: caseFilesTable.retainerFee,
+      retainerInstallments: caseFilesTable.retainerInstallments,
+      retainerDay: caseFilesTable.retainerDay,
+      successFee: caseFilesTable.successFee,
+      successInstallments: caseFilesTable.successInstallments,
+      successDay: caseFilesTable.successDay,
+      registeredAt: caseFilesTable.registeredAt,
+      departmentIds: caseFilesTable.departmentIds,
+      memberIds: caseFilesTable.memberIds,
+      consultantIds: caseFilesTable.consultantIds,
       createdAt: caseFilesTable.createdAt,
       updatedAt: caseFilesTable.updatedAt,
       lawyerName: lawyers.name,
     })
     .from(caseFilesTable)
     .leftJoin(lawyers, eq(caseFilesTable.lawyerId, lawyers.id))
-    .where(and(eq(caseFilesTable.id, caseId), eq(caseFilesTable.clientId, clientId)));
+    .where(clientId
+      ? and(eq(caseFilesTable.id, caseId), eq(caseFilesTable.clientId, clientId))
+      : eq(caseFilesTable.id, caseId));
 
   if (!caseFile) throw new ServiceError("사건을 찾을 수 없습니다", 404);
 
@@ -466,7 +586,9 @@ async function getCaseMessages(caseId, clientId, pagination) {
   const [caseFile] = await db
     .select()
     .from(caseFilesTable)
-    .where(and(eq(caseFilesTable.id, caseId), eq(caseFilesTable.clientId, clientId)));
+    .where(clientId
+      ? and(eq(caseFilesTable.id, caseId), eq(caseFilesTable.clientId, clientId))
+      : eq(caseFilesTable.id, caseId));
 
   if (!caseFile) throw new ServiceError("사건을 찾을 수 없습니다", 404);
 
@@ -497,7 +619,9 @@ async function sendClientMessage(caseId, clientId, userId, content) {
   const [caseFile] = await db
     .select()
     .from(caseFilesTable)
-    .where(and(eq(caseFilesTable.id, caseId), eq(caseFilesTable.clientId, clientId)));
+    .where(clientId
+      ? and(eq(caseFilesTable.id, caseId), eq(caseFilesTable.clientId, clientId))
+      : eq(caseFilesTable.id, caseId));
 
   if (!caseFile) throw new ServiceError("사건을 찾을 수 없습니다", 404);
   if (!content || !content.trim()) throw new ServiceError("메시지 내용을 입력해주세요", 400);
@@ -1281,6 +1405,21 @@ async function deletePortalEvent(id, portalUserId) {
 // =============================================
 // 포털 변호사 프로필 설정 / 편집 / 관리자 CRUD
 // =============================================
+
+
+/**
+ * 포털 사용자가 내부 구성원(직원/변호사/관리자)인지 확인
+ * - lawyers 테이블에 있거나 admin_users에 있거나 portal_users.role이 설정된 경우
+ */
+function isInternalPortalUser(userId, email) {
+  if (checkIsLawyer(email)) return true;
+  if (checkIsAdminByEmail(email)) return true;
+  if (userId) {
+    const row = sqlite.prepare("SELECT role FROM portal_users WHERE id = ?").get(userId);
+    if (row && row.role) return true;
+  }
+  return false;
+}
 
 function checkIsLawyer(email) {
   if (!email) return false;
@@ -2066,6 +2205,169 @@ async function resetPortalPassword(token, newPassword) {
   return { success: true };
 }
 
+/**
+ * 이번 달 유입 경로 + 매출 통계
+ * 지인 소개 건은 착수금/성공보수에 20% 할인 적용
+ */
+async function getMonthlyCaseStats(year, month) {
+  const prefix = `${year}-${String(month).padStart(2, "0")}`;
+  const rows = sqlite.prepare(
+    "SELECT visit_route, referrer_id, referrer_name, retainer_fee, success_fee FROM case_files WHERE substr(created_at,1,7)=?"
+  ).all(prefix);
+
+  const routeMap = {};
+  let retainerTotal = 0;
+  let successTotal = 0;
+  const externalReferrerMap = {};
+
+  for (const row of rows) {
+    const r = row.visit_route || "(미입력)";
+    routeMap[r] = (routeMap[r] || 0) + 1;
+    // 20% 할인: 지인 소개 중 외부인(referrer_id 없음)인 경우만
+    const isExternalReferral = row.visit_route === "지인" && !row.referrer_id;
+    const discount = isExternalReferral ? 0.8 : 1.0;
+    retainerTotal += Math.round((row.retainer_fee || 0) * discount);
+    successTotal  += Math.round((row.success_fee  || 0) * discount);
+    if (isExternalReferral && row.referrer_name) {
+      const name = row.referrer_name;
+      if (!externalReferrerMap[name]) externalReferrerMap[name] = { retainerCommission: 0, successCommission: 0, count: 0 };
+      externalReferrerMap[name].retainerCommission += Math.round((row.retainer_fee || 0) * 0.2);
+      externalReferrerMap[name].successCommission  += Math.round((row.success_fee  || 0) * 0.2);
+      externalReferrerMap[name].count += 1;
+    }
+  }
+
+  const routes = Object.entries(routeMap)
+    .map(([route, count]) => ({ route, count }))
+    .sort((a, b) => b.count - a.count);
+
+  const externalReferrers = Object.entries(externalReferrerMap)
+    .map(([name, v]) => ({ name, ...v, total: v.retainerCommission + v.successCommission }))
+    .sort((a, b) => b.total - a.total);
+
+  return {
+    routes,
+    revenue: { retainerTotal, successTotal, total: retainerTotal + successTotal },
+    externalReferrers,
+    year, month, totalCases: rows.length,
+  };
+}
+
+
+/**
+ * 할부 납입 예정 목록
+ * payment_method = "무통장입금" 인 사건만 반환 (강민구는 카드도 포함하여 구분)
+ */
+/**
+ * 소송위임계약서 목록 조회
+ * document_type = 'litigation_agreement' 인 서류
+ */
+function getLitigationAgreements({ search, from, to, caseId } = {}) {
+  let query = `
+    SELECT
+      d.id,
+      d.case_file_id AS caseFileId,
+      d.filename,
+      d.original_name AS originalName,
+      d.url,
+      d.file_size AS fileSize,
+      d.mime_type AS mimeType,
+      d.created_at AS createdAt,
+      cf.title AS caseTitle
+    FROM case_documents d
+    LEFT JOIN case_files cf ON cf.id = d.case_file_id
+    WHERE d.document_type = 'litigation_agreement'
+  `;
+  const params = [];
+
+  if (caseId) {
+    query += ' AND d.case_file_id = ?';
+    params.push(caseId);
+  }
+  if (from) {
+    query += ' AND date(d.created_at) >= ?';
+    params.push(from);
+  }
+  if (to) {
+    query += ' AND date(d.created_at) <= ?';
+    params.push(to);
+  }
+  if (search) {
+    query += ' AND (d.filename LIKE ? OR cf.title LIKE ?)';
+    params.push('%' + search + '%', '%' + search + '%');
+  }
+
+  query += ' ORDER BY d.created_at DESC LIMIT 500';
+  return sqlite.prepare(query).all(...params);
+}
+
+function getUpcomingPayments() {
+  const rows = sqlite.prepare(
+    `SELECT id, title, retainer_fee, retainer_installments, retainer_day, retainer_paid_count,
+            success_fee, success_installments, success_day, success_paid_count,
+            payment_method, visit_route
+     FROM case_files
+     WHERE status NOT IN ('완료')
+       AND (
+         (retainer_installments IS NOT NULL AND retainer_installments > 1)
+         OR (success_installments IS NOT NULL AND success_installments > 1)
+       )`
+  ).all();
+
+  const now = new Date();
+  const results = [];
+
+  for (const row of rows) {
+    const pm = row.payment_method || '무통장입금';
+    const title = row.title || '';
+    // extract client from "의뢰인_사건명" format
+    const clientName = title.includes('_') ? title.split('_')[0] : title;
+
+    if (row.retainer_installments > 1 && row.retainer_fee) {
+      const monthly = Math.round(row.retainer_fee / row.retainer_installments);
+      const paid = row.retainer_paid_count || 0;
+      const remaining = row.retainer_installments - paid;
+      if (remaining > 0) {
+        results.push({
+          caseTitle: title,
+          clientName,
+          type: '착수금',
+          paymentMethod: pm,
+          monthlyAmount: monthly,
+          dueDay: row.retainer_day || 1,
+          paidCount: paid,
+          totalInstallments: row.retainer_installments,
+          remainingCount: remaining,
+        });
+      }
+    }
+
+    if (row.success_installments > 1 && row.success_fee) {
+      const monthly = Math.round(row.success_fee / row.success_installments);
+      const paid = row.success_paid_count || 0;
+      const remaining = row.success_installments - paid;
+      if (remaining > 0) {
+        results.push({
+          caseTitle: title,
+          clientName,
+          type: '성공보수',
+          paymentMethod: pm,
+          monthlyAmount: monthly,
+          dueDay: row.success_day || 1,
+          paidCount: paid,
+          totalInstallments: row.success_installments,
+          remainingCount: remaining,
+        });
+      }
+    }
+  }
+
+  // 납일 기준 정렬
+  results.sort((a, b) => a.dueDay - b.dueDay);
+  return results;
+}
+
+
 module.exports = {
   // 인증
   registerUser,
@@ -2082,6 +2384,10 @@ module.exports = {
   // 사건
   getUserCases,
   registerPortalCase,
+  updatePortalCase,
+  getMonthlyCaseStats,
+  getLitigationAgreements,
+  getUpcomingPayments,
   getCaseDetail,
   getCaseMessages,
   sendClientMessage,
@@ -2123,6 +2429,7 @@ module.exports = {
   deletePortalEvent,
 
   // 변호사 프로필
+  isInternalPortalUser,
   checkIsLawyer,
   checkIsAdminByEmail,
   checkIsAdmin,

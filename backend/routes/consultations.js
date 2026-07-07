@@ -17,6 +17,29 @@ router.post("/", async (req, res) => {
   try {
     const inserted = await consultationService.createConsultation(req.body);
     // 상담 접수 자동 트리거 (실패해도 접수는 성공 응답)
+
+    // 강민구 포털 예약 자동 생성
+    if (inserted?.id) {
+      try {
+        const crypto = require('crypto');
+        const sqlite3 = require('../db/sqlite').default || require('../db/sqlite');
+        const bookingId = crypto.randomUUID();
+        const startsAt = new Date();
+        startsAt.setDate(startsAt.getDate() + 1);
+        sqlite3.prepare(
+          `INSERT OR IGNORE INTO portal_bookings (id, portal_user_id, title, description, starts_at, status, created_at)
+           VALUES (?, ?, ?, ?, ?, 'pending', datetime('now'))`
+        ).run(
+          bookingId,
+          '6d151ef2-2f4f-41a0-b995-03efc0e80125',
+          '상담 신청: ' + (inserted.name || ''),
+          (inserted.content || '') + '\n연락처: ' + (inserted.phone || ''),
+          startsAt.toISOString().slice(0, 16).replace('T', ' ')
+        );
+      } catch(bookingErr) {
+        console.warn('[consultation] auto-booking failed:', bookingErr.message);
+      }
+    }
     triggerService.fireTrigger("consultation_received", {
       recipient: {
         name: inserted.name,

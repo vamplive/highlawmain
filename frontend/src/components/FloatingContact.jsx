@@ -26,6 +26,12 @@ export default function FloatingContact() {
   const phone = contact.phone || FALLBACK_PHONE;
   const kakaoUrl = safeHttpUrl(contact.kakaoUrl, KAKAO_CHANNEL_CHAT);
   const instagramUrl = safeHttpUrl(contact.instagramUrl, LAYOUT_DEFAULTS.contact.instagramUrl);
+  const naverReservationUrl = contact.naverReservationEnabled
+    ? safeHttpUrl(contact.naverReservationUrl, "")
+    : "";
+  const telegramUrl = contact.telegramEnabled ? safeHttpUrl(contact.telegramUrl, "") : "";
+  const naverBlogUrl = contact.naverBlogEnabled ? safeHttpUrl(contact.naverBlogUrl, "") : "";
+  const youtubeUrl  = contact.youtubeEnabled  ? safeHttpUrl(contact.youtubeUrl,  "") : "";
 
   const tel = normalizeTel(phone);
 
@@ -240,7 +246,8 @@ export default function FloatingContact() {
         </button>
 
         <div className="quick-menu-body">
-          {/* Item 1: 전화상담 (헤더 바로 아래 배치) */}
+          {/* Item 1: 전화상담 */}
+          {contact.phoneEnabled !== false && (
           <a href={`tel:${tel}`} className="quick-menu-item" aria-label={`전화상담 연결 ${phone}`}>
             <div className="quick-menu-item-icon">
               {/* Phone Icon */}
@@ -251,8 +258,10 @@ export default function FloatingContact() {
             <span className="quick-menu-item-label">전화상담</span>
             <span className="quick-menu-phone-num">{phone}</span>
           </a>
+          )}
 
           {/* Item 2: 카카오톡 */}
+          {contact.kakaoEnabled !== false && (
           <a
             href={kakaoUrl}
             target="_blank"
@@ -269,18 +278,13 @@ export default function FloatingContact() {
             </div>
             <span className="quick-menu-item-label">카카오톡</span>
           </a>
+          )}
 
-          {/* Item 3: 인스타그램 — instagramEnabled이 true이고 URL이 있을 때만 노출 */}
+          {/* Item 3: 인스타그램 */}
           {contact.instagramEnabled !== false && instagramUrl && (
-            <a
-              href={instagramUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="quick-menu-item"
-              aria-label="인스타그램 — 새 창으로 열림"
-            >
+            <a href={instagramUrl} target="_blank" rel="noopener noreferrer"
+              className="quick-menu-item" aria-label="인스타그램 — 새 창으로 열림">
               <div className="quick-menu-item-icon">
-                {/* Instagram Icon */}
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
                   <circle cx="12" cy="12" r="4" />
@@ -291,22 +295,65 @@ export default function FloatingContact() {
             </a>
           )}
 
-          {/* Item 4: 빠른 상담 */}
-          <Link to="/consultation" className="quick-menu-item" aria-label="빠른 상담 신청">
-            <div className="quick-menu-item-icon">
-              {/* Consultation Document Icon */}
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <polyline points="14 2 14 8 20 8" />
-                <line x1="16" y1="13" x2="8" y2="13" />
-                <line x1="16" y1="17" x2="8" y2="17" />
-                <polyline points="10 9 9 9 8 9" />
-              </svg>
-            </div>
-            <span className="quick-menu-item-label">빠른 상담</span>
-          </Link>
+          {/* Item 4: 네이버 예약 */}
+          {naverReservationUrl && (
+            <a href={naverReservationUrl} target="_blank" rel="noopener noreferrer"
+              className="quick-menu-item" aria-label="네이버 예약 — 새 창으로 열림">
+              <div className="quick-menu-item-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6"/>
+                  <line x1="8" y1="2" x2="8" y2="6"/>
+                  <line x1="3" y1="10" x2="21" y2="10"/>
+                  <path d="M8 14h.01M12 14h.01M16 14h.01"/>
+                </svg>
+              </div>
+              <span className="quick-menu-item-label">네이버 예약</span>
+            </a>
+          )}
 
-          {/* Item 5: 오시는 길 */}
+          {/* Telegram */}
+          {telegramUrl && (
+            <a href={telegramUrl} target="_blank" rel="noopener noreferrer"
+              className="quick-menu-item" aria-label="텔레그램 — 새 창으로 열림">
+              <div className="quick-menu-item-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/>
+                </svg>
+              </div>
+              <span className="quick-menu-item-label">텔레그램</span>
+            </a>
+          )}
+
+          {/* 네이버 블로그 */}
+          {naverBlogUrl && (
+            <a href={naverBlogUrl} target="_blank" rel="noopener noreferrer"
+              className="quick-menu-item" aria-label="네이버 블로그 — 새 창으로 열림">
+              <div className="quick-menu-item-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M9 17H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-4l-4 4V17z"/>
+                  <path d="M9 9h6M9 13h4" strokeWidth="1.8"/>
+                </svg>
+              </div>
+              <span className="quick-menu-item-label">블로그</span>
+            </a>
+          )}
+
+          {/* 유튜브 */}
+          {youtubeUrl && (
+            <a href={youtubeUrl} target="_blank" rel="noopener noreferrer"
+              className="quick-menu-item" aria-label="유튜브 — 새 창으로 열림">
+              <div className="quick-menu-item-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46A2.78 2.78 0 0 0 1.46 6.42 29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58 2.78 2.78 0 0 0 1.96 1.96C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.96-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"/>
+                  <polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" fill="currentColor" stroke="none"/>
+                </svg>
+              </div>
+              <span className="quick-menu-item-label">유튜브</span>
+            </a>
+          )}
+
+          {/* 오시는 길 */}
           <Link to="/about/directions" className="quick-menu-item" aria-label="오시는 길 안내">
             <div className="quick-menu-item-icon">
               {/* Modern Map Pin Icon */}

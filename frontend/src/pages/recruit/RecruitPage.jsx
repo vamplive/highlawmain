@@ -8,6 +8,7 @@ import { PublicHero, SectionHeading, SurfaceCard } from "../../components/public
 
 const RECRUIT_DEFAULTS = {
   hero: { heading: "인재 채용", subheading: "CAREERS AT HIGHLAW", description: "신의성실(Loyalty)과 품격(Dignity)을 바탕으로, 탁월한 법률 솔루션을 창출해 나갈 하이로의 인재를 모십니다." },
+  contact: { email: "", phone: "", hours: "평일 09:00 - 18:00", note: "이력서와 자기소개서를 이메일로 보내주세요." },
 };
 
 const CATEGORY_META = {
@@ -421,6 +422,14 @@ export default function RecruitPage() {
                 eyebrow="Recruitment Inquiry"
                 title="채용 문의 및 안내"
               />
+              {(settings.contact?.email || settings.contact?.phone || settings.contact?.note) && (
+                <div style={{ background: "#f8f9fa", border: "1px solid #e5e7eb", borderRadius: 10, padding: "20px 24px", marginBottom: 32, fontSize: 14, color: "#374151", lineHeight: 1.8 }}>
+                  {settings.contact.note && <p style={{ marginBottom: 8 }}>{settings.contact.note}</p>}
+                  {settings.contact.email && <p>📧 이메일: <a href={`mailto:${settings.contact.email}`} style={{ color: "#1d4ed8" }}>{settings.contact.email}</a></p>}
+                  {settings.contact.phone && <p>📞 전화: <a href={`tel:${settings.contact.phone}`} style={{ color: "#1d4ed8" }}>{settings.contact.phone}</a></p>}
+                  {settings.contact.hours && <p>🕐 업무시간: {settings.contact.hours}</p>}
+                </div>
+              )}
 
               {/* 주 안내 */}
               <div style={{

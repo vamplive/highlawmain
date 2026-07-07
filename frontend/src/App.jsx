@@ -111,6 +111,7 @@ const PortalLayout = lazy(() => import("./pages/portal/PortalLayout"));
 const PortalLogin = lazy(() => import("./pages/portal/PortalLogin"));
 const PortalRegister = lazy(() => import("./pages/portal/PortalRegister"));
 const PortalDashboard = lazy(() => import("./pages/portal/PortalDashboard"));
+const PortalLitigationAgreements = lazy(() => import("./pages/portal/PortalLitigationAgreements"));
 const PortalCaseDetail = lazy(() => import("./pages/portal/PortalCaseDetail"));
 const PortalCaseRecords = lazy(() => import("./pages/portal/PortalCaseRecords"));
 const PortalCaseRegister = lazy(() => import("./pages/portal/PortalCaseRegister"));
@@ -341,6 +342,7 @@ export default function App() {
           <Route path="login" element={<Navigate to="/login" replace />} />
           <Route path="register" element={<Navigate to="/login" replace />} />
           <Route path="dashboard" element={<LazyRoute><PortalDashboard /></LazyRoute>} />
+          <Route path="litigation-agreements" element={<LazyRoute><PortalLitigationAgreements /></LazyRoute>} />
           <Route path="cases/register" element={<LazyRoute><PortalCaseRegister /></LazyRoute>} />
           <Route path="cases/:id" element={<LazyRoute><PortalCaseDetail /></LazyRoute>} />
           <Route path="cases/:id/records" element={<LazyRoute><PortalCaseRecords /></LazyRoute>} />

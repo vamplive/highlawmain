@@ -107,6 +107,22 @@ export default function LawyerDetailPage() {
     return parsed;
   }, [raw, lectures]);
 
+  const visibleTabs = useMemo(() => {
+    if (!lawyer) return TABS;
+    return TABS.filter((tab) => {
+      switch (tab.id) {
+        case "profile":  return true;
+        case "practice": return lawyer.practiceAreas?.length > 0;
+        case "papers":   return lawyer.publications?.length > 0 || lawyer.books?.length > 0;
+        case "media":    return lawyer.media?.length > 0;
+        case "columns":  return lawyer.columns?.length > 0;
+        case "lectures": return lawyer.lectures?.length > 0;
+        case "cases":    return lawyer.cases?.length > 0;
+        default:         return true;
+      }
+    });
+  }, [lawyer]);
+
   if (loading) {
     return (
       <div className="lp-scope" style={{ background: "var(--lp-bg)", minHeight: "60vh", padding: "80px 24px", textAlign: "center" }}>
@@ -123,7 +139,8 @@ export default function LawyerDetailPage() {
     );
   }
 
-  const ActivePanel = TABS.find((t) => t.id === active)?.Component || ProfileTab;
+  const currentActive = visibleTabs.some((t) => t.id === active) ? active : "profile";
+  const ActivePanel = TABS.find((t) => t.id === currentActive)?.Component || ProfileTab;
   const canonicalPath = `/partners/${lawyer.slug || lawyer.id}`;
   const seoTitle = `${lawyer.name} ${lawyer.title} — 법무법인 하이로`;
   const seoDesc = lawyer.tagline || lawyer.intro || `${lawyer.name} ${lawyer.title}의 학력·경력·논문·수행사례를 소개합니다.`;
@@ -166,13 +183,13 @@ export default function LawyerDetailPage() {
 
       <LawyerHero lawyer={lawyer} />
 
-      <LawyerTabBar tabs={TABS} active={active} onChange={changeTab} />
+      <LawyerTabBar tabs={visibleTabs} active={currentActive} onChange={changeTab} />
 
       <main className="lp-main">
         <div
           role="tabpanel"
-          id={`lp-panel-${active}`}
-          aria-labelledby={`lp-tab-${active}`}
+          id={`lp-panel-${currentActive}`}
+          aria-labelledby={`lp-tab-${currentActive}`}
           tabIndex={0}
           className="lp-panel"
         >

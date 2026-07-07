@@ -100,22 +100,40 @@ export default function RecruitSectionWrapper({ settings, update }) {
 
       {/* 채용 문의 */}
       {activeTab === "contact" && (
-        <SectionCard title="채용 문의 안내">
-          <div style={{
-            background: "#f8f9fa", border: `1px solid ${COLORS.border}`,
-            borderRadius: 8, padding: 20, fontSize: 13, color: COLORS.textSecondary, lineHeight: 1.8,
-          }}>
-            <p style={{ fontWeight: 600, color: COLORS.text, marginBottom: 8 }}>채용 관련 문의 안내</p>
-            <p>채용 문의는 이메일 또는 카카오톡으로 접수됩니다.</p>
-            <p style={{ marginTop: 8 }}>연락처 정보는 <strong>공통 (헤더/푸터)</strong> 탭 &gt; 연락처 정보에서 수정하세요.</p>
-            <div style={{
-              marginTop: 16, padding: "10px 14px",
-              background: "rgba(26,58,107,0.06)", borderRadius: 6,
-              fontSize: 12, color: COLORS.accent,
-            }}>
-              채용 지원서는 채용 공고 탭에서 개별 공고에 파일을 첨부하여 관리합니다.
-            </div>
-          </div>
+        <SectionCard title="채용 문의 연락처">
+          <p style={{ fontSize: 12, color: COLORS.textMuted, marginBottom: 16 }}>
+            채용 페이지 &gt; 채용 문의 탭에 표시됩니다. 저장 버튼으로 적용하세요.
+          </p>
+          <FieldRow>
+            <FormField
+              label="이메일"
+              value={s["recruit/contact"].email}
+              onChange={(v) => update("recruit/contact", "email", v)}
+              placeholder="recruit@highlaw.net"
+            />
+            <FormField
+              label="전화번호"
+              value={s["recruit/contact"].phone}
+              onChange={(v) => update("recruit/contact", "phone", v)}
+              placeholder="02-6925-6757"
+            />
+          </FieldRow>
+          <FieldRow>
+            <FormField
+              label="업무시간"
+              value={s["recruit/contact"].hours}
+              onChange={(v) => update("recruit/contact", "hours", v)}
+              placeholder="평일 09:00 - 18:00"
+            />
+          </FieldRow>
+          <FormField
+            label="안내 문구"
+            type="textarea"
+            minHeight={80}
+            value={s["recruit/contact"].note}
+            onChange={(v) => update("recruit/contact", "note", v)}
+            placeholder="이력서와 자기소개서를 이메일로 보내주세요."
+          />
         </SectionCard>
       )}
     </div>

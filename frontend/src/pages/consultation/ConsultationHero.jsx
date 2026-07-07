@@ -7,6 +7,10 @@ import { PublicHero } from "../../components/public/PublicDesign";
 import { safeHttpUrl } from "../../utils/safeUrl";
 import { TELEGRAM_CONTACT_URL } from "../../utils/telegramContact";
 
+const CONSULTATION_CONTACT_DEFAULTS = {
+  contact: { address: "서울특별시 강남구 테헤란로 141, 15층", phone: "02-6925-6757", email: "", hours: "평일 09:00 - 18:00 (예약 상담 우선)", businessNumber: "433-86-04078" },
+};
+
 const CONSULTATION_HERO_DEFAULTS = {
   hero: { heading: "상담안내", subheading: "CONSULTATION", description: "법무법인 하이로의 1:1 맞춤 법률 상담을 신청하세요. 전문 변호사가 직접 상담합니다." },
 };
@@ -15,6 +19,8 @@ export default function ConsultationHero() {
   const lang = useLanguage();
   const { settings: layoutSettings } = useSiteSettingsPage("layout", LAYOUT_DEFAULTS, lang);
   const { settings: consultationSettings } = useSiteSettingsPage("consultation", CONSULTATION_HERO_DEFAULTS);
+  const { settings: contactSettings } = useSiteSettingsPage("consultation", CONSULTATION_CONTACT_DEFAULTS);
+  const officeAddress = contactSettings?.contact?.address || "서울특별시 강남구 테헤란로 141, 15층";
   const contact = layoutSettings.contact || LAYOUT_DEFAULTS.contact;
   const telegramUrl = safeHttpUrl(contact.telegramUrl, TELEGRAM_CONTACT_URL);
   const showTelegram = (contact.telegramEnabled !== false || !contact.telegramUrl) && !!telegramUrl;

@@ -271,9 +271,7 @@ export default function BlogDetailPage() {
         style={{
           minHeight: 360,
           padding: "100px 24px 80px",
-          background: heroImage
-            ? `linear-gradient(rgba(10,22,40,0.78), rgba(10,22,40,0.92)), url("${heroCssImage}") center/cover`
-            : "linear-gradient(135deg, #0a1628 0%, #0f1d32 50%, #0a1628 100%)",
+          background: "linear-gradient(135deg, #0a1628 0%, #0f1d32 50%, #0a1628 100%)",
         }}
       >
         <div className="relative text-center" style={{ maxWidth: 800, width: "100%", zIndex: 2 }}>
@@ -287,52 +285,28 @@ export default function BlogDetailPage() {
           >
             <ArrowLeft size={14} /> 블로그 목록
           </Link>
-          <div className="reveal" style={{ marginBottom: 24 }}>
-            <span style={{
-              display: "inline-block", padding: "5px 18px", fontSize: 11,
-              background: "rgba(255,255,255,0.15)", color: "#fff",
-              border: "1px solid rgba(255,255,255,0.3)", borderRadius: 2,
-              letterSpacing: "0.12em", fontWeight: 500,
-            }}>
-              {CATEGORY_LABELS[post.category] || post.category}
-            </span>
-          </div>
+          <p className="reveal" style={{
+            fontSize: 11, letterSpacing: "0.18em", color: "rgba(255,255,255,0.55)",
+            fontWeight: 500, marginBottom: 16, textTransform: "uppercase",
+          }}>
+            BLOG
+          </p>
           <h1
             className="font-serif-kr reveal"
             style={{
               fontSize: "clamp(1.6rem, 3.6vw, 2.6rem)", fontWeight: 500,
-              color: "#fff", lineHeight: 1.5, marginBottom: 28,
+              color: "#fff", lineHeight: 1.5, marginBottom: 20,
               wordBreak: "keep-all",
             }}
           >
-            {post.title}
+            블로그
           </h1>
-          {post.excerpt && (
-            <p className="reveal" style={{
-              fontSize: 15, color: "rgba(255,255,255,0.72)", lineHeight: 1.9,
-              fontWeight: 300, maxWidth: 640, margin: "0 auto 32px",
-              wordBreak: "keep-all",
-            }}>
-              {post.excerpt}
-            </p>
-          )}
-          <div className="reveal flex items-center justify-center flex-wrap gap-x-5 gap-y-2"
-            style={{ fontSize: 13, color: "rgba(255,255,255,0.55)" }}>
-            <span className="inline-flex items-center gap-1.5"><User size={13} />{post.author || "법무법인 하이로"}</span>
-            <span style={{ width: 1, height: 12, background: "rgba(255,255,255,0.2)" }} />
-            <span className="inline-flex items-center gap-1.5"><Calendar size={13} />{formatDate(post.publishedAt || post.createdAt)}</span>
-            <span style={{ width: 1, height: 12, background: "rgba(255,255,255,0.2)" }} />
-            <span className="inline-flex items-center gap-1.5"><Eye size={13} />조회 {post.viewCount || 0}</span>
-          </div>
-          {tags.length > 0 && (
-            <div className="reveal" style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginTop: 20 }}>
-              {tags.map((tag) => (
-                <span key={tag} style={{ fontSize: 12, color: "rgba(255,255,255,0.64)", border: "1px solid rgba(255,255,255,0.22)", padding: "4px 9px", borderRadius: 999 }}>
-                  #{tag}
-                </span>
-              ))}
-            </div>
-          )}
+          <p className="reveal" style={{
+            fontSize: 14, color: "rgba(255,255,255,0.65)", letterSpacing: "0.04em",
+            fontWeight: 300,
+          }}>
+            {CATEGORY_LABELS[post.category] || "블로그"}
+          </p>
         </div>
       </section>
 
@@ -358,6 +332,48 @@ export default function BlogDetailPage() {
         }}>
           <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", justifyItems: "center" }}>
             <div style={{ width: "100%", maxWidth: 720, position: "relative" }}>
+
+              {/* 포스트 제목 + 메타 정보 */}
+              <div style={{ marginBottom: 32, paddingBottom: 28, borderBottom: "1px solid var(--border-subtle)" }}>
+                <div style={{ marginBottom: 12 }}>
+                  <span style={{
+                    display: "inline-block", padding: "4px 14px", fontSize: 11,
+                    background: "#eff6ff", color: "#1d4ed8",
+                    border: "1px solid #bfdbfe", borderRadius: 2,
+                    letterSpacing: "0.08em", fontWeight: 500,
+                  }}>
+                    {CATEGORY_LABELS[post.category] || post.category}
+                  </span>
+                </div>
+                <h2 style={{
+                  fontSize: "clamp(1.35rem, 3vw, 2rem)", fontWeight: 600,
+                  color: "#1a1a1a", lineHeight: 1.5, marginBottom: 16,
+                  wordBreak: "keep-all",
+                }}>
+                  {post.title}
+                </h2>
+                {post.excerpt && (
+                  <p style={{ fontSize: 15, color: "#64748b", lineHeight: 1.8, marginBottom: 16, wordBreak: "keep-all" }}>
+                    {post.excerpt}
+                  </p>
+                )}
+                <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "8px 20px", fontSize: 13, color: "#94a3b8" }}>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><User size={13} />{post.author || "법무법인 하이로"}</span>
+                  <span style={{ width: 1, height: 12, background: "#e2e8f0" }} />
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><Calendar size={13} />{formatDate(post.publishedAt || post.createdAt)}</span>
+                  <span style={{ width: 1, height: 12, background: "#e2e8f0" }} />
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><Eye size={13} />조회 {post.viewCount || 0}</span>
+                </div>
+                {tags.length > 0 && (
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 12 }}>
+                    {tags.map((tag) => (
+                      <span key={tag} style={{ fontSize: 12, color: "#64748b", border: "1px solid #e2e8f0", padding: "3px 9px", borderRadius: 999 }}>
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               {/* 도구 모음 (글자크기/공유/인쇄) */}
               <div className="blog-tools" style={{

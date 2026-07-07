@@ -2,7 +2,11 @@
 
 /** 사건 상태별 색상 매핑 */
 export const STATUS_MAP = {
-  "접수": { color: "var(--gray-500, #1976d2)", bg: "var(--bg-secondary)" },
-  "진행": { color: "var(--accent-gold)", bg: "var(--accent-gold-light)" },
-  "완료": { color: "#2e7d32", bg: "#e8f5e9" },
+  "접수/상담": { color: "#1976d2", bg: "#e3f2fd" },
+  "진행":      { color: "var(--accent-gold)", bg: "var(--accent-gold-light)" },
+  "완료":      { color: "#2e7d32", bg: "#e8f5e9" },
+  "상담종결":  { color: "#6b7280", bg: "#f3f4f6" },
+  // 기존 데이터 호환
+  "상담": { color: "#1976d2", bg: "#e3f2fd" },
+  "접수": { color: "#1976d2", bg: "#e3f2fd" },
 };

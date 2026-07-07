@@ -35,7 +35,7 @@ export default function LayoutSection({ settings, update, updateItem, addItem, r
         <FormField label="저작권 표시" value={s["layout/footer"].copyright} onChange={(v) => update("layout/footer", "copyright", v)} />
       </SectionCard>
 
-      <SectionCard title="플로팅 문의 및 SNS 버튼 (전화/카카오톡/텔레그램/인스타그램/블로그/유튜브)">
+      <SectionCard title="플로팅 퀵 버튼 (전화/카카오/인스타/네이버예약/오시는길) 및 SNS 채널 설정">
         <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 12 }}>
           모든 페이지 우측 하단 및 푸터에 노출되는 연락처/SNS 정보입니다. 각 채널을 켜고 끌 수 있고, URL을 수정할 수 있습니다.
         </p>
@@ -62,6 +62,10 @@ export default function LayoutSection({ settings, update, updateItem, addItem, r
         <FieldRow>
           <ToggleField label="유튜브 표시" checked={!!s["layout/contact"].youtubeEnabled} onChange={(v) => update("layout/contact", "youtubeEnabled", v)} />
           <FormField label="유튜브 URL" value={s["layout/contact"].youtubeUrl} onChange={(v) => update("layout/contact", "youtubeUrl", v)} placeholder="https://www.youtube.com/..." />
+        </FieldRow>
+        <FieldRow>
+          <ToggleField label="네이버 예약 버튼 표시 (플로팅 메뉴)" checked={!!s["layout/contact"].naverReservationEnabled} onChange={(v) => update("layout/contact", "naverReservationEnabled", v)} />
+          <FormField label="네이버 예약 URL" value={s["layout/contact"].naverReservationUrl || ""} onChange={(v) => update("layout/contact", "naverReservationUrl", v)} placeholder="https://booking.naver.com/..." />
         </FieldRow>
         <p style={{ fontSize: 12, color: "#6b7280", marginTop: 8, lineHeight: 1.6 }}>
           <strong>텔레그램 세팅:</strong> ① 모바일 텔레그램 앱 설치 → ② 설정 → 사용자 이름(@username) 등록

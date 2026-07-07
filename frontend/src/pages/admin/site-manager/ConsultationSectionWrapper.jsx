@@ -10,6 +10,7 @@ const SUB_TABS = [
   { key: "edit", label: "상담 신청 수정" },
   { key: "process", label: "진행 절차" },
   { key: "faq", label: "FAQ" },
+  { key: "contact", label: "연락처 및 오시는 길" },
 ];
 
 function SubTabBar({ active, onChange }) {
@@ -129,6 +130,49 @@ export default function ConsultationSectionWrapper({ settings, update, updateIte
             </ItemCard>
           ))}
           <AddButton onClick={() => addItem("consultation/faq", { q: "", a: "" })} label="FAQ 추가" />
+        </SectionCard>
+      )}
+
+      {/* 연락처 및 오시는 길 */}
+      {activeTab === "contact" && (
+        <SectionCard title="연락처 및 오시는 길">
+          <p style={{ fontSize: 12, color: COLORS.textMuted, marginBottom: 16 }}>
+            상담안내 페이지에 표시되는 사무소 연락처 정보입니다. 저장 버튼으로 적용하세요.
+          </p>
+          <FieldRow>
+            <FormField
+              label="전화번호"
+              value={s["consultation/contact"].phone}
+              onChange={(v) => update("consultation/contact", "phone", v)}
+              placeholder="02-6925-6757"
+            />
+            <FormField
+              label="이메일"
+              value={s["consultation/contact"].email}
+              onChange={(v) => update("consultation/contact", "email", v)}
+              placeholder="info@highlaw.net"
+            />
+          </FieldRow>
+          <FormField
+            label="사무소 주소"
+            value={s["consultation/contact"].address}
+            onChange={(v) => update("consultation/contact", "address", v)}
+            placeholder="서울특별시 강남구 테헤란로 141, 15층"
+          />
+          <FieldRow>
+            <FormField
+              label="업무시간"
+              value={s["consultation/contact"].hours}
+              onChange={(v) => update("consultation/contact", "hours", v)}
+              placeholder="평일 09:00 - 18:00 (예약 상담 우선)"
+            />
+            <FormField
+              label="사업자등록번호"
+              value={s["consultation/contact"].businessNumber}
+              onChange={(v) => update("consultation/contact", "businessNumber", v)}
+              placeholder="433-86-04078"
+            />
+          </FieldRow>
         </SectionCard>
       )}
     </div>

@@ -1,5 +1,12 @@
 /** 사무소 소개 편집 — 5개 하위 탭(인사말/핵심가치/오시는길/공익활동/연혁) */
 import { useState } from "react";
+import SimpleRichEditor from "../../../components/admin/SimpleRichEditor";
+
+function plainToHtml(text) {
+  if (!text) return "";
+  if (/<[a-z][\s\S]*>/i.test(text)) return text;
+  return text.split("\n\n").map((p) => `<p>${p}</p>`).join("");
+}
 import { FormField } from "../../../components/admin";
 import { COLORS } from "../../../components/admin/styles";
 import { SectionCard, ItemCard, AddButton, FieldRow } from "./shared";
@@ -66,14 +73,13 @@ export default function AboutSection({ settings, update, updateItem, addItem, re
 
           <SectionCard title="인사말 본문">
             <p style={{ fontSize: 12, color: COLORS.textMuted, marginBottom: 12 }}>
-              홈페이지 소개 페이지 &gt; 인사말 탭에 표시됩니다. 단락 사이는 빈 줄로 구분하세요.
+              홈페이지 소개 페이지 &gt; 인사말 탭에 표시됩니다. Bold / Italic / 색상 / 정렬 서식을 지원합니다.
             </p>
-            <FormField
-              label="인사말 텍스트"
-              type="textarea"
-              minHeight={220}
-              value={s["about/philosophy"].description}
+            <SimpleRichEditor
+              value={plainToHtml(s["about/philosophy"].description)}
               onChange={(v) => update("about/philosophy", "description", v)}
+              minHeight={220}
+              placeholder="인사말 본문을 입력하세요..."
             />
           </SectionCard>
         </>

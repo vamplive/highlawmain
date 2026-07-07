@@ -1,6 +1,7 @@
 /** 사이트 설정 로드/수정/저장 로직 커스텀 훅 */
 import { useState, useEffect, useCallback } from "react";
 import { api } from "../../../utils/api";
+import { invalidateAllCaches } from "../../../hooks/useSiteSettings";
 import { DEFAULT_SETTINGS, deepClone } from "./constants";
 import { showToast } from "../../../utils/showToast";
 import { TOAST_DURATION_MS } from "../../../utils/timing";
@@ -107,6 +108,9 @@ export default function useSiteSettings() {
     setSaving(true);
     try {
       await api.post("/site-settings/bulk", { settings: toBulkItems(settings) });
+      invalidateAllCaches();
+      window.dispatchEvent(new Event("site-settings-invalidated"));
+      try { const _bc = new BroadcastChannel("site-settings"); _bc.postMessage({ type: "invalidated" }); _bc.close(); } catch {}
       setDirty(false);
       setToast("저장되었습니다");
       setTimeout(() => setToast(""), TOAST_DURATION_MS);

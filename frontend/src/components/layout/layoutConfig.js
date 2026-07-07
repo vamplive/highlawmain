@@ -41,6 +41,8 @@ export const LAYOUT_DEFAULTS = {
     instagramEnabled: true,
     youtubeEnabled: true,
     naverBlogEnabled: true,
+    naverReservationUrl: "",
+    naverReservationEnabled: false,
   },
 };
 

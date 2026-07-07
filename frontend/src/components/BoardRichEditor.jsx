@@ -115,6 +115,7 @@ export default function BoardRichEditor({
   const [showTableMenu, setShowTableMenu] = useState(false);
   const [imageUploading, setImageUploading] = useState(false);
   const [attachUploading, setAttachUploading] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
   const [fontSize, setFontSize] = useState("14");
   const [fontFamily, setFontFamily] = useState(FONT_FAMILIES[0].value);
 
@@ -190,6 +191,40 @@ export default function BoardRichEditor({
     finally { setAttachUploading(false); e.target.value = ""; }
   };
 
+  const handleDrop = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+    const files = Array.from(e.dataTransfer.files || []);
+    if (!files.length) return;
+    const imageFiles = files.filter(f => f.type.startsWith("image/"));
+    const otherFiles = files.filter(f => !f.type.startsWith("image/"));
+    // 이미지: 에디터 본문에 삽입
+    for (const file of imageFiles) {
+      setImageUploading(true);
+      try {
+        const form = new FormData();
+        form.append("image", file);
+        const res = await portalApi.upload("/board/upload-image", form);
+        const url = res.data?.url;
+        if (url && editor) editor.chain().focus().setImage({ src: url, alt: file.name }).run();
+      } catch { alert("이미지 업로드에 실패했습니다: " + file.name); }
+      finally { setImageUploading(false); }
+    }
+    // 일반 파일: 첨부파일 목록에 추가
+    if (otherFiles.length > 0) {
+      setAttachUploading(true);
+      try {
+        const form = new FormData();
+        otherFiles.forEach((f) => form.append("files", f));
+        const res = await portalApi.upload("/board/upload-attachments", form);
+        const uploaded = res.data?.files || [];
+        onAttachmentsChange?.([...attachments, ...uploaded]);
+      } catch { alert("파일 업로드에 실패했습니다."); }
+      finally { setAttachUploading(false); }
+    }
+  };
+
   const insertLink = () => {
     const url = window.prompt("링크 URL을 입력하세요", "https://");
     if (!url || !editor) return;
@@ -206,7 +241,13 @@ export default function BoardRichEditor({
     : "p";
 
   return (
-    <div style={{ border: "1px solid #d1d5db", borderRadius: 8, overflow: "visible", background: "#f3f4f6" }}>
+    <div
+      style={{ border: isDragOver ? "2px dashed #3b82f6" : "1px solid #d1d5db", borderRadius: 8, overflow: "visible", background: isDragOver ? "#eff6ff" : "#f3f4f6", transition: "border 0.15s, background 0.15s", position: "relative" }}
+      onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOver(true); }}
+      onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOver(true); }}
+      onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); if (!e.currentTarget.contains(e.relatedTarget)) setIsDragOver(false); }}
+      onDrop={handleDrop}
+    >
 
       {/* ── 삽입 툴바 (1행) */}
       <div style={{
@@ -436,6 +477,22 @@ export default function BoardRichEditor({
 
       {/* ── 편집 영역: 문서 페이지 스타일 */}
       <div style={{ background: "#e5e7eb", padding: "24px 32px", minHeight: 400, position: "relative" }}>
+        {isDragOver && (
+          <div style={{
+            position: "absolute", inset: 0, zIndex: 50,
+            background: "rgba(59,130,246,0.10)",
+            border: "2px dashed #3b82f6",
+            borderRadius: 4,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            pointerEvents: "none",
+          }}>
+            <div style={{ background: "#fff", borderRadius: 10, padding: "18px 32px", textAlign: "center", boxShadow: "0 4px 16px rgba(59,130,246,0.2)" }}>
+              <div style={{ fontSize: 32, marginBottom: 8 }}>📎</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#1d4ed8" }}>파일을 여기에 놓으세요</div>
+              <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>이미지는 본문에 삽입 · 그 외 파일은 첨부파일로 추가</div>
+            </div>
+          </div>
+        )}
         <div style={{
           background: "#fff",
           maxWidth: 860, margin: "0 auto",
@@ -455,6 +512,14 @@ export default function BoardRichEditor({
           )}
         </div>
       </div>
+
+      {/* ── 파일 드롭 힌트 (첨부파일 없을 때) */}
+      {attachments.length === 0 && (
+        <div style={{ borderTop: "1px solid #e2e8f0", padding: "10px 14px", background: "#fff", display: "flex", alignItems: "center", gap: 8 }}>
+          <Paperclip size={13} style={{ color: "#94a3b8" }} />
+          <span style={{ fontSize: 12, color: "#94a3b8" }}>파일을 에디터 위로 드래그하거나 <strong>파일첨부</strong> 버튼을 클릭하세요.</span>
+        </div>
+      )}
 
       {/* ── 첨부파일 목록 */}
       {attachments.length > 0 && (

@@ -19,9 +19,8 @@ const { adminAuth, requireMinRole } = require("../lib/auth");
 const router = express.Router();
 
 /* ── 페이지 파일 경로 설정 ── */
-const DIST_BASE = process.env.NODE_ENV === "production"
-  ? path.join(__dirname, "../../frontend/dist")
-  : path.join(__dirname, "../../frontend/public");
+const DIST_BASE   = path.join(__dirname, "../../frontend/dist");
+const PUBLIC_BASE = path.join(__dirname, "../../frontend/public");
 
 const PAGE_FILES = {
   home:         "military/index.html",
@@ -36,6 +35,7 @@ function getFilePath(page) {
   const rel = PAGE_FILES[page];
   if (!rel) return null;
   if (page === "home" && process.env.MILITARY_HTML_PATH) return process.env.MILITARY_HTML_PATH;
+  // 항상 dist/ 에서 읽기 (nginx 서빙 기준)
   return path.join(DIST_BASE, rel);
 }
 
@@ -46,9 +46,14 @@ function readPage(page) {
 }
 
 function writePage(page, html) {
-  const fp = getFilePath(page);
-  if (!fp) throw new Error(`알 수 없는 페이지: ${page}`);
-  fs.writeFileSync(fp, html, "utf-8");
+  const rel = PAGE_FILES[page];
+  if (!rel) throw new Error(`알 수 없는 페이지: ${page}`);
+  // dist/ 에 즉시 반영 (nginx가 여기서 서빙)
+  const distPath = path.join(DIST_BASE, rel);
+  fs.writeFileSync(distPath, html, "utf-8");
+  // public/ 에도 저장 → npm run build 후에도 내용 유지
+  const pubPath = path.join(PUBLIC_BASE, rel);
+  try { fs.writeFileSync(pubPath, html, "utf-8"); } catch (_) { /* public 없어도 무관 */ }
 }
 
 /* ── 홈 페이지: 코멘트 마커 기반 섹션 분리 ──
@@ -233,71 +238,121 @@ function applyHomeContent(html, content) {
 /* ── 서브 페이지 히어로 콘텐츠 파싱 ── */
 
 /**
- * 서브 페이지 HTML의 id="hero" 섹션에서 heading/subheading/description 추출
+ * 서브 페이지 HTML에서 hero 정보 추출
+ * — <div class="page-hero"> 우선, fallback: <section id="hero">
  */
 function parseSubPageHero(html) {
+  // ── <div class="page-hero"> 패턴 우선 ──
+  const heroStart = html.indexOf('<div class="page-hero">');
+  if (heroStart !== -1) {
+    let pos = heroStart + '<div class="page-hero">'.length;
+    let depth = 1;
+    while (pos < html.length && depth > 0) {
+      const o = html.indexOf("<div", pos);
+      const c = html.indexOf("</div>", pos);
+      if (c === -1) break;
+      if (o !== -1 && o < c) { depth++; pos = o + 1; }
+      else { depth--; pos = c + "</div>".length; }
+    }
+    const block = html.slice(heroStart, pos);
+    // 첫 번째 <p>: 아이브로우 (eyebrow)
+    const eyebrow = (block.match(/<p[^>]*>([\s\S]*?)<\/p>/i) || [])[1] || "";
+    // <h1>
+    const heading = (block.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i) || [])[1] || "";
+    // 두 번째 <p>: 설명
+    const allPs = [...block.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/gi)];
+    const description = allPs.length > 1 ? allPs[1][1] : "";
+    return {
+      heading: heading.replace(/<[^>]+>/g, "").trim(),
+      subheading: eyebrow.replace(/<[^>]+>/g, "").trim(),
+      description: description.replace(/<[^>]+>/g, "").trim(),
+    };
+  }
+
+  // ── fallback: <section id="hero"> ──
   const heroSection = extractSectionById(html, "hero");
   if (!heroSection) return { heading: "", subheading: "", description: "" };
-
   const heading = (heroSection.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i)?.[1] || "")
     .replace(/<[^>]+>/g, "").trim();
-
-  // 부제목: eyebrow/subtitle/sub 클래스 p·span 우선, 없으면 h2
   const subheading = (
     heroSection.match(/<(?:p|span)[^>]+class="[^"]*(?:eyebrow|subtitle|sub-title|sub)[^"]*"[^>]*>([\s\S]*?)<\/(?:p|span)>/i)?.[1]
     || heroSection.match(/<h2[^>]*>([\s\S]*?)<\/h2>/i)?.[1]
     || ""
   ).replace(/<[^>]+>/g, "").trim();
-
-  // 설명: desc/description/lead/intro 클래스 p
   const description = (
     heroSection.match(/<p[^>]+class="[^"]*(?:desc|description|lead|intro)[^"]*"[^>]*>([\s\S]*?)<\/p>/i)?.[1]
     || ""
   ).replace(/<[^>]+>/g, "").trim();
-
   return { heading, subheading, description };
 }
 
 /**
- * 서브 페이지 HTML의 hero 섹션에 heading/subheading/description 반영
+ * 서브 페이지 HTML의 hero 정보 반영
+ * — <div class="page-hero"> 우선, fallback: <section id="hero">
  */
 function applySubPageHero(html, heroData) {
+  // ── <div class="page-hero"> 패턴 우선 ──
+  const heroStart = html.indexOf('<div class="page-hero">');
+  if (heroStart !== -1) {
+    let pos = heroStart + '<div class="page-hero">'.length;
+    let depth = 1;
+    while (pos < html.length && depth > 0) {
+      const o = html.indexOf("<div", pos);
+      const c = html.indexOf("</div>", pos);
+      if (c === -1) break;
+      if (o !== -1 && o < c) { depth++; pos = o + 1; }
+      else { depth--; pos = c + "</div>".length; }
+    }
+    let block = html.slice(heroStart, pos);
+    const after = html.slice(pos);
+
+    if (heroData.heading !== undefined) {
+      block = block.replace(/(<h1[^>]*>)([\s\S]*?)(<\/h1>)/i,
+        (_, o, _2, c) => `${o}${heroData.heading}${c}`);
+    }
+    if (heroData.subheading !== undefined) {
+      // 첫 번째 <p> (아이브로우)
+      block = block.replace(/(<p[^>]*>)([\s\S]*?)(<\/p>)/i,
+        (_, o, _2, c) => `${o}${heroData.subheading}${c}`);
+    }
+    if (heroData.description !== undefined) {
+      // 두 번째 <p> (설명)
+      let count = 0;
+      block = block.replace(/(<p[^>]*>)([\s\S]*?)(<\/p>)/gi,
+        (match, o, content, c) => {
+          count++;
+          if (count === 2) return `${o}${heroData.description}${c}`;
+          return match;
+        });
+    }
+    return html.slice(0, heroStart) + block + after;
+  }
+
+  // ── fallback: <section id="hero"> ──
   const heroSection = extractSectionById(html, "hero");
-  if (!heroSection) throw new Error('히어로 섹션(id="hero")을 찾을 수 없습니다');
-
-  let updated = heroSection;
-
-  // h1 제목 교체 (함수로 전달해 $-특수문자 처리 방지)
-  if (heroData.heading !== undefined) {
-    const h1Match = updated.match(/(<h1[^>]*>)([\s\S]*?)(<\/h1>)/i);
-    if (h1Match) {
-      updated = updated.replace(h1Match[0], () => `${h1Match[1]}${heroData.heading}${h1Match[3]}`);
-    }
+  function replaceFirst(src, regex, newText) {
+    const m = src.match(regex);
+    if (!m) return src;
+    return src.replace(m[0], () => m[1] + newText + m[3]);
   }
-
-  // 부제목 교체
-  if (heroData.subheading !== undefined) {
-    const subMatch = updated.match(/(<(?:p|span)[^>]+class="[^"]*(?:eyebrow|subtitle|sub-title|sub)[^"]*"[^>]*>)([\s\S]*?)(<\/(?:p|span)>)/i);
-    if (subMatch) {
-      updated = updated.replace(subMatch[0], () => `${subMatch[1]}${heroData.subheading}${subMatch[3]}`);
-    } else {
-      // h2로 fallback
-      const h2Match = updated.match(/(<h2[^>]*>)([\s\S]*?)(<\/h2>)/i);
-      if (h2Match) {
-        updated = updated.replace(h2Match[0], () => `${h2Match[1]}${heroData.subheading}${h2Match[3]}`);
-      }
+  if (heroSection) {
+    let updated = heroSection;
+    if (heroData.heading !== undefined)
+      updated = replaceFirst(updated, /(<h1[^>]*>)([\s\S]*?)(<\/h1>)/i, heroData.heading);
+    if (heroData.subheading !== undefined) {
+      const sub = updated.match(/(<(?:p|span)[^>]+class="[^"]*(?:eyebrow|subtitle|sub-title|sub)[^"]*"[^>]*>)([\s\S]*?)(<\/(?:p|span)>)/i);
+      if (sub) updated = updated.replace(sub[0], () => sub[1] + heroData.subheading + sub[3]);
+      else updated = replaceFirst(updated, /(<h2[^>]*>)([\s\S]*?)(<\/h2>)/i, heroData.subheading);
     }
+    if (heroData.description !== undefined)
+      updated = replaceFirst(updated, /(<p[^>]+class="[^"]*(?:desc|description|lead|intro)[^"]*"[^>]*>)([\s\S]*?)(<\/p>)/i, heroData.description);
+    return replaceSectionById(html, "hero", updated);
   }
-
-  // 설명 교체
-  if (heroData.description !== undefined) {
-    const descMatch = updated.match(/(<p[^>]+class="[^"]*(?:desc|description|lead|intro)[^"]*"[^>]*>)([\s\S]*?)(<\/p>)/i);
-    if (descMatch) {
-      updated = updated.replace(descMatch[0], () => `${descMatch[1]}${heroData.description}${descMatch[3]}`);
-    }
-  }
-
-  return replaceSectionById(html, "hero", updated);
+  // 최종 fallback
+  let result = html;
+  if (heroData.heading !== undefined)
+    result = result.replace(/(<h1[^>]*>)([\s\S]*?)(<\/h1>)/i, (_, o, _2, c) => `${o}${heroData.heading}${c}`);
+  return result;
 }
 
 /* ── 미들웨어: 페이지 유효성 검사 ── */
@@ -324,7 +379,7 @@ router.get("/:page/html", adminAuth, requirePage, (req, res) => {
 });
 
 /** PUT /api/military/:page/html */
-router.put("/:page/html", adminAuth, requireMinRole("manager"), requirePage, (req, res) => {
+router.put("/:page/html", adminAuth, requireMinRole("staff"), requirePage, (req, res) => {
   try {
     const { html } = req.body;
     if (typeof html !== "string" || !html.trim()) {

@@ -3,6 +3,7 @@ import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react
 import { Link } from "react-router-dom";
 import { Scale } from "lucide-react";
 import { api } from "../../utils/api";
+import { useSiteSettingsPage } from "../../hooks/useSiteSettings";
 import { SkeletonLawyerCard } from "../../components/ui/Skeleton";
 import ErrorState from "../../components/ui/ErrorState";
 import Seo from "../../components/Seo";
@@ -52,8 +53,13 @@ function useRevealOnChange(deps) {
   return ref;
 }
 
+const MEMBERS_DEFAULTS = {
+  hero: { heading: "구성원", subheading: "PEOPLE", description: "각 분야 전문가들이 유기적으로 협력하여\n의뢰인에게 최선의 솔루션을 제공합니다" },
+};
+
 export default function LawyersPage() {
   const [lawyers, setLawyers] = useState([]);
+  const { settings: membersSettings } = useSiteSettingsPage("members", MEMBERS_DEFAULTS);
   const [activeTab, setActiveTab] = useState("lawyer"); // 'lawyer', 'advisor', 'staff'
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -117,9 +123,9 @@ export default function LawyersPage() {
         ]}
       />
       <PublicHero
-        eyebrow="PEOPLE"
-        title="구성원"
-        description={"각 분야 전문가들이 유기적으로 협력하여\n의뢰인에게 최선의 솔루션을 제공합니다"}
+        eyebrow={membersSettings.hero.subheading}
+        title={membersSettings.hero.heading}
+        description={membersSettings.hero.description}
       />
 
       {/* ==================== 탭 컨트롤 ==================== */}

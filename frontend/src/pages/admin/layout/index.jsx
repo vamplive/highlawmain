@@ -358,7 +358,11 @@ export default function AdminLayout({ onLogout, children }) {
                   )}
                 </button>
                 {!isCompact && isExpanded && (
-                  <div style={{ paddingLeft: 14, marginTop: 2, marginBottom: 6 }}>
+                  <div style={{
+                    marginLeft: 14, marginTop: 4, marginBottom: 6,
+                    borderLeft: "2px solid rgba(201,168,76,0.30)",
+                    paddingLeft: 8,
+                  }}>
                     {group.children.map((child) => {
                       const isActive = isChildLinkActive(child, pathname, search);
                       return (
@@ -369,19 +373,25 @@ export default function AdminLayout({ onLogout, children }) {
                           onMouseEnter={() => setHoveredItem(child.to)}
                           onMouseLeave={() => setHoveredItem(null)}
                           style={{
-                            display: "block",
-                            padding: "7px 12px 7px 28px",
-                            fontSize: 12.5,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 7,
+                            padding: "6px 10px",
+                            fontSize: 12,
                             fontWeight: isActive ? 600 : 400,
-                            color: isActive ? THEME.accent : (hoveredItem === child.to ? "#ffffff" : THEME.sidebarText),
-                            background: isActive ? THEME.accentDim : (hoveredItem === child.to ? THEME.sidebarHoverBg : "transparent"),
-                            borderRadius: 6,
+                            color: isActive ? THEME.accent : (hoveredItem === child.to ? "#ffffff" : "rgba(255,255,255,0.58)"),
+                            background: isActive ? "rgba(201,168,76,0.10)" : (hoveredItem === child.to ? "rgba(255,255,255,0.05)" : "transparent"),
+                            borderRadius: 5,
                             textDecoration: "none",
-                            borderLeft: isActive ? `2px solid ${THEME.accent}` : "2px solid transparent",
                             marginBottom: 1,
                             transition: "background-color 150ms ease, color 150ms ease",
                           }}
                         >
+                          <span style={{
+                            width: 5, height: 5, borderRadius: "50%", flexShrink: 0,
+                            background: isActive ? THEME.accent : "rgba(255,255,255,0.28)",
+                            transition: "background-color 150ms ease",
+                          }} />
                           {child.label}
                         </Link>
                       );

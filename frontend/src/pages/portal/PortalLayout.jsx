@@ -305,6 +305,18 @@ export default function PortalLayout() {
         .portal-board-filter-input:focus { border-color: ${THEME.accent}; background: rgba(255,255,255,0.10); }
         .notif-item:hover { background: #f8fafc !important; }
         .org-card:hover { box-shadow: 0 4px 16px rgba(11,31,58,0.1) !important; transform: translateY(-1px); }
+        .portal-sidebar-sublink {
+          display: flex; align-items: center; gap: 8px;
+          padding: 6px 10px; border-radius: 5px; text-decoration: none;
+          font-size: 12px; color: rgba(255,255,255,0.58) !important; font-weight: 400;
+          transition: background-color 150ms ease, color 150ms ease;
+          margin-bottom: 1px;
+        }
+        .portal-sidebar-sublink:hover { background-color: rgba(255,255,255,0.07) !important; color: #ffffff !important; }
+        .portal-sidebar-sublink-active {
+          color: #7dd3fc !important; background-color: rgba(125,211,252,0.15) !important;
+          font-weight: 600;
+        }
       `}</style>
 
       {/* 모바일 사이드바 오버레이 */}
@@ -461,9 +473,8 @@ export default function PortalLayout() {
                   { to: "/portal/editor?mode=blog", icon: <Plus size={14} />,     label: "새 글 쓰기" },
                 ].map(({ to, icon, label }) => (
                   <Link key={to} to={to}
-                    className={`portal-sidebar-link ${location.pathname.startsWith(to) ? "portal-sidebar-link-active" : ""}`}
+                    className={`portal-sidebar-sublink ${location.pathname.startsWith(to) ? "portal-sidebar-sublink-active" : ""}`}
                     onClick={() => isMobile && setIsSidebarOpen(false)}
-                    style={{ fontSize: 12, paddingLeft: 10 }}
                   >
                     {icon}{label}
                   </Link>
@@ -487,9 +498,8 @@ export default function PortalLayout() {
                   { to: "/portal/bookings",      icon: <CalendarCheck size={14} />, label: "예약 관리" },
                 ].map(({ to, icon, label }) => (
                   <Link key={to} to={to}
-                    className={`portal-sidebar-link ${location.pathname.startsWith(to) ? "portal-sidebar-link-active" : ""}`}
+                    className={`portal-sidebar-sublink ${location.pathname.startsWith(to) ? "portal-sidebar-sublink-active" : ""}`}
                     onClick={() => isMobile && setIsSidebarOpen(false)}
-                    style={{ fontSize: 12, paddingLeft: 10 }}
                   >
                     {icon}{label}
                   </Link>
@@ -511,9 +521,8 @@ export default function PortalLayout() {
                   { to: "/portal/ai-settings", icon: <Bot size={14} />,      label: "AI 연동 설정" },
                 ].map(({ to, icon, label }) => (
                   <Link key={to} to={to}
-                    className={`portal-sidebar-link ${location.pathname.startsWith(to) ? "portal-sidebar-link-active" : ""}`}
+                    className={`portal-sidebar-sublink ${location.pathname.startsWith(to) ? "portal-sidebar-sublink-active" : ""}`}
                     onClick={() => isMobile && setIsSidebarOpen(false)}
-                    style={{ fontSize: 12, paddingLeft: 10 }}
                   >
                     {icon}{label}
                   </Link>
@@ -1062,7 +1071,7 @@ function SidebarGroup({ label, icon, open, active, onToggle, children }) {
         />
       </button>
       {open && (
-        <div style={{ paddingLeft: 8, paddingBottom: 4 }}>
+        <div style={{ marginLeft: 14, marginTop: 2, paddingBottom: 4, paddingLeft: 6, borderLeft: "2px solid rgba(125,211,252,0.28)" }}>
           {children}
         </div>
       )}

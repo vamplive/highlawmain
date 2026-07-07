@@ -13,6 +13,7 @@ import {
   MessageSquare, Plus, Search, Send, Paperclip,
   Users, X, User, Check, CheckCheck,
   Download, Trash2, MoreVertical, Edit2, Image,
+  Clock, ChevronDown, ChevronUp, Play, Square,
 } from "lucide-react";
 
 // ─── 색상 상수 ───────────────────────────────────────────────────────
@@ -205,6 +206,17 @@ export default function PortalMessenger() {
   const [typingUsers, setTypingUsers] = useState({});
   const [onlineUsers, setOnlineUsers] = useState(new Set());
   const [searchQuery, setSearchQuery] = useState("");
+
+  // 타이머 상태 (메신저 내 표시)
+  const [timerStatuses, setTimerStatuses] = useState({}); // { userId: { caseTitle, startedAt } }
+  const [timerPanelOpen, setTimerPanelOpen] = useState(false);
+  const [timerCases, setTimerCases] = useState([]);
+  const [timerActiveCaseId, setTimerActiveCaseId] = useState(null);
+  const [timerActiveTitle, setTimerActiveTitle] = useState(null);
+  const [timerStartedAt, setTimerStartedAt] = useState(null);
+  const [timerElapsed, setTimerElapsed] = useState(0);
+  const [timerCaseSearch, setTimerCaseSearch] = useState("");
+  const [timerStarting, setTimerStarting] = useState(false);
   const [tab, setTab] = useState("all"); // "all" | "direct" | "group"
   const [showNewChat, setShowNewChat] = useState(false);
   const [userList, setUserList] = useState({ portal: [], admin: [] });
@@ -303,6 +315,48 @@ export default function PortalMessenger() {
     portalApi.get("/me").then((r) => setMyProfile(r.data)).catch(() => {});
   }, []);
 
+  // ─ 타이머 상태 폴링 (30초마다)
+  useEffect(() => {
+    let cancelled = false;
+    const fetchTimers = () => {
+      portalApi.get("/time-entries/active-all").then(res => {
+        if (cancelled) return;
+        const map = {};
+        (res.data?.data || []).forEach(row => {
+          map[row.portal_user_id] = { caseTitle: row.case_title, startedAt: row.started_at };
+        });
+        setTimerStatuses(map);
+      }).catch(() => {});
+    };
+    fetchTimers();
+    const iv = setInterval(fetchTimers, 30000);
+    return () => { cancelled = true; clearInterval(iv); };
+  }, []);
+
+  // ─ 내 활성 타이머 로드
+  useEffect(() => {
+    portalApi.get("/time-entries/active").then(res => {
+      const d = res.data?.data;
+      if (d) {
+        setTimerActiveCaseId(d.caseId);
+        setTimerActiveTitle(d.caseTitle);
+        setTimerStartedAt(d.startedAt ? new Date(d.startedAt) : null);
+      }
+    }).catch(() => {});
+    portalApi.get("/cases").then(res => {
+      setTimerCases(res.data?.data || []);
+    }).catch(() => {});
+  }, []);
+
+  // ─ 타이머 경과시간 (1초 갱신)
+  useEffect(() => {
+    if (!timerStartedAt) { setTimerElapsed(0); return; }
+    const iv = setInterval(() => {
+      setTimerElapsed(Math.floor((Date.now() - timerStartedAt.getTime()) / 1000));
+    }, 1000);
+    return () => clearInterval(iv);
+  }, [timerStartedAt]);
+
   async function loadRooms() {
     setLoadingRooms(true);
     try {
@@ -354,6 +408,37 @@ export default function PortalMessenger() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // ─ 타이머 헬퍼
+  function fmtElapsed(secs) {
+    const h = Math.floor(secs / 3600);
+    const m = Math.floor((secs % 3600) / 60);
+    const s = secs % 60;
+    return h > 0 ? `${h}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}` : `${m}:${String(s).padStart(2,"0")}`;
+  }
+
+  async function handleTimerStart(caseId) {
+    if (!caseId) return;
+    setTimerStarting(true);
+    try {
+      await portalApi.post("/time-entries/timer/start", { caseId });
+      const c = timerCases.find(x => x.id === caseId);
+      setTimerActiveCaseId(caseId);
+      setTimerActiveTitle(c?.title || "");
+      setTimerStartedAt(new Date());
+    } catch (e) { console.error(e); }
+    finally { setTimerStarting(false); }
+  }
+
+  async function handleTimerStop() {
+    try {
+      await portalApi.post("/time-entries/timer/stop", {});
+      setTimerActiveCaseId(null);
+      setTimerActiveTitle(null);
+      setTimerStartedAt(null);
+      setTimerElapsed(0);
+    } catch (e) { console.error(e); }
+  }
 
   // ─ 메시지 전송
   async function sendMessage(e) {
@@ -663,6 +748,11 @@ export default function PortalMessenger() {
                         <span style={{ fontSize: 11, color: C.textMuted, marginLeft: 4 }}>{room.members.length}</span>
                       )}
                     </span>
+                    {room.type === "direct" && otherMember && timerStatuses[otherMember.user_id] && (
+                      <span style={{ display: "flex", alignItems: "center", gap: 2, fontSize: 10, color: "#d97706", background: "#fef3c7", borderRadius: 8, padding: "1px 5px", marginLeft: 4, flexShrink: 0, maxWidth: 80, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        <Clock size={9} />{timerStatuses[otherMember.user_id].caseTitle || "진행 중"}
+                      </span>
+                    )}
                     <span style={{ fontSize: 11, color: C.textMuted, flexShrink: 0, marginLeft: 4 }}>
                       {fmtTime(room.lastMessageAt)}
                     </span>
@@ -681,6 +771,69 @@ export default function PortalMessenger() {
               </button>
             );
           })}
+        </div>
+
+        {/* 타이머 패널 */}
+        <div style={{ borderTop: `1px solid ${C.sidebarBorder}`, flexShrink: 0 }}>
+          <button onClick={() => setTimerPanelOpen(p => !p)} style={{
+            display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "11px 16px",
+            background: timerActiveCaseId ? "#fffbeb" : "transparent", border: "none", cursor: "pointer",
+            color: timerActiveCaseId ? "#d97706" : C.textMuted, fontSize: 13, fontWeight: timerActiveCaseId ? 600 : 400,
+          }}>
+            <Clock size={15} color={timerActiveCaseId ? "#d97706" : C.textMuted} />
+            <span style={{ flex: 1, textAlign: "left", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {timerActiveCaseId ? `${timerActiveTitle || "타이머 진행 중"}  ${fmtElapsed(timerElapsed)}` : "타임트래킹"}
+            </span>
+            {timerPanelOpen ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+          </button>
+
+          {timerPanelOpen && (
+            <div style={{ padding: "12px 16px", borderTop: `1px solid ${C.sidebarBorder}`, background: "#fafafa" }}>
+              {timerActiveCaseId ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  <div style={{ fontSize: 13, color: "#374151", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {timerActiveTitle || "알 수 없음"}
+                  </div>
+                  <div style={{ fontSize: 24, fontVariantNumeric: "tabular-nums", fontWeight: 700, color: "#d97706", textAlign: "center", letterSpacing: 2 }}>
+                    {fmtElapsed(timerElapsed)}
+                  </div>
+                  <button onClick={handleTimerStop} style={{
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "8px 0", borderRadius: 8,
+                    background: "#ef4444", color: "#fff", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600,
+                  }}>
+                    <Square size={12} fill="#fff" /> 타이머 종료
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <input
+                    value={timerCaseSearch}
+                    onChange={e => setTimerCaseSearch(e.target.value)}
+                    placeholder="사건 검색..."
+                    style={{ padding: "7px 10px", fontSize: 12, border: `1px solid ${C.border}`, borderRadius: 7, background: "#fff", color: C.text, width: "100%", boxSizing: "border-box" }}
+                  />
+                  <div style={{ maxHeight: 160, overflowY: "auto", display: "flex", flexDirection: "column", gap: 2 }}>
+                    {timerCases
+                      .filter(c => !timerCaseSearch || (c.title || "").includes(timerCaseSearch))
+                      .slice(0, 30)
+                      .map(c => (
+                        <button key={c.id} onClick={() => handleTimerStart(c.id)} disabled={timerStarting} style={{
+                          padding: "6px 10px", fontSize: 12, textAlign: "left", borderRadius: 6,
+                          border: "none", background: "#fff", color: C.text, cursor: "pointer",
+                          whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                        }}>
+                          <Play size={10} style={{ marginRight: 5, color: "#22c55e", verticalAlign: "middle" }} />
+                          {c.title || c.id}
+                        </button>
+                      ))}
+                    {timerCases.length === 0 && (
+                      <div style={{ fontSize: 12, color: C.textMuted, textAlign: "center", padding: "8px 0" }}>담당 사건이 없습니다</div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* 메신저 다운로드 버튼 */}
@@ -714,7 +867,14 @@ export default function PortalMessenger() {
                 : <Avatar name={activeRoom.displayName} photoUrl={activeRoomOther?.photoUrl} size={32} color={avatarColor(activeRoom.displayName || "")} />
               }
               <div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{activeRoom.displayName || "채팅방"}</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{activeRoom.displayName || "채팅방"}</span>
+                  {activeRoom.type === "direct" && activeRoomOther && timerStatuses[activeRoomOther.user_id] && (
+                    <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "#d97706", background: "#fef3c7", borderRadius: 10, padding: "2px 8px" }}>
+                      <Clock size={10} /> {timerStatuses[activeRoomOther.user_id].caseTitle || "타이머 진행 중"}
+                    </span>
+                  )}
+                </div>
                 {typingText
                   ? <div style={{ fontSize: 11, color: C.accent }}>{typingText}</div>
                   : activeRoom.type === "group"

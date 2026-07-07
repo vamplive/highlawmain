@@ -25,12 +25,13 @@ const {
   getPortalSession,
 } = require("../lib/auth");
 const portalService = require("../services/portal-service");
+const blogService = require("../services/blog-service");
 const googleCalendarOAuth = require("../lib/google-calendar-oauth");
 const { logSecurityEvent } = require("../lib/audit-log");
 const { handleError } = require("../lib/route-handler");
 const notif = require("../lib/notifications");
 const { db: msgDb, sqlite } = require("../db");
-const { messageTemplates, messageLogs } = require("../db/schema");
+const { messageTemplates, messageLogs, caseDocuments } = require("../db/schema");
 const { sendSMS: sendSMSFn } = require("../lib/sms-service");
 const { sendFriendTalk: sendFriendTalkFn } = require("../lib/kakao-friendtalk-service");
 const portalScheduleService = require("../services/schedule-service");
@@ -38,6 +39,13 @@ const { eq: deq, desc: ddesc, sql: dsql, and: dand } = require("drizzle-orm");
 const { cleanPhone: cleanPhoneFn } = require("../services/helpers");
 
 const router = Router();
+
+// 포털 사용자가 내부 구성원인지 확인 (lawyers/admin/role 보유자)
+function isInternalUser(portalUser) {
+  if (!portalUser) return false;
+  if (!portalUser.clientId) return true;
+  return portalService.isInternalPortalUser(portalUser.userId, portalUser.email);
+}
 
 // 내부 구성원만 접근 가능
 // clientId가 null이거나, lawyers/admin_users 테이블에 등록된 이메일이면 통과
@@ -385,7 +393,8 @@ router.delete("/receipts/:id", portalAuth, (req, res) => {
 /** GET /api/portal/cases — 내 사건 목록 */
 router.get("/cases", portalAuth, async (req, res) => {
   try {
-    const rows = await portalService.getUserCases(req.portalUser.clientId);
+    const effectiveClientId = isInternalUser(req.portalUser) ? null : req.portalUser.clientId;
+    const rows = await portalService.getUserCases(effectiveClientId);
     res.json({ data: rows, error: null, meta: null });
   } catch (e) {
     handleError(res, e);
@@ -395,18 +404,225 @@ router.get("/cases", portalAuth, async (req, res) => {
 /** POST /api/portal/cases — 포털 사용자 직접 사건 등록 */
 router.post("/cases", portalAuth, async (req, res) => {
   try {
-    const { clientId } = req.portalUser;
-    const result = await portalService.registerPortalCase(clientId, req.body);
+    const effectiveClientId = isInternalUser(req.portalUser) ? null : req.portalUser.clientId;
+    const result = await portalService.registerPortalCase(effectiveClientId, req.body);
     res.status(201).json({ data: result, error: null, meta: null });
   } catch (e) {
     handleError(res, e);
   }
 });
 
+
+// =============================================
+// 사건 첨부파일 multer 설정
+// =============================================
+const CASE_DOC_DIR = require("path").join(STORAGE_PATH, "uploads", "cases");
+if (!require("fs").existsSync(CASE_DOC_DIR)) require("fs").mkdirSync(CASE_DOC_DIR, { recursive: true });
+const caseDocStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, CASE_DOC_DIR),
+  filename: (req, file, cb) => {
+    const ext = require("path").extname(file.originalname) || "";
+    cb(null, `${require("crypto").randomUUID()}${ext}`);
+  },
+});
+const caseDocUpload = multer({
+  storage: caseDocStorage,
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
+  fileFilter: (req, file, cb) => {
+    const allowed = /\.(pdf|hwp|hwpx|doc|docx|xlsx|pptx|jpg|jpeg|png|gif|txt|zip)$/i;
+    const decoded = decodeMultipartFilename(file.originalname);
+    if (allowed.test(decoded)) cb(null, true);
+    else cb(new Error("허용되지 않는 파일 형식입니다"));
+  },
+});
+
+const { extractText: extractFileText } = require("../utils/extract-text");
+
+/** POST /api/portal/cases/:id/documents — 사건 파일 첨부 */
+router.post("/cases/:id/documents", portalAuth, (req, res) => {
+  caseDocUpload.array("files", 20)(req, res, async (uploadErr) => {
+    if (uploadErr) return res.status(400).json({ error: uploadErr.message, data: null });
+    try {
+      const { id } = req.params;
+      const effClientId = isInternalUser(req.portalUser) ? null : req.portalUser.clientId;
+      await portalService.getCaseDetail(id, effClientId);
+      if (!req.files || req.files.length === 0) {
+        return res.status(400).json({ error: "파일을 선택해주세요", data: null });
+      }
+      const inserted = [];
+      for (const file of req.files) {
+        const docId = require("crypto").randomUUID();
+        await msgDb.insert(caseDocuments).values({
+          id: docId,
+          caseFileId: id,
+          filename: decodeMultipartFilename(file.originalname),
+          originalName: decodeMultipartFilename(file.originalname),
+          url: `/uploads/cases/${file.filename}`,
+          storedPath: file.path,
+          fileSize: file.size,
+          mimeType: file.mimetype,
+          uploadedBy: "portal",
+          documentType: req.body.documentType || null,
+          isVisibleToClient: 1,
+        });
+        inserted.push({ id: docId, filename: decodeMultipartFilename(file.originalname), fileSize: file.size });
+        // 텍스트 추출 백그라운드
+        extractFileText(file.path, file.mimetype, file.originalname).then(text => {
+          if (text && text.trim()) {
+            msgDb.update(caseDocuments).set({ extractedText: text }).where(deq(caseDocuments.id, docId)).catch(() => {});
+          }
+        }).catch(() => {});
+      }
+      res.status(201).json({ data: { uploaded: inserted }, error: null });
+    } catch (e) {
+      handleError(res, e);
+    }
+  });
+});
+
+/** GET /api/portal/cases/:id/documents — 사건 파일 목록 */
+router.get("/cases/:id/documents", portalAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const effClientId = isInternalUser(req.portalUser) ? null : req.portalUser.clientId;
+    await portalService.getCaseDetail(id, effClientId);
+    const docs = await msgDb
+      .select()
+      .from(caseDocuments)
+      .where(deq(caseDocuments.caseFileId, id))
+      .orderBy(caseDocuments.createdAt);
+    res.json({ data: docs, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+/** GET /api/portal/cases/documents/:docId/download — 파일 다운로드 */
+router.get("/cases/documents/:docId/download", portalAuth, async (req, res) => {
+  try {
+    const [doc] = await db.select().from(caseDocuments).where(eq(caseDocuments.id, req.params.docId));
+    if (!doc) return res.status(404).json({ error: "파일을 찾을 수 없습니다", data: null });
+    // 접근 권한 확인
+    const dlClientId = isInternalUser(req.portalUser) ? null : req.portalUser.clientId;
+    await portalService.getCaseDetail(doc.caseFileId, dlClientId);
+    const filePath = doc.storedPath ||
+      require("path").join(STORAGE_PATH, (doc.url || '').replace(/^\//, ''));
+    if (!require("fs").existsSync(filePath)) {
+      return res.status(404).json({ error: "파일이 서버에 존재하지 않습니다", data: null });
+    }
+    res.download(filePath, doc.originalName || doc.filename);
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+/** DELETE /api/portal/cases/documents/:docId — 파일 삭제 (포털 업로드 파일만) */
+router.delete("/cases/documents/:docId", portalAuth, async (req, res) => {
+  try {
+    const [doc] = await msgDb.select().from(caseDocuments).where(deq(caseDocuments.id, req.params.docId));
+    if (!doc) return res.status(404).json({ error: "파일을 찾을 수 없습니다", data: null });
+    if (doc.uploadedBy !== "portal") {
+      return res.status(403).json({ error: "삭제 권한이 없습니다", data: null });
+    }
+    const dlClientId = isInternalUser(req.portalUser) ? null : req.portalUser.clientId;
+    await portalService.getCaseDetail(doc.caseFileId, dlClientId);
+    const filePath = doc.storedPath ||
+      require("path").join(STORAGE_PATH, (doc.url || '').replace(/^\//, ''));
+    try { require("fs").unlinkSync(filePath); } catch {}
+    await msgDb.delete(caseDocuments).where(deq(caseDocuments.id, doc.id));
+    res.json({ data: { deleted: true }, error: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
 /** GET /api/portal/cases/:id */
+/** GET /api/portal/internal/lawyers — 내부 구성원 목록 (케이스 등록 시 선택용) */
+router.get("/internal/lawyers", portalAuth, internalOnly, async (req, res) => {
+  try {
+    const rows = sqlite.prepare(`
+      SELECT pu.id, COALESCE(c.name, pu.email) AS name, pu.position, pu.department_id
+      FROM portal_users pu
+      LEFT JOIN clients c ON c.id = pu.client_id
+      WHERE pu.is_active = 1 AND pu.role IS NOT NULL
+      ORDER BY c.name
+    `).all();
+    res.json({ data: rows, error: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+/** GET /api/portal/internal/departments — 부서 목록 */
+router.get("/internal/departments", portalAuth, internalOnly, async (req, res) => {
+  try {
+    const rows = sqlite.prepare("SELECT id, name FROM departments ORDER BY name").all();
+    res.json({ data: rows, error: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+router.get("/cases/stats", portalAuth, async (req, res) => {
+  try {
+    const now = new Date();
+    const year = parseInt(req.query.year || now.getFullYear());
+    const month = parseInt(req.query.month || (now.getMonth() + 1));
+    const stats = await portalService.getMonthlyCaseStats(year, month);
+    res.json(stats);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+/** GET /api/portal/cases/litigation-agreements — 소송위임계약서 목록 */
+router.get("/cases/litigation-agreements", portalAuth, async (req, res) => {
+  try {
+    const { search, from, to, caseId } = req.query;
+    const data = await portalService.getLitigationAgreements({ search, from, to, caseId });
+    res.json({ data, error: null });
+  } catch (err) {
+    handleError(res, err);
+  }
+});
+
+router.get("/cases/upcoming-payments", portalAuth, async (req, res) => {
+  try {
+    const data = await portalService.getUpcomingPayments();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 router.get("/cases/:id", portalAuth, async (req, res) => {
   try {
-    const result = await portalService.getCaseDetail(req.params.id, req.portalUser.clientId);
+    const effectiveClientId = isInternalUser(req.portalUser) ? null : req.portalUser.clientId;
+    const result = await portalService.getCaseDetail(req.params.id, effectiveClientId);
+    res.json({ data: result, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+
+/** PATCH /api/portal/cases/:id — 사건 수정 */
+router.patch("/cases/:id", portalAuth, async (req, res) => {
+  try {
+    const effectiveClientId = isInternalUser(req.portalUser) ? null : req.portalUser.clientId;
+    const result = await portalService.updatePortalCase(req.params.id, effectiveClientId, req.body);
+    res.json({ data: result, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+/** DELETE /api/portal/cases/:id — 사건 삭제 (내부 사용자만) */
+router.delete("/cases/:id", portalAuth, internalOnly, async (req, res) => {
+  try {
+    const result = await portalService.deleteAdminCase(req.params.id);
     res.json({ data: result, error: null, meta: null });
   } catch (e) {
     handleError(res, e);
@@ -416,9 +632,10 @@ router.get("/cases/:id", portalAuth, async (req, res) => {
 /** GET /api/portal/cases/:id/messages */
 router.get("/cases/:id/messages", portalAuth, async (req, res) => {
   try {
+    const effectiveClientId = isInternalUser(req.portalUser) ? null : req.portalUser.clientId;
     const { data, meta } = await portalService.getCaseMessages(
       req.params.id,
-      req.portalUser.clientId,
+      effectiveClientId,
       req.query,
     );
     res.json({ data, error: null, meta });
@@ -430,10 +647,11 @@ router.get("/cases/:id/messages", portalAuth, async (req, res) => {
 /** POST /api/portal/cases/:id/messages */
 router.post("/cases/:id/messages", portalAuth, async (req, res) => {
   try {
-    const { clientId, userId } = req.portalUser;
+    const { userId } = req.portalUser;
+    const effectiveClientId = isInternalUser(req.portalUser) ? null : req.portalUser.clientId;
     const result = await portalService.sendClientMessage(
       req.params.id,
-      clientId,
+      effectiveClientId,
       userId,
       req.body.content,
     );
@@ -487,6 +705,22 @@ router.post("/time-entries", portalAuth, async (req, res) => {
   }
 });
 
+/** GET /api/portal/time-entries/active-all — 전체 진행 중 타이머 (메신저용) */
+router.get("/time-entries/active-all", portalAuth, async (req, res) => {
+  try {
+    const rows = sqlite.prepare(`
+      SELECT pte.id, pte.portal_user_id, pte.description, pte.started_at,
+             cf.title as case_title
+      FROM portal_time_entries pte
+      LEFT JOIN case_files cf ON cf.id = pte.case_id
+      WHERE pte.ended_at IS NULL
+    `).all();
+    res.json({ data: rows, error: null, meta: null });
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
 /** POST /api/portal/time-entries/timer/start */
 router.post("/time-entries/timer/start", portalAuth, async (req, res) => {
   try {
@@ -521,7 +755,7 @@ router.put("/time-entries/:id", portalAuth, async (req, res) => {
 router.delete("/time-entries/:id", portalAuth, async (req, res) => {
   try {
     await portalService.deletePortalTimeEntry(req.params.id, req.portalUser.userId);
-    res.status(204).end();
+    res.json({ data: { id: req.params.id }, error: null, meta: null });
   } catch (e) {
     handleError(res, e);
   }
@@ -1407,7 +1641,15 @@ router.get('/me/ical-token', portalAuth, (req, res) => {
 
 router.post('/events/:id/share', portalAuth, async (req, res) => {
   try {
-    const { userIds } = req.body;
+    let { userIds, departmentIds } = req.body;
+    // departmentIds: expand to userIds via portal_users.department_id
+    if (Array.isArray(departmentIds) && departmentIds.length > 0) {
+      const deptMembers = sqlite.prepare(
+        `SELECT id FROM portal_users WHERE department_id IN (${departmentIds.map(() => '?').join(',')}) AND is_active = 1`
+      ).all(...departmentIds);
+      const deptUserIds = deptMembers.map(m => m.id);
+      userIds = [...new Set([...(userIds || []), ...deptUserIds])];
+    }
     if (!Array.isArray(userIds) || userIds.length === 0)
       return res.status(400).json({ data: null, error: '공유할 구성원을 선택해주세요', meta: null });
     const src = sqlite.prepare('SELECT * FROM portal_events WHERE id = ?').get(req.params.id);
@@ -1428,6 +1670,17 @@ router.post('/events/:id/share', portalAuth, async (req, res) => {
     }
     res.json({ data: { shared: count }, error: null, meta: null });
   } catch (e) { handleError(res, e); }
+});
+
+
+/** DELETE /api/portal/blog/:id — 포털 관리자 블로그 삭제 */
+router.delete("/blog/:id", portalAuth, internalOnly, async (req, res) => {
+  try {
+    const result = await blogService.deletePost(req.params.id);
+    res.json({ data: result, error: null });
+  } catch (e) {
+    handleError(res, e);
+  }
 });
 
 module.exports = router;

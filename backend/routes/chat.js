@@ -333,13 +333,16 @@ router.post("/rooms/:id/files", anyAuth, chatUpload.single("file"), (req, res) =
 router.get("/users", anyAuth, (req, res) => {
   try {
     const portalUsers = sqlite.prepare(`
-      SELECT pu.id, 'portal' as user_type, COALESCE(c.name, pu.email) as display_name, pu.email,
-             COALESCE(l.photo_url, pu.photo_url) as photo_url
+      SELECT pu.id, 'portal' as user_type,
+             COALESCE(c.name, l.name, pu.email) as display_name, pu.email,
+             COALESCE(l.photo_url, pu.photo_url) as photo_url,
+             l.position, l.team as department_name,
+             COALESCE(l.phone, c.phone) as phone
       FROM portal_users pu
       LEFT JOIN clients c ON pu.client_id = c.id
-      LEFT JOIN lawyers l ON LOWER(l.email) = LOWER(pu.email)
+      LEFT JOIN lawyers l ON LOWER(l.email) = LOWER(pu.email) AND l.is_active = 1
       WHERE pu.is_active = 1
-      ORDER BY COALESCE(c.name, pu.email)
+      ORDER BY COALESCE(c.name, l.name, pu.email)
     `).all();
 
     const adminUsers = sqlite.prepare(`

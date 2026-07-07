@@ -40,12 +40,26 @@ export default function PortalBlog() {
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
 
   useEffect(() => {
     portalApi.get("/lawyers/admin/check")
       .then((res) => setIsAdmin(res.data?.isAdmin || false))
       .catch(() => {});
   }, []);
+
+  const handleDelete = async (post) => {
+    if (!window.confirm(`"${post.title || '이 게시글'}"을(를) 삭제하시겠습니까?\n\n삭제된 게시글은 복구할 수 없습니다.`)) return;
+    setDeletingId(post.id);
+    try {
+      await portalApi.delete(`/blog/${post.id}`);
+      setPosts((prev) => prev.filter((p) => p.id !== post.id));
+    } catch (err) {
+      window.alert('삭제 실패: ' + (err.message || '알 수 없는 오류'));
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const loadPosts = useCallback(async () => {
     setLoading(true);
@@ -192,6 +206,13 @@ export default function PortalBlog() {
                               <Eye size={12} /> 보기
                             </a>
                           )}
+                          <button
+                            onClick={() => handleDelete(post)}
+                            disabled={deletingId === post.id}
+                            style={{ padding: "3px 10px", fontSize: 12, border: "1px solid #fca5a5", borderRadius: 4, color: "#ef4444", background: "#fff", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4, opacity: deletingId === post.id ? 0.5 : 1 }}
+                          >
+                            {deletingId === post.id ? "삭제 중..." : "삭제"}
+                          </button>
                         </div>
                       </td>
                     )}

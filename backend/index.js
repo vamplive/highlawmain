@@ -619,6 +619,9 @@ if (fs.existsSync(frontendDist)) {
     });
   }
 
+  // 군사센터 정적 HTML — /military/* 경로는 SPA 대신 dist/military/ 에서 직접 서빙
+  app.use("/military", express.static(path.join(frontendDist, "military"), { index: "index.html" }));
+
   app.use(express.static(frontendDist, { index: false }));
   // SPA 폴백 — API가 아닌 모든 GET 요청에 index.html 반환 (Express 5 호환)
   app.use((req, res, next) => {

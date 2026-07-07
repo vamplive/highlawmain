@@ -83,6 +83,7 @@ async function request(base, method, path, body, retryOnCsrf = true) {
 
   let json;
   try {
+    if (res.status === 204) return { data: null, error: null, meta: null };
     json = await res.json();
   } catch {
     if (res.ok) throw new Error("응답 파싱 실패");

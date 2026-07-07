@@ -201,6 +201,7 @@ const PRACTICE_DEFAULTS = {
   hero: { heading: "업무분야", subheading: "PRACTICE AREAS" },
   pain_points: { items: [] },
   advantages: { items: [] },
+  areas: { items: [] },
 };
 
 const TABS = [
@@ -215,6 +216,11 @@ export default function PracticePage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get("tab") || "pain-points";
   const { settings } = useSiteSettingsPage("practice", PRACTICE_DEFAULTS);
+  // settings.areas.items에서 title→url 매핑 (관리자에서 URL 설정 시 오버라이드)
+  const areaUrlOverrides = {};
+  (settings.areas?.items || []).forEach(item => {
+    if (item.title && item.url) areaUrlOverrides[item.title] = item.url;
+  });
 
   return (
     <div ref={ref}>
@@ -231,7 +237,7 @@ export default function PracticePage() {
         image="/realestate-hero.jpg"
         eyebrow={settings.hero.subheading}
         title={settings.hero.heading}
-        description={"검증된 실무 역량과 정교한 법리 해석을 결합하여,\n클라이언트의 가치를 실현하는 최적의 법률 솔루션을 제시합니다."}
+        description={settings.hero.description || "검증된 실무 역량과 정교한 법리 해석을 결합하여,\n클라이언트의 가치를 실현하는 최적의 법률 솔루션을 제시합니다."}
         primaryAction={{ to: "/consultation", label: "상담 예약", icon: <Phone size={15} /> }}
         secondaryAction={{ href: "tel:02-6925-6757", label: "02-6925-6757" }}
       />
@@ -388,7 +394,7 @@ export default function PracticePage() {
                   const Icon = area.icon;
                   // fullLoad: React Router 외부 경로 (정적 HTML 등)는 <a href>로 강제 풀페이지 이동
                   const cardProps = area.fullLoad
-                    ? { as: "a", href: area.to }
+                    ? { as: "a", href: areaUrlOverrides[area.title] || area.to }
                     : { as: Link, to: area.to };
                   return (
                     <SurfaceCard key={i} {...cardProps} className="reveal group block" style={{ textDecoration: "none", overflow: "hidden" }}>

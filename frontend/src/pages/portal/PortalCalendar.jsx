@@ -49,6 +49,14 @@ export default function PortalCalendar() {
   const [sharingSending, setShareSending] = useState(false);
   const [sharePendingEvent, setSharePendingEvent] = useState(null);
 
+  // 일정 참석자 공유 (작성 중 선택)
+  const [formAttendeeIds, setFormAttendeeIds] = useState([]);
+  const [formDeptIds, setFormDeptIds] = useState([]);
+  const [calMembers, setCalMembers] = useState([]);
+  const [calDepts, setCalDepts] = useState([]);
+  const [calUserRole, setCalUserRole] = useState(null);
+  const [showAttendeePanel, setShowAttendeePanel] = useState(false);
+
   const colorPalette = [
     { value: "#0ea5e9", label: "스카이" },
     { value: "#06b6d4", label: "시안" },
@@ -82,6 +90,19 @@ export default function PortalCalendar() {
       if (cancelled) return;
       setEvents(evRes.data?.data || []);
       setGoogleConnected(Boolean(meRes.data?.user?.googleConnected));
+      const role = meRes.data?.user?.role;
+      setCalUserRole(role || null);
+      if (role) {
+        Promise.all([
+          portalApi.get("/internal/lawyers"),
+          portalApi.get("/internal/departments"),
+        ]).then(([lRes, dRes]) => {
+          if (!cancelled) {
+            setCalMembers(lRes.data || []);
+            setCalDepts(dRes.data || []);
+          }
+        }).catch(() => {});
+      }
     }).catch(() => {
       if (!cancelled) setEvents([]);
     }).finally(() => {
@@ -220,6 +241,9 @@ export default function PortalCalendar() {
     setFormDescription("");
     setFormStartsAt(formatDateForInput(date, "09:00"));
     setFormEndsAt(formatDateForInput(date, "18:00"));
+    setFormAttendeeIds([]);
+    setFormDeptIds([]);
+    setShowAttendeePanel(false);
     setFormIsAllDay(false);
     setFormColor("#0ea5e9");
     setFormLocation("");
@@ -262,9 +286,16 @@ export default function PortalCalendar() {
       } else {
         const createRes = await portalApi.post("/events", payload);
         showToast("새 일정이 등록되었습니다");
-        if (formAutoSync && googleConnected && createRes.data?.data?.id) {
+        const newEventId = createRes.data?.data?.id;
+        if ((formAttendeeIds.length > 0 || formDeptIds.length > 0) && newEventId) {
           try {
-            await portalApi.post(`/google/sync-event/${createRes.data.data.id}`);
+            await portalApi.post(`/events/${newEventId}/share`, { userIds: formAttendeeIds, departmentIds: formDeptIds });
+            if (formAttendeeIds.length > 0 || formDeptIds.length > 0) showToast("참석자에게 공유되었습니다", "success");
+          } catch { showToast("참석자 공유에 실패했습니다", "error"); }
+        }
+        if (formAutoSync && googleConnected && newEventId) {
+          try {
+            await portalApi.post(`/google/sync-event/${newEventId}`);
             showToast("구글 캘린더에도 추가되었습니다", "success");
           } catch { showToast("구글 캘린더 추가에 실패했습니다", "error"); }
         }
@@ -698,8 +729,78 @@ export default function PortalCalendar() {
                   style={{ flex: 1, border: "none", outline: "none", fontSize: 13, color: "#334155", background: "transparent", resize: "none", minHeight: 72, lineHeight: 1.7, fontFamily: "inherit" }} />
               </div>
 
-              {/* 일정 공유 행 */}
-              {!selectedEvent?.isCourtDate && (
+              {/* 참석자 / 공유 행 — 내부 구성원 전용 */}
+              {!selectedEvent?.isCourtDate && calUserRole && calMembers.length > 0 && (
+                <div style={{ padding: "10px 20px", borderBottom: "1px solid #f1f5f9" }}>
+                  <button type="button" onClick={() => setShowAttendeePanel(p => !p)} style={{
+                    display: "flex", alignItems: "center", gap: 10, background: "none", border: "none", cursor: "pointer", padding: 0, width: "100%",
+                  }}>
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={formAttendeeIds.length > 0 || formDeptIds.length > 0 ? "#0ea5e9" : "#94a3b8"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                    </svg>
+                    <span style={{ fontSize: 13, color: formAttendeeIds.length > 0 || formDeptIds.length > 0 ? "#0ea5e9" : "#475569" }}>
+                      참석자 공유
+                      {(formAttendeeIds.length > 0 || formDeptIds.length > 0) && (
+                        <span style={{ marginLeft: 6, fontSize: 11, color: "#0ea5e9", fontWeight: 600 }}>
+                          ({formAttendeeIds.length}명{formDeptIds.length > 0 ? ` + 부서 ${formDeptIds.length}개` : ""})
+                        </span>
+                      )}
+                    </span>
+                    <span style={{ marginLeft: "auto", fontSize: 12, color: "#94a3b8" }}>{showAttendeePanel ? "▲" : "▼"}</span>
+                  </button>
+
+                  {showAttendeePanel && (
+                    <div style={{ marginTop: 10 }}>
+                      {/* 구성원 선택 */}
+                      <div style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", letterSpacing: 0.5, marginBottom: 6 }}>구성원</div>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+                        {calMembers.map(m => {
+                          const sel = formAttendeeIds.includes(m.id);
+                          return (
+                            <button key={m.id} type="button" onClick={() => setFormAttendeeIds(prev =>
+                              prev.includes(m.id) ? prev.filter(id => id !== m.id) : [...prev, m.id]
+                            )} style={{
+                              padding: "4px 10px", fontSize: 12, borderRadius: 16, cursor: "pointer",
+                              border: sel ? "2px solid #0ea5e9" : "1px solid #e2e8f0",
+                              background: sel ? "#e0f9ff" : "#f8fafc",
+                              color: sel ? "#0284c7" : "#374151", fontWeight: sel ? 600 : 400,
+                            }}>
+                              {m.name}{m.position && <span style={{ fontSize: 10, color: "#6b7280", marginLeft: 3 }}>{m.position}</span>}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* 부서 선택 */}
+                      {calDepts.length > 0 && (
+                        <>
+                          <div style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", letterSpacing: 0.5, marginBottom: 6 }}>부서 전체 공유</div>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                            {calDepts.map(d => {
+                              const sel = formDeptIds.includes(d.id);
+                              return (
+                                <button key={d.id} type="button" onClick={() => setFormDeptIds(prev =>
+                                  prev.includes(d.id) ? prev.filter(id => id !== d.id) : [...prev, d.id]
+                                )} style={{
+                                  padding: "4px 10px", fontSize: 12, borderRadius: 16, cursor: "pointer",
+                                  border: sel ? "2px solid #7c3aed" : "1px solid #e2e8f0",
+                                  background: sel ? "#f5f3ff" : "#f8fafc",
+                                  color: sel ? "#7c3aed" : "#374151", fontWeight: sel ? 600 : 400,
+                                }}>
+                                  🏢 {d.name}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* 일정 공유 (기존 — 저장 후 개별 공유) */}
+              {!selectedEvent?.isCourtDate && !calUserRole && (
                 <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "12px 20px", borderBottom: "1px solid #f1f5f9" }}>
                   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
                     <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />

@@ -379,7 +379,7 @@ const clients = sqliteTable("clients", {
 // =============================================
 const clientCases = sqliteTable("client_cases", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
-  clientId: text("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  clientId: text("client_id").references(() => clients.id, { onDelete: "cascade" }),
   caseNumber: text("case_number"),
   jurisdiction: text("jurisdiction"),
   memo: text("memo"),
@@ -393,7 +393,7 @@ const clientCases = sqliteTable("client_cases", {
 // =============================================
 const clientRelatedPersons = sqliteTable("client_related_persons", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
-  clientId: text("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  clientId: text("client_id").references(() => clients.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   phone: text("phone"),
   role: text("role"),
@@ -639,13 +639,13 @@ const portalUsers = sqliteTable("portal_users", {
 // =============================================
 // case_files — 사건 관리
 // =============================================
-const CASE_STATUSES = ["접수", "진행", "완료"];
+const CASE_STATUSES = ["접수/상담", "진행", "완료", "상담종결"];
 
 const caseFilesTable = sqliteTable("case_files", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
-  clientId: text("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  clientId: text("client_id").references(() => clients.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
-  status: text("status").notNull().default("접수"),
+  status: text("status").notNull().default("접수/상담"),
   lawyerId: text("lawyer_id").references(() => lawyers.id, { onDelete: "set null" }),
   description: text("description"),
   // 전자소송 호환 필드 — 의뢰인 포털에서 자기 사건의 기록을 조회할 때 노출된다.
@@ -655,6 +655,23 @@ const caseFilesTable = sqliteTable("case_files", {
   plaintiff: text("plaintiff"),          // 원고
   defendant: text("defendant"),          // 피고
   filedAt: text("filed_at"),             // 제소일 (YYYY-MM-DD)
+  // 유입 경로 및 수임 조건
+  consultantId: text("consultant_id"),
+  consultantName: text("consultant_name"),
+  consultantIds: text("consultant_ids"),
+  paymentMethod: text("payment_method"),
+  visitRoute: text("visit_route"),
+  referrerId: text("referrer_id"),
+  referrerName: text("referrer_name"),
+  retainerFee: integer("retainer_fee"),
+  retainerInstallments: integer("retainer_installments"),
+  retainerDay: integer("retainer_day"),
+  successFee: integer("success_fee"),
+  successInstallments: integer("success_installments"),
+  successDay: integer("success_day"),
+  registeredAt: text("registered_at"),
+  departmentIds: text("department_ids"),
+  memberIds: text("member_ids"),
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
   updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
 });
@@ -674,6 +691,8 @@ const caseDocuments = sqliteTable("case_documents", {
   mimeType: text("mime_type"),
   originalName: text("original_name"),     // 사용자가 업로드한 원본 파일명
   isVisibleToClient: integer("is_visible_to_client").notNull().default(1),
+  storedPath: text("stored_path"),
+  extractedText: text("extracted_text"),
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
 });
 

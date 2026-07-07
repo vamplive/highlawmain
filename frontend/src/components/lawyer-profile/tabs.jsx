@@ -15,18 +15,24 @@ export function ProfileTab({ lawyer }) {
           <p className="lp-intro-body">{lawyer.intro}</p>
         </section>
       )}
-      <section>
-        <SectionH2>학력</SectionH2>
-        <Timeline items={lawyer.education} />
-      </section>
-      <section>
-        <SectionH2>경력</SectionH2>
-        <Timeline items={lawyer.career} />
-      </section>
-      <section>
-        <SectionH2>자격</SectionH2>
-        <ItemList items={(lawyer.qualifications || []).map((q) => ({ title: q }))} />
-      </section>
+      {lawyer.education?.length > 0 && (
+        <section>
+          <SectionH2>학력</SectionH2>
+          <Timeline items={lawyer.education} />
+        </section>
+      )}
+      {lawyer.career?.length > 0 && (
+        <section>
+          <SectionH2>경력</SectionH2>
+          <Timeline items={lawyer.career} />
+        </section>
+      )}
+      {lawyer.qualifications?.length > 0 && (
+        <section>
+          <SectionH2>자격</SectionH2>
+          <ItemList items={lawyer.qualifications.map((q) => ({ title: q }))} />
+        </section>
+      )}
       {(lawyer.memberships?.length > 0) && (
         <section>
           <SectionH2>소속 위원회 · 학회</SectionH2>

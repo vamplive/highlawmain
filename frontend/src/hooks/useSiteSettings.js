@@ -10,6 +10,9 @@ import { api } from "../utils/api";
 /** @type {Map<string, Record<string, unknown>>} 페이지별 설정 캐시 */
 const cache = new Map();
 
+/** 관리자 저장 후 캐시 전체 무효화 — FloatingContact 등이 새 값을 즉시 반영하도록 */
+export function invalidateAllCaches() { cache.clear(); }
+
 /** 현재 미리보기 모드 여부 */
 const isPreviewMode = () => {
   try { return window.location.search.includes("preview=1"); } catch { return false; }
@@ -69,6 +72,27 @@ export function useSiteSettingsPage(page, defaults, language = "ko") {
     return defaults;
   });
   const [loading, setLoading] = useState(() => !cache.has(cacheKey));
+  // 어드민 저장 후 강제 재조회를 위한 카운터
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // 어드민 저장 이벤트 수신 → 캐시 삭제 + 재조회 트리거
+  useEffect(() => {
+    function handleInvalidate() {
+      cache.delete(cacheKey);
+      setRefreshKey((k) => k + 1);
+    }
+    window.addEventListener("site-settings-invalidated", handleInvalidate);
+    // 다른 탭(어드민 저장) → BroadcastChannel로 수신
+    let bc = null;
+    try {
+      bc = new BroadcastChannel("site-settings");
+      bc.onmessage = () => handleInvalidate();
+    } catch {}
+    return () => {
+      window.removeEventListener("site-settings-invalidated", handleInvalidate);
+      bc?.close();
+    };
+  }, [cacheKey]);
 
   // API에서 설정 로드
   useEffect(() => {
@@ -109,9 +133,8 @@ export function useSiteSettingsPage(page, defaults, language = "ko") {
 
     fetchSettings();
     return () => { cancelled = true; };
-    // cacheKey는 [page, language]에서 파생되고, defaults는 호출자가 모듈 상수로 전달하는 것이 계약
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, language]);
+  }, [page, language, refreshKey]);
 
   // 실시간 미리보기: postMessage 리스너
   useEffect(() => {

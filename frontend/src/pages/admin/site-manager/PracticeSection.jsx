@@ -103,6 +103,7 @@ function AreasEditor({ settings, update, updateItem, addItem, removeItem, update
                     <FormField label="부제목 (영문)" value={item.subtitle} onChange={(v) => updateItem("practice/areas", i, "subtitle", v)} />
                   </FieldRow>
                   <FormField label="설명" type="textarea" minHeight={48} value={item.desc} onChange={(v) => updateItem("practice/areas", i, "desc", v)} />
+                  <FormField label="페이지 URL (연동 주소)" value={item.url || ""} onChange={(v) => updateItem("practice/areas", i, "url", v)} placeholder="/practice/..." />
 
                   <div style={{ marginTop: 16 }}>
                     <label style={{ ...labelStyle, marginBottom: 8 }}>상세 항목</label>
@@ -123,7 +124,7 @@ function AreasEditor({ settings, update, updateItem, addItem, removeItem, update
           );
         })}
         <AddButton
-          onClick={() => addItem("practice/areas", { title: "", subtitle: "", desc: "", details: [""] })}
+          onClick={() => addItem("practice/areas", { title: "", subtitle: "", desc: "", url: "", details: [""] })}
           label="업무분야 추가"
         />
       </SectionCard>
@@ -147,6 +148,13 @@ export default function PracticeSection({ settings, update, updateItem, addItem,
               <FormField label="제목" value={s["practice/hero"].heading} onChange={(v) => update("practice/hero", "heading", v)} />
               <FormField label="부제목 (영문)" value={s["practice/hero"].subheading} onChange={(v) => update("practice/hero", "subheading", v)} />
             </FieldRow>
+            <FormField
+              label="설명 (홈페이지 히어로 배너 본문)"
+              type="textarea"
+              minHeight={60}
+              value={s["practice/hero"].description || ""}
+              onChange={(v) => update("practice/hero", "description", v)}
+            />
           </SectionCard>
 
           <SectionCard title="의뢰인 고민 항목 (상담점검)">

@@ -25,7 +25,7 @@ import RecruitSectionWrapper from "./RecruitSectionWrapper";
 import ConsultationSectionWrapper from "./ConsultationSectionWrapper";
 
 /** 독립 저장을 관리하는 탭 (하단 저장 바 미표시) */
-const SELF_SAVING_TABS = ["seo", "announcements", "history", "hero-videos", "members"];
+const SELF_SAVING_TABS = ["seo", "announcements", "history", "hero-videos"];
 /** 미리보기 가능한 탭 */
 const PREVIEWABLE_TABS = ["home", "about", "practice", "layout"];
 
@@ -68,7 +68,35 @@ export default function AdminSiteManager() {
       case "seo": return <SeoSection toast={toast} setToast={setToast} />;
       case "announcements": return <AnnouncementsSection toast={toast} setToast={setToast} />;
       case "history": return <HistorySection />;
-      case "members": return <AdminLawyers />;
+      case "members": return (
+        <div>
+          <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 20, marginBottom: 24 }}>
+            <h3 style={{ fontSize: 14, fontWeight: 700, color: "#0b1f3a", marginBottom: 4 }}>페이지 히어로 배너</h3>
+            <p style={{ fontSize: 12, color: "#94a3b8", marginBottom: 16 }}>구성원 페이지(/partners) 상단 히어로에 표시됩니다. 저장 버튼으로 적용하세요.</p>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+              <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <span style={{ fontSize: 11, fontWeight: 600, color: "#4a5568" }}>제목</span>
+                <input style={{ border: "1px solid #e5e7eb", borderRadius: 6, padding: "8px 10px", fontSize: 13 }}
+                  value={settings["members/hero"].heading}
+                  onChange={(e) => update("members/hero", "heading", e.target.value)} />
+              </label>
+              <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <span style={{ fontSize: 11, fontWeight: 600, color: "#4a5568" }}>부제목 (영문)</span>
+                <input style={{ border: "1px solid #e5e7eb", borderRadius: 6, padding: "8px 10px", fontSize: 13 }}
+                  value={settings["members/hero"].subheading}
+                  onChange={(e) => update("members/hero", "subheading", e.target.value)} />
+              </label>
+            </div>
+            <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <span style={{ fontSize: 11, fontWeight: 600, color: "#4a5568" }}>설명</span>
+              <textarea rows={2} style={{ border: "1px solid #e5e7eb", borderRadius: 6, padding: "8px 10px", fontSize: 13, resize: "vertical" }}
+                value={settings["members/hero"].description}
+                onChange={(e) => update("members/hero", "description", e.target.value)} />
+            </label>
+          </div>
+          <AdminLawyers />
+        </div>
+      );
       case "news-edit": return <NewsBlogSection settings={settings} update={update} />;
       case "recruit-edit": return <RecruitSectionWrapper settings={settings} update={update} />;
       case "consultation-edit":

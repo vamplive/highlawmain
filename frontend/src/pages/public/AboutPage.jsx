@@ -199,13 +199,28 @@ export default function AboutPage() {
                 eyebrow="Introduction"
                 title="Message from Partners"
               />
-              <div style={{ color: "var(--text-secondary)", fontWeight: 300, fontSize: 15, lineHeight: 1.9, display: "flex", flexDirection: "column", gap: 24, marginBottom: 60, textAlign: "left" }}>
-                {settings.philosophy.description.split("\n\n").map((para, i, arr) => (
-                  <p key={i} style={i === arr.length - 1 ? { marginTop: 32, fontWeight: 500, color: "var(--text-primary)", textAlign: "right", fontSize: 16 } : {}}>
-                    {para}
-                  </p>
-                ))}
-              </div>
+              {(() => {
+                const desc = settings.philosophy.description || "";
+                const isHtml = /<[a-z][\s\S]*>/i.test(desc);
+                if (isHtml) {
+                  return (
+                    <div
+                      className="philosophy-html"
+                      style={{ color: "var(--text-secondary)", fontWeight: 300, fontSize: 15, lineHeight: 1.9, marginBottom: 60 }}
+                      dangerouslySetInnerHTML={{ __html: desc }}
+                    />
+                  );
+                }
+                return (
+                  <div style={{ color: "var(--text-secondary)", fontWeight: 300, fontSize: 15, lineHeight: 1.9, display: "flex", flexDirection: "column", gap: 24, marginBottom: 60, textAlign: "left" }}>
+                    {desc.split("\n\n").map((para, i, arr) => (
+                      <p key={i} style={i === arr.length - 1 ? { marginTop: 32, fontWeight: 500, color: "var(--text-primary)", textAlign: "right", fontSize: 16 } : {}}>
+                        {para}
+                      </p>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
           )}
 
@@ -394,7 +409,9 @@ export default function AboutPage() {
               />
               
               <div style={{ maxWidth: 600, margin: "0 auto", position: "relative", paddingLeft: 24, borderLeft: "2px solid var(--border-subtle)", textAlign: "left" }}>
-                {settings.history.items.map((item, idx) => (
+                {[...settings.history.items]
+                  .sort((a, b) => parseInt(b.year) - parseInt(a.year))
+                  .map((item, idx) => (
                   <div key={idx} style={{ position: "relative", marginBottom: 40 }} className="reveal">
                     <div 
                       style={{ 
