@@ -593,6 +593,15 @@ function ScheduledTab() {
     catch (e) { showToast("취소 실패: " + e.message); }
   };
 
+  const sendNow = async (id) => {
+    if (!window.confirm("지금 바로 발송하시겠습니까?")) return;
+    try {
+      await api.post(`/portal/sms/scheduled/${id}/send`);
+      showToast("즉시 발송 완료", "success");
+      load();
+    } catch (e) { showToast("발송 실패: " + e.message, "error"); }
+  };
+
   return (
     <div>
       <div style={{ display:"flex", gap:10, marginBottom:14, alignItems:"center" }}>
@@ -623,7 +632,12 @@ function ScheduledTab() {
                   <div style={{ fontSize:13, color:"#334155", whiteSpace:"pre-wrap", maxHeight:60, overflow:"hidden", lineHeight:1.5 }}>{item.content}</div>
                   {rcpts.length>0 && <div style={{ marginTop:4, fontSize:11, color:"#94a3b8" }}>{rcpts.map(r=>r.name||r.contact).join(", ")}</div>}
                 </div>
-                {item.status==="pending" && <button onClick={() => cancel(item.id)} style={{ ...ghostBtn, color:"#ef4444", flexShrink:0 }}>취소</button>}
+                {item.status==="pending" && (
+                <div style={{ display:"flex", flexDirection:"column", gap:6, flexShrink:0 }}>
+                  <button onClick={() => sendNow(item.id)} style={{ ...ghostBtn, color:"#0369a1", background:"#e0f2fe", border:"1px solid #7dd3fc", fontWeight:700, whiteSpace:"nowrap" }}>즉시 발송</button>
+                  <button onClick={() => cancel(item.id)} style={{ ...ghostBtn, color:"#ef4444", whiteSpace:"nowrap" }}>취소</button>
+                </div>
+              )}
               </div>
             );
           })}

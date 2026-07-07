@@ -2210,30 +2210,67 @@ async function resetPortalPassword(token, newPassword) {
  * 지인 소개 건은 착수금/성공보수에 20% 할인 적용
  */
 async function getMonthlyCaseStats(year, month) {
-  const prefix = `${year}-${String(month).padStart(2, "0")}`;
+  // 수임일(registered_at) 기준으로 해당 월과 연관된 사건 조회
+  // - 수임일이 query 월인 사건: 유입경로 통계 + 비할부 매출 집계
+  // - 할부 사건: 수임월부터 N개월치 각 월에 월납입액 분산
   const rows = sqlite.prepare(
-    "SELECT visit_route, referrer_id, referrer_name, retainer_fee, success_fee FROM case_files WHERE substr(created_at,1,7)=?"
-  ).all(prefix);
+    `SELECT visit_route, referrer_id, referrer_name,
+            retainer_fee, retainer_installments,
+            success_fee, success_installments,
+            COALESCE(registered_at, created_at) AS effective_date
+     FROM case_files
+     WHERE effective_date IS NOT NULL`
+  ).all();
 
   const routeMap = {};
   let retainerTotal = 0;
   let successTotal = 0;
   const externalReferrerMap = {};
+  let totalCases = 0;
 
   for (const row of rows) {
-    const r = row.visit_route || "(미입력)";
-    routeMap[r] = (routeMap[r] || 0) + 1;
-    // 20% 할인: 지인 소개 중 외부인(referrer_id 없음)인 경우만
+    const effectiveDate = row.effective_date;
+    if (!effectiveDate) continue;
+
+    const regYear  = parseInt(effectiveDate.substr(0, 4), 10);
+    const regMonth = parseInt(effectiveDate.substr(5, 2), 10);
+    // 수임월로부터 query월까지의 개월 차이 (0 = 수임월)
+    const monthDiff = (year - regYear) * 12 + (month - regMonth);
+
+    // 유입경로 통계: 수임월에만 카운트
+    if (monthDiff === 0) {
+      totalCases++;
+      const r = row.visit_route || "(미입력)";
+      routeMap[r] = (routeMap[r] || 0) + 1;
+    }
+
     const isExternalReferral = row.visit_route === "지인" && !row.referrer_id;
     const discount = isExternalReferral ? 0.8 : 1.0;
-    retainerTotal += Math.round((row.retainer_fee || 0) * discount);
-    successTotal  += Math.round((row.success_fee  || 0) * discount);
-    if (isExternalReferral && row.referrer_name) {
-      const name = row.referrer_name;
-      if (!externalReferrerMap[name]) externalReferrerMap[name] = { retainerCommission: 0, successCommission: 0, count: 0 };
-      externalReferrerMap[name].retainerCommission += Math.round((row.retainer_fee || 0) * 0.2);
-      externalReferrerMap[name].successCommission  += Math.round((row.success_fee  || 0) * 0.2);
-      externalReferrerMap[name].count += 1;
+
+    // 착수금: 해당 월에 납입 예정인 회차인지 확인
+    const retN = Math.max(1, row.retainer_installments || 1);
+    if (monthDiff >= 0 && monthDiff < retN && row.retainer_fee) {
+      const monthly = Math.round(row.retainer_fee / retN);
+      retainerTotal += Math.round(monthly * discount);
+      // 외부 소개인 수당: 수임월(첫 납입월)에만 집계
+      if (monthDiff === 0 && isExternalReferral && row.referrer_name) {
+        const name = row.referrer_name;
+        if (!externalReferrerMap[name]) externalReferrerMap[name] = { retainerCommission: 0, successCommission: 0, count: 0 };
+        externalReferrerMap[name].retainerCommission += Math.round(row.retainer_fee * 0.2);
+        externalReferrerMap[name].count += 1;
+      }
+    }
+
+    // 성공보수: 해당 월에 납입 예정인 회차인지 확인
+    const sucN = Math.max(1, row.success_installments || 1);
+    if (monthDiff >= 0 && monthDiff < sucN && row.success_fee) {
+      const monthly = Math.round(row.success_fee / sucN);
+      successTotal += Math.round(monthly * discount);
+      if (monthDiff === 0 && isExternalReferral && row.referrer_name) {
+        const name = row.referrer_name;
+        if (!externalReferrerMap[name]) externalReferrerMap[name] = { retainerCommission: 0, successCommission: 0, count: 0 };
+        externalReferrerMap[name].successCommission += Math.round(row.success_fee * 0.2);
+      }
     }
   }
 
@@ -2249,7 +2286,7 @@ async function getMonthlyCaseStats(year, month) {
     routes,
     revenue: { retainerTotal, successTotal, total: retainerTotal + successTotal },
     externalReferrers,
-    year, month, totalCases: rows.length,
+    year, month, totalCases,
   };
 }
 

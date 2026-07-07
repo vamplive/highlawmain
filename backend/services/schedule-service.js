@@ -317,11 +317,111 @@ function sqlDateTimeNow() {
   return new Date().toISOString().replace("T", " ").slice(0, 19);
 }
 
+/**
+ * 예약 메시지 즉시 발송
+ * pending 또는 failed 상태의 예약을 지금 바로 발송한다.
+ */
+async function sendScheduledNow(id) {
+  validateUUID(id);
+  const [item] = await db.select().from(scheduledMessages).where(eq(scheduledMessages.id, id));
+  if (!item) throw new ServiceError("예약을 찾을 수 없습니다", 404);
+  if (!["pending", "failed"].includes(item.status)) {
+    throw new ServiceError("대기 또는 실패 상태의 예약만 즉시 발송할 수 있습니다", 400);
+  }
+
+  // processing으로 표시
+  await db.update(scheduledMessages)
+    .set({ status: STATUS.PROCESSING, updatedAt: sql`(datetime('now'))` })
+    .where(eq(scheduledMessages.id, id));
+
+  try {
+    const parsedRecipients = parseRecipients(item.recipients);
+    const isMarketing = item.source === "manual" || (item.originRef || "").startsWith("reengagement:");
+    let recipients = parsedRecipients;
+    let blocked = [];
+    if (isMarketing) {
+      const filtered = await clientService.filterByConsent(parsedRecipients, item.channel);
+      recipients = filtered.allowed;
+      blocked = filtered.blocked;
+    }
+
+    const results = [];
+    for (const recipient of recipients) {
+      const token = await resolveUnsubscribeToken(recipient.contact);
+      const unsubscribeUrl = buildUnsubscribeUrl(token);
+      const renderedContent = replacePlaceholders(item.content, {
+        name: recipient.name, category: recipient.category, unsubscribeUrl,
+      });
+      const renderedSubject = item.subject
+        ? replacePlaceholders(item.subject, { name: recipient.name, category: recipient.category, unsubscribeUrl })
+        : null;
+
+      let sendResult;
+      if (item.channel === "sms") {
+        sendResult = await sendSMS(recipient.contact, renderedContent);
+      } else if (item.channel === "kakao") {
+        sendResult = await sendFriendTalk(recipient.contact, renderedContent, { name: recipient.name });
+      } else {
+        const bodyWithFooter = appendEmailFooter(renderedContent, unsubscribeUrl);
+        const [pendingLog] = await db.insert(messageLogs).values({
+          channel: item.channel, recipientName: recipient.name || null,
+          recipientContact: recipient.contact, consultationId: recipient.consultationId || null,
+          templateId: item.templateId || null, subject: renderedSubject,
+          content: bodyWithFooter, status: "pending",
+        }).returning();
+        const emailHtml = injectTrackingPixel(bodyWithFooter, pendingLog.id);
+        sendResult = await sendEmail(recipient.contact, renderedSubject, emailHtml);
+        const now2 = sqlDateTimeNow();
+        await db.update(messageLogs).set({
+          status: sendResult.success ? "sent" : "failed",
+          errorMessage: sendResult.error || null,
+          sentAt: sendResult.success ? now2 : null,
+        }).where(eq(messageLogs.id, pendingLog.id));
+        results.push({ recipientContact: recipient.contact, success: sendResult.success, error: sendResult.error || null });
+        if (sendResult.success) await clientService.touchLastContacted(recipient.contact);
+        continue;
+      }
+
+      const now2 = sqlDateTimeNow();
+      await db.insert(messageLogs).values({
+        channel: item.channel, recipientName: recipient.name || null,
+        recipientContact: recipient.contact, consultationId: recipient.consultationId || null,
+        templateId: item.templateId || null, subject: null,
+        content: renderedContent,
+        status: sendResult.success ? "sent" : "failed",
+        errorMessage: sendResult.error || null, sentAt: sendResult.success ? now2 : null,
+      });
+
+      if (sendResult.success) await clientService.touchLastContacted(recipient.contact);
+      results.push({ recipientContact: recipient.contact, success: sendResult.success, error: sendResult.error || null });
+    }
+
+    const sent = results.filter(r => r.success).length;
+    const failed = results.filter(r => !r.success).length;
+    await db.update(scheduledMessages).set({
+      status: failed > 0 && sent === 0 ? STATUS.FAILED : STATUS.SENT,
+      result: JSON.stringify({ total: results.length, sent, failed, results, blockedByConsent: blocked.length }),
+      sentAt: sqlDateTimeNow(),
+      updatedAt: sql`(datetime('now'))`,
+    }).where(eq(scheduledMessages.id, id));
+
+    return { total: results.length, sent, failed };
+  } catch (err) {
+    await db.update(scheduledMessages).set({
+      status: STATUS.FAILED,
+      errorMessage: err.message || String(err),
+      updatedAt: sql`(datetime('now'))`,
+    }).where(eq(scheduledMessages.id, id));
+    throw err;
+  }
+}
+
 module.exports = {
   STATUS,
   createSchedule,
   listSchedules,
   cancelSchedule,
   processPendingMessages,
+  sendScheduledNow,
   resolveTemplate,
 };

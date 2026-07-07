@@ -500,7 +500,7 @@ router.get("/cases/:id/documents", portalAuth, async (req, res) => {
 /** GET /api/portal/cases/documents/:docId/download — 파일 다운로드 */
 router.get("/cases/documents/:docId/download", portalAuth, async (req, res) => {
   try {
-    const [doc] = await db.select().from(caseDocuments).where(eq(caseDocuments.id, req.params.docId));
+    const [doc] = await msgDb.select().from(caseDocuments).where(deq(caseDocuments.id, req.params.docId));
     if (!doc) return res.status(404).json({ error: "파일을 찾을 수 없습니다", data: null });
     // 접근 권한 확인
     const dlClientId = isInternalUser(req.portalUser) ? null : req.portalUser.clientId;
@@ -1533,6 +1533,13 @@ router.get('/sms/scheduled', portalAuth, async (req, res) => {
   try {
     const result = await portalScheduleService.listSchedules(req.query);
     res.json({ data: result.items, error: null, meta: result.meta });
+  } catch (e) { res.status(e.status || 500).json({ data: null, error: e.message || '서버 오류', meta: null }); }
+});
+
+router.post('/sms/scheduled/:id/send', portalAuth, async (req, res) => {
+  try {
+    const result = await portalScheduleService.sendScheduledNow(req.params.id);
+    res.json({ data: result, error: null, meta: null });
   } catch (e) { res.status(e.status || 500).json({ data: null, error: e.message || '서버 오류', meta: null }); }
 });
 
