@@ -63,6 +63,7 @@ const AdminMessages = lazy(() => import("./pages/admin/messages"));
 const PortalMessages = lazy(() => import("./pages/portal/PortalMessages"));
 const AdminSiteManager = lazy(() => import("./pages/admin/site-manager"));
 const AdminMilitarySiteManager = lazy(() => import("./pages/admin/military-site-manager"));
+const AdminGameSiteManager = lazy(() => import("./pages/admin/game-site-manager"));
 const AdminHomepageManager = lazy(() => import("./pages/admin/homepage"));
 const AdminMedia = lazy(() => import("./pages/admin/media"));
 const AdminAnalytics = lazy(() => import("./pages/admin/analytics"));
@@ -104,6 +105,7 @@ const InviteEntryPage = lazy(() => import("./pages/public/InviteEntryPage"));
 const InvitedConsultationPage = lazy(() => import("./pages/public/InvitedConsultationPage"));
 const ExternalSignPage = lazy(() => import("./pages/public/ExternalSignPage"));
 const MilitaryLandingPage = lazy(() => import("./pages/military"));
+const GameCenterPage = lazy(() => import("./pages/game"));
 const Military2LandingPage = lazy(() => import("./pages/military2"));
 
 /* ── 포털 청크: 지연 로딩 ── */
@@ -220,6 +222,7 @@ function AdminArea() {
           <Route path="messages" element={<LazyRoute><AdminMessages /></LazyRoute>} />
           <Route path="site-manager" element={<LazyRoute><AdminSiteManager /></LazyRoute>} />
           <Route path="military-site-manager" element={<LazyRoute><AdminMilitarySiteManager /></LazyRoute>} />
+          <Route path="game-site-manager" element={<LazyRoute><AdminGameSiteManager /></LazyRoute>} />
           <Route path="homepage" element={<LazyRoute><AdminHomepageManager /></LazyRoute>} />
           <Route path="media" element={<LazyRoute><AdminMedia /></LazyRoute>} />
           <Route path="analytics" element={<LazyRoute><AdminAnalytics /></LazyRoute>} />
@@ -319,6 +322,9 @@ export default function App() {
           {/* 404 — 공개 레이아웃 내부에서 처리, lazy */}
           <Route path="*" element={<LazyRoute><NotFoundPage /></LazyRoute>} />
         </Route>
+
+        {/* /game — HIGHLAW 게임센터 독립 랜딩 페이지 (Layout 없이 풀스크린) */}
+        <Route path="/game" element={<ErrorBoundary><LazyRoute><GameCenterPage /></LazyRoute></ErrorBoundary>} />
 
         {/* /military — 군형사·징계 전문 독립 랜딩 페이지 (Layout 없이 풀스크린) */}
         <Route path="/military" element={<ErrorBoundary><LazyRoute><Military2LandingPage /></LazyRoute></ErrorBoundary>} />

@@ -10,11 +10,13 @@ import { useState } from "react";
 import { COLORS } from "../../../components/admin/styles";
 import AdminSiteManager from "../site-manager";
 import MilitarySiteManager from "../military-site-manager";
+import GameSiteManager from "../game-site-manager";
 
 /* 상위 사이트 탭 정의 */
 const SITE_TABS = [
   { key: "main",     label: "Highlaw Main",  emoji: "🏛" },
   { key: "military", label: "군사센터",       emoji: "⚖️" },
+  { key: "game",     label: "게임센터",       emoji: "🎮" },
 ];
 
 /** 상위 사이트 선택 탭 바 */
@@ -74,6 +76,7 @@ export default function AdminHomepageManager() {
       {/* 선택된 사이트 관리자 렌더링 — 기존 컴포넌트를 그대로 사용 */}
       {activeSite === "main" && <AdminSiteManager />}
       {activeSite === "military" && <MilitarySiteManager />}
+      {activeSite === "game" && <GameSiteManager />}
     </div>
   );
 }

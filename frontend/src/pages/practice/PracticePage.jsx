@@ -66,7 +66,7 @@ const ADVANTAGES = [
 /* ── 12대 분야 카드 ── */
 const AREAS = [
   {
-    to: "/practice/game-fraud",
+    to: "/game",
     image: "/practice-game.png",
     icon: Target,
     label: "GAME FRAUD",
