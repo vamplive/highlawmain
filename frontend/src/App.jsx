@@ -105,7 +105,13 @@ const InviteEntryPage = lazy(() => import("./pages/public/InviteEntryPage"));
 const InvitedConsultationPage = lazy(() => import("./pages/public/InvitedConsultationPage"));
 const ExternalSignPage = lazy(() => import("./pages/public/ExternalSignPage"));
 const MilitaryLandingPage = lazy(() => import("./pages/military"));
-const GameCenterPage = lazy(() => import("./pages/game"));
+const GameLayout = lazy(() => import("./pages/game/GameLayout"));
+const GameHomePage = lazy(() => import("./pages/game/GameHomePage"));
+const GameAboutPage = lazy(() => import("./pages/game/GameAboutPage"));
+const GameMembersPage = lazy(() => import("./pages/game/GameMembersPage"));
+const GamePracticesPage = lazy(() => import("./pages/game/GamePracticesPage"));
+const GameInfoPage = lazy(() => import("./pages/game/GameInfoPage"));
+const GameConsultationPage = lazy(() => import("./pages/game/GameConsultationPage"));
 const Military2LandingPage = lazy(() => import("./pages/military2"));
 
 /* ── 포털 청크: 지연 로딩 ── */
@@ -323,8 +329,20 @@ export default function App() {
           <Route path="*" element={<LazyRoute><NotFoundPage /></LazyRoute>} />
         </Route>
 
-        {/* /game — HIGHLAW 게임센터 독립 랜딩 페이지 (Layout 없이 풀스크린) */}
-        <Route path="/game" element={<ErrorBoundary><LazyRoute><GameCenterPage /></LazyRoute></ErrorBoundary>} />
+        {/* /game — HIGHLAW 게임센터 (GameLayout + 서브페이지) */}
+        <Route path="/game" element={<ErrorBoundary><LazyRoute><GameLayout /></LazyRoute></ErrorBoundary>}>
+          <Route index element={<LazyRoute><GameHomePage /></LazyRoute>} />
+          <Route path="about" element={<LazyRoute><GameAboutPage /></LazyRoute>} />
+          <Route path="about/:section" element={<LazyRoute><GameAboutPage /></LazyRoute>} />
+          <Route path="members" element={<LazyRoute><GameMembersPage /></LazyRoute>} />
+          <Route path="members/:tab" element={<LazyRoute><GameMembersPage /></LazyRoute>} />
+          <Route path="practices" element={<LazyRoute><GamePracticesPage /></LazyRoute>} />
+          <Route path="practices/:tab" element={<LazyRoute><GamePracticesPage /></LazyRoute>} />
+          <Route path="info" element={<LazyRoute><GameInfoPage /></LazyRoute>} />
+          <Route path="info/:tab" element={<LazyRoute><GameInfoPage /></LazyRoute>} />
+          <Route path="consultation" element={<LazyRoute><GameConsultationPage /></LazyRoute>} />
+          <Route path="consultation/:tab" element={<LazyRoute><GameConsultationPage /></LazyRoute>} />
+        </Route>
 
         {/* /military — 군형사·징계 전문 독립 랜딩 페이지 (Layout 없이 풀스크린) */}
         <Route path="/military" element={<ErrorBoundary><LazyRoute><Military2LandingPage /></LazyRoute></ErrorBoundary>} />
