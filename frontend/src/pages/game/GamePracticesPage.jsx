@@ -3,10 +3,10 @@ import { Link } from "react-router-dom";
 import Seo from "../../components/Seo";
 import GamePageShell from "./GamePageShell";
 
-const A = "#3b82f6";
-const TXT = "#f1f5f9";
-const TXT2 = "rgba(241,245,249,0.6)";
-const BG3 = "#162032";
+const BLUE  = "#1d4ed8";
+const TEXT  = "#111827";
+const TEXT2 = "#6b7280";
+const WHITE = "#ffffff";
 
 const TABS = [
   { id:"civil",    label:"게임민사", path:"/game/practices" },
@@ -17,7 +17,7 @@ const SM = { criminal:"criminal", admin:"admin" };
 
 const DATA = {
   civil: {
-    title:"게임민사", subtitle:"CIVIL LITIGATION", color:A,
+    title:"게임민사", subtitle:"CIVIL LITIGATION", color: BLUE,
     desc:"아이템 거래 사기, 운영사 손해배상, 게임머니 부당이득 반환 등 게임 분야 민사 분쟁 전문 법률 서비스입니다.",
     areas:[
       { title:"아이템·계정 거래 사기 손해배상", desc:"온라인 게임 아이템 또는 계정 거래 과정에서 발생한 사기 피해에 대한 민사 손해배상 청구를 대리합니다.", tags:["손해배상청구","디지털증거수집","민사소송"] },
@@ -27,7 +27,7 @@ const DATA = {
     ],
   },
   criminal: {
-    title:"게임형사", subtitle:"CRIMINAL COMPLAINT", color:"#818cf8",
+    title:"게임형사", subtitle:"CRIMINAL COMPLAINT", color:"#7c3aed",
     desc:"게임 관련 사기 범죄에 대한 형사고소, 수사 지원, 피해자 대리를 전담합니다.",
     areas:[
       { title:"아이템 거래 사기 형사고소", desc:"게임 아이템 거래 과정에서 발생한 사기 범죄에 대해 형사고소장을 작성하고 수사기관에 제출합니다.", tags:["형사고소","사기죄","수사지원"] },
@@ -37,7 +37,7 @@ const DATA = {
     ],
   },
   admin: {
-    title:"게임행정", subtitle:"ADMINISTRATIVE REVIEW", color:"#06b6d4",
+    title:"게임행정", subtitle:"ADMINISTRATIVE REVIEW", color:"#0891b2",
     desc:"게임 이용정지·영구정지 처분 불복, 운영사 제재 이의신청 등 게임 행정 분쟁 전문 서비스입니다.",
     areas:[
       { title:"이용정지·영구정지 불복",  desc:"게임 운영사의 이용정지 또는 영구정지 처분이 부당하다고 판단되는 경우, 이의신청 및 행정소송을 통해 계정을 회복합니다.", tags:["이용정지불복","영구정지","계정복구"] },
@@ -50,39 +50,46 @@ const DATA = {
 
 export default function GamePracticesPage() {
   const { tab } = useParams();
-  const activeId  = (tab && SM[tab]) ? SM[tab] : "civil";
-  const p         = DATA[activeId];
+  const activeId = (tab && SM[tab]) ? SM[tab] : "civil";
+  const p = DATA[activeId];
 
   return (
     <>
-      <Seo title={`${p.title} | HIGHLAW 게임센터`} description={p.desc} path={`/game/practices${activeId!=="civil"?"/"+activeId:""}`} />
+      <Seo title={`${p.title} | HIGHLAW 게임센터`} description={p.desc} path={`/game/practices${activeId !== "civil" ? "/" + activeId : ""}`} />
       <GamePageShell eyebrow="PRACTICES" title="업무 분야" tabs={TABS} activeId={activeId}>
-        <div style={{ marginBottom:44 }}>
-          <div style={{ fontSize:9, letterSpacing:"0.22em", color:p.color, textTransform:"uppercase", fontWeight:700, marginBottom:10 }}>{p.subtitle}</div>
-          <h2 style={{ fontFamily:"var(--font-serif)", fontSize:"clamp(1.5rem,3vw,2.2rem)", fontWeight:700, color:TXT, marginBottom:14 }}>{p.title}</h2>
-          <p style={{ fontSize:15, color:TXT2, lineHeight:1.8, maxWidth:640 }}>{p.desc}</p>
+
+        <div style={{ marginBottom: 44 }}>
+          <div style={{ fontSize: 9, letterSpacing: "0.22em", color: p.color, textTransform: "uppercase", fontWeight: 700, marginBottom: 10 }}>{p.subtitle}</div>
+          <h2 style={{ fontFamily: "var(--font-serif)", fontSize: "clamp(1.5rem,3vw,2.2rem)", fontWeight: 700, color: TEXT, marginBottom: 14 }}>{p.title}</h2>
+          <p style={{ fontSize: 15, color: TEXT2, lineHeight: 1.8, maxWidth: 640 }}>{p.desc}</p>
         </div>
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(270px,1fr))", gap:18 }}>
-          {p.areas.map(area=>(
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(270px,1fr))", gap: 18 }}>
+          {p.areas.map(area => (
             <div key={area.title}
-              style={{ background:"#162032", border:"1px solid rgba(59,130,246,0.15)", borderRadius:10, padding:"26px 22px", transition:"border-color .2s,box-shadow .2s,transform .2s" }}
-              onMouseEnter={e=>{e.currentTarget.style.borderColor="rgba(59,130,246,0.45)";e.currentTarget.style.boxShadow="0 0 20px rgba(59,130,246,0.1)";e.currentTarget.style.transform="translateY(-3px)";}}
-              onMouseLeave={e=>{e.currentTarget.style.borderColor="rgba(59,130,246,0.15)";e.currentTarget.style.boxShadow="none";e.currentTarget.style.transform="none";}}>
-              <h3 style={{ fontSize:14, fontWeight:700, color:TXT, marginBottom:10 }}>{area.title}</h3>
-              <p style={{ fontSize:13, color:TXT2, lineHeight:1.8, marginBottom:14 }}>{area.desc}</p>
-              <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
-                {area.tags.map(tag=>(
-                  <span key={tag} style={{ fontSize:10, background:"rgba(59,130,246,0.1)", color:A, padding:"3px 9px", borderRadius:10, fontWeight:500, border:"1px solid rgba(59,130,246,0.2)" }}>{tag}</span>
+              style={{ background: WHITE, border: "1.5px solid #e5e7eb", borderRadius: 12, padding: "26px 22px", transition: "border-color .2s,box-shadow .2s,transform .2s", borderTop: `3px solid ${p.color}` }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = p.color; e.currentTarget.style.boxShadow = "0 8px 32px rgba(0,0,0,0.1)"; e.currentTarget.style.transform = "translateY(-3px)"; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = "#e5e7eb"; e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.transform = "none"; e.currentTarget.style.borderTopColor = p.color; }}>
+              <h3 style={{ fontSize: 14, fontWeight: 700, color: TEXT, marginBottom: 10 }}>{area.title}</h3>
+              <p style={{ fontSize: 13, color: TEXT2, lineHeight: 1.8, marginBottom: 14 }}>{area.desc}</p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                {area.tags.map(tag => (
+                  <span key={tag} style={{ fontSize: 10, background: "#eff6ff", color: BLUE, padding: "3px 9px", borderRadius: 10, fontWeight: 600, border: "1px solid #dbeafe" }}>{tag}</span>
                 ))}
               </div>
             </div>
           ))}
         </div>
-        <div style={{ marginTop:56, background:"#0a1020", border:"1px solid rgba(59,130,246,0.18)", borderRadius:12, padding:"32px 36px", textAlign:"center" }}>
-          <h3 style={{ fontFamily:"var(--font-serif)", fontSize:"clamp(1.1rem,2.5vw,1.6rem)", fontWeight:700, color:TXT, marginBottom:14 }}>{p.title} 피해를 입으셨나요?</h3>
-          <p style={{ fontSize:13, color:TXT2, marginBottom:24 }}>빠른 초기 대응이 피해 회복의 핵심입니다. 지금 바로 상담하세요.</p>
-          <Link to="/game/consultation" style={{ display:"inline-block", background:A, color:"#fff", fontWeight:700, fontSize:14, padding:"12px 32px", borderRadius:4, textDecoration:"none", boxShadow:"0 0 20px rgba(59,130,246,0.35)" }}>무료 사건 진단</Link>
+
+        <div style={{ marginTop: 56, background: WHITE, border: `1.5px solid ${BLUE}`, borderRadius: 12, padding: "32px 36px", textAlign: "center" }}>
+          <h3 style={{ fontFamily: "var(--font-serif)", fontSize: "clamp(1.1rem,2.5vw,1.6rem)", fontWeight: 700, color: TEXT, marginBottom: 14 }}>{p.title} 피해를 입으셨나요?</h3>
+          <p style={{ fontSize: 13, color: TEXT2, marginBottom: 24 }}>빠른 초기 대응이 피해 회복의 핵심입니다. 지금 바로 상담하세요.</p>
+          <Link to="/game/consultation"
+            style={{ display: "inline-block", background: BLUE, color: "#fff", fontWeight: 700, fontSize: 14, padding: "12px 32px", borderRadius: 6, textDecoration: "none", boxShadow: "0 4px 16px rgba(29,78,216,0.35)" }}>
+            무료 사건 진단
+          </Link>
         </div>
+
       </GamePageShell>
     </>
   );
