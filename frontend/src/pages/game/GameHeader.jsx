@@ -5,11 +5,10 @@ import LogoCanvas from "../../components/layout/LogoCanvas";
 import { KAKAO_CHANNEL_CHAT } from "../../utils/kakaoChannel";
 
 const C = {
-  dark: "rgba(3,5,10,0.97)",
+  dark: "rgba(10,15,28,0.97)",
   accent: "#3b82f6",
-  accentGlow: "rgba(59,130,246,0.35)",
   gold: "#c9a84c",
-  border: "rgba(59,130,246,0.14)",
+  border: "rgba(59,130,246,0.18)",
 };
 
 const NAV = [
@@ -69,8 +68,8 @@ export default function GameHeader() {
     setMegaOpen(true);
   }
 
-  function schedulClose() {
-    leaveTimer.current = setTimeout(() => setMegaOpen(false), 120);
+  function scheduleClose() {
+    leaveTimer.current = setTimeout(() => setMegaOpen(false), 140);
   }
 
   function cancelClose() {
@@ -80,58 +79,127 @@ export default function GameHeader() {
   return (
     <>
       <style>{`
-        .gh-nav-btn { font-size:11px; font-weight:500; letter-spacing:0.07em; color:rgba(255,255,255,0.65); cursor:pointer; padding:6px 12px; border-radius:4px; border:none; background:none; transition:color 0.15s; white-space:nowrap; }
-        .gh-nav-btn:hover, .gh-nav-btn.gh-active { color:#fff; }
-        .gh-mega-link { display:block; padding:7px 10px; border-radius:5px; font-size:12px; color:rgba(255,255,255,0.6); text-decoration:none; transition:background 0.12s,color 0.12s; }
-        .gh-mega-link:hover { background:rgba(59,130,246,0.12); color:#fff; }
-        .gh-mega-col-label { font-size:9px; font-weight:700; letter-spacing:0.18em; text-transform:uppercase; color:rgba(59,130,246,0.7); margin-bottom:8px; padding:0 10px; }
-        @media(max-width:960px){ .gh-desktop-nav{ display:none!important; } }
-        @media(min-width:961px){ .gh-mobile-btn{ display:none!important; } }
+        .gh-nav-btn {
+          font-size: 12px; font-weight: 500; letter-spacing: 0.04em;
+          color: rgba(255,255,255,0.6); cursor: pointer;
+          padding: 0 18px; height: 64px;
+          border: none; background: none;
+          transition: color 0.15s; white-space: nowrap;
+          display: flex; align-items: center; gap: 4px;
+        }
+        .gh-nav-btn:hover, .gh-nav-btn.gh-act { color: #fff; }
+        .gh-mega-link {
+          display: block; padding: 7px 12px; border-radius: 5px;
+          font-size: 12px; color: rgba(255,255,255,0.55);
+          text-decoration: none; transition: background 0.12s, color 0.12s;
+          white-space: nowrap;
+        }
+        .gh-mega-link:hover { background: rgba(59,130,246,0.12); color: #fff; }
+        .gh-mega-link-active { color: rgba(255,255,255,0.85) !important; }
+        @media(max-width:960px){ .gh-desktop{ display:none!important; } }
+        @media(min-width:961px){ .gh-mob-btn{ display:none!important; } }
       `}</style>
 
       <header
         style={{
           position: "fixed", top: 0, left: 0, right: 0, zIndex: 200,
           background: C.dark, backdropFilter: "blur(16px)",
-          borderBottom: `1px solid ${C.border}`,
-          height: 64,
+          borderBottom: `1px solid ${C.border}`, height: 64,
         }}
       >
-        <div style={{ height: 64, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 clamp(16px,4vw,48px)" }}>
+        <div
+          style={{
+            height: 64, display: "flex", alignItems: "center",
+            padding: "0 clamp(16px,3vw,40px)", gap: 0,
+          }}
+        >
           {/* Logo */}
-          <Link to="/game" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none", flexShrink: 0 }}>
-            <LogoCanvas size={30} color={C.gold} />
+          <Link to="/game" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none", flexShrink: 0, marginRight: 16 }}>
+            <LogoCanvas size={28} color={C.gold} />
             <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-              <span style={{ fontFamily: "var(--font-serif)", fontSize: 15, fontWeight: 700, color: "#fff", letterSpacing: "0.04em", lineHeight: 1.2 }}>
+              <span style={{ fontFamily: "var(--font-serif)", fontSize: 14, fontWeight: 700, color: "#fff", letterSpacing: "0.03em", lineHeight: 1.2 }}>
                 HIGHLAW <span style={{ color: C.accent }}>게임센터</span>
               </span>
-              <span style={{ fontSize: 9, fontWeight: 500, color: "rgba(255,255,255,0.35)", letterSpacing: "0.08em" }}>법무법인 하이로</span>
+              <span style={{ fontSize: 9, fontWeight: 500, color: "rgba(255,255,255,0.3)", letterSpacing: "0.07em" }}>법무법인 하이로</span>
             </div>
           </Link>
 
-          {/* Desktop mega nav */}
-          <nav
-            className="gh-desktop-nav"
-            style={{ display: "flex", alignItems: "center", gap: 0, position: "relative" }}
-            onMouseLeave={schedulClose}
-            onMouseEnter={cancelClose}
+          {/* Desktop nav — takes remaining space */}
+          <div
+            className="gh-desktop"
+            style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "flex-end" }}
           >
-            <div style={{ display: "flex", alignItems: "center" }}>
-              {NAV.map((item, idx) => (
-                <button
-                  key={idx}
-                  className={`gh-nav-btn${megaOpen && activeGroup === idx ? " gh-active" : ""}`}
-                  onMouseEnter={() => openMega(idx)}
+            {/* Nav buttons + mega panel share the same CSS grid so columns align */}
+            <div
+              style={{ position: "relative" }}
+              onMouseLeave={scheduleClose}
+              onMouseEnter={cancelClose}
+            >
+              {/* Button row — CSS grid, 5 equal columns */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", minWidth: 480 }}>
+                {NAV.map((item, idx) => (
+                  <button
+                    key={idx}
+                    className={`gh-nav-btn${megaOpen && activeGroup === idx ? " gh-act" : ""}`}
+                    style={{ justifyContent: "center" }}
+                    onMouseEnter={() => openMega(idx)}
+                  >
+                    {item.label}
+                    <ChevronDown
+                      size={10}
+                      style={{ transition: "transform 0.2s", transform: megaOpen && activeGroup === idx ? "rotate(180deg)" : "none" }}
+                    />
+                  </button>
+                ))}
+              </div>
+
+              {/* Mega panel — same CSS grid so columns align with buttons */}
+              {megaOpen && (
+                <div
+                  onMouseEnter={cancelClose}
+                  onMouseLeave={scheduleClose}
+                  style={{
+                    position: "absolute", top: "calc(100% + 1px)", left: 0, right: 0,
+                    background: "rgba(10,15,28,0.98)",
+                    border: `1px solid ${C.border}`,
+                    borderTop: "none",
+                    borderRadius: "0 0 10px 10px",
+                    boxShadow: "0 20px 60px rgba(0,0,0,0.7), 0 0 30px rgba(59,130,246,0.1)",
+                    zIndex: 999,
+                    backdropFilter: "blur(20px)",
+                    display: "grid",
+                    gridTemplateColumns: "repeat(5, 1fr)",
+                    padding: "12px 0 16px",
+                  }}
                 >
-                  {item.label}
-                  <ChevronDown
-                    size={10}
-                    style={{ marginLeft: 3, verticalAlign: "middle", transition: "transform 0.2s", transform: megaOpen && activeGroup === idx ? "rotate(180deg)" : "none" }}
-                  />
-                </button>
-              ))}
+                  {NAV.map((group, gIdx) => (
+                    <div key={gIdx} style={{ padding: "0 8px", borderRight: gIdx < NAV.length - 1 ? "1px solid rgba(59,130,246,0.07)" : "none" }}>
+                      <div
+                        style={{
+                          fontSize: 9, fontWeight: 700, letterSpacing: "0.18em",
+                          textTransform: "uppercase", padding: "4px 12px 8px",
+                          color: gIdx === activeGroup ? C.accent : "rgba(59,130,246,0.35)",
+                        }}
+                      >
+                        {group.label}
+                      </div>
+                      {group.sub.map(s => (
+                        <Link
+                          key={s.to}
+                          to={s.to}
+                          className={`gh-mega-link${gIdx === activeGroup ? " gh-mega-link-active" : ""}`}
+                          onClick={() => setMegaOpen(false)}
+                        >
+                          {s.label}
+                        </Link>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
+            {/* Kakao CTA */}
             <a
               href={KAKAO_CHANNEL_CHAT}
               target="_blank"
@@ -140,66 +208,19 @@ export default function GameHeader() {
                 display: "flex", alignItems: "center", gap: 6,
                 background: C.accent, color: "#fff", fontWeight: 600, fontSize: 11,
                 padding: "7px 14px", borderRadius: 4, textDecoration: "none",
-                marginLeft: 12, whiteSpace: "nowrap",
-                boxShadow: `0 0 12px ${C.accentGlow}`,
+                marginLeft: 16, whiteSpace: "nowrap", flexShrink: 0,
+                boxShadow: "0 0 16px rgba(59,130,246,0.4)",
               }}
             >
               <MessageCircle size={12} />카카오 상담
             </a>
-
-            {/* Mega menu panel */}
-            {megaOpen && (
-              <div
-                onMouseEnter={cancelClose}
-                onMouseLeave={schedulClose}
-                style={{
-                  position: "absolute", top: "calc(100% + 10px)", right: 0,
-                  background: "rgba(3,5,10,0.98)", border: `1px solid ${C.border}`,
-                  borderRadius: 10, padding: "20px 16px",
-                  display: "flex", gap: 0,
-                  boxShadow: `0 20px 60px rgba(0,0,0,0.7), 0 0 30px ${C.accentGlow}`,
-                  zIndex: 999,
-                  backdropFilter: "blur(20px)",
-                }}
-              >
-                {NAV.map((group, gIdx) => (
-                  <div
-                    key={gIdx}
-                    style={{
-                      minWidth: 112, padding: "0 8px",
-                      borderRight: gIdx < NAV.length - 1 ? "1px solid rgba(59,130,246,0.08)" : "none",
-                    }}
-                  >
-                    <div
-                      className="gh-mega-col-label"
-                      style={{ color: gIdx === activeGroup ? C.accent : "rgba(59,130,246,0.4)" }}
-                    >
-                      {group.label}
-                    </div>
-                    {group.sub.map(s => (
-                      <Link
-                        key={s.to}
-                        to={s.to}
-                        className="gh-mega-link"
-                        onClick={() => setMegaOpen(false)}
-                        style={{
-                          color: gIdx === activeGroup ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.45)",
-                        }}
-                      >
-                        {s.label}
-                      </Link>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            )}
-          </nav>
+          </div>
 
           {/* Mobile hamburger */}
           <button
-            className="gh-mobile-btn"
+            className="gh-mob-btn"
             onClick={() => setMobileOpen(o => !o)}
-            style={{ background: "none", border: "none", color: "#fff", cursor: "pointer", padding: 8 }}
+            style={{ background: "none", border: "none", color: "#fff", cursor: "pointer", padding: 8, marginLeft: "auto" }}
           >
             {mobileOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
@@ -211,7 +232,7 @@ export default function GameHeader() {
         <div
           style={{
             position: "fixed", top: 64, left: 0, right: 0, bottom: 0,
-            background: "rgba(3,5,10,0.98)", zIndex: 199,
+            background: "rgba(10,15,28,0.98)", zIndex: 199,
             overflowY: "auto", padding: "12px 20px",
             backdropFilter: "blur(16px)",
           }}
@@ -256,7 +277,7 @@ export default function GameHeader() {
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
               background: C.accent, color: "#fff", fontWeight: 700, fontSize: 14,
               padding: "14px 20px", borderRadius: 6, textDecoration: "none", marginTop: 16,
-              boxShadow: `0 0 20px ${C.accentGlow}`,
+              boxShadow: "0 0 20px rgba(59,130,246,0.4)",
             }}
           >
             <MessageCircle size={16} />카카오톡으로 즉시 상담
