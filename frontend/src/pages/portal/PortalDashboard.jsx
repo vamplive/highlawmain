@@ -82,10 +82,10 @@ function PaymentsPanel({ userRole, userEmail, userDeptId, sonmuDeptId }) {
   );
 
   return (
-    <>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       {wire.length > 0 && <TableBlock items={wire} label="무통장" />}
       {showCard && <TableBlock items={card} label="카드" />}
-    </>
+    </div>
   );
 }
 
