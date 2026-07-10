@@ -1364,37 +1364,26 @@ export default function PortalDashboard() {
         </div>
       ) : (
         <>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+          <div style={{ marginBottom: 8 }}>
             <span style={{ fontSize: 12, color: T.textMuted }}>총 {filteredCases.length}건</span>
-            <span style={{ fontSize: 12, color: T.textMuted }}>{safePageNum} / {totalPages} 페이지</span>
           </div>
-          <CaseTable cases={pagedCases} googleConnected={googleConnected} syncingCaseId={syncingCaseId} deletingCaseId={deletingCaseId} userRole={userRole} handleSyncToCalendar={handleSyncToCalendar} handleDeleteCase={handleDeleteCase} onEdit={setEditCaseId} members={members} />
-          {totalPages > 1 && (
-            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 4, marginTop: 16 }}>
-              <button onClick={() => setPage(1)} disabled={safePageNum === 1}
-                style={{ padding: "5px 10px", fontSize: 12, border: "1px solid #e5e7eb", borderRadius: 5, background: "#fff", color: safePageNum === 1 ? "#d1d5db" : "#374151", cursor: safePageNum === 1 ? "default" : "pointer" }}>처음</button>
-              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={safePageNum === 1}
-                style={{ padding: "5px 10px", fontSize: 12, border: "1px solid #e5e7eb", borderRadius: 5, background: "#fff", color: safePageNum === 1 ? "#d1d5db" : "#374151", cursor: safePageNum === 1 ? "default" : "pointer" }}>‹ 이전</button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1)
-                .filter(p => p === 1 || p === totalPages || Math.abs(p - safePageNum) <= 2)
-                .reduce((acc, p, i, arr) => {
-                  if (i > 0 && p - arr[i - 1] > 1) acc.push("...");
-                  acc.push(p);
-                  return acc;
-                }, [])
-                .map((p, i) => p === "..." ? (
-                  <span key={"e" + i} style={{ padding: "5px 4px", fontSize: 12, color: "#9ca3af" }}>…</span>
-                ) : (
-                  <button key={p} onClick={() => setPage(p)}
-                    style={{ padding: "5px 10px", fontSize: 12, border: `1px solid ${p === safePageNum ? T.accent : "#e5e7eb"}`, borderRadius: 5, background: p === safePageNum ? T.accent : "#fff", color: p === safePageNum ? "#fff" : "#374151", cursor: "pointer", fontWeight: p === safePageNum ? 700 : 400 }}>{p}</button>
-                ))
-              }
-              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={safePageNum === totalPages}
-                style={{ padding: "5px 10px", fontSize: 12, border: "1px solid #e5e7eb", borderRadius: 5, background: "#fff", color: safePageNum === totalPages ? "#d1d5db" : "#374151", cursor: safePageNum === totalPages ? "default" : "pointer" }}>다음 ›</button>
-              <button onClick={() => setPage(totalPages)} disabled={safePageNum === totalPages}
-                style={{ padding: "5px 10px", fontSize: 12, border: "1px solid #e5e7eb", borderRadius: 5, background: "#fff", color: safePageNum === totalPages ? "#d1d5db" : "#374151", cursor: safePageNum === totalPages ? "default" : "pointer" }}>마지막</button>
-            </div>
-          )}
+          {["접수/상담", "진행", "완료", "상담종결"].map(status => {
+            const statusCases = sortedCases.filter(c => {
+              if (status === "접수/상담") return ["접수/상담","접수","상담"].includes(c.status);
+              return c.status === status;
+            });
+            if (statusCases.length === 0) return null;
+            const st = STATUS_MAP[status] || {};
+            return (
+              <div key={status} style={{ marginBottom: 28 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                  <span style={{ fontSize: 12, padding: "3px 12px", borderRadius: 12, background: st.bg, color: st.color, fontWeight: 700 }}>{status}</span>
+                  <span style={{ fontSize: 12, color: T.textMuted }}>{statusCases.length}건</span>
+                </div>
+                <CaseTable cases={statusCases} googleConnected={googleConnected} syncingCaseId={syncingCaseId} deletingCaseId={deletingCaseId} userRole={userRole} handleSyncToCalendar={handleSyncToCalendar} handleDeleteCase={handleDeleteCase} onEdit={setEditCaseId} members={members} />
+              </div>
+            );
+          })}
         </>
       )}
       {/* 할부 납입 예정 */}
