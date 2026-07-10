@@ -1109,6 +1109,8 @@ export default function PortalDashboard() {
   const [filterDateTo, setFilterDateTo] = useState("");
   const [sortBy, setSortBy] = useState("date_desc");
   const [page, setPage] = useState(1);
+  // 상태별 페이지 (각 테이블 독립 페이지네이션)
+  const [statusPages, setStatusPages] = useState({});
 
   // 편집 모달 상태
   const [editCaseId, setEditCaseId] = useState(null);
@@ -1241,8 +1243,8 @@ export default function PortalDashboard() {
   }, []);
 
   const uniqueRoutes = [...new Set([...ROUTES, ...cases.map(c => c.visitRoute).filter(Boolean)])];
-  // 필터/정렬 변경 시 페이지 초기화
-  useEffect(() => { setPage(1); }, [searchText, filterRoute, filterDateFrom, filterDateTo, sortBy]);
+  // 필터/정렬 변경 시 페이지 초기화 (전체 페이지 + 상태별 페이지 모두)
+  useEffect(() => { setPage(1); setStatusPages({}); }, [searchText, filterRoute, filterDateFrom, filterDateTo, sortBy]);
   const filteredCases = cases.filter(c => {
     if (searchText) {
       const q = searchText.toLowerCase();
@@ -1368,19 +1370,59 @@ export default function PortalDashboard() {
             <span style={{ fontSize: 12, color: T.textMuted }}>총 {filteredCases.length}건</span>
           </div>
           {["접수/상담", "진행", "완료", "상담종결"].map(status => {
-            const statusCases = sortedCases.filter(c => {
+            const allStatusCases = sortedCases.filter(c => {
               if (status === "접수/상담") return ["접수/상담","접수","상담"].includes(c.status);
               return c.status === status;
             });
-            if (statusCases.length === 0) return null;
+            if (allStatusCases.length === 0) return null;
+
+            const STATUS_PAGE_SIZE = 5;
+            const curPage = statusPages[status] || 1;
+            const totalStatusPages = Math.ceil(allStatusCases.length / STATUS_PAGE_SIZE);
+            const pagedStatusCases = allStatusCases.slice((curPage - 1) * STATUS_PAGE_SIZE, curPage * STATUS_PAGE_SIZE);
+
+            const setStatusPage = (p) => setStatusPages(prev => ({ ...prev, [status]: p }));
             const st = STATUS_MAP[status] || {};
+
             return (
               <div key={status} style={{ marginBottom: 28 }}>
+                {/* 상태 섹션 헤더 */}
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                   <span style={{ fontSize: 12, padding: "3px 12px", borderRadius: 12, background: st.bg, color: st.color, fontWeight: 700 }}>{status}</span>
-                  <span style={{ fontSize: 12, color: T.textMuted }}>{statusCases.length}건</span>
+                  <span style={{ fontSize: 12, color: T.textMuted }}>{allStatusCases.length}건</span>
+                  {totalStatusPages > 1 && (
+                    <span style={{ fontSize: 11, color: T.textMuted, marginLeft: 4 }}>{curPage} / {totalStatusPages} 페이지</span>
+                  )}
                 </div>
-                <CaseTable cases={statusCases} googleConnected={googleConnected} syncingCaseId={syncingCaseId} deletingCaseId={deletingCaseId} userRole={userRole} handleSyncToCalendar={handleSyncToCalendar} handleDeleteCase={handleDeleteCase} onEdit={setEditCaseId} members={members} />
+
+                {/* 사건 테이블 */}
+                <CaseTable cases={pagedStatusCases} googleConnected={googleConnected} syncingCaseId={syncingCaseId} deletingCaseId={deletingCaseId} userRole={userRole} handleSyncToCalendar={handleSyncToCalendar} handleDeleteCase={handleDeleteCase} onEdit={setEditCaseId} members={members} />
+
+                {/* 페이지네이션 (5건 초과 시) */}
+                {totalStatusPages > 1 && (
+                  <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 3, marginTop: 10 }}>
+                    <button onClick={() => setStatusPage(1)} disabled={curPage === 1}
+                      style={{ padding: "4px 8px", fontSize: 11, border: "1px solid #e5e7eb", borderRadius: 4, background: "#fff", color: curPage === 1 ? "#d1d5db" : "#374151", cursor: curPage === 1 ? "default" : "pointer" }}>처음</button>
+                    <button onClick={() => setStatusPage(p => Math.max(1, p - 1))} disabled={curPage === 1}
+                      style={{ padding: "4px 8px", fontSize: 11, border: "1px solid #e5e7eb", borderRadius: 4, background: "#fff", color: curPage === 1 ? "#d1d5db" : "#374151", cursor: curPage === 1 ? "default" : "pointer" }}>‹</button>
+                    {Array.from({ length: totalStatusPages }, (_, i) => i + 1)
+                      .filter(p => p === 1 || p === totalStatusPages || Math.abs(p - curPage) <= 2)
+                      .reduce((acc, p, i, arr) => { if (i > 0 && p - arr[i-1] > 1) acc.push("…"); acc.push(p); return acc; }, [])
+                      .map((p, i) => p === "…" ? (
+                        <span key={"e"+i} style={{ padding: "4px 3px", fontSize: 11, color: "#9ca3af" }}>…</span>
+                      ) : (
+                        <button key={p} onClick={() => setStatusPage(p)}
+                          style={{ padding: "4px 9px", fontSize: 11, border: `1px solid ${p === curPage ? st.color : "#e5e7eb"}`, borderRadius: 4, background: p === curPage ? st.bg : "#fff", color: p === curPage ? st.color : "#374151", cursor: "pointer", fontWeight: p === curPage ? 700 : 400 }}>
+                          {p}
+                        </button>
+                      ))
+                    }
+                    <button onClick={() => setStatusPage(p => Math.min(totalStatusPages, p + 1))} disabled={curPage === totalStatusPages}
+                      style={{ padding: "4px 8px", fontSize: 11, border: "1px solid #e5e7eb", borderRadius: 4, background: "#fff", color: curPage === totalStatusPages ? "#d1d5db" : "#374151", cursor: curPage === totalStatusPages ? "default" : "pointer" }}>›</button>
+                    <button onClick={() => setStatusPage(totalStatusPages)} disabled={curPage === totalStatusPages}
+                      style={{ padding: "4px 8px", fontSize: 11, border: "1px solid #e5e7eb", borderRadius: 4, background: "#fff", color: curPage === totalStatusPages ? "#d1d5db" : "#374151", cursor: curPage === totalStatusPages ? "default" : "pointer" }}>마지막</button>
+                  </div>
+                )}
               </div>
             );
           })}
