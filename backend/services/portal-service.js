@@ -2340,8 +2340,8 @@ function getLitigationAgreements({ search, from, to, caseId } = {}) {
 
 function getUpcomingPayments() {
   const rows = sqlite.prepare(
-    `SELECT id, title, retainer_fee, retainer_installments, retainer_day, retainer_paid_count,
-            success_fee, success_installments, success_day, success_paid_count,
+    `SELECT id, title, retainer_fee, retainer_installments, retainer_day,
+            success_fee, success_installments, success_day,
             payment_method, visit_route
      FROM case_files
      WHERE status NOT IN ('완료')
@@ -2362,8 +2362,7 @@ function getUpcomingPayments() {
 
     if (row.retainer_installments > 1 && row.retainer_fee) {
       const monthly = Math.round(row.retainer_fee / row.retainer_installments);
-      const paid = row.retainer_paid_count || 0;
-      const remaining = row.retainer_installments - paid;
+      const remaining = row.retainer_installments;
       if (remaining > 0) {
         results.push({
           caseTitle: title,
@@ -2372,7 +2371,7 @@ function getUpcomingPayments() {
           paymentMethod: pm,
           monthlyAmount: monthly,
           dueDay: row.retainer_day || 1,
-          paidCount: paid,
+          paidCount: 0,
           totalInstallments: row.retainer_installments,
           remainingCount: remaining,
         });
@@ -2381,8 +2380,7 @@ function getUpcomingPayments() {
 
     if (row.success_installments > 1 && row.success_fee) {
       const monthly = Math.round(row.success_fee / row.success_installments);
-      const paid = row.success_paid_count || 0;
-      const remaining = row.success_installments - paid;
+      const remaining = row.success_installments;
       if (remaining > 0) {
         results.push({
           caseTitle: title,
@@ -2391,7 +2389,7 @@ function getUpcomingPayments() {
           paymentMethod: pm,
           monthlyAmount: monthly,
           dueDay: row.success_day || 1,
-          paidCount: paid,
+          paidCount: 0,
           totalInstallments: row.success_installments,
           remainingCount: remaining,
         });
