@@ -30,7 +30,7 @@ function PaymentsPanel({ userRole, userEmail, userDeptId, sonmuDeptId }) {
     import('../../utils/api').then(({ portalApi }) => {
       portalApi.get('/cases/upcoming-payments')
         .then(r => {
-          const data = Array.isArray(r.data) ? r.data : [];
+          const data = Array.isArray(r) ? r : (Array.isArray(r.data) ? r.data : []);
           setPayments(data);
         })
         .catch(() => {});
