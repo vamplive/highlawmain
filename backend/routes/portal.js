@@ -35,7 +35,7 @@ const { messageTemplates, messageLogs, caseDocuments } = require("../db/schema")
 const { sendSMS: sendSMSFn } = require("../lib/sms-service");
 const { sendFriendTalk: sendFriendTalkFn } = require("../lib/kakao-friendtalk-service");
 const portalScheduleService = require("../services/schedule-service");
-const { eq: deq, desc: ddesc, sql: dsql, and: dand } = require("drizzle-orm");
+const { eq: deq, desc: ddesc, sql: dsql, and: dand, ne: dne } = require("drizzle-orm");
 const { cleanPhone: cleanPhoneFn } = require("../services/helpers");
 
 const router = Router();
@@ -489,7 +489,7 @@ router.get("/cases/:id/documents", portalAuth, async (req, res) => {
     const docs = await msgDb
       .select()
       .from(caseDocuments)
-      .where(deq(caseDocuments.caseFileId, id))
+      .where(dand(deq(caseDocuments.caseFileId, id), dne(caseDocuments.documentType, 'litigation_agreement')))
       .orderBy(caseDocuments.createdAt);
     res.json({ data: docs, error: null, meta: null });
   } catch (e) {
