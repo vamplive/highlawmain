@@ -21,12 +21,18 @@ function validatePhone(phone) {
   return { ok: true, phone: normalized };
 }
 
+function stripBom(str) {
+  return str ? str.replace(/^﻿/, "") : str;
+}
+
 function readConfig() {
+  // KAKAO_SENDER_KEY 우선, 없으면 ALIGO_KAKAO_SENDER_KEY 사용. BOM 문자 제거.
+  const rawSenderKey = process.env.KAKAO_SENDER_KEY || process.env.ALIGO_KAKAO_SENDER_KEY;
   return {
     apiKey: process.env.ALIGO_API_KEY,
     // 카카오 계정이 SMS 계정과 다를 경우 KAKAO_USER_ID로 분리 설정 가능
     userId: process.env.KAKAO_USER_ID || process.env.ALIGO_USER_ID,
-    senderKey: process.env.KAKAO_SENDER_KEY,
+    senderKey: stripBom(rawSenderKey),
     testMode: (process.env.ALIGO_TEST_MODE || "N").toUpperCase() === "Y" ? "Y" : "N",
   };
 }

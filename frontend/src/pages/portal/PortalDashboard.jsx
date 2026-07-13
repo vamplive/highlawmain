@@ -376,7 +376,7 @@ function EditModalMsgTab({ caseId }) {
   const [sending, setSending] = useState(false);
   const bottomRef = useRef(null);
   const load = useCallback(() => {
-    portalApi.get(`/cases/${caseId}/messages`).then(r => setMessages(r.data?.data || [])).catch(() => {});
+    portalApi.get(`/cases/${caseId}/messages`).then(r => setMessages(Array.isArray(r.data) ? r.data : [])).catch(() => {});
   }, [caseId]);
   useEffect(() => { load(); }, [load]);
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
